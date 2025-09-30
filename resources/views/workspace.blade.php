@@ -13,9 +13,9 @@
             </svg>
             <a href="#" class="text-gray-700 hover:text-blue-600 font-medium transition">Div. Marketing</a>
         </div>
-        
+
         <div class="flex-1"></div>
-        
+
         <div class="flex items-center gap-4">
             <a href="#" class="flex items-center gap-2 text-gray-600 hover:text-blue-600">
                 <img src="/images/icons/insight.png" alt="Insight" class="w-4 h-4">
@@ -33,7 +33,7 @@
                 <img src="/images/icons/dokumen.png" alt="Dokumen" class="w-4 h-4">
                 <span>Dokumen</span>
             </a>
-            <a href="#" class="flex items-center gap-2 text-gray-600 hover:text-blue-600">
+            <a href="" class="flex items-center gap-2 text-gray-600 hover:text-blue-600">
                 <img src="/images/icons/jadwal.png" alt="Jadwal" class="w-4 h-4">
                 <span>Jadwal</span>
             </a>
