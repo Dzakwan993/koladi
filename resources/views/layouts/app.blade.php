@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Koladi - @yield('title')</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+</head>
+<body class="bg-[#f3f6fc] flex h-screen overflow-hidden">
+    <x-sidebar />
+
+    <div class="flex-1 flex flex-col overflow-hidden">
+        <x-topbar />
+
+        <main class="flex-1 overflow-y-auto">
+            @yield('content')
+        </main>
+    </div>
+</body>
+
+</html>
