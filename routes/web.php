@@ -15,4 +15,6 @@ Route::get('/dashboard', function () {
 // Halaman Workspace
 Route::get('/workspace', function () {
     return view('workspace');
+    
 });
+
