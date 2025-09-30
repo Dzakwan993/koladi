@@ -16,3 +16,8 @@ Route::get('/dashboard', function () {
 Route::get('/workspace', function () {
     return view('workspace');
 });
+
+// Halaman Jadwal
+Route::get('/jadwal', function () {
+    return view('jadwal');
+});

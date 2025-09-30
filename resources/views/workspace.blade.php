@@ -33,7 +33,7 @@
                 <img src="/images/icons/dokumen.png" alt="Dokumen" class="w-4 h-4">
                 <span>Dokumen</span>
             </a>
-            <a href="" class="flex items-center gap-2 text-gray-600 hover:text-blue-600">
+            <a href="{{ url('/jadwal')}}" class="flex items-center gap-2 text-gray-600 hover:text-blue-600">
                 <img src="/images/icons/jadwal.png" alt="Jadwal" class="w-4 h-4">
                 <span>Jadwal</span>
             </a>
@@ -67,7 +67,7 @@
         </a>
 
         {{-- Card Jadwal --}}
-        <a href="#" class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group">
+        <a href="{{ url('/jadwal')}}" class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group">
             <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
                 <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10"></path>
