@@ -2,7 +2,7 @@
     <!-- Left Section: Logo & Company Name -->
     <div class="flex items-center gap-3">
         <img src="/images/logo.png" alt="Logo" class="w-6 h-6">
-        <span class="text-gray-800 font-medium text-sm">PT. Mencari Cinta Sejati</span>
+        <span class="text-gray-500 font-medium text-sm">PT. Mencari Cinta Sejati</span>
     </div>
 
     <!-- Center Section: Search Bar -->
@@ -28,21 +28,39 @@
                 <img src="https://i.pravatar.cc/32?img=2" alt="User 2" class="w-7 h-7 rounded-full border-2 border-white">
                 <img src="https://i.pravatar.cc/32?img=3" alt="User 3" class="w-7 h-7 rounded-full border-2 border-white">
             </div>
-            <span class="text-xs text-gray-600">Sabron dan 5 lainnya aktif</span>
-        </div>
+<span class="text-xs text-gray-600">
+    Sabron dan 
+    <button 
+        class="text-blue-500 hover:underline" 
+        onclick="openModal()"
+    >
+        5 lainnya
+    </button> 
+    aktif
+</span>        </div>
 
         <!-- Action Buttons -->
-        <button class="p-2 hover:bg-gray-50 rounded-lg transition" title="Dollar">
-            <img src="/images/icons/dollar.png" alt="Dollar" class="w-5 h-5">
+        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Atur Akses">
+            <img src="/images/icons/akses.png" alt="Atur Akses" class="w-5 h-5">
         </button>
 
-        <button class="p-2 hover:bg-gray-50 rounded-lg transition relative" title="Notifications">
-            <img src="/images/icons/notification.png" alt="Notification" class="w-5 h-5">
-            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+        <button class="p-1 hover:bg-gray-50 rounded-lg transition relative" title="Notifications">
+            <img src="/images/icons/dollar.png" alt="Notification" class="w-5 h-5">
+
+            
         </button>
 
-        <button class="p-2 hover:bg-gray-50 rounded-lg transition" title="Apps">
+        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Apps">
             <img src="/images/icons/apps.png" alt="Apps" class="w-5 h-5">
+        </button>
+
+        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Apps">
+            <img src="/images/icons/apps.png" alt="Apps" class="w-5 h-5">
+        </button>
+
+        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Apps">
+            <img src="/images/icons/notification.png" alt="Apps" class="w-5 h-5">
+            
         </button>
 
         <!-- Profile -->
