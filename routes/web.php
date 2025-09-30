@@ -18,3 +18,8 @@ Route::get('/workspace', function () {
     
 });
 
+// routes/web.php
+Route::get('/kanban-tugas', function () {
+    return view('kanban-tugas');
+});
+
