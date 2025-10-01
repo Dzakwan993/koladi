@@ -21,3 +21,15 @@ Route::get('/workspace', function () {
 Route::get('/jadwal', function () {
     return view('jadwal');
 });
+
+//halaman buat jadwal
+Route::get('/buatJadwal', function () {
+    return view('buatJadwal');
+})->name('buatJadwal');
+
+
+Route::get('/events', function () {
+    return response()->json([
+    ]);
+});
+

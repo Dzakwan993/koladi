@@ -4,45 +4,8 @@
 
 @section('content')
 <div class="bg-[#f3f6fc]">
-    {{-- Workspace Nav (menempel ke topbar) --}}
-    <div class="h-12 bg-white shadow-sm flex items-center px-6 space-x-6 text-sm border-b border-gray-200">
-        <div class="flex items-center gap-2">
-            <span class="text-xs text-gray-500 uppercase tracking-wide">Ruang Kerja</span>
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-            </svg>
-            <a href="#" class="text-gray-700 hover:text-blue-600 font-medium transition">Div. Marketing</a>
-        </div>
-
-        <div class="flex-1"></div>
-
-        <div class="flex items-center gap-4">
-            <a href="#" class="flex items-center gap-2 text-gray-600 hover:text-blue-600">
-                <img src="/images/icons/insight.png" alt="Insight" class="w-4 h-4">
-                <span>Insight</span>
-            </a>
-            <a href="#" class="flex items-center gap-2 text-gray-600 hover:text-blue-600">
-                <img src="/images/icons/tugas.png" alt="Tugas" class="w-4 h-4">
-                <span>Tugas</span>
-            </a>
-            <a href="#" class="flex items-center gap-2 text-gray-600 hover:text-blue-600">
-                <img src="/images/icons/chat.png" alt="Chat" class="w-4 h-4">
-                <span>Chat</span>
-            </a>
-            <a href="#" class="flex items-center gap-2 text-gray-600 hover:text-blue-600">
-                <img src="/images/icons/dokumen.png" alt="Dokumen" class="w-4 h-4">
-                <span>Dokumen</span>
-            </a>
-            <a href="{{ url('/jadwal')}}" class="flex items-center gap-2 text-gray-600 hover:text-blue-600">
-                <img src="/images/icons/jadwal.png" alt="Jadwal" class="w-4 h-4">
-                <span>Jadwal</span>
-            </a>
-            <a href="#" class="flex items-center gap-2 text-gray-600 hover:text-blue-600">
-                <img src="/images/icons/pengumuman.png" alt="Pengumuman" class="w-4 h-4">
-                <span>Pengumuman</span>
-            </a>
-        </div>
-    </div>
+    {{-- Workspace Nav --}}
+    @include('components.workspace-nav')
 
     {{-- Grid Workspace --}}
     <div class="p-8 grid grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -67,7 +30,7 @@
         </a>
 
         {{-- Card Jadwal --}}
-        <a href="{{ url('/jadwal')}}" class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group">
+        <a href="{{ url('/jadwal') }}" class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group">
             <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
                 <svg class="w-full h-full" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10"></path>
