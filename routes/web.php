@@ -27,6 +27,10 @@ Route::get('/buatJadwal', function () {
     return view('buatJadwal');
 })->name('buatJadwal');
 
+//isiJadwalOnline
+Route::get('/isiJadwalOnline', function () {
+    return view('isiJadwalOnline');
+});
 
 Route::get('/events', function () {
     return response()->json([
