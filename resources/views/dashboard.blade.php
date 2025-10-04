@@ -5,10 +5,10 @@
 @section('content')
 <div class="bg-[#f3f6fc]">
     {{-- Workspace Nav (menempel ke topbar) --}}
-    
+
         <div class="flex-1"></div>
-        
-        
+
+
     </div>
 
     {{-- Grid Workspace --}}
@@ -23,9 +23,9 @@
             <span class="text-gray-700 font-extrabold text-2xl">INI BAKAL JADI TAMPILAN DASHBOARD</span>
         </a>
 
-      
 
-       
+
+
     </div>
 </div>
 @endsection

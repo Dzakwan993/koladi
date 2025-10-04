@@ -16,9 +16,10 @@
             @yield('content')
         </main>
     </div>
+
+    {{-- semua script tambahan dari fitur lain masuk di sini --}}
+    @stack('scripts')
+
+    <script src="//unpkg.com/alpinejs" defer></script>
 </body>
-
-<script src="//unpkg.com/alpinejs" defer></script>
-
-
 </html>
