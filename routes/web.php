@@ -17,6 +17,11 @@ Route::get('/masuk', function () {
     return view('masuk');
 });
 
+// Halaman Buat Perusahaan
+Route::get('/buat-perusahaan', function () {
+    return view('buat-perusahaan');
+});
+
 // Halaman Dashboard
 Route::get('/dashboard', function () {
     return view('dashboard');

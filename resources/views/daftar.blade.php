@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar - Koladi</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
     <div class="min-h-screen bg-gradient-to-br from-gray-50 to-[#F9FAFB] flex items-center justify-center p-4">
@@ -12,7 +12,7 @@
                {{-- Logo --}}
             <div class="flex justify-center mb-6">
                 <div class="flex items-center">
-                    <img src="/images/logo-koladi1.png"  alt="Logo Koladi">
+                    <img src="{{ asset('images/logo-koladi1.png') }}" alt="Logo Koladi">
                 </div>
             </div>
 
