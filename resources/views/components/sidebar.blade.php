@@ -7,14 +7,14 @@
     {{-- Navigation --}}
     <nav class="flex-1 py-4 px-3 space-y-1 overflow-auto">
         {{-- Dashboard --}}
-    <a href="{{ url('/dashboard') }}" 
+    <a href="{{ url('/dashboard') }}"
        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition">
         <img src="/images/icons/dashboard.png" alt="" class="w-5 h-5">
         <span class="text-sm">Dashboard</span>
     </a>
 
     {{-- Workspace --}}
-    <a href="{{ url('/workspace') }}" 
+    <a href="{{ url('/workspace') }}"
        class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition">
         <img src="/images/icons/ruang-kerja.png" alt="" class="w-5 h-5">
         <span class="text-sm">Ruang Kerja</span>
@@ -48,9 +48,9 @@
     <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
     </svg>
-    <input 
-        type="text" 
-        placeholder="Cari ruang..." 
+    <input
+        type="text"
+        placeholder="Cari ruang..."
         class="flex-1 bg-transparent outline-none border-none focus:ring-0 text-gray-700 text-xs min-w-0"
     />
 </div>

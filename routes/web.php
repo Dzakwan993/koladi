@@ -7,6 +7,16 @@ Route::get('/', function () {
     return view('dashboard');
 });
 
+// Halaman Daftar
+Route::get('/daftar', function () {
+    return view('daftar');
+});
+
+// Halaman Masuk
+Route::get('/masuk', function () {
+    return view('masuk');
+});
+
 // Halaman Dashboard
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -15,6 +25,6 @@ Route::get('/dashboard', function () {
 // Halaman Workspace
 Route::get('/workspace', function () {
     return view('workspace');
-    
+
 });
 
