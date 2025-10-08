@@ -32,6 +32,26 @@ Route::get('/isiJadwalOnline', function () {
     return view('isiJadwalOnline');
 });
 
+//isiJadwalOffline
+Route::get('/isiJadwalOffline', function () {
+    return view('isiJadwalOffline');
+});
+
+//isiJadwalTidakAdaRapat
+Route::get('/isiJadwalTidakAdaRapat', function () {
+    return view('isiJadwalTidakAdaRapat');
+});
+
+//notulensi
+Route::get('/notulensi', function () {
+    return view('/notulensi');
+});
+
+//pengunguman
+Route::get('/pengunguman', function () {
+    return view('/pengunguman');
+});
+
 Route::get('/events', function () {
     return response()->json([
     ]);

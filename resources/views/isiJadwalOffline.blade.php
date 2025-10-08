@@ -55,11 +55,7 @@
         <div class="flex items-start gap-4">
           <img src="images/icons/hbj1.svg" alt="">
           <div>
-            <h2 class="font-semibold text-black text-[16px]">Rapat dilakukan dengan online</h2>
-            <button @click="openPopup = true" class="mt-2 bg-[#2563eb] text-white font-semibold py-1 px-2 rounded-lg text-sm hover:bg-blue-700 transition-colors flex items-center gap-1 ">
-            <img src="/images/icons/ZoomPutih.svg" alt="Zoom Icon" class="w-[28px] h-[28px]">
-            <span>Gabung rapat</span>
-        </button>
+            <h2 class="font-semibold text-black text-[16px]">Rapat dilakukan dengan offline</h2>
           </div>
         </div>
 
@@ -76,9 +72,9 @@
         </div>
       </div>
 
-{{-- komentar start --}}
-<h2 class="font-semibold text-black text-[16px] font-inter">Komentar</h2>
+      {{-- komentar --}}
 <!-- Wrapper utama -->
+<h2 class="font-semibold text-black text-[16px] font-inter">Komentar</h2>
 <div class="flex items-start gap-2">
 
   <!-- Avatar di kiri -->
@@ -131,32 +127,7 @@
   </div>
 </div>
 {{-- End komentar --}}
-
       </div>
-      {{-- KODE POP UP --}}
-    {{-- Perbaikan: Menghapus style="display: none;" --}}
-{{-- <div x-show="openPopup" x-transition class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-  <div @click.away="openPopup = false" class="bg-[#f3f6fc] rounded-2xl shadow-lg p-8 w-full max-w-sm text-center">
-
-    <img src="{{ asset('images/icons/teamimage.svg') }}" alt="Ilustrasi rapat" class="w-48 mx-auto mb-6">
-
-    <h2 class="text-xl font-medium text-black">
-      Apakah anda ingin bergabung dengan rapat?
-    </h2>
-
-    <div class="flex justify-center gap-4 mt-8">
-
-      <button @click="openPopup = false" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-8 rounded-lg transition-colors">
-        Batal
-      </button>
-
-      <button @click="openPopup = false" class="bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-10 rounded-lg transition-colors">
-        Ya
-      </button>
-
-    </div>
-  </div>
-</div> --}}
   </div>
 </div>
 @endsection

@@ -230,7 +230,7 @@
   <button class="hover:bg-gray-200 rounded flex-shrink-0"><img src="images/icons/1a.png" alt="" class="w-6 h-6"></button>
   <button class="hover:bg-gray-200 rounded flex-shrink-0"><img src="images/icons/2a.png" alt="" class="w-6 h-6"></button>
 
-  <select class="border rounded text-sm px-10 py-1 flex-shrink-0">
+  <select class="border rounded text-sm py-1 flex-shrink-0 pr-9">
     <option>Normal text</option>
     <option>Heading 1</option>
     <option>Heading 2</option>
