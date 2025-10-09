@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 
 // Halaman default diarahkan ke dashboard
 Route::get('/', function () {
@@ -30,6 +31,11 @@ Route::get('/dashboard', function () {
 // Halaman Workspace
 Route::get('/workspace', function () {
     return view('workspace');
-
 });
 
+Route::post('/logout', function () {
+    Auth::logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect('/masuk'); // arahkan ke halaman masuk
+})->name('logout');
