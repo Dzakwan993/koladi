@@ -5,7 +5,6 @@
 @section('content')
 <div class="bg-[#f3f6fc]">
     {{-- Workspace Nav (menempel ke topbar) --}}
-
         <div class="flex-1"></div>
     </div>
     {{-- Grid Workspace --}}

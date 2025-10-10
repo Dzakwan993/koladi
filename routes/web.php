@@ -46,9 +46,24 @@ Route::get('/tambah-anggota', function () {
 // Halaman Workspace
 Route::get('/workspace', function () {
     return view('workspace');
+});
+
+// Halaman Pengajuan Cuti Karyawan
+Route::get('/cutikaryawan', function () {
+    return view('cutikaryawan');
+});
+
+// Halaman Pengajuan Cuti Manajer
+Route::get('/cutimanajer', function () {
+    return view('cutimanajer');
 
 });
 
+// Halaman Chat
+Route::get('/chat', function () {
+    return view('chat');
+    
+});
 Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
