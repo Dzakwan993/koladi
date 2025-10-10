@@ -49,7 +49,6 @@ Route::get('/workspace', function () {
 
 });
 
-
 Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();

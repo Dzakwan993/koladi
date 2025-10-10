@@ -59,10 +59,11 @@
                     </div>
                 </div>
                 {{-- Button Login --}}
-                <button type="button"
-                    class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-md hover:shadow-lg">
-                    Login
-                </button>
+                <a href="{{ url('/buat-perusahaan') }}"
+                    class="block w-full text-center bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-md hover:shadow-lg">
+                    Masuk
+                </a>
+
 
                 {{-- Divider --}}
                 <div class="relative my-6">

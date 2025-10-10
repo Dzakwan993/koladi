@@ -50,6 +50,7 @@
     <div class="flex items-center justify-center min-h-screen px-4 py-8">
         <div
             class="bg-white/30 backdrop-blur-xl rounded-3xl card-shadow p-8 sm:p-12 w-full max-w-lg relative border-2 border-blue-500/90">
+
             {{-- Heading --}}
             <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 text-center mb-6">
                 Ayo buat perusahaanmu!
@@ -62,28 +63,21 @@
                 </div>
             </div>
 
-            {{-- Form --}}
-            <form action="" method="POST" class="space-y-6">
-                @csrf
+            {{-- Input Nama Perusahaan --}}
+            <div class="mb-8">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Nama perusahaan
+                </label>
+                <input type="text" placeholder="Masukkan nama perusahaanmu..."
+                    class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm">
+            </div>
 
-                {{-- Nama Perusahaan --}}
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        Nama perusahaan
-                    </label>
-                    <input type="text" name="nama_perusahaan" placeholder="Masukkan nama perusahaanmu..."
-                        class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
-                        required>
-                </div>
+            {{-- Tombol Buat Perusahaan --}}
+            <a href="{{ url('/dashboard-awal') }}"
+                class="block text-center w-full bg-blue-600 text-white py-3.5 rounded-xl font-semibold text-base hover:bg-blue-700 active:bg-blue-800 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                Buat perusahaan
+            </a>
 
-                {{-- Button Buat Perusahaan --}}
-                <div class="pt-2">
-                    <button type="submit"
-                        class="w-full bg-blue-600 text-white py-3.5 rounded-xl font-semibold text-base hover:bg-blue-700 active:bg-blue-800 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
-                        Buat perusahaan
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 </body>

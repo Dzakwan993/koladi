@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Dashboard')
+@section('title', 'Dashboard Tambah Anggota')
 
 @section('content')
     <div x-data="{ showOverlay: true, showTooltip: true }" x-init="// Tutup overlay kalau user menekan tombol apa pun
