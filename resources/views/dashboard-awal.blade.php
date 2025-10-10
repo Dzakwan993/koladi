@@ -3,17 +3,19 @@
 @section('title', 'Dashboard')
 
 @section('content')
-    <div x-data="{ showOverlay: true, showTooltip: true }" class="relative bg-[#f3f6fc] min-h-full">
+    <div x-data="{ showOverlay: true, showTooltip: true }" x-init="// Tutup overlay kalau user menekan tombol apa pun
+    window.addEventListener('keydown', () => {
+        showOverlay = false;
+        showTooltip = false;
+    });" class="relative bg-[#f3f6fc] min-h-full">
 
         {{-- Overlay dengan efek spotlight --}}
         <template x-if="showOverlay">
             <div class="fixed inset-0 z-40 pointer-events-auto" @click="showOverlay = false; showTooltip = false">
-                {{-- Lebih terang: opacity dikurangi --}}
                 <div class="absolute inset-0 bg-black bg-opacity-40 transition duration-500"></div>
 
-                {{-- Efek spotlight lebih lembut & terang --}}
                 <div
-                    class="absolute right-[15%] bottom-[35%] w-64 h-64 rounded-full bg-transparent  blur-2xl drop-shadow-[0_0_60px_rgba(255,255,255,0.2)]">
+                    class="absolute right-[15%] bottom-[35%] w-64 h-64 rounded-full bg-transparent blur-2xl drop-shadow-[0_0_60px_rgba(255,255,255,0.2)]">
                 </div>
             </div>
         </template>
@@ -39,7 +41,7 @@
                             </p>
                         </div>
 
-                        {{-- Tombol & Tooltip di pojok kanan --}}
+                        {{-- Tombol & Tooltip --}}
                         <div class="relative flex justify-end pr-10">
                             <a href="{{ url('/tambah-anggota') }}"
                                 class="relative z-[60] bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold py-3.5 px-8 rounded-lg inline-flex items-center justify-center gap-2 shadow-2xl transition ring-4 ring-white/50">

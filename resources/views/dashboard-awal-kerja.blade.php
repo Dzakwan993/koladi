@@ -3,20 +3,24 @@
 @section('title', 'Dashboard Awal Tambah Ruang Kerja')
 
 @section('content')
-    <div x-data="{ showOverlay: true, showTooltip: true, showPopup: false }" class="relative bg-[#f3f6fc] min-h-screen">
+    <div x-data="{ showOverlay: true, showTooltip: true, showPopup: false }" x-init="// Tutup overlay & tooltip ketika menekan tombol apa pun
+    window.addEventListener('keydown', () => {
+        showOverlay = false;
+        showTooltip = false;
+    });" class="relative bg-[#f3f6fc] min-h-screen">
 
         {{-- Overlay efek spotlight --}}
         <template x-if="showOverlay">
             <div class="fixed inset-0 z-40 pointer-events-auto" @click="showOverlay = false; showTooltip = false">
                 <div class="absolute inset-0 bg-black bg-opacity-40 transition duration-500"></div>
                 <div
-                    class="absolute right-[18%] bottom-[33%] w-72 h-72 rounded-full bg-transparent  blur-2xl drop-shadow-[0_0_60px_rgba(255,255,255,0.3)]">
+                    class="absolute right-[18%] bottom-[33%] w-72 h-72 rounded-full bg-transparent blur-2xl drop-shadow-[0_0_60px_rgba(255,255,255,0.3)]">
                 </div>
             </div>
         </template>
 
         {{-- Konten utama --}}
-        <div class="relative z-50 h-full flex items-center justify-center px-8 py-20">
+        <div class="relative z-50 h-full flex items-center justify-center px-8 py-16">
             <div class="max-w-7xl w-full">
                 <div class="grid grid-cols-2 gap-20 items-center">
 
@@ -41,14 +45,14 @@
                         </div>
 
                         {{-- Tombol tambah & tooltip --}}
-                        <div class="relative flex justify-end pr-16">
+                        <div class="relative flex justify-end pr-16 mt-[-40px]"> {{-- posisi dinaikkan --}}
                             <button @click="showPopup = true"
                                 class="relative z-[60] bg-[#2563eb] hover:bg-[#1d4ed8] text-white rounded-full p-3 flex items-center justify-center shadow-2xl transition ring-4 ring-white/50">
                                 <img src="{{ asset('images/icons/tambah.svg') }}" alt="Tambah" class="w-7 h-7">
                             </button>
 
                             {{-- Tooltip --}}
-                            <div x-show="showTooltip" x-transition class="absolute right-10 top-full mt-4 z-[70]">
+                            <div x-show="showTooltip" x-transition class="absolute right-10 top-full mt-3 z-[70]">
                                 <div
                                     class="absolute right-11 -top-2 w-4 h-4 bg-white rotate-45 border-r border-t border-gray-200">
                                 </div>
@@ -123,7 +127,6 @@
                 </form>
             </div>
         </div>
-
 
     </div>
 @endsection
