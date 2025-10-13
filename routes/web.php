@@ -62,8 +62,9 @@ Route::get('/cutimanajer', function () {
 // Halaman Chat
 Route::get('/chat', function () {
     return view('chat');
-    
+
 });
+
 Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
