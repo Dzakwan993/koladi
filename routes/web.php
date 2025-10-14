@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 
 // Halaman default diarahkan ke dashboard
 Route::get('/', function () {
@@ -8,14 +9,15 @@ Route::get('/', function () {
 });
 
 // Halaman Daftar
-Route::get('/daftar', function () {
-    return view('daftar');
-});
+Route::get('/daftar', [AuthController::class, 'showRegister'])->name('register');
+Route::post('/daftar', [AuthController::class, 'register']);
 
 // Halaman Masuk
-Route::get('/masuk', function () {
-    return view('masuk');
-});
+Route::get('/masuk', [AuthController::class, 'showLogin'])->name('masuk');
+Route::post('/masuk', [AuthController::class, 'login']);
+
+// Halaman Logout
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Halaman Buat Perusahaan
 Route::get('/buat-perusahaan', function () {

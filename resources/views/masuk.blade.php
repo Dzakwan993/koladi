@@ -25,7 +25,8 @@
             </div>
 
             {{-- Form --}}
-            <form class="space-y-4">
+            <form class="space-y-4" action="{{ url('/masuk') }}" method="POST">
+                @csrf
                 {{-- Alamat Email --}}
                 <div class="relative">
                     <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none"
@@ -59,7 +60,7 @@
                     </div>
                 </div>
                 {{-- Button Login --}}
-                <button type="button"
+                <button type="submit"
                     class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-md hover:shadow-lg">
                     Login
                 </button>
