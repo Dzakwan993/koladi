@@ -40,7 +40,7 @@
 </span>        </div>
 
         <!-- Action Buttons -->
-        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Atur Akses">
+        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Atur Akses" onclick="openModal()">
             <img src="/images/icons/akses.png" alt="Atur Akses" class="w-5 h-5">
         </button>
 

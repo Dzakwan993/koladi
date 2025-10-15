@@ -15,6 +15,9 @@
         <main class="flex-1 overflow-y-auto">
             @yield('content')
         </main>
+
+        <x-hak-akses />
+        <x-atur-hak />
     </div>
 </body>
 
