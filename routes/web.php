@@ -18,3 +18,8 @@ Route::get('/workspace', function () {
     
 });
 
+// Halaman Tambah Anggota
+Route::get('/tambah-anggota', function () {
+    return view('tambah-anggota');
+    
+});
