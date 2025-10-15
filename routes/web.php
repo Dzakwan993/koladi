@@ -18,3 +18,8 @@ Route::get('/workspace', function () {
     
 });
 
+// Halaman Profile
+Route::get('/profile', function () {
+    return view('profile');
+    
+});
