@@ -65,6 +65,12 @@ Route::get('/chat', function () {
 
 });
 
+// Halaman Chat
+Route::get('/insight', function () {
+    return view('insight');
+
+});
+
 Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();

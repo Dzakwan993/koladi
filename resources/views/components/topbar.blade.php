@@ -27,7 +27,7 @@
                     class="w-7 h-7 rounded-full border-2 border-white ring-1 ring-gray-200">
                 <img src="https://i.pravatar.cc/32?img=2" alt="User 2"
                     class="w-7 h-7 rounded-full border-2 border-white ring-1 ring-gray-200">
-                <img src="https://i.pravatar.cc/32?img=3" alt="User 3"
+                <img src="https://i.pravatar.cc/32?img=6" alt="User 3"
                     class="w-7 h-7 rounded-full border-2 border-white ring-1 ring-gray-200">
             </div>
             <span class="text-xs text-gray-600 whitespace-nowrap">
