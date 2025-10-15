@@ -2,24 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
-
     // Tampilkan halaman register
     public function showRegister()
     {
-        return view('daftar'); // sesuaikan nama blade
+        return view('daftar');
     }
 
     public function register(Request $request)
     {
-        // dd($request->all()); // lihat semua data yang dikirim
-
         $validated = $request->validate([
             'nama_lengkap' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
@@ -30,17 +28,17 @@ class AuthController extends Controller
             'nama_lengkap' => $validated['nama_lengkap'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'id_role' => 5, // misal default role user biasa
+            'id_role' => 5, // Role default (sesuaikan dengan ID role di tabel roles)
             'status_aktif' => true,
         ]);
 
-        return redirect()->route('masuk')->with('success', 'Akun berhasil dibuat!');
+        return redirect()->route('masuk')->with('success', 'Akun berhasil dibuat! Silakan login.');
     }
 
     // Tampilkan halaman login
     public function showLogin()
     {
-        return view('masuk'); // sesuaikan dengan file blade
+        return view('masuk');
     }
 
     // Proses login
@@ -53,7 +51,18 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            return redirect('/')->with('success', 'Selamat datang, ' . Auth::user()->nama_lengkap);
+
+            $user = Auth::user();
+
+            // ✅ Cek apakah user sudah punya perusahaan
+            if ($user->companies()->count() === 0) {
+                return redirect()->route('companies.create')
+                    ->with('info', 'Silakan buat perusahaan terlebih dahulu.');
+            }
+
+            // ✅ Jika sudah punya perusahaan, redirect ke dashboard
+            return redirect()->route('dashboard')
+                ->with('success', 'Selamat datang, ' . $user->nama_lengkap);
         }
 
         return back()->withErrors([
@@ -67,6 +76,6 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect('/masuk');
+        return redirect()->route('masuk');
     }
 }

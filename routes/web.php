@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CompanyController;
 
 // Halaman default diarahkan ke dashboard
 Route::get('/', function () {
@@ -20,14 +21,13 @@ Route::post('/masuk', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Halaman Buat Perusahaan
-Route::get('/buat-perusahaan', function () {
-    return view('buat-perusahaan');
-});
+Route::get('/buat-perusahaan', [CompanyController::class, 'create'])->name('companies.create');
+Route::post('/buat-perusahaan', [CompanyController::class, 'store'])->name('companies.store');
 
 // Halaman Dashboard
 Route::get('/dashboard', function () {
     return view('dashboard');
-});
+})->name('dashboard');
 
 // Halaman Workspace
 Route::get('/workspace', function () {

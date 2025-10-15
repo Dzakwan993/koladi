@@ -62,16 +62,22 @@
                 </div>
             </div>
 
-            {{-- Form --}}
-            <form action="" method="POST" class="space-y-6">
-                @csrf
+            @if (session('success'))
+                <div class="bg-green-100 text-green-800 px-4 py-2 rounded-md mb-4">
+                    {{ session('success') }}
+                </div>
+            @endif
 
+
+            {{-- Form --}}
+            <form action="{{ route('companies.store') }}" method="POST" class="space-y-6">
+                @csrf
                 {{-- Nama Perusahaan --}}
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
                         Nama perusahaan
                     </label>
-                    <input type="text" name="nama_perusahaan" placeholder="Masukkan nama perusahaanmu..."
+                    <input type="text" name="name" placeholder="Masukkan nama perusahaanmu..."
                         class="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all shadow-sm"
                         required>
                 </div>
