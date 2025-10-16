@@ -14,29 +14,48 @@
             {{-- Logo --}}
             <div class="flex justify-center mb-6">
                 <div class="flex items-center">
-                    <img src="{{ asset('images/logo-koladi1.png') }}" alt="Logo Koladi">
+                    <img src="{{ asset('images/logo-koladi1.png') }}" alt="Logo Koladi" class="h-12">
                 </div>
             </div>
 
             {{-- Heading --}}
             <div class="text-center mb-8">
                 <h1 class="text-2xl font-bold text-gray-800 mb-2">Selamat Datang di Koladi</h1>
-                <p class="text-gray-500 text-sm">Silahkan masuk untuk melanjutkan</p>
+                <p class="text-gray-500 text-sm">Silakan masuk untuk melanjutkan</p>
             </div>
 
-            {{-- Form --}}
+            {{-- Notifikasi sukses --}}
+            @if (session('success'))
+                <div class="mb-4 bg-green-100 border border-green-300 text-green-700 px-4 py-3 rounded-lg text-sm">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            {{-- Notifikasi error --}}
+            @if ($errors->any())
+                <div class="mb-4 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg text-sm">
+                    <ul class="list-disc pl-5">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            {{-- Form Login --}}
             <form class="space-y-4" action="{{ url('/masuk') }}" method="POST">
                 @csrf
+
                 {{-- Alamat Email --}}
                 <div class="relative">
                     <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none"
                         stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
-                        </path>
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                     <input type="email" name="email" placeholder="Alamat email"
-                        class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                        class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                        required>
                 </div>
 
                 {{-- Kata Sandi --}}
@@ -44,22 +63,54 @@
                     <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none"
                         stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
-                        </path>
+                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
-                    <input type="password" name="password" placeholder="Kata sandi"
-                        class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+
+                    <input id="password" type="password" name="password" placeholder="Kata sandi"
+                        class="w-full pl-12 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                        required>
+
+                    {{-- Toggle Password --}}
+                    <!-- Toggle Password -->
+                    <button type="button" id="togglePassword"
+                        class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none">
+
+                        <!-- Mata terbuka (hidden dulu) -->
+                        <svg id="eyeOpen" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 hidden" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12
+            5c4.477 0 8.268 2.943 9.542
+            7-1.274 4.057-5.065 7-9.542
+            7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+
+                        <!-- Mata tertutup (tampil duluan) -->
+                        <svg id="eyeClosed" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112
+            19c-4.477 0-8.268-2.943-9.542-7a9.957
+            9.957 0 012.125-3.368m2.59-2.591A9.956
+            9.956 0 0112 5c4.477 0 8.268 2.943
+            9.542 7a9.956 9.956 0 01-2.318
+            3.74M15 12a3 3 0 00-4.243-4.243M3
+            3l18 18" />
+                        </svg>
+                    </button>
+
                 </div>
 
-                {{-- Lupa kata sandi & Belum punya akun --}}
-                <div class="flex justify-between items-center text-sm">
+                {{-- Lupa kata sandi & Daftar --}}
+                <div class="flex flex-col sm:flex-row justify-between items-center text-sm gap-2 sm:gap-0">
                     <a href="#" class="text-blue-600 font-semibold hover:underline">Lupa kata sandi?</a>
-                    <div>
+                    <div class="text-center sm:text-right">
                         <span class="text-gray-500">Belum punya akun? </span>
                         <a href="{{ url('/daftar') }}" class="text-blue-600 font-semibold hover:underline">Daftar</a>
                     </div>
                 </div>
-                {{-- Button Login --}}
+
+                {{-- Tombol Login --}}
                 <button type="submit"
                     class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition shadow-md hover:shadow-lg">
                     Login
@@ -75,7 +126,7 @@
                     </div>
                 </div>
 
-                {{-- Button Google --}}
+                {{-- Tombol Google --}}
                 <button type="button"
                     class="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition shadow-sm hover:shadow flex items-center justify-center gap-3">
                     <svg class="w-5 h-5" viewBox="0 0 24 24">
@@ -93,6 +144,22 @@
             </form>
         </div>
     </div>
+
+    {{-- Script toggle password --}}
+    <script>
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
+        const eyeOpen = document.getElementById('eyeOpen');
+        const eyeClosed = document.getElementById('eyeClosed');
+
+        togglePassword.addEventListener('click', () => {
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
+            eyeOpen.classList.toggle('hidden', !isPassword);
+            eyeClosed.classList.toggle('hidden', isPassword);
+        });
+    </script>
+
 </body>
 
 </html>
