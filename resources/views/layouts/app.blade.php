@@ -21,6 +21,9 @@
         <main class="flex-1 overflow-y-auto relative z-10">
             @yield('content')
         </main>
+
+        <x-hak-akses />
+        <x-atur-hak />
     </div>
 
     {{-- semua script tambahan dari fitur lain masuk di sini --}}

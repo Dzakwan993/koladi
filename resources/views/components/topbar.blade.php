@@ -43,8 +43,8 @@
         <div class="h-6 w-px bg-gray-200"></div>
 
         <!-- Action Buttons -->
-        <button class="p-2 hover:bg-gray-100 rounded-lg transition" title="Atur Akses">
-            <img src="{{ asset('images/icons/akses.svg') }}" alt="Atur Akses" class="w-5 h-5">
+        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Atur Akses" onclick="openModal()">
+            <img src="{{ asset('images/icons/akses.svg') }}"  alt="Atur Akses" class="w-5 h-5">
         </button>
 
         <button class="p-2 hover:bg-gray-100 rounded-lg transition" title="Dollar">
