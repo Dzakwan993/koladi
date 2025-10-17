@@ -49,6 +49,46 @@ Route::get('/workspace', function () {
 
 });
 
+// Halaman Jadwal
+Route::get('/jadwal', function () {
+    return view('jadwal');
+});
+
+//halaman buat jadwal
+Route::get('/buatJadwal', function () {
+    return view('buatJadwal');
+})->name('buatJadwal');
+
+//isiJadwalOnline
+Route::get('/isiJadwalOnline', function () {
+    return view('isiJadwalOnline');
+});
+
+//isiJadwalOffline
+Route::get('/isiJadwalOffline', function () {
+    return view('isiJadwalOffline');
+});
+
+//isiJadwalTidakAdaRapat
+Route::get('/isiJadwalTidakAdaRapat', function () {
+    return view('isiJadwalTidakAdaRapat');
+});
+
+//notulensi
+Route::get('/notulensi', function () {
+    return view('/notulensi');
+});
+
+//pengunguman
+Route::get('/pengunguman', function () {
+    return view('/pengunguman');
+});
+
+Route::get('/events', function () {
+    return response()->json([
+    ]);
+});
+
 // routes/web.php
 Route::get('/kanban-tugas', function () {
     return view('kanban-tugas');
