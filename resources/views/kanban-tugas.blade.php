@@ -344,71 +344,71 @@
 
 
     /* Ukuran kolom kanban medium */
-.kanban-column-medium {
-    width: 75vw !important;
-    min-width: 240px !important;
-    max-width: 280px !important;
-}
-
-@media (min-width: 476px) {
     .kanban-column-medium {
-        width: 220px !important;
-        min-width: 220px !important;
-        max-width: 260px !important;
-    }
-}
-
-@media (min-width: 640px) {
-    .kanban-column-medium {
-        width: 240px !important;
+        width: 75vw !important;
         min-width: 240px !important;
         max-width: 280px !important;
     }
-}
 
-@media (min-width: 768px) {
-    .kanban-column-medium {
-        width: 260px !important;
-        min-width: 260px !important;
-        max-width: 300px !important;
+    @media (min-width: 476px) {
+        .kanban-column-medium {
+            width: 220px !important;
+            min-width: 220px !important;
+            max-width: 260px !important;
+        }
     }
-}
 
-@media (min-width: 1024px) {
-    .kanban-column-medium {
-        width: 280px !important;
-        min-width: 280px !important;
-        max-width: 320px !important;
+    @media (min-width: 640px) {
+        .kanban-column-medium {
+            width: 240px !important;
+            min-width: 240px !important;
+            max-width: 280px !important;
+        }
     }
-}
 
-/* Padding medium */
-.kanban-padding-medium {
-    padding: 0.75rem !important;
-}
+    @media (min-width: 768px) {
+        .kanban-column-medium {
+            width: 260px !important;
+            min-width: 260px !important;
+            max-width: 300px !important;
+        }
+    }
 
-@media (min-width: 476px) {
+    @media (min-width: 1024px) {
+        .kanban-column-medium {
+            width: 280px !important;
+            min-width: 280px !important;
+            max-width: 320px !important;
+        }
+    }
+
+    /* Padding medium */
     .kanban-padding-medium {
-        padding: 1rem !important;
+        padding: 0.75rem !important;
     }
-}
 
-/* Gap medium */
-.kanban-gap-medium {
-    gap: 0.75rem !important;
-}
+    @media (min-width: 476px) {
+        .kanban-padding-medium {
+            padding: 1rem !important;
+        }
+    }
 
-@media (min-width: 476px) {
+    /* Gap medium */
     .kanban-gap-medium {
-        gap: 1rem !important;
+        gap: 0.75rem !important;
     }
-}
 
-@media (min-width: 768px) {
-    .kanban-gap-medium {
-        gap: 1.25rem !important;
+    @media (min-width: 476px) {
+        .kanban-gap-medium {
+            gap: 1rem !important;
+        }
     }
-}
+
+    @media (min-width: 768px) {
+        .kanban-gap-medium {
+            gap: 1.25rem !important;
+        }
+    }
 </style>
 
 @section('title', 'kanban-tugas')
@@ -525,9 +525,10 @@
         {{-- 🎯 Kanban Board --}}
         <div x-show="!replyView.active">
             <div class="flex-1 overflow-x-auto" @click.outside="openListMenu = null">
-<div id="kanban-board" class="flex kanban-gap-medium p-5 xs:p-4 min-w-max">
+                <div id="kanban-board" class="flex kanban-gap-medium p-5 xs:p-4 min-w-max">
                     {{-- 📋 To Do Column --}}
-                    <div class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
+                    <div
+                        class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
                         <div class="flex items-center justify-between mb-1 xs:mb-2">
                             <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">To Do List</h2>
                             <button @click="openListMenu = openListMenu === 'todo' ? null : 'todo'"
@@ -541,7 +542,8 @@
                         </div>
 
                         <div class="flex flex-col flex-1">
-                            <div id="todo" class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
+                            <div id="todo"
+                                class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
                                 <template x-for="task in getFilteredTasks('todo')" :key="task.id">
                                     <div @click="openDetail(task.id)"
                                         class="bg-white p-1.5 xs:p-2 sm:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
@@ -614,14 +616,15 @@
                             </div>
 
                             <button @click="openTaskModal = true"
-    class="w-full mt-3 py-2 text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 shadow-sm">
-    + Buat Tugas
-</button>
+                                class="w-full mt-3 py-2 text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 shadow-sm">
+                                + Buat Tugas
+                            </button>
                         </div>
                     </div>
 
                     {{-- 🔄 Dikerjakan Column --}}
-                    <div class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
+                    <div
+                        class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
                         <div class="flex items-center justify-between mb-1 xs:mb-2">
                             <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">Dikerjakan</h2>
                             <button @click="openListMenu = openListMenu === 'inprogress' ? null : 'inprogress'"
@@ -635,7 +638,8 @@
                         </div>
 
                         <div class="flex flex-col flex-1">
-                            <div id="inprogress" class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
+                            <div id="inprogress"
+                                class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
                                 <template x-for="task in getFilteredTasks('inprogress')" :key="task.id">
                                     <div @click="openDetail(task.id)"
                                         class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
@@ -715,7 +719,8 @@
                     </div>
 
                     {{-- ✅ Selesai Column --}}
-                    <div class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
+                    <div
+                        class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
                         <div class="flex items-center justify-between mb-1 xs:mb-2">
                             <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">Selesai</h2>
                             <button @click="openListMenu = openListMenu === 'done' ? null : 'done'"
@@ -729,7 +734,8 @@
                         </div>
 
                         <div class="flex flex-col flex-1">
-                            <div id="done" class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
+                            <div id="done"
+                                class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
                                 <template x-for="task in getFilteredTasks('done')" :key="task.id">
                                     <div @click="openDetail(task.id)"
                                         class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
@@ -809,7 +815,8 @@
                     </div>
 
                     {{-- ❌ Batal Column --}}
-                    <div class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
+                    <div
+                        class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
                         <div class="flex items-center justify-between mb-1 xs:mb-2">
                             <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">Batal</h2>
                             <button @click="openListMenu = openListMenu === 'cancel' ? null : 'cancel'"
@@ -822,10 +829,12 @@
                             </button>
                         </div>
                         <div class="flex flex-col flex-1">
-                            <div id="cancel" class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
+                            <div id="cancel"
+                                class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
                                 <template x-for="task in getFilteredTasks('cancel')" :key="task.id">
                                     <div @click="openDetail(task.id)"
-class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">                                        {{-- Header (Label + Tanggal) --}}
+                                        class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
+                                        {{-- Header (Label + Tanggal) --}}
                                         <div class="flex items-center justify-between mb-1 xs:mb-2 flex-wrap gap-1">
                                             <div class="flex flex-wrap gap-1">
                                                 <template x-for="label in task.labels" :key="label.name">
@@ -1390,7 +1399,7 @@ class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border bor
                             class="px-10 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm">
                             Simpan
                         </button>
-                        
+
                     </div>
                 </form>
             </div>
@@ -2614,16 +2623,17 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
 
                     // Add new list
                     // Add new list
-addList() {
-    let newListName = this.newListName.trim();
-    if (newListName === '') return;
+                    addList() {
+                        let newListName = this.newListName.trim();
+                        if (newListName === '') return;
 
-    let listId = newListName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
-    const board = document.getElementById('kanban-board');
+                        let listId = newListName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
+                        const board = document.getElementById('kanban-board');
 
-    const div = document.createElement('div');
-    div.className = 'bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col';
-    div.innerHTML = `
+                        const div = document.createElement('div');
+                        div.className =
+                            'bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col';
+                        div.innerHTML = `
         <div class="flex items-center justify-between mb-1 xs:mb-2">
             <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">${newListName}</h2>
             <button @click="openListMenu = openListMenu === '${listId}' ? null : '${listId}'"
@@ -2646,18 +2656,18 @@ addList() {
         </div>
     `;
 
-    board.insertBefore(div, board.lastElementChild);
+                        board.insertBefore(div, board.lastElementChild);
 
-    // Initialize Sortable for the new list
-    new Sortable(document.getElementById(listId), {
-        group: 'kanban',
-        animation: 150,
-        ghostClass: 'bg-blue-300'
-    });
+                        // Initialize Sortable for the new list
+                        new Sortable(document.getElementById(listId), {
+                            group: 'kanban',
+                            animation: 150,
+                            ghostClass: 'bg-blue-300'
+                        });
 
-    this.newListName = '';
-    this.openModal = false;
-},
+                        this.newListName = '';
+                        this.openModal = false;
+                    },
 
 
                     // === NEW METHODS FOR REPLY INTERACTION ===
@@ -2877,45 +2887,45 @@ addList() {
 
                     // untuk modal aksi list
                     // untuk modal aksi list
-sortTasks(sortType) {
-    const currentList = this.openListMenu; // 'todo', 'inprogress', dll. atau ID list baru
+                    sortTasks(sortType) {
+                        const currentList = this.openListMenu; // 'todo', 'inprogress', dll. atau ID list baru
 
-    if (!currentList) return;
+                        if (!currentList) return;
 
-    // Untuk list default (todo, inprogress, done, cancel)
-    if (['todo', 'inprogress', 'done', 'cancel'].includes(currentList)) {
-        const listTasks = this.tasks.filter(task => task.status === currentList);
-        
-        // Implementasi sorting berdasarkan jenis
-        switch (sortType) {
-            case 'deadline-asc': // Tenggat waktu terdekat
-                listTasks.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-                break;
+                        // Untuk list default (todo, inprogress, done, cancel)
+                        if (['todo', 'inprogress', 'done', 'cancel'].includes(currentList)) {
+                            const listTasks = this.tasks.filter(task => task.status === currentList);
 
-            case 'deadline-desc': // Tenggat waktu terjauh
-                listTasks.sort((a, b) => new Date(b.dueDate) - new Date(a.dueDate));
-                break;
+                            // Implementasi sorting berdasarkan jenis
+                            switch (sortType) {
+                                case 'deadline-asc': // Tenggat waktu terdekat
+                                    listTasks.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+                                    break;
 
-            case 'created-asc': // Waktu dibuat terdekat
-                listTasks.sort((a, b) => a.id - b.id);
-                break;
+                                case 'deadline-desc': // Tenggat waktu terjauh
+                                    listTasks.sort((a, b) => new Date(b.dueDate) - new Date(a.dueDate));
+                                    break;
 
-            case 'created-desc': // Waktu dibuat terjauh
-                listTasks.sort((a, b) => b.id - a.id);
-                break;
-        }
+                                case 'created-asc': // Waktu dibuat terdekat
+                                    listTasks.sort((a, b) => a.id - b.id);
+                                    break;
 
-        // Update tasks dengan urutan baru
-        this.tasks = this.tasks.filter(task => task.status !== currentList);
-        this.tasks = [...this.tasks, ...listTasks];
-    } else {
-        // Untuk list baru (akan diimplementasikan nanti)
-        console.log(`Sorting untuk list baru: ${currentList} dengan tipe: ${sortType}`);
-        alert('Fitur sorting untuk list baru akan segera tersedia!');
-    }
+                                case 'created-desc': // Waktu dibuat terjauh
+                                    listTasks.sort((a, b) => b.id - a.id);
+                                    break;
+                            }
 
-    console.log(`Tasks di ${currentList} diurutkan dengan: ${sortType}`);
-},
+                            // Update tasks dengan urutan baru
+                            this.tasks = this.tasks.filter(task => task.status !== currentList);
+                            this.tasks = [...this.tasks, ...listTasks];
+                        } else {
+                            // Untuk list baru (akan diimplementasikan nanti)
+                            console.log(`Sorting untuk list baru: ${currentList} dengan tipe: ${sortType}`);
+                            alert('Fitur sorting untuk list baru akan segera tersedia!');
+                        }
+
+                        console.log(`Tasks di ${currentList} diurutkan dengan: ${sortType}`);
+                    },
 
                 }
             }

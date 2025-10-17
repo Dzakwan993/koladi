@@ -52,7 +52,7 @@
                                 </td>
                                 <td class="px-4 py-3">
                                     <button onclick="openTinjauModal()" class="text-blue-600 hover:text-blue-800">
-                                        <img src="/images/icons/tinjau.svg" alt="tinjau" >
+                                        <img src="/images/icons/tinjau.svg" alt="tinjau">
                                     </button>
                                 </td>
                             </tr>
@@ -64,7 +64,7 @@
                                 </td>
                                 <td class="px-4 py-3">
                                     <button onclick="openTinjauModal()" class="text-blue-600 hover:text-blue-800">
-                                        <img src="/images/icons/tinjau.svg" alt="tinjau" >
+                                        <img src="/images/icons/tinjau.svg" alt="tinjau">
                                     </button>
                                 </td>
                             </tr>
@@ -86,7 +86,7 @@
                                 </td>
                                 <td class="px-4 py-3">
                                     <button onclick="openTinjauModal()" class="text-blue-600 hover:text-blue-800">
-                                        <img src="/images/icons/tinjau.svg" alt="tinjau" >
+                                        <img src="/images/icons/tinjau.svg" alt="tinjau">
                                     </button>
                                 </td>
                             </tr>

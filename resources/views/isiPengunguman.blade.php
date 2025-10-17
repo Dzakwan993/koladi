@@ -37,40 +37,41 @@
                         </div>
 
                         <div x-data="{ open: false }" class="relative inline-block text-left">
-    <!-- Tombol tiga titik -->
-    <button @click="open = !open" @click.away="open = false"
-        class="text-gray-600 hover:text-gray-800 focus:outline-none">
-        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-        </svg>
-    </button>
+                            <!-- Tombol tiga titik -->
+                            <button @click="open = !open" @click.away="open = false"
+                                class="text-gray-600 hover:text-gray-800 focus:outline-none">
+                                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                    <path
+                                        d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                </svg>
+                            </button>
 
-    <!-- Popup menu -->
-    <div x-show="open" x-transition.scale.origin.top.right
-        class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-50"
-        @click.away="open = false">
+                            <!-- Popup menu -->
+                            <div x-show="open" x-transition.scale.origin.top.right
+                                class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-50"
+                                @click.away="open = false">
 
-        <!-- Judul -->
-        <h3 class="text-center font-semibold text-gray-800 mb-2">Aksi</h3>
-        <hr class="border-gray-300 mb-3">
+                                <!-- Judul -->
+                                <h3 class="text-center font-semibold text-gray-800 mb-2">Aksi</h3>
+                                <hr class="border-gray-300 mb-3">
 
-        <!-- Tombol Edit -->
-        <button @click="open = false; editComment()"
-            class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
-            <img src="images/icons/Pencil.svg" alt="Edit" class="w-6 h-6">
-            <span class="text-gray-700 text-base">Edit</span>
-        </button>
+                                <!-- Tombol Edit -->
+                                <button @click="open = false; editComment()"
+                                    class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
+                                    <img src="images/icons/Pencil.svg" alt="Edit" class="w-6 h-6">
+                                    <span class="text-gray-700 text-base">Edit</span>
+                                </button>
 
-        <hr class="border-gray-300 my-2">
+                                <hr class="border-gray-300 my-2">
 
-        <!-- Tombol Hapus -->
-        <button @click="open = false; deleteComment()"
-            class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
-            <img src="images/icons/Trash.svg" alt="Hapus" class="w-6 h-6">
-            <span class="text-gray-700 text-base">Hapus</span>
-        </button>
-    </div>
-</div>
+                                <!-- Tombol Hapus -->
+                                <button @click="open = false; deleteComment()"
+                                    class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
+                                    <img src="images/icons/Trash.svg" alt="Hapus" class="w-6 h-6">
+                                    <span class="text-gray-700 text-base">Hapus</span>
+                                </button>
+                            </div>
+                        </div>
 
                     </div>
 
@@ -154,7 +155,8 @@
                                                         <h4 class="text-sm font-semibold text-gray-800 mb-2">Membalas <span
                                                                 x-text="comment.author.name"></span></h4>
 
-                                                        <div class="border border-gray-300 rounded-lg overflow-hidden mb-3">
+                                                        <div
+                                                            class="border border-gray-300 rounded-lg overflow-hidden mb-3">
                                                             <!-- container unik untuk reply editor -->
                                                             <div :id="'reply-editor-' + comment.id"
                                                                 class="min-h-[120px] p-3 bg-white"></div>
@@ -225,10 +227,10 @@
     {{-- SCRIPT: CKEditor & Alpine --}}
     <script>
         /* -------------------------
-               Helper CKEditor functions
-               - all functions defined BEFORE alpine:init
-               - editor instances managed by id
-            ------------------------- */
+                   Helper CKEditor functions
+                   - all functions defined BEFORE alpine:init
+                   - editor instances managed by id
+                ------------------------- */
 
         const editors = {}; // map id -> editor instance
 
@@ -476,7 +478,7 @@
 
                     // push ke parent comment
                     if (!this.replyView.parentComment.replies) this.replyView.parentComment
-                .replies = [];
+                        .replies = [];
                     this.replyView.parentComment.replies.push(newReply);
 
                     // tutup & destroy editor
@@ -550,57 +552,73 @@
     </script>
 
     <style>
-    /* Responsif untuk Card Pengumuman */
-    @media (max-width: 640px) {
-        .bg-[#e9effd] .flex.items-start.justify-between {
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .bg-[#e9effd] img.rounded-full {
-            width: 3rem;  /* 48px */
-            height: 3rem; /* 48px */
-        }
-        .bg-[#e9effd] h1.text-xl {
-            font-size: 1rem; /* 16px */
-        }
-        .bg-[#e9effd] .flex.items-center.gap-2 p,
-        .bg-[#e9effd] .flex.items-center.gap-2 span {
-            font-size: 0.75rem; /* 12px */
-        }
-        .bg-[#e9effd] span.bg-[#102a63] {
-            width: 70px;
-            height: 24px;
-            font-size: 0.7rem;
-        }
-    }
+        /* Responsif untuk Card Pengumuman */
+        @media (max-width: 640px) {
+            .bg-[#e9effd] .flex.items-start.justify-between {
+                flex-direction: column;
+                gap: 1rem;
+            }
 
-    /* Responsif untuk Komentar dan Input */
-    @media (max-width: 640px) {
-        .flex.items-start.gap-3 img.rounded-full {
-            width: 2.5rem; /* 40px */
-            height: 2.5rem; /* 40px */
-        }
-        input[type="text"] {
-            font-size: 0.75rem; /* 12px */
-            padding: 0.4rem 0.5rem;
-        }
-        #main-editor,
-        [id^="reply-editor-"] {
-            min-height: 100px !important;
-        }
-        .flex.justify-end.gap-2 button {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.7rem;
-        }
-    }
+            .bg-[#e9effd] img.rounded-full {
+                width: 3rem;
+                /* 48px */
+                height: 3rem;
+                /* 48px */
+            }
 
-    /* Avatar penerima responsif */
-    @media (max-width: 640px) {
-        .flex.-space-x-2 img.rounded-full {
-            width: 1.75rem; /* 28px */
-            height: 1.75rem; /* 28px */
+            .bg-[#e9effd] h1.text-xl {
+                font-size: 1rem;
+                /* 16px */
+            }
+
+            .bg-[#e9effd] .flex.items-center.gap-2 p,
+            .bg-[#e9effd] .flex.items-center.gap-2 span {
+                font-size: 0.75rem;
+                /* 12px */
+            }
+
+            .bg-[#e9effd] span.bg-[#102a63] {
+                width: 70px;
+                height: 24px;
+                font-size: 0.7rem;
+            }
         }
-    }
-</style>
+
+        /* Responsif untuk Komentar dan Input */
+        @media (max-width: 640px) {
+            .flex.items-start.gap-3 img.rounded-full {
+                width: 2.5rem;
+                /* 40px */
+                height: 2.5rem;
+                /* 40px */
+            }
+
+            input[type="text"] {
+                font-size: 0.75rem;
+                /* 12px */
+                padding: 0.4rem 0.5rem;
+            }
+
+            #main-editor,
+            [id^="reply-editor-"] {
+                min-height: 100px !important;
+            }
+
+            .flex.justify-end.gap-2 button {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.7rem;
+            }
+        }
+
+        /* Avatar penerima responsif */
+        @media (max-width: 640px) {
+            .flex.-space-x-2 img.rounded-full {
+                width: 1.75rem;
+                /* 28px */
+                height: 1.75rem;
+                /* 28px */
+            }
+        }
+    </style>
 
 @endsection

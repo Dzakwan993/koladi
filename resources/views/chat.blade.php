@@ -66,10 +66,12 @@
                             </div>
                         </div>
 
-                         {{-- Message 3 --}}
+                        {{-- Message 3 --}}
                         <div class="flex items-start mb-4">
                             <div class="flex-shrink-0">
-                                <div class="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-white font-medium text-xs">SA</div>
+                                <div
+                                    class="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-white font-medium text-xs">
+                                    SA</div>
                             </div>
                             <div class="ml-3 flex-1">
                                 <div class="flex items-baseline mb-1">
@@ -103,10 +105,12 @@
                             </div>
                         </div>
 
-                         {{-- Message 7 --}}
+                        {{-- Message 7 --}}
                         <div class="flex items-start mb-4">
                             <div class="flex-shrink-0">
-                                <div class="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-white font-medium text-xs">SA</div>
+                                <div
+                                    class="w-9 h-9 rounded-full bg-gray-700 flex items-center justify-center text-white font-medium text-xs">
+                                    SA</div>
                             </div>
                             <div class="ml-3 flex-1">
                                 <div class="flex items-baseline mb-1">
@@ -127,13 +131,16 @@
                                     <span class="font-semibold text-gray-900 text-sm">Anda</span>
                                 </div>
                                 <div class="inline-block">
-                                    <div class="bg-[#6b9aff] text-white rounded-2xl rounded-tr-sm px-4 py-2 inline-block max-w-md">
+                                    <div
+                                        class="bg-[#6b9aff] text-white rounded-2xl rounded-tr-sm px-4 py-2 inline-block max-w-md">
                                         <p class="text-sm">Banyak</p>
                                     </div>
                                 </div>
                             </div>
                             <div class="flex-shrink-0">
-                                <div class="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-xs">AN</div>
+                                <div
+                                    class="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium text-xs">
+                                    AN</div>
                             </div>
                         </div>
 
@@ -177,7 +184,8 @@
                             <button type="button" id="sendButton"
                                 class="items-center justify-center w-7 h-7 rounded-full bg-blue-500 hover:bg-blue-600 transition ml-2"
                                 style="display: none;">
-                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                                 </svg>

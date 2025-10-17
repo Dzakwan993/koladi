@@ -94,13 +94,13 @@
     }
 
 
-     /* Custom responsive utilities */
+    /* Custom responsive utilities */
     @media (max-width: 576px) {
         .mobile-padding {
             padding-left: 1rem;
             padding-right: 1rem;
         }
-        
+
         .mobile-grid {
             grid-template-columns: repeat(2, 1fr) !important;
         }
@@ -299,15 +299,17 @@
         </div>
 
         {{-- Konten Halaman --}}
-<div class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto">
+        <div class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto">
             {{-- Container dengan border dan padding --}}
-    <div class="border border-gray-200 rounded-lg bg-white p-4 sm:p-6 flex flex-col h-[calc(100vh-140px)] sm:h-[calc(100vh-160px)] lg:h-[calc(100vh-200px)]">
+            <div
+                class="border border-gray-200 rounded-lg bg-white p-4 sm:p-6 flex flex-col h-[calc(100vh-140px)] sm:h-[calc(100vh-160px)] lg:h-[calc(100vh-200px)]">
 
                 {{-- Header dengan Pencarian dan Tombol Aksi --}}
-<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 flex-shrink-0" x-show="!currentFile">                    {{-- Tombol Aksi --}}
-                   <div class="flex flex-wrap gap-2 sm:gap-3" x-show="!selectMode">
-        <button @click="showCreateFolderModal = true"
-            class="bg-blue-600 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-blue-700 flex items-center gap-1 sm:gap-2 transition text-xs sm:text-sm">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 flex-shrink-0"
+                    x-show="!currentFile"> {{-- Tombol Aksi --}}
+                    <div class="flex flex-wrap gap-2 sm:gap-3" x-show="!selectMode">
+                        <button @click="showCreateFolderModal = true"
+                            class="bg-blue-600 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-blue-700 flex items-center gap-1 sm:gap-2 transition text-xs sm:text-sm">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
@@ -350,7 +352,7 @@
                     </div>
 
                     {{-- Search Bar --}}
-    <div class="relative w-full sm:w-64 lg:w-80" x-show="!selectMode">
+                    <div class="relative w-full sm:w-64 lg:w-80" x-show="!selectMode">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -367,9 +369,9 @@
                 </div>
 
                 {{-- Breadcrumb dan Info Folder --}}
-<div x-show="currentFolder" class="mb-4 sm:mb-6 flex-shrink-0">
+                <div x-show="currentFolder" class="mb-4 sm:mb-6 flex-shrink-0">
                     {{-- Breadcrumb --}}
-    <div class="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500 mb-2 flex-wrap">
+                    <div class="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500 mb-2 flex-wrap">
                         <button @click="goToRoot()" class="text-gray-500 hover:text-gray-700 transition">
                             Dokumen
                         </button>
@@ -389,9 +391,9 @@
                             </template>
                     </div>
                     {{-- Header Folder --}}
-    <div class="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
+                    <div class="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
                         {{-- Judul Folder dan Actions --}}
-        <div class="flex items-center justify-between mb-2 sm:mb-3">
+                        <div class="flex items-center justify-between mb-2 sm:mb-3">
                             <h2 class="text-lg font-semibold text-gray-800" x-text="currentFolder.name"></h2>
                             <div class="flex items-center gap-1">
                                 <button @click="openEditFolder(currentFolder)"
@@ -412,7 +414,7 @@
                         </div>
 
                         {{-- Info Pembuat dan Diterima Oleh --}}
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                             {{-- Info Pembuat --}}
                             <div class="flex items-center gap-2">
                                 <img :src="currentFolder.creatorAvatar || 'https://i.pravatar.cc/32?img=8'" alt="Profile"
@@ -606,7 +608,8 @@
 
                 {{-- Grid Dokumen di Dalam Folder --}}
                 <template x-if="currentFolder">
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 overflow-y-auto flex-1 pb-4">
+                    <div
+                        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 overflow-y-auto flex-1 pb-4">
                         {{-- Tampilkan hasil pencarian atau dokumen biasa --}}
                         <template x-for="document in getDisplayedDocuments()" :key="document.id">
                             <div @click="selectMode ? toggleDocumentSelection(document) : (document.type === 'Folder' ? openFolder(document) : openFile(document))"
@@ -620,20 +623,23 @@
                                 class="flex flex-col items-center text-center p-2 sm:p-3 border rounded-lg transition relative">
 
                                 <!-- Checkbox untuk select mode -->
-    <div x-show="selectMode" class="absolute top-1 right-1 sm:top-2 sm:right-2">
+                                <div x-show="selectMode" class="absolute top-1 right-1 sm:top-2 sm:right-2">
                                     <div :class="isDocumentSelected(document.id) ? 'bg-blue-600 border-blue-600' :
                                         'bg-white border-gray-300'"
                                         class="w-4 h-4 sm:w-5 sm:h-5 border-2 rounded flex items-center justify-center">
-                                        <svg x-show="isDocumentSelected(document.id)" class="w-2 h-2 sm:w-3 sm:h-3 text-white"
-                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg x-show="isDocumentSelected(document.id)"
+                                            class="w-2 h-2 sm:w-3 sm:h-3 text-white" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
                                                 d="M5 13l4 4L19 7" />
                                         </svg>
                                     </div>
                                 </div>
 
-    <img :src="document.icon" :alt="document.type" class="w-8 h-8 sm:w-10 sm:h-10 mb-1 sm:mb-2">
-                                    <span class="text-xs font-medium text-gray-700 truncate w-full" x-text="document.name"></span>
+                                <img :src="document.icon" :alt="document.type"
+                                    class="w-8 h-8 sm:w-10 sm:h-10 mb-1 sm:mb-2">
+                                <span class="text-xs font-medium text-gray-700 truncate w-full"
+                                    x-text="document.name"></span>
 
                                 <span x-show="document.type !== 'Folder'" class="text-xs text-gray-400 mt-0.5"
                                     x-text="document.type"></span>
@@ -642,9 +648,10 @@
 
                         {{-- Empty State --}}
                         <div x-show="getDisplayedDocuments().length === 0 && searchQuery.length > 0"
-                            class="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-5 xl:col-span-6 
+                            class="col-span-2 sm:col-span-3 md:col-span-4 lg:col-span-5 xl:col-span-6
             flex flex-col items-center justify-center py-6 sm:py-8 text-gray-500">
-                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2 sm:mb-3">
+                            <div
+                                class="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center mb-2 sm:mb-3">
                                 <svg class="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
@@ -684,7 +691,7 @@
 
                 {{-- Header Pilihan (muncul saat select mode) --}}
                 <div x-show="selectMode && selectedDocuments.length > 0"
-    class="mb-3 sm:mb-4 flex-shrink-0 bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+                    class="mb-3 sm:mb-4 flex-shrink-0 bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                         <div class="flex items-center gap-2 sm:gap-4">
                             <button @click="cancelSelection()"
@@ -842,16 +849,16 @@
                     </div>
 
                     {{-- Konten File dan Komentar --}}
-<div x-show="currentFile && !replyView.active" class="mt-4 sm:mt-6">
+                    <div x-show="currentFile && !replyView.active" class="mt-4 sm:mt-6">
                         {{-- Preview File --}}
-    <div class="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
-        <h3 class="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Preview File</h3>
+                        <div class="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+                            <h3 class="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Preview File</h3>
 
                             {{-- Preview berdasarkan tipe file --}}
                             <template x-if="currentFile.type === 'PDF'">
-        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6 md:p-8 text-center">
-                                    <img src="{{ asset('images/icons/pdf.svg') }}" alt="PDF" 
-                 class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-3 sm:mb-4">
+                                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6 md:p-8 text-center">
+                                    <img src="{{ asset('images/icons/pdf.svg') }}" alt="PDF"
+                                        class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-3 sm:mb-4">
                                     <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
                                     <button @click="downloadFile(currentFile)"
                                         class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
@@ -1213,8 +1220,10 @@
 
 
                 {{-- Grid Dokumen Utama (Scrollable) --}}
-<template x-if="filteredDocuments.length > 0 && !currentFolder && !currentFile">
-<div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 overflow-y-auto flex-1 pb-4">                        <template x-for="document in filteredDocuments" :key="document.id">
+                <template x-if="filteredDocuments.length > 0 && !currentFolder && !currentFile">
+                    <div
+                        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 overflow-y-auto flex-1 pb-4">
+                        <template x-for="document in filteredDocuments" :key="document.id">
                             <div @click="selectMode ? toggleDocumentSelection(document) : (document.type === 'Folder' ? openFolder(document) : openFile(document))"
                                 :class="{
                                     'border-blue-500 bg-blue-50 ring-2 ring-blue-200': selectMode && isDocumentSelected(
@@ -1271,9 +1280,11 @@
                 </template>
 
                 {{-- Default View (ketika tidak ada pencarian dan tidak di dalam folder) --}}
-                <template x-if="filteredDocuments.length === 0 && searchQuery.length === 0 && !currentFolder && !currentFile">
+                <template
+                    x-if="filteredDocuments.length === 0 && searchQuery.length === 0 && !currentFolder && !currentFile">
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 overflow-y-auto flex-1 pb-4">
+                    <div
+                        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 overflow-y-auto flex-1 pb-4">
                         {{-- Folder --}}
                         <template x-for="folder in folders" :key="folder.id">
                             <div @click="selectMode ? toggleDocumentSelection(folder) : openFolder(folder)"
@@ -2518,12 +2529,8 @@
                     this.closeReplyView();
                 },
 
-
-
             }
         }
     </script>
-
-
 
 @endsection

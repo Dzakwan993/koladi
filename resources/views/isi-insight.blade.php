@@ -16,62 +16,64 @@
         <div class="max-w-6xl mx-auto px-4 py-6">
             <div class="bg-white rounded-xl shadow-md p-6">
 
-                
+
                 <!-- Card Pengumuman/Insight -->
-<div class="bg-[#dde5f4] rounded-xl shadow-sm p-5 mb-6 transition">
-    <div class="flex justify-between items-start">
-        <!-- Konten Kiri -->
-        <div class="flex flex-col gap-3">
-            <div>
-                <p class="text-base text-[#1e3a8a] font-medium mb-1">Insight 2 orang tiap Senin pada 09.00 AM</p>
-                <p class="text-[#1e3a8a] font-bold text-xl">Lapor Progres!</p>
-            </div>
-            <div class="flex items-center">
-                <img src="https://i.pravatar.cc/40?img=6" alt="Avatar" class="rounded-full w-9 h-9">
-                <img src="https://i.pravatar.cc/40?img=8" alt="Avatar" class="rounded-full w-9 h-9 -ml-3">
-            </div>
-        </div>
+                <div class="bg-[#dde5f4] rounded-xl shadow-sm p-5 mb-6 transition">
+                    <div class="flex justify-between items-start">
+                        <!-- Konten Kiri -->
+                        <div class="flex flex-col gap-3">
+                            <div>
+                                <p class="text-base text-[#1e3a8a] font-medium mb-1">Insight 2 orang tiap Senin pada 09.00 AM
+                                </p>
+                                <p class="text-[#1e3a8a] font-bold text-xl">Lapor Progres!</p>
+                            </div>
+                            <div class="flex items-center">
+                                <img src="https://i.pravatar.cc/40?img=6" alt="Avatar" class="rounded-full w-9 h-9">
+                                <img src="https://i.pravatar.cc/40?img=8" alt="Avatar" class="rounded-full w-9 h-9 -ml-3">
+                            </div>
+                        </div>
 
-        <!-- Konten Kanan: Titik 3 -->
-        <div class="flex items-center gap-3">
-            <!-- Tombol Titik 3 -->
-            <div x-data="{ open: false }" class="relative inline-block text-left">
-                <button @click="open = !open" @click.away="open = false"
-                    class="text-gray-600 hover:text-gray-800 focus:outline-none">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                    </svg>
-                </button>
+                        <!-- Konten Kanan: Titik 3 -->
+                        <div class="flex items-center gap-3">
+                            <!-- Tombol Titik 3 -->
+                            <div x-data="{ open: false }" class="relative inline-block text-left">
+                                <button @click="open = !open" @click.away="open = false"
+                                    class="text-gray-600 hover:text-gray-800 focus:outline-none">
+                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                        <path
+                                            d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                    </svg>
+                                </button>
 
-                <!-- Popup menu -->
-                <div x-show="open" x-transition.scale.origin.top.right
-                    class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-50"
-                    @click.away="open = false">
+                                <!-- Popup menu -->
+                                <div x-show="open" x-transition.scale.origin.top.right
+                                    class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-50"
+                                    @click.away="open = false">
 
-                    <!-- Judul -->
-                    <h3 class="text-center font-semibold text-gray-800 mb-2">Aksi</h3>
-                    <hr class="border-gray-300 mb-3">
+                                    <!-- Judul -->
+                                    <h3 class="text-center font-semibold text-gray-800 mb-2">Aksi</h3>
+                                    <hr class="border-gray-300 mb-3">
 
-                    <!-- Tombol Edit -->
-                    <button @click="open = false; editComment()"
-                        class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
-                        <img src="images/icons/Pencil.svg" alt="Edit" class="w-6 h-6">
-                        <span class="text-gray-700 text-base">Edit</span>
-                    </button>
+                                    <!-- Tombol Edit -->
+                                    <button @click="open = false; editComment()"
+                                        class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
+                                        <img src="images/icons/Pencil.svg" alt="Edit" class="w-6 h-6">
+                                        <span class="text-gray-700 text-base">Edit</span>
+                                    </button>
 
-                    <hr class="border-gray-300 my-2">
+                                    <hr class="border-gray-300 my-2">
 
-                    <!-- Tombol Hapus -->
-                    <button @click="open = false; deleteComment()"
-                        class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
-                        <img src="images/icons/Trash.svg" alt="Hapus" class="w-6 h-6">
-                        <span class="text-gray-700 text-base">Hapus</span>
-                    </button>
+                                    <!-- Tombol Hapus -->
+                                    <button @click="open = false; deleteComment()"
+                                        class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
+                                        <img src="images/icons/Trash.svg" alt="Hapus" class="w-6 h-6">
+                                        <span class="text-gray-700 text-base">Hapus</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
 
                 <!-- Section Komentar -->
                 <div class="mt-6">
@@ -117,17 +119,19 @@
                                     <!-- Label Tanggal/Hari -->
                                     <template x-if="shouldShowDateLabel(index)">
                                         <div class="text-center py-2 mb-4">
-                                            <span class="text-xs text-gray-400 font-medium" x-text="getDateLabel(comment.createdAt)"></span>
+                                            <span class="text-xs text-gray-400 font-medium"
+                                                x-text="getDateLabel(comment.createdAt)"></span>
                                         </div>
                                     </template>
-                                    
+
                                     <!-- Card Komentar -->
                                     <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                         <div class="flex items-start gap-3">
                                             <img :src="comment.author.avatar" alt="" class="w-8 h-8 rounded-full">
                                             <div class="flex-1">
                                                 <div class="flex justify-between items-center">
-                                                    <p class="text-sm font-semibold text-gray-800" x-text="comment.author.name">
+                                                    <p class="text-sm font-semibold text-gray-800"
+                                                        x-text="comment.author.name">
                                                     </p>
                                                     <span class="text-xs text-gray-500"
                                                         x-text="formatCommentDate(comment.createdAt)"></span>
@@ -142,20 +146,23 @@
                                                         <svg class="w-3 h-3" fill="none" stroke="currentColor"
                                                             viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                                                stroke-width="2"
+                                                                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                                                         </svg>
                                                         <span>balas</span>
                                                     </button>
                                                 </div>
 
                                                 <!-- FORM BALAS (inline, hanya 1 instance active pada satu waktu) -->
-                                                <template x-if="replyView.active && replyView.parentComment?.id === comment.id">
+                                                <template
+                                                    x-if="replyView.active && replyView.parentComment?.id === comment.id">
                                                     <div class="mt-4 pl-6 border-l-2 border-gray-200">
                                                         <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                                            <h4 class="text-sm font-semibold text-gray-800 mb-2">Membalas <span
-                                                                    x-text="comment.author.name"></span></h4>
+                                                            <h4 class="text-sm font-semibold text-gray-800 mb-2">Membalas
+                                                                <span x-text="comment.author.name"></span></h4>
 
-                                                            <div class="border border-gray-300 rounded-lg overflow-hidden mb-3">
+                                                            <div
+                                                                class="border border-gray-300 rounded-lg overflow-hidden mb-3">
                                                                 <!-- container unik untuk reply editor -->
                                                                 <div :id="'reply-editor-' + comment.id"
                                                                     class="min-h-[120px] p-3 bg-white"></div>
@@ -206,7 +213,7 @@
                         <div class="text-center py-8 text-gray-500 text-sm">Belum ada komentar disini...</div>
                     </template>
 
-                    
+
 
                 </div>
             </div>
@@ -216,10 +223,10 @@
     {{-- SCRIPT: CKEditor & Alpine --}}
     <script>
         /* -------------------------
-               Helper CKEditor functions
-               - all functions defined BEFORE alpine:init
-               - editor instances managed by id
-            ------------------------- */
+                   Helper CKEditor functions
+                   - all functions defined BEFORE alpine:init
+                   - editor instances managed by id
+                ------------------------- */
 
         const editors = {}; // map id -> editor instance
 
@@ -466,7 +473,8 @@
                     };
 
                     // push ke parent comment
-                    if (!this.replyView.parentComment.replies) this.replyView.parentComment.replies = [];
+                    if (!this.replyView.parentComment.replies) this.replyView.parentComment
+                .replies = [];
                     this.replyView.parentComment.replies.push(newReply);
 
                     // tutup & destroy editor
@@ -525,12 +533,13 @@
                     const today = new Date();
                     const yesterday = new Date(today);
                     yesterday.setDate(yesterday.getDate() - 1);
-                    
+
                     // Reset jam ke 00:00 untuk perbandingan tanggal saja
                     const commentDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
                     const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                    const yesterdayDate = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
-                    
+                    const yesterdayDate = new Date(yesterday.getFullYear(), yesterday.getMonth(),
+                        yesterday.getDate());
+
                     if (commentDate.getTime() === todayDate.getTime()) {
                         return 'Hari Ini';
                     } else if (commentDate.getTime() === yesterdayDate.getTime()) {
@@ -548,19 +557,21 @@
                 /* cek apakah perlu tampilkan label tanggal */
                 shouldShowDateLabel(index) {
                     if (index === 0) return true; // selalu tampilkan untuk komentar pertama
-                    
+
                     const currentComment = this.comments[index];
                     const previousComment = this.comments[index - 1];
-                    
+
                     if (!currentComment?.createdAt || !previousComment?.createdAt) return false;
-                    
+
                     const currentDate = new Date(currentComment.createdAt);
                     const previousDate = new Date(previousComment.createdAt);
-                    
+
                     // Bandingkan hanya tanggal (ignore waktu)
-                    const currentDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-                    const previousDay = new Date(previousDate.getFullYear(), previousDate.getMonth(), previousDate.getDate());
-                    
+                    const currentDay = new Date(currentDate.getFullYear(), currentDate.getMonth(),
+                        currentDate.getDate());
+                    const previousDay = new Date(previousDate.getFullYear(), previousDate.getMonth(),
+                        previousDate.getDate());
+
                     return currentDay.getTime() !== previousDay.getTime();
                 }
             }));
@@ -586,57 +597,73 @@
     </script>
 
     <style>
-    /* Responsif untuk Card Pengumuman */
-    @media (max-width: 640px) {
-        .bg-[#e9effd] .flex.items-start.justify-between {
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .bg-[#e9effd] img.rounded-full {
-            width: 3rem;  /* 48px */
-            height: 3rem; /* 48px */
-        }
-        .bg-[#e9effd] h1.text-xl {
-            font-size: 1rem; /* 16px */
-        }
-        .bg-[#e9effd] .flex.items-center.gap-2 p,
-        .bg-[#e9effd] .flex.items-center.gap-2 span {
-            font-size: 0.75rem; /* 12px */
-        }
-        .bg-[#e9effd] span.bg-[#102a63] {
-            width: 70px;
-            height: 24px;
-            font-size: 0.7rem;
-        }
-    }
+        /* Responsif untuk Card Pengumuman */
+        @media (max-width: 640px) {
+            .bg-[#e9effd] .flex.items-start.justify-between {
+                flex-direction: column;
+                gap: 1rem;
+            }
 
-    /* Responsif untuk Komentar dan Input */
-    @media (max-width: 640px) {
-        .flex.items-start.gap-3 img.rounded-full {
-            width: 2.5rem; /* 40px */
-            height: 2.5rem; /* 40px */
-        }
-        input[type="text"] {
-            font-size: 0.75rem; /* 12px */
-            padding: 0.4rem 0.5rem;
-        }
-        #main-editor,
-        [id^="reply-editor-"] {
-            min-height: 100px !important;
-        }
-        .flex.justify-end.gap-2 button {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.7rem;
-        }
-    }
+            .bg-[#e9effd] img.rounded-full {
+                width: 3rem;
+                /* 48px */
+                height: 3rem;
+                /* 48px */
+            }
 
-    /* Avatar penerima responsif */
-    @media (max-width: 640px) {
-        .flex.-space-x-2 img.rounded-full {
-            width: 1.75rem; /* 28px */
-            height: 1.75rem; /* 28px */
+            .bg-[#e9effd] h1.text-xl {
+                font-size: 1rem;
+                /* 16px */
+            }
+
+            .bg-[#e9effd] .flex.items-center.gap-2 p,
+            .bg-[#e9effd] .flex.items-center.gap-2 span {
+                font-size: 0.75rem;
+                /* 12px */
+            }
+
+            .bg-[#e9effd] span.bg-[#102a63] {
+                width: 70px;
+                height: 24px;
+                font-size: 0.7rem;
+            }
         }
-    }
-</style>
+
+        /* Responsif untuk Komentar dan Input */
+        @media (max-width: 640px) {
+            .flex.items-start.gap-3 img.rounded-full {
+                width: 2.5rem;
+                /* 40px */
+                height: 2.5rem;
+                /* 40px */
+            }
+
+            input[type="text"] {
+                font-size: 0.75rem;
+                /* 12px */
+                padding: 0.4rem 0.5rem;
+            }
+
+            #main-editor,
+            [id^="reply-editor-"] {
+                min-height: 100px !important;
+            }
+
+            .flex.justify-end.gap-2 button {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.7rem;
+            }
+        }
+
+        /* Avatar penerima responsif */
+        @media (max-width: 640px) {
+            .flex.-space-x-2 img.rounded-full {
+                width: 1.75rem;
+                /* 28px */
+                height: 1.75rem;
+                /* 28px */
+            }
+        }
+    </style>
 
 @endsection
