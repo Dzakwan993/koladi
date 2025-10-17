@@ -46,6 +46,13 @@ Route::get('/tambah-anggota', function () {
 // Halaman Workspace
 Route::get('/workspace', function () {
     return view('workspace');
+
+});
+
+// Halaman Profile
+Route::get('/profile', function () {
+    return view('profile');
+
 });
 
 // Halaman Pengajuan Cuti Karyawan
