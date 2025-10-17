@@ -7,27 +7,27 @@
     @include('components.workspace-nav')
 
        <!-- Card putih besar sebagai parent -->
-<div class="card bg-white rounded-[8px] shadow-xl flex flex-col gap-5 p-6 m-6 mx-10 h-[900px]">
+<div class="card bg-white rounded-[8px] shadow-xl flex flex-col gap-5 p-6 m-6 mx-10 h-[900px] responsive-container">
 
     <!-- Bagian atas: kalender + notulen sejajar -->
-    <div class="flex flex-row gap-5 items-center justify-center">
+    <div class="flex flex-row gap-5 items-center justify-center responsive-top">
 
         <!-- Card kalender -->
-        <div class="card bg-white rounded-[8px] shadow-xl p-4 flex flex-col items-center justify-center w-full max-w-lg h-full">
+        <div class="card bg-white rounded-[8px] shadow-xl p-4 flex flex-col items-center justify-center w-full max-w-lg h-full calendar-card">
             <div id="calendar" class="w-full h-full"></div>
         </div>
 
-        <div class="flex flex-col">
+        <div class="flex flex-col right-section">
     <a href="{{ route('buatJadwal') }}" class="bg-[#225ad6] rounded-[8px] shadow-xl
    flex items-center justify-center
    p-5 w-[400px] h-[40px]
-   text-[#ffffff] font-semibold hover:bg-[#1a46a0] transition mb-4">
+   text-[#ffffff] font-semibold hover:bg-[#1a46a0] transition mb-4 buat-jadwal-btn">
     Buat Jadwal
 </a>
 
 
     <div class="card bg-[#bbcff9] rounded-[8px] shadow-xl flex flex-col items-center justify-center
-                p-6 w-[400px] h-[300px]">
+                p-6 w-[400px] h-[300px] notulen-card">
 
         <img src="{{ asset('images/icons/Notulen.png') }}">
 
@@ -45,9 +45,9 @@
     </div>
     <!-- Card hitam full di bawah -->
     <div class="flex justify-center">
-  <div class="w-[930px] flex flex-col gap-3">
+  <div class="w-[930px] flex flex-col gap-3 schedule-list">
    <div class="flex justify-center">
-  <div class="w-[930px] flex flex-col gap-4">
+  <div class="w-[930px] flex flex-col gap-4 schedule-list">
 
 
 <!-- Wrapper semua item -->
@@ -58,15 +58,15 @@
 
 <!-- start -->
 <!-- Item Card 1 -->
-<div class="bg-[#bbcff9] rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition">
+<div class="bg-[#bbcff9] rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition schedule-item">
 
   <!-- Tanggal -->
-<div class="flex flex-col items-center w-[120px]">
+<div class="flex flex-col items-center w-[120px] date-section">
   <span class="font-semibold text-[14px]">Rabu</span>
   <span class="font-semibold text-[14px]">1 Oktober 2025</span>
 </div>
   <!-- Isi -->
-  <div class="flex flex-col flex-1 px-4">
+  <div class="flex flex-col flex-1 px-4 content-section">
     <!-- Judul + Icon sejajar -->
     <div class="flex items-center gap-2">
       <img src="{{ asset('images/icons/Zoom.png') }}" class="w-6 h-6" alt="Zoom">
@@ -81,7 +81,7 @@
   </div>
 
   <!-- Badge -->
-  <div>
+  <div class="badge-section">
     <span class="bg-yellow-400 text-[#6B7280] text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-sm">
       2
     </span>
@@ -92,15 +92,15 @@
 
 <!-- start -->
 <!-- Item Card 1 -->
-<div class="bg-[#bbcff9] rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition">
+<div class="bg-[#bbcff9] rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition schedule-item">
 
   <!-- Tanggal -->
-<div class="flex flex-col items-center w-[120px]">
+<div class="flex flex-col items-center w-[120px] date-section">
   <span class="font-semibold text-[14px]">Rabu</span>
   <span class="font-semibold text-[14px]">1 Oktober 2025</span>
 </div>
   <!-- Isi -->
-  <div class="flex flex-col flex-1 px-4">
+  <div class="flex flex-col flex-1 px-4 content-section">
     <!-- Judul + Icon sejajar -->
     <div class="flex items-center gap-2">
       <img src="{{ asset('images/icons/Zoom.png') }}" class="w-6 h-6" alt="Zoom">
@@ -115,7 +115,7 @@
   </div>
 
   <!-- Badge -->
-  <div>
+  <div class="badge-section">
     <span class="bg-yellow-400 text-[#6B7280] text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-sm">
       2
     </span>
@@ -130,15 +130,15 @@
 
 <!-- start -->
 <!-- Item Card 1 -->
-<div class="bg-[#bbcff9] rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition">
+<div class="bg-[#bbcff9] rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition schedule-item">
 
   <!-- Tanggal -->
-<div class="flex flex-col items-center w-[120px]">
+<div class="flex flex-col items-center w-[120px] date-section">
   <span class="font-semibold text-[14px]">Rabu</span>
   <span class="font-semibold text-[14px]">1 Oktober 2025</span>
 </div>
   <!-- Isi -->
-  <div class="flex flex-col flex-1 px-4">
+  <div class="flex flex-col flex-1 px-4 content-section">
     <!-- Judul + Icon sejajar -->
     <div class="flex items-center gap-2">
       <img src="{{ asset('images/icons/Zoom.png') }}" class="w-6 h-6" alt="Zoom">
@@ -153,7 +153,7 @@
   </div>
 
   <!-- Badge -->
-  <div>
+  <div class="badge-section">
     <span class="bg-yellow-400 text-[#6B7280] text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-sm">
       2
     </span>
@@ -164,15 +164,15 @@
 
 <!-- start -->
 <!-- Item Card 1 -->
-<div class="bg-[#bbcff9] rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition">
+<div class="bg-[#bbcff9] rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition schedule-item">
 
   <!-- Tanggal -->
-<div class="flex flex-col items-center w-[120px]">
+<div class="flex flex-col items-center w-[120px] date-section">
   <span class="font-semibold text-[14px]">Rabu</span>
   <span class="font-semibold text-[14px]">1 Oktober 2025</span>
 </div>
   <!-- Isi -->
-  <div class="flex flex-col flex-1 px-4">
+  <div class="flex flex-col flex-1 px-4 content-section">
     <!-- Judul + Icon sejajar -->
     <div class="flex items-center gap-2">
       <img src="{{ asset('images/icons/Zoom.png') }}" class="w-6 h-6" alt="Zoom">
@@ -187,7 +187,7 @@
   </div>
 
   <!-- Badge -->
-  <div>
+  <div class="badge-section">
     <span class="bg-yellow-400 text-[#6B7280] text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-sm">
       2
     </span>
@@ -412,6 +412,159 @@
     z-index: 10;
 }
 
+/* ===== RESPONSIVE STYLES ===== */
+
+/* Tablet - 1024px and below */
+@media (max-width: 1024px) {
+    .responsive-container {
+        margin: 1rem !important;
+        padding: 1rem !important;
+        height: auto !important;
+    }
+
+    .responsive-top {
+        flex-direction: column !important;
+    }
+
+    .calendar-card {
+        max-width: 100% !important;
+        height: 400px !important;
+    }
+
+    .right-section {
+        width: 100% !important;
+    }
+
+    .buat-jadwal-btn {
+        width: 100% !important;
+    }
+
+    .notulen-card {
+        width: 100% !important;
+    }
+
+    .schedule-list {
+        width: 100% !important;
+    }
+}
+
+/* Mobile - 768px and below */
+@media (max-width: 768px) {
+    .responsive-container {
+        margin: 0.5rem !important;
+        padding: 0.75rem !important;
+    }
+
+    .calendar-card {
+        padding: 0.5rem !important;
+        height: 350px !important;
+    }
+
+    .schedule-item {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.75rem !important;
+    }
+
+    .date-section {
+        width: 100% !important;
+        flex-direction: row !important;
+        justify-content: flex-start !important;
+        gap: 0.5rem !important;
+    }
+
+    .content-section {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .badge-section {
+        align-self: flex-end !important;
+    }
+
+    .fc .fc-toolbar-title {
+        font-size: 16px !important;
+    }
+
+    .fc .fc-daygrid-day-number {
+        font-size: 14px !important;
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .fc .fc-day-today .fc-daygrid-day-number {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .fc .fc-col-header-cell-cushion {
+        font-size: 12px !important;
+    }
+}
+
+/* Small Mobile - 480px and below */
+@media (max-width: 480px) {
+    .responsive-container {
+        margin: 0.25rem !important;
+        padding: 0.5rem !important;
+    }
+
+    .calendar-card {
+        height: 300px !important;
+    }
+
+    .notulen-card {
+        height: auto !important;
+        padding: 1rem !important;
+    }
+
+    .notulen-card h1 {
+        font-size: 1.25rem !important;
+    }
+
+    .notulen-card p {
+        font-size: 0.75rem !important;
+    }
+
+    .schedule-item {
+        padding: 0.75rem !important;
+    }
+
+    .date-section span {
+        font-size: 12px !important;
+    }
+
+    .content-section span {
+        font-size: 14px !important;
+    }
+
+    .fc .fc-toolbar-title {
+        font-size: 14px !important;
+    }
+
+    .fc .fc-button {
+        width: 24px !important;
+        height: 24px !important;
+        font-size: 12px !important;
+    }
+
+    .fc .fc-daygrid-day-number {
+        font-size: 12px !important;
+        width: 28px !important;
+        height: 28px !important;
+    }
+
+    .fc .fc-day-today .fc-daygrid-day-number {
+        width: 28px !important;
+        height: 28px !important;
+    }
+
+    .fc .day-marker {
+        width: 14px !important;
+        height: 14px !important;
+        font-size: 8px !important;
+    }
+}
 
 </style>
 
