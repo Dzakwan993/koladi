@@ -49,6 +49,21 @@ Route::get('/workspace', function () {
 
 });
 
+// routes/web.php
+Route::get('/kanban-tugas', function () {
+    return view('kanban-tugas');
+});
+
+// routes/web.php
+Route::get('/dokumen-dan-file', function () {
+    return view('dokumen-dan-file');
+});
+
+// routes/web.php
+Route::get('/kelola-workspace', function () {
+    return view('kelola-workspace');
+});
+
 // Halaman Profile
 Route::get('/profile', function () {
     return view('profile');
