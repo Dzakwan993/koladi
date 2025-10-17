@@ -12,11 +12,11 @@
                     <h1 class="text-xl sm:text-xl font-bold text-gray-900">Selamat datang, Sahroni</h1>
                     <p class="text-sm text-gray-600 mt-0.5">Silahkan kelola tugas anda.</p>
                 </div>
-                <button
+                <a href="{{ url('/tambah-anggota') }}"
                     class="mx-4 text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-2.5 rounded-lg font-medium transition flex items-center justify-center gap-1 shadow-sm">
                     <img src="{{ asset('images/icons/Plus.svg') }}" alt="Schedule" class="w-5 h-5" />
                     Tambah anggota
-                </button>
+                </a>
             </div>
 
             {{-- Main Grid - Flex 1 to fill remaining space --}}
@@ -137,7 +137,7 @@
                 <div class="flex flex-col h-full overflow-hidden mx-4">
                     {{-- Jadwal Header --}}
                     <div class="flex items-center gap-2 mb-3 flex-shrink-0">
-                        <img src="{{ asset('images/icons/Calendar.svg') }}" alt="Schedule" class="w-6 h-6" />
+                        <img src="{{ asset('images/icons/calendar-dashboard.svg') }}" alt="Schedule" class="w-6 h-6" />
                         <p class="text-base text-gray-700">Jadwal</p>
                     </div>
 

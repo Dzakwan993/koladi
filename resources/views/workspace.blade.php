@@ -21,7 +21,7 @@
         </a>
 
         {{-- Card Pengumuman --}}
-        <a href="{{ url('/workspace/pengumuman') }}"
+        <a href="{{ url('/pengumuman') }}"
            @click="$store.workspace.selectedMenu = 'pengumuman'"
            class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
             <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
@@ -31,7 +31,7 @@
         </a>
 
         {{-- Card Jadwal --}}
-        <a href="{{ url('/workspace/jadwal') }}"
+        <a href="{{ url('/jadwal') }}"
            @click="$store.workspace.selectedMenu = 'jadwal'"
            class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
             <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
@@ -41,7 +41,7 @@
         </a>
 
         {{-- Card Chat --}}
-        <a href="{{ url('/workspace/chat') }}"
+        <a href="{{ url('/chat') }}"
            @click="$store.workspace.selectedMenu = 'chat'"
            class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
             <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
@@ -51,7 +51,7 @@
         </a>
 
         {{-- Card Insight --}}
-        <a href="{{ url('/workspace/insight') }}"
+        <a href="{{ url('/insight') }}"
            @click="$store.workspace.selectedMenu = 'insight'"
            class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
             <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">

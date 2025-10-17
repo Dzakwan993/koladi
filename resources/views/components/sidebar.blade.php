@@ -1,9 +1,7 @@
 <style>
-
     .filter-blue {
-  filter: brightness(0) saturate(100%) invert(30%) sepia(91%) saturate(1539%) hue-rotate(213deg) brightness(90%) contrast(96%);
-}
-
+        filter: brightness(0) saturate(100%) invert(30%) sepia(91%) saturate(1539%) hue-rotate(213deg) brightness(90%) contrast(96%);
+    }
 </style>
 
 
@@ -58,16 +56,17 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
             <a href="{{ url('/kelola-workspace') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                       {{ Request::is('kelola-workspace*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-<img src="/images/icons/sidebar_ruang-kerja.svg" alt="Ruang Kerja"
-     class="w-5 h-5 {{ Request::is('kelola-workspace*') ? 'filter-blue' : '' }}">                <span class="text-sm">Ruang Kerja</span>
+                <img src="/images/icons/sidebar_ruang-kerja.svg" alt="Ruang Kerja"
+                    class="w-5 h-5 {{ Request::is('kelola-workspace*') ? 'filter-blue' : '' }}"> <span
+                    class="text-sm">Ruang Kerja</span>
             </a>
 
             {{-- Chat --}}
             <a href="{{ url('/chat') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                       {{ Request::is('chat*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-<img src="/images/icons/sidebar_chat.svg" alt="Chat"
-     class="w-5 h-5 {{ Request::is('chat*') ? 'filter-blue' : '' }}">
+                <img src="/images/icons/sidebar_chat.svg" alt="Chat"
+                    class="w-5 h-5 {{ Request::is('chat*') ? 'filter-blue' : '' }}">
                 <span class="text-sm">Chat</span>
             </a>
 
@@ -75,24 +74,27 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
             <a href="{{ url('/tugas') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                       {{ Request::is('tugas*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-<img src="/images/icons/sidebar_semua-tugas.svg" alt="Semua Tugas"
-     class="w-5 h-5 {{ Request::is('tugas*') ? 'filter-blue' : '' }}">                <span class="text-sm">Semua Tugas</span>
+                <img src="/images/icons/sidebar_semua-tugas.svg" alt="Semua Tugas"
+                    class="w-5 h-5 {{ Request::is('tugas*') ? 'filter-blue' : '' }}"> <span class="text-sm">Semua
+                    Tugas</span>
             </a>
 
             {{-- Laporan Kinerja --}}
-            <a href="{{ url('/laporan') }}"
+            <a href="{{ url('/statistik') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                       {{ Request::is('laporan*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-<img src="/images/icons/sidebar_laporan-kinerja.svg" alt="Laporan Kinerja"
-     class="w-5 h-5 {{ Request::is('laporan*') ? 'filter-blue' : '' }}">                <span class="text-sm">Laporan Kinerja</span>
+                <img src="/images/icons/sidebar_laporan-kinerja.svg" alt="Laporan Kinerja"
+                    class="w-5 h-5 {{ Request::is('laporan*') ? 'filter-blue' : '' }}"> <span class="text-sm">Laporan
+                    Kinerja</span>
             </a>
 
             {{-- Cuti --}}
             <a href="{{ url('/cutimanajer') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                       {{ Request::is('cutimanajer*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-<img src="/images/icons/sidebar_cuti.svg" alt="Cuti"
-     class="w-5 h-5 {{ Request::is('cutimanajer*') ? 'filter-blue' : '' }}">                <span class="text-sm">Cuti</span>
+                <img src="/images/icons/sidebar_cuti.svg" alt="Cuti"
+                    class="w-5 h-5 {{ Request::is('cutimanajer*') ? 'filter-blue' : '' }}"> <span
+                    class="text-sm">Cuti</span>
             </a>
 
             {{-- Search & Actions --}}

@@ -16,7 +16,7 @@
         workspaceMenuPosition: { x: 0, y: 0 },
         showManageMembersModal: false,
         showEditWorkspaceModal: false,
-    
+
         searchMember: '',
         selectedMembers: [],
         members: [
@@ -31,13 +31,13 @@
             { id: 9, name: 'Hendra Setiawan', email: 'hendra@company.com', avatar: 'https://i.pravatar.cc/32?img=19' },
             { id: 10, name: 'Lina Marlina', email: 'lina@company.com', avatar: 'https://i.pravatar.cc/32?img=20' }
         ],
-    
+
         editWorkspaceData: {
             name: '',
             description: '',
             type: 'HQ'
         },
-    
+
         // Method untuk buka modal edit
         openEditWorkspace(workspaceName, workspaceDescription, workspaceType) {
             this.editWorkspaceData = {
@@ -48,14 +48,14 @@
             this.showEditWorkspaceModal = true;
             this.showWorkspaceMenu = false;
         },
-    
+
         // Method untuk simpan perubahan
         saveWorkspaceChanges() {
             console.log('Workspace updated:', this.editWorkspaceData);
             // Di sini Anda bisa menambahkan logika untuk menyimpan perubahan
             this.showEditWorkspaceModal = false;
         },
-    
+
         // Computed property untuk filtered members
         get filteredMembers() {
             if (!this.searchMember) {
@@ -66,7 +66,7 @@
                 member.email.toLowerCase().includes(this.searchMember.toLowerCase())
             );
         },
-    
+
         // Toggle select member
         toggleMember(memberId) {
             const index = this.selectedMembers.indexOf(memberId);
@@ -76,12 +76,12 @@
                 this.selectedMembers.splice(index, 1);
             }
         },
-    
+
         // Check if member is selected
         isMemberSelected(memberId) {
             return this.selectedMembers.includes(memberId);
         },
-    
+
         // Apply selected members
         applyMembers() {
             console.log('Selected members:', this.selectedMembers);
@@ -148,7 +148,6 @@
                 </div>
             </div>
         </div>
-
 
         <!-- Modal Menu Workspace (titik tiga) -->
         <div x-show="showWorkspaceMenu" class="fixed inset-0 z-50" @click="showWorkspaceMenu = false">
@@ -267,7 +266,6 @@
             </div>
         </div>
 
-
         <!-- Modal Edit Ruang Kerja -->
         <div x-show="showEditWorkspaceModal"
             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
@@ -339,7 +337,6 @@
                 </div>
             </div>
         </div>
-
 
         <!-- Modal Atur Hak Akses -->
         <div x-show="showAccessRightsModal"
@@ -474,140 +471,146 @@
             </div>
         </div>
 
-
-
         <!-- Modal Atur Role -->
-<div x-show="showRoleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-    @click="showRoleModal = false">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl" @click.stop>
-        <!-- Header -->
-        <div class="p-6 pb-4 relative">
-            <button @click="showRoleModal = false" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-            <h2 class="text-2xl font-bold text-gray-900">Atur role</h2>
-            <p class="text-sm text-gray-500 mt-2">
-                Anda bebas bisa mengatur role rekan ada ataupun mengubah rolenya dibawah...
-            </p>
+        <div x-show="showRoleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            @click="showRoleModal = false">
+            <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl" @click.stop>
+                <!-- Header -->
+                <div class="p-6 pb-4 relative">
+                    <button @click="showRoleModal = false"
+                        class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                    <h2 class="text-2xl font-bold text-gray-900">Atur role</h2>
+                    <p class="text-sm text-gray-500 mt-2">
+                        Anda bebas bisa mengatur role rekan ada ataupun mengubah rolenya dibawah...
+                    </p>
+                </div>
+
+                <!-- User List -->
+                <div class="px-6 py-4 space-y-3 max-h-[50vh] overflow-y-auto bg-blue-50">
+                    <!-- User 1 - Super Admin (tanpa dropdown) -->
+                    <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                                <img src="https://i.pravatar.cc/150?img=5" alt="Member" class="w-12 h-12 rounded-full">
+
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900">Muhammad Dzakwan</p>
+                                <span
+                                    class="inline-block px-3 py-0.5 text-xs font-medium text-white bg-blue-600 rounded-md mt-1">Super
+                                    Admin</span>
+                            </div>
+                        </div>
+                        <button
+                            class="px-4 py-1.5 text-sm font-medium text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-blue-50">
+                            Super Admin
+                        </button>
+                    </div>
+
+                    <!-- User 2 - Manager (dengan dropdown) -->
+                    <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <img src="https://i.pravatar.cc/150?img=11" alt="Manager" class="w-12 h-12 rounded-full">
+                            <div>
+                                <p class="font-semibold text-gray-900">Sarah Johnson</p>
+                                <span
+                                    class="inline-block px-3 py-0.5 text-xs font-medium text-white bg-teal-500 rounded-md mt-1">Manager</span>
+                            </div>
+                        </div>
+                        <div class="relative">
+                            <select
+                                class="appearance-none bg-white border border-blue-600 text-blue-600 rounded-lg px-4 py-1.5 pr-10 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                <option value="admin" selected>Admin</option>
+                                <option value="manager">Manager</option>
+                                <option value="member">Member</option>
+                            </select>
+                            <div
+                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-600">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User 3 - Admin (dengan dropdown) -->
+                    <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <img src="https://i.pravatar.cc/150?img=32" alt="Admin" class="w-12 h-12 rounded-full">
+                            <div>
+                                <p class="font-semibold text-gray-900">David Chen</p>
+                                <span
+                                    class="inline-block px-3 py-0.5 text-xs font-medium text-white bg-blue-500 rounded-md mt-1">Admin</span>
+                            </div>
+                        </div>
+                        <div class="relative">
+                            <select
+                                class="appearance-none bg-white border border-blue-600 text-blue-600 rounded-lg px-4 py-1.5 pr-10 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                <option value="admin">Admin</option>
+                                <option value="manager" selected>Manager</option>
+                                <option value="member">Member</option>
+                            </select>
+                            <div
+                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-600">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User 4 - Member (dengan dropdown) -->
+                    <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm">
+                        <div class="flex items-center gap-3">
+                            <img src="https://i.pravatar.cc/150?img=5" alt="Member" class="w-12 h-12 rounded-full">
+                            <div>
+                                <p class="font-semibold text-gray-900">Maria Garcia</p>
+                                <span
+                                    class="inline-block px-3 py-0.5 text-xs font-medium text-white bg-yellow-500 rounded-md mt-1">Member</span>
+                            </div>
+                        </div>
+                        <div class="relative">
+                            <select
+                                class="appearance-none bg-white border border-blue-600 text-blue-600 rounded-lg px-4 py-1.5 pr-10 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                                <option value="admin">Admin</option>
+                                <option value="manager">Manager</option>
+                                <option value="member" selected>Member</option>
+                            </select>
+                            <div
+                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-600">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="p-6 flex justify-end gap-3 bg-white rounded-b-2xl">
+                    <button type="button"
+                        class="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        @click="showRoleModal = false">
+                        Batal
+                    </button>
+                    <button type="button"
+                        class="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        @click="showRoleModal = false">
+                        Simpan
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <!-- User List -->
-        <div class="px-6 py-4 space-y-3 max-h-[50vh] overflow-y-auto bg-blue-50">
-            <!-- User 1 - Super Admin (tanpa dropdown) -->
-            <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
-                                            <img src="https://i.pravatar.cc/150?img=5" alt="Member" class="w-12 h-12 rounded-full">
-
-                    </div>
-                    <div>
-                        <p class="font-semibold text-gray-900">Muhammad Dzakwan</p>
-                        <span class="inline-block px-3 py-0.5 text-xs font-medium text-white bg-blue-600 rounded-md mt-1">Super Admin</span>
-                    </div>
-                </div>
-                <button class="px-4 py-1.5 text-sm font-medium text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-blue-50">
-                    Super Admin
-                </button>
-            </div>
-
-            <!-- User 2 - Manager (dengan dropdown) -->
-            <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm">
-                <div class="flex items-center gap-3">
-                    <img src="https://i.pravatar.cc/150?img=11" alt="Manager" class="w-12 h-12 rounded-full">
-                    <div>
-                        <p class="font-semibold text-gray-900">Sarah Johnson</p>
-                        <span class="inline-block px-3 py-0.5 text-xs font-medium text-white bg-teal-500 rounded-md mt-1">Manager</span>
-                    </div>
-                </div>
-                <div class="relative">
-                    <select
-                        class="appearance-none bg-white border border-blue-600 text-blue-600 rounded-lg px-4 py-1.5 pr-10 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                        <option value="admin" selected>Admin</option>
-                        <option value="manager">Manager</option>
-                        <option value="member">Member</option>
-                    </select>
-                    <div
-                        class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-600">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <!-- User 3 - Admin (dengan dropdown) -->
-            <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm">
-                <div class="flex items-center gap-3">
-                    <img src="https://i.pravatar.cc/150?img=32" alt="Admin" class="w-12 h-12 rounded-full">
-                    <div>
-                        <p class="font-semibold text-gray-900">David Chen</p>
-                        <span class="inline-block px-3 py-0.5 text-xs font-medium text-white bg-blue-500 rounded-md mt-1">Admin</span>
-                    </div>
-                </div>
-                <div class="relative">
-                    <select
-                        class="appearance-none bg-white border border-blue-600 text-blue-600 rounded-lg px-4 py-1.5 pr-10 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                        <option value="admin">Admin</option>
-                        <option value="manager" selected>Manager</option>
-                        <option value="member">Member</option>
-                    </select>
-                    <div
-                        class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-600">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <!-- User 4 - Member (dengan dropdown) -->
-            <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm">
-                <div class="flex items-center gap-3">
-                    <img src="https://i.pravatar.cc/150?img=5" alt="Member" class="w-12 h-12 rounded-full">
-                    <div>
-                        <p class="font-semibold text-gray-900">Maria Garcia</p>
-                        <span class="inline-block px-3 py-0.5 text-xs font-medium text-white bg-yellow-500 rounded-md mt-1">Member</span>
-                    </div>
-                </div>
-                <div class="relative">
-                    <select
-                        class="appearance-none bg-white border border-blue-600 text-blue-600 rounded-lg px-4 py-1.5 pr-10 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                        <option value="admin">Admin</option>
-                        <option value="manager">Manager</option>
-                        <option value="member" selected>Member</option>
-                    </select>
-                    <div
-                        class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-600">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="p-6 flex justify-end gap-3 bg-white rounded-b-2xl">
-            <button type="button"
-                class="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                @click="showRoleModal = false">
-                Batal
-            </button>
-            <button type="button"
-                class="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                @click="showRoleModal = false">
-                Simpan
-            </button>
-        </div>
-    </div>
-</div>
-
-        
         <!-- HQ Section -->
         <div class="mt-2 mx-8 mb-8">
             <div class="flex items-center justify-between mb-4">
@@ -640,7 +643,7 @@
                         <div class="flex items-start justify-between mb-3">
                             <h3 class="font-semibold text-gray-900">Inti</h3>
                             <button class="text-gray-400 hover:text-gray-600 relative"
-                                @click="showWorkspaceMenu = true; 
+                                @click="showWorkspaceMenu = true;
                                     activeWorkspace = 'Inti';
                                     workspaceMenuPosition = { x: $event.clientX - 256, y: $event.clientY + 10 }">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -681,7 +684,7 @@
                         <div class="flex items-start justify-between mb-3">
                             <h3 class="font-semibold text-gray-900">Div. IT</h3>
                             <button class="text-gray-400 hover:text-gray-600 relative"
-                                @click="showWorkspaceMenu = true; 
+                                @click="showWorkspaceMenu = true;
                                     activeWorkspace = 'Div. IT';
                                     workspaceMenuPosition = { x: $event.clientX - 256, y: $event.clientY + 10 }">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -718,86 +721,49 @@
                     </div>
 
                     <!-- Card Div. Marketing -->
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition">
-                        <div class="flex items-start justify-between mb-3">
-                            <h3 class="font-semibold text-gray-900">Div. Marketing</h3>
-                            <button class="text-gray-400 hover:text-gray-600 relative"
-                                @click="showWorkspaceMenu = true; 
-                                    activeWorkspace = 'Div. Marketing';
-                                    workspaceMenuPosition = { x: $event.clientX - 256, y: $event.clientY + 10 }">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                    <circle cx="5" cy="12" r="2"></circle>
-                                    <circle cx="12" cy="12" r="2"></circle>
-                                    <circle cx="19" cy="12" r="2"></circle>
+                    <a href="{{ url('/workspace') }}" class="block no-underline">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition">
+                            <div class="flex items-start justify-between mb-3">
+                                <h3 class="font-semibold text-gray-900">Div. Marketing</h3>
+                                <button class="text-gray-400 hover:text-gray-600 relative"
+                                    @click.stop="showWorkspaceMenu = true;
+                    activeWorkspace = 'Div. Marketing';
+                    workspaceMenuPosition = { x: $event.clientX - 256, y: $event.clientY + 10 }">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                        <circle cx="5" cy="12" r="2"></circle>
+                                        <circle cx="12" cy="12" r="2"></circle>
+                                        <circle cx="19" cy="12" r="2"></circle>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-4 line-clamp-2">Jualan makanan sehat yang membuat seseorang
+                                menjadi lebih berotot</p>
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                                    </path>
                                 </svg>
-                            </button>
-                        </div>
-                        <p class="text-sm text-gray-500 mb-4 line-clamp-2">Jualan makanan sehat yang membuat seseorang
-                            menjadi lebih berotot</p>
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
-                                </path>
-                            </svg>
-                            <span class="text-xs text-gray-500">Anggota</span>
-                        </div>
-                        <div class="flex items-center gap-1 mt-2">
-                            <div class="flex -space-x-2">
-                                <img src="https://i.pravatar.cc/32?img=17" alt="Member"
-                                    class="w-7 h-7 rounded-full border-2 border-white">
-                                <img src="https://i.pravatar.cc/32?img=18" alt="Member"
-                                    class="w-7 h-7 rounded-full border-2 border-white">
-                                <img src="https://i.pravatar.cc/32?img=19" alt="Member"
-                                    class="w-7 h-7 rounded-full border-2 border-white">
-                                <div
-                                    class="w-7 h-7 rounded-full border-2 border-white bg-blue-100 flex items-center justify-center">
-                                    <span class="text-xs font-medium text-blue-600">2+</span>
+                                <span class="text-xs text-gray-500">Anggota</span>
+                            </div>
+                            <div class="flex items-center gap-1 mt-2">
+                                <div class="flex -space-x-2">
+                                    <img src="https://i.pravatar.cc/32?img=17" alt="Member"
+                                        class="w-7 h-7 rounded-full border-2 border-white">
+                                    <img src="https://i.pravatar.cc/32?img=18" alt="Member"
+                                        class="w-7 h-7 rounded-full border-2 border-white">
+                                    <img src="https://i.pravatar.cc/32?img=19" alt="Member"
+                                        class="w-7 h-7 rounded-full border-2 border-white">
+                                    <div
+                                        class="w-7 h-7 rounded-full border-2 border-white bg-blue-100 flex items-center justify-center">
+                                        <span class="text-xs font-medium text-blue-600">2+</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </a>
 
-                    <!-- Card Div. Marketing (duplicate) -->
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition">
-                        <div class="flex items-start justify-between mb-3">
-                            <h3 class="font-semibold text-gray-900">Div. Marketing</h3>
-                            <button class="text-gray-400 hover:text-gray-600 relative"
-                                @click="showWorkspaceMenu = true; 
-                                    activeWorkspace = 'Div. Marketing 2';
-                                    workspaceMenuPosition = { x: $event.clientX - 256, y: $event.clientY + 10 }">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                    <circle cx="5" cy="12" r="2"></circle>
-                                    <circle cx="12" cy="12" r="2"></circle>
-                                    <circle cx="19" cy="12" r="2"></circle>
-                                </svg>
-                            </button>
-                        </div>
-                        <p class="text-sm text-gray-500 mb-4 line-clamp-2">Jualan makanan sehat yang membuat seseorang
-                            menjadi lebih berotot</p>
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
-                                </path>
-                            </svg>
-                            <span class="text-xs text-gray-500">Anggota</span>
-                        </div>
-                        <div class="flex items-center gap-1 mt-2">
-                            <div class="flex -space-x-2">
-                                <img src="https://i.pravatar.cc/32?img=20" alt="Member"
-                                    class="w-7 h-7 rounded-full border-2 border-white">
-                                <img src="https://i.pravatar.cc/32?img=21" alt="Member"
-                                    class="w-7 h-7 rounded-full border-2 border-white">
-                                <img src="https://i.pravatar.cc/32?img=22" alt="Member"
-                                    class="w-7 h-7 rounded-full border-2 border-white">
-                                <div
-                                    class="w-7 h-7 rounded-full border-2 border-white bg-blue-100 flex items-center justify-center">
-                                    <span class="text-xs font-medium text-blue-600">2+</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -834,7 +800,7 @@
                             <div class="flex items-start justify-between mb-3">
                                 <h3 class="font-semibold text-gray-900">Div. Marketing</h3>
                                 <button class="text-gray-400 hover:text-gray-600 relative"
-                                    @click="showWorkspaceMenu = true; 
+                                    @click="showWorkspaceMenu = true;
                                         activeWorkspace = 'Div. Marketing Tim ' + ({{ $i }} + 1);
                                         workspaceMenuPosition = { x: $event.clientX - 256, y: $event.clientY + 10 }">
                                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -908,7 +874,7 @@
                             <h3 class="font-semibold text-gray-900">Proyek Kerjasama</h3>
 
                             <button class="text-gray-400 hover:text-gray-600 relative"
-                                @click="showWorkspaceMenu = true; 
+                                @click="showWorkspaceMenu = true;
                                     activeWorkspace = 'Proyek Kerjasama';
                                     workspaceMenuPosition = { x: $event.clientX - 256, y: $event.clientY + 10 }">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -949,7 +915,7 @@
                             <div class="flex items-start justify-between mb-3">
                                 <h3 class="font-semibold text-gray-900">Proyek Digital Office</h3>
                                 <button class="text-gray-400 hover:text-gray-600 relative"
-                                    @click="showWorkspaceMenu = true; 
+                                    @click="showWorkspaceMenu = true;
                                         activeWorkspace = 'Proyek Digital Office ' + ({{ $i }} + 1);
                                         workspaceMenuPosition = { x: $event.clientX - 256, y: $event.clientY + 10 }">
                                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

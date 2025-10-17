@@ -32,7 +32,7 @@
             </div>
             <span class="text-xs text-gray-600 whitespace-nowrap">
                 <span class="font-medium">Sahroni</span> dan
-                <button class="text-blue-600 hover:text-blue-700 font-medium" onclick="openModal()">
+                <button class="text-blue-600 hover:text-blue-700 font-medium">
                     5 lainnya
                 </button>
                 aktif
@@ -267,7 +267,7 @@
 
                 <!-- Menu Items -->
                 <div class="border-t border-gray-200">
-                    <a href="#"
+                    <a href="{{ url('profile') }}"
                         class="flex items-center gap-3 px-6 py-3.5 text-sm text-gray-700 hover:bg-gray-50 transition">
                         <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                             <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor"

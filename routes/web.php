@@ -80,8 +80,8 @@ Route::get('/notulensi', function () {
 });
 
 //pengunguman
-Route::get('/pengunguman', function () {
-    return view('/pengunguman');
+Route::get('/pengumuman', function () {
+    return view('/pengumuman');
 });
 
 //statistik
