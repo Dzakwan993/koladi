@@ -65,6 +65,17 @@ Route::get('/chat', function () {
 
 });
 
+// Halaman Insigght
+Route::get('/insight', function () {
+    return view('insight');
+
+});
+
+// Halaman isi Insigght
+Route::get('/isi-insight', function () {
+    return view('isi-insight');
+})->name('isi-insight');
+
 Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
