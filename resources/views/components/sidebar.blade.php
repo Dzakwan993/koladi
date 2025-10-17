@@ -1,172 +1,232 @@
-<div class="w-64 bg-white shadow-sm flex flex-col border-r border-gray-200">
-    {{-- Logo --}}
-   <div class="h-16 flex items-center justify-center px-4 border-b border-gray-200">
-        <img src="/images/logo-koladi.png"  class="h-28 mt-12">
-    </div>
+<style>
 
-    {{-- Navigation --}}
-    <nav class="flex-1 py-4 px-3 space-y-1 overflow-auto">
-        {{-- Dashboard --}}
-    <a href="{{ url('/dashboard') }}" 
-       class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition">
-        <img src="/images/icons/dashboard.png" alt="" class="w-5 h-5">
-        <span class="text-sm">Dashboard</span>
-    </a>
+    .filter-blue {
+  filter: brightness(0) saturate(100%) invert(30%) sepia(91%) saturate(1539%) hue-rotate(213deg) brightness(90%) contrast(96%);
+}
 
-    {{-- Workspace --}}
-    <a href="{{ url('/workspace') }}" 
-       class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition">
-        <img src="/images/icons/ruang-kerja.png" alt="" class="w-5 h-5">
-        <span class="text-sm">Ruang Kerja</span>
-    </a>
-
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition">
-            <img src="/images/icons/chat.png" alt="" class="w-5 h-5">
-            <span class="text-sm">Chat</span>
-        </a>
-
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition">
-            <img src="/images/icons/semua-tugas.png" alt="" class="w-5 h-5">
-            <span class="text-sm">Semua Tugas</span>
-        </a>
-
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition">
-            <img src="/images/icons/laporan-kinerja.png" alt="" class="w-5 h-5">
-            <span class="text-sm">Laporan Kinerja</span>
-        </a>
-
-        <a href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600 hover:bg-gray-50 transition">
-            <img src="/images/icons/cuti.png" alt="" class="w-5 h-5">
-            <span class="text-sm">Cuti</span>
-        </a>
-
-       {{-- Workspace Section --}}
-<div class="pt-3 mt-3 border-t border-gray-200">
-    <div class="flex items-center gap-2">
-        <!-- Kolom Pencarian -->
-        <div class="flex items-center gap-2 px-2 py-1    rounded-lg bg-gray-50 text-gray-400 text-xs flex-1 min-w-0 hover:text-gray-600 transition">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-    </svg>
-    <input 
-        type="text" 
-        placeholder="Cari ruang..." 
-        class="flex-1 bg-transparent outline-none border-none focus:ring-0 text-gray-700 text-xs min-w-0"
-    />
-</div>
+</style>
 
 
-        <!-- Tombol tambah pertama -->
-        <button class="flex items-center justify-center w-8 h-8 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition flex-shrink-0">
-            <img src="/images/icons/add.png" alt="" class="w-4 h-4">
-        </button>
+{{-- resources/views/components/sidebar.blade.php --}}
+<div x-data="{ openSidebar: window.innerWidth >= 992 }" x-init="const handleResize = () => {
+    if (window.innerWidth < 992 && openSidebar) openSidebar = false;
+    else if (window.innerWidth >= 992 && !openSidebar) openSidebar = true;
+};
+window.addEventListener('resize', handleResize);" class="flex h-screen relative">
 
-        <!-- Tombol tambah kedua -->
-        <button class="flex items-center justify-center w-8 h-8 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition flex-shrink-0">
-            <img src="/images/icons/add.png" alt="" class="w-4 h-4">
-        </button>
-    </div>
-</div>
+    {{-- Tombol Toggle (hamburger / close) --}}
+    <button @click="openSidebar = !openSidebar"
+        class="absolute top-4 left-4 z-50 bg-white border border-gray-200 shadow-md rounded-lg p-2 hover:bg-gray-100 transition">
+        <template x-if="!openSidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                stroke="currentColor" class="w-5 h-5 text-gray-700">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </template>
+        <template x-if="openSidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                stroke="currentColor" class="w-5 h-5 text-gray-700">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </template>
+    </button>
 
+    {{-- Sidebar --}}
+    <div x-show="openSidebar"
+        class="w-64 bg-white shadow-sm border-r border-gray-200 h-screen transition-all duration-300 fixed md:relative z-40"
+        x-transition:enter="transform transition ease-in-out duration-300" x-transition:enter-start="-translate-x-full"
+        x-transition:enter-end="translate-x-0" x-transition:leave="transform transition ease-in-out duration-300"
+        x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full">
+        {{-- Logo --}}
+        <div class="h-16 flex items-center justify-center px-4 border-b border-gray-200">
+            <img src="/images/logo-koladi.png" class="h-28 mt-12" alt="Koladi Logo">
+        </div>
 
+        {{-- Navigation --}}
+        <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto" x-data="{ openHQ: true, openTim: true, openProyek: true }">
 
-{{-- Workspace List --}}
-<div class="mt-3 space-y-0.5" x-data="{ openHQ: true, openTim: true, openProyek: true }">
+            {{-- Dashboard --}}
+            <a href="{{ url('/dashboard') }}"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition 
+                      {{ Request::is('dashboard*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                <img src="/images/icons/sidebar_dashboard.svg" alt="Dashboard"
+                    class="w-5 h-5 {{ Request::is('dashboard*') ? 'filter-blue' : '' }}"> <span
+                    class="text-sm">Dashboard</span>
+            </a>
 
-    {{-- HQ --}}
-    <div class="px-3 py-1.5">
-        <div class="flex items-center justify-between text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-             @click="openHQ = !openHQ">
-            <div class="flex items-center gap-2">
-                <img src="/images/icons/hq.png" alt="" class="w-4 h-4">
-                <span>HQ</span>
+            {{-- Ruang Kerja --}}
+            <a href="{{ url('/kelola-workspace') }}"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition 
+                      {{ Request::is('kelola-workspace*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+<img src="/images/icons/sidebar_ruang-kerja.svg" alt="Ruang Kerja"
+     class="w-5 h-5 {{ Request::is('kelola-workspace*') ? 'filter-blue' : '' }}">                <span class="text-sm">Ruang Kerja</span>
+            </a>
+
+            {{-- Chat --}}
+            <a href="{{ url('/chat') }}"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition 
+                      {{ Request::is('chat*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+<img src="/images/icons/sidebar_chat.svg" alt="Chat"
+     class="w-5 h-5 {{ Request::is('chat*') ? 'filter-blue' : '' }}">
+                <span class="text-sm">Chat</span>
+            </a>
+
+            {{-- Semua Tugas --}}
+            <a href="{{ url('/tugas') }}"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition 
+                      {{ Request::is('tugas*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+<img src="/images/icons/sidebar_semua-tugas.svg" alt="Semua Tugas"
+     class="w-5 h-5 {{ Request::is('tugas*') ? 'filter-blue' : '' }}">                <span class="text-sm">Semua Tugas</span>
+            </a>
+
+            {{-- Laporan Kinerja --}}
+            <a href="{{ url('/laporan') }}"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition 
+                      {{ Request::is('laporan*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+<img src="/images/icons/sidebar_laporan-kinerja.svg" alt="Laporan Kinerja"
+     class="w-5 h-5 {{ Request::is('laporan*') ? 'filter-blue' : '' }}">                <span class="text-sm">Laporan Kinerja</span>
+            </a>
+
+            {{-- Cuti --}}
+            <a href="{{ url('/cutimanajer') }}"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition 
+                      {{ Request::is('cutimanajer*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+<img src="/images/icons/sidebar_cuti.svg" alt="Cuti"
+     class="w-5 h-5 {{ Request::is('cutimanajer*') ? 'filter-blue' : '' }}">                <span class="text-sm">Cuti</span>
+            </a>
+
+            {{-- Search & Actions --}}
+            <div class="pt-3 mt-3 border-t border-gray-200">
+                <div class="flex items-center gap-1.5">
+                    {{-- Search Bar (kecil) --}}
+                    <div
+                        class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-gray-50 text-gray-400 text-xs flex-1 hover:bg-gray-100 transition">
+                        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input type="text" placeholder="Cari ruang..."
+                            class="flex-1 bg-transparent outline-none border-none focus:ring-0 text-gray-700 text-[11px]">
+                    </div>
+
+                    {{-- Filter Button (pakai gambar kamu) --}}
+                    <button
+                        class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
+                        title="Filter">
+                        <img src="/images/icons/sidebar_filter.svg" alt="Filter" class="w-3.5 h-3.5">
+                    </button>
+
+                    {{-- Add Button (pakai gambar kamu) --}}
+                    <button
+                        class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
+                        title="Tambah">
+                        <img src="/images/icons/sidebar_tambah.svg" alt="Tambah" class="w-3.5 h-3.5">
+                    </button>
+                </div>
             </div>
 
-            <!-- Arrow -->
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <!-- Panah kanan -->
-                <path x-show="!openHQ" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                <!-- Panah bawah -->
-                <path x-show="openHQ" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-        </div>
-    </div>
 
-    <div x-show="openHQ" class="space-y-0.5 mt-1">
-        <a href="#" class="flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded transition">
-            <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
-            <span>Mencari Cinta HQ</span>
-        </a>
-    </div>
 
-    {{-- TIM --}}
-    <div class="px-3 py-1.5 mt-2">
-        <div class="flex items-center justify-between text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-             @click="openTim = !openTim">
-            <div class="flex items-center gap-2">
-                <img src="/images/icons/tim.png" alt="" class="w-4 h-4">
-                <span>Tim</span>
+            {{-- Workspace List --}}
+            <div class="mt-3 space-y-1">
+                {{-- HQ --}}
+                <div>
+                    <button @click="openHQ = !openHQ"
+                        class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-lg transition">
+                        <div class="flex items-center gap-2">
+                            <img src="/images/icons/sidebar_hq.svg" alt="HQ" class="w-4 h-4">
+                            <span>HQ</span>
+                        </div>
+                        <svg class="w-3 h-3 transition-transform" :class="{ 'rotate-90': openHQ }" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+                            </path>
+                        </svg>
+                    </button>
+
+                    <div x-show="openHQ" x-transition class="mt-1 space-y-0.5">
+                        <a href="{{ url('/workspace/hq') }}"
+                            class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition 
+                                  {{ Request::is('workspace/hq*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                            <span>Mencari Cinta HQ</span>
+                        </a>
+                    </div>
+                </div>
+
+                {{-- TIM --}}
+                <div>
+                    <button @click="openTim = !openTim"
+                        class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-lg transition">
+                        <div class="flex items-center gap-2">
+                            <img src="/images/icons/sidebar_tim.svg" alt="Tim" class="w-4 h-4">
+                            <span>Tim</span>
+                        </div>
+                        <svg class="w-3 h-3 transition-transform" :class="{ 'rotate-90': openTim }" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+                            </path>
+                        </svg>
+                    </button>
+
+                    <div x-show="openTim" x-transition class="mt-1 space-y-0.5">
+                        <a href="{{ url('/workspace') }}"
+                            class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition 
+                                  {{ Request::is('workspace') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
+                            <span>Div. Marketing</span>
+                        </a>
+                        <a href="{{ url('/workspace/pelayanan') }}"
+                            class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition 
+                                  {{ Request::is('workspace/pelayanan*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                            <span>Div. Pelayanan</span>
+                        </a>
+                        <a href="{{ url('/workspace/creativ') }}"
+                            class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition 
+                                  {{ Request::is('workspace/creativ*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                            <span>Div. Creativ</span>
+                        </a>
+                    </div>
+                </div>
+
+                {{-- PROYEK --}}
+                <div>
+                    <button @click="openProyek = !openProyek"
+                        class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-lg transition">
+                        <div class="flex items-center gap-2">
+                            <img src="/images/icons/sidebar_proyek.svg" alt="Proyek" class="w-4 h-4">
+                            <span>Proyek</span>
+                        </div>
+                        <svg class="w-3 h-3 transition-transform" :class="{ 'rotate-90': openProyek }" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+                            </path>
+                        </svg>
+                    </button>
+
+                    <div x-show="openProyek" x-transition class="mt-1 space-y-0.5">
+                        <a href="{{ url('/workspace/creativ-konten') }}"
+                            class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition 
+                                  {{ Request::is('workspace/creativ-konten*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 bg-blue-700 rounded-full"></span>
+                            <span>Creativ Konten</span>
+                        </a>
+                        <a href="{{ url('/workspace/pelayan-creativ') }}"
+                            class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition 
+                                  {{ Request::is('workspace/pelayan-creativ*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                            <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
+                            <span>Pelayan Creativ</span>
+                        </a>
+                    </div>
+                </div>
             </div>
-
-            <!-- Arrow -->
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <!-- Panah kanan -->
-                <path x-show="!openTim" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                <!-- Panah bawah -->
-                <path x-show="openTim" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-        </div>
+        </nav>
     </div>
 
-    <div x-show="openTim" class="space-y-0.5 mt-1">
-        <a href="#" class="flex items-center gap-2 px-6 py-1.5 text-sm text-blue-600 bg-blue-50 font-medium rounded transition">
-            <span class="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-            <span>Div. Marketing</span>
-        </a>
-        <a href="#" class="flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded transition">
-            <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-            <span>Div. Pelayanan</span>
-        </a>
-        <a href="#" class="flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded transition">
-            <span class="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
-            <span>Div. Creativ</span>
-        </a>
+    {{-- Overlay (blur background di layar kecil) --}}
+    <div x-show="openSidebar && window.innerWidth < 768" x-transition.opacity @click="openSidebar = false"
+        class="fixed inset-0 bg-black bg-opacity-30 z-30 md:hidden">
     </div>
-
-    {{-- PROYEK --}}
-    <div class="px-3 py-1.5 mt-2">
-        <div class="flex items-center justify-between text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-             @click="openProyek = !openProyek">
-            <div class="flex items-center gap-2">
-                <img src="/images/icons/proyek.png" alt="" class="w-4 h-4">
-                <span>Proyek</span>
-            </div>
-
-            <!-- Arrow -->
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <!-- Panah kanan -->
-                <path x-show="!openProyek" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                <!-- Panah bawah -->
-                <path x-show="openProyek" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-        </div>
-    </div>
-
-    <div x-show="openProyek" class="space-y-0.5 mt-1">
-        <a href="#" class="flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded transition">
-            <span class="w-1.5 h-1.5 bg-blue-700 rounded-full"></span>
-            <span>Creativ Konten</span>
-        </a>
-        <a href="#" class="flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 hover:bg-gray-50 rounded transition">
-            <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
-            <span>Pelayan Creativ</span>
-        </a>
-    </div>
-
-</div>
-
-
-
-        </div>
-    </nav>
 </div>

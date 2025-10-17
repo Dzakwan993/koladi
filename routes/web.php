@@ -23,3 +23,13 @@ Route::get('/kanban-tugas', function () {
     return view('kanban-tugas');
 });
 
+// routes/web.php
+Route::get('/dokumen-dan-file', function () {
+    return view('dokumen-dan-file');
+});
+
+// routes/web.php
+Route::get('/kelola-workspace', function () {
+    return view('kelola-workspace');
+});
+
