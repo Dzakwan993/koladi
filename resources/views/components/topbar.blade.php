@@ -141,11 +141,6 @@
                                                 class="bg-[#2563EB] text-white px-5 py-2.5 rounded-lg hover:bg-[#1d4cc1] shadow-sm transition">
                                                 Simpan
                                             </button>
-                                            <button
-                                                class="border border-[#2563EB] text-[#2563EB] px-5 py-2.5 rounded-lg hover:bg-[#225ad6] hover:text-white transition"
-                                                @click="showModal = false">
-                                                Batal
-                                            </button>
                                         </div>
 
                                         <!-- Tombol Hapus -->
