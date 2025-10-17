@@ -84,6 +84,26 @@ Route::get('/pengunguman', function () {
     return view('/pengunguman');
 });
 
+//statistik
+Route::get('/statistik', function () {
+    return view('/statistik');
+});
+
+//statistikRuangKerja
+Route::get('/statistikRuangKerja', function () {
+    return view('/statistikRuangKerja');
+});
+
+//pengunguman
+Route::get('/pengunguman', function () {
+    return view('/pengunguman');
+});
+
+//isiPengunguman
+Route::get('/isiPengunguman', function () {
+    return view('/isiPengunguman');
+});
+
 Route::get('/events', function () {
     return response()->json([
     ]);
