@@ -13,94 +13,94 @@
     <div class="bg-[#e9effd] min-h-screen font-[Inter,sans-serif] text-black relative" x-data="commentSection">
         @include('components.workspace-nav')
 
-        <div class="max-w-6xl mx-auto px-4 py-6">
-            <div class="bg-white rounded-xl shadow-md p-6">
+        <div class="justify-center max-w-7xl pt-4 sm:pt-6 mx-4 sm:mx-6 md:mx-12 lg:mx-16 xl:mx-24 pb-6">
+            <div class="bg-white rounded-xl sm:rounded-2xl shadow-md p-4 sm:p-5 md:p-6">
 
                 
                 <!-- Card Pengumuman/Insight -->
-<div class="bg-[#dde5f4] rounded-xl shadow-sm p-5 mb-6 transition">
-    <div class="flex justify-between items-start">
-        <!-- Konten Kiri -->
-        <div class="flex flex-col gap-3">
-            <div>
-                <p class="text-base text-[#1e3a8a] font-medium mb-1">Insight 2 orang tiap Senin pada 09.00 AM</p>
-                <p class="text-[#1e3a8a] font-bold text-xl">Lapor Progres!</p>
-            </div>
-            <div class="flex items-center">
-                <img src="https://i.pravatar.cc/40?img=6" alt="Avatar" class="rounded-full w-9 h-9">
-                <img src="https://i.pravatar.cc/40?img=8" alt="Avatar" class="rounded-full w-9 h-9 -ml-3">
-            </div>
-        </div>
+                <div class="bg-[#dde5f4] rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-5 mb-4 sm:mb-5 md:mb-6 transition">
+                    <div class="flex flex-col sm:flex-row justify-between items-start gap-3 sm:gap-0">
+                        <!-- Konten Kiri -->
+                        <div class="flex flex-col gap-2 sm:gap-3 w-full sm:w-auto">
+                            <div>
+                                <p class="text-sm sm:text-base text-[#102A63] font-semibold mb-0.5 sm:mb-1">Insight 2 orang tiap Senin pada 09.00 AM</p>
+                                <p class="text-[#102A63] font-bold text-lg sm:text-xl">Lapor Progres!</p>
+                            </div>
+                            <div class="flex items-center">
+                                <img src="https://i.pravatar.cc/40?img=6" alt="Avatar" class="rounded-full w-8 h-8 sm:w-9 sm:h-9">
+                                <img src="https://i.pravatar.cc/40?img=8" alt="Avatar" class="rounded-full w-8 h-8 sm:w-9 sm:h-9 -ml-2 sm:-ml-3">
+                            </div>
+                        </div>
 
-        <!-- Konten Kanan: Titik 3 -->
-        <div class="flex items-center gap-3">
-            <!-- Tombol Titik 3 -->
-            <div x-data="{ open: false }" class="relative inline-block text-left">
-                <button @click="open = !open" @click.away="open = false"
-                    class="text-gray-600 hover:text-gray-800 focus:outline-none">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                    </svg>
-                </button>
+                        <!-- Konten Kanan: Titik 3 -->
+                        <div class="flex items-center gap-3 self-start sm:self-auto">
+                            <!-- Tombol Titik 3 -->
+                            <div x-data="{ open: false }" class="relative inline-block text-left">
+                                <button @click="open = !open" @click.away="open = false"
+                                    class="text-gray-600 hover:text-gray-800 focus:outline-none">
+                                    <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                    </svg>
+                                </button>
 
-                <!-- Popup menu -->
-                <div x-show="open" x-transition.scale.origin.top.right
-                    class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-50"
-                    @click.away="open = false">
+                                <!-- Popup menu -->
+                                <div x-show="open" x-transition.scale.origin.top.right
+                                    class="absolute right-0 mt-2 w-44 sm:w-48 bg-white border border-gray-200 rounded-xl sm:rounded-2xl shadow-xl p-3 sm:p-4 z-50"
+                                    @click.away="open = false">
 
-                    <!-- Judul -->
-                    <h3 class="text-center font-semibold text-gray-800 mb-2">Aksi</h3>
-                    <hr class="border-gray-300 mb-3">
+                                    <!-- Judul -->
+                                    <h3 class="text-center font-semibold text-gray-800 mb-2 text-sm sm:text-base">Aksi</h3>
+                                    <hr class="border-gray-300 mb-2 sm:mb-3">
 
-                    <!-- Tombol Edit -->
-                    <button @click="open = false; editComment()"
-                        class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
-                        <img src="images/icons/Pencil.svg" alt="Edit" class="w-6 h-6">
-                        <span class="text-gray-700 text-base">Edit</span>
-                    </button>
+                                    <!-- Tombol Edit -->
+                                    <button @click="open = false; editComment()"
+                                        class="flex items-center gap-2 sm:gap-3 w-full px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-gray-100 rounded-lg transition">
+                                        <img src="images/icons/Pencil.svg" alt="Edit" class="w-5 h-5 sm:w-6 sm:h-6">
+                                        <span class="text-gray-700 text-sm sm:text-base font-medium">Edit</span>
+                                    </button>
 
-                    <hr class="border-gray-300 my-2">
+                                    <hr class="border-gray-300 my-2">
 
-                    <!-- Tombol Hapus -->
-                    <button @click="open = false; deleteComment()"
-                        class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
-                        <img src="images/icons/Trash.svg" alt="Hapus" class="w-6 h-6">
-                        <span class="text-gray-700 text-base">Hapus</span>
-                    </button>
+                                    <!-- Tombol Hapus -->
+                                    <button @click="open = false; deleteComment()"
+                                        class="flex items-center gap-2 sm:gap-3 w-full px-2 sm:px-3 py-1.5 sm:py-2 hover:bg-gray-100 rounded-lg transition">
+                                        <img src="images/icons/Trash.svg" alt="Hapus" class="w-5 h-5 sm:w-6 sm:h-6">
+                                        <span class="text-gray-700 text-sm sm:text-base font-medium">Hapus</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
 
                 <!-- Section Komentar -->
-                <div class="mt-6">
-                    <h3 class="text-base font-semibold text-black mb-4">Komentar</h3>
+                <div class="mt-4 sm:mt-5 md:mt-6">
+                    <h3 class="text-base sm:text-lg font-bold text-black mb-3 sm:mb-4">Komentar</h3>
 
                     <!-- Input Komentar Utama (placeholder -> CKEditor) -->
-                    <div class="flex items-start gap-3 mb-6">
-                        <img src="https://i.pravatar.cc/40?img=6" alt="Avatar" class="rounded-full w-10 h-10">
+                    <div class="flex items-start gap-2 sm:gap-3 mb-4 sm:mb-5 md:mb-6">
+                        <img src="https://i.pravatar.cc/40?img=6" alt="Avatar" class="rounded-full w-9 h-9 sm:w-10 sm:h-10">
 
                         <!-- gunakan x-data lokal hanya untuk toggle active -->
                         <div class="flex-1" x-data="{ active: false }" x-cloak>
                             <template x-if="!active">
                                 <input type="text" placeholder="Tambahkan komentar baru..."
                                     @focus="active = true; $nextTick(() => initMainEditor('main-editor'))"
-                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-[#102a63] text-sm bg-white cursor-text">
+                                    class="w-full px-3 sm:px-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-[#102a63] text-xs sm:text-sm font-medium bg-white cursor-text">
                             </template>
 
                             <template x-if="active">
-                                <div class="bg-white border border-gray-300 rounded-lg p-4">
-                                    <div id="main-editor" class="min-h-[140px] bg-white"></div>
+                                <div class="bg-white border border-gray-300 rounded-lg p-3 sm:p-4 shadow-sm">
+                                    <div id="main-editor" class="min-h-[120px] sm:min-h-[140px] bg-white"></div>
 
-                                    <div class="flex justify-end gap-2 mt-4">
+                                    <div class="flex justify-end gap-2 mt-3 sm:mt-4">
                                         <button @click="active = false; destroyMainEditor('main-editor')"
-                                            class="px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded-lg hover:text-gray-800 transition">
+                                            class="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-gray-600 border border-gray-300 rounded-lg hover:text-gray-800 transition">
                                             Batal
                                         </button>
                                         <!-- panggil Alpine method submitMain yg ada di component -->
                                         <button @click="$dispatch('submit-main-comment'); active = false;"
-                                            class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                                            class="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
                                             Kirim
                                         </button>
                                     </div>
@@ -111,35 +111,35 @@
 
                     <!-- Daftar Komentar -->
                     <template x-if="comments.length > 0">
-                        <div class="space-y-4">
+                        <div class="space-y-3 sm:space-y-4">
                             <template x-for="(comment, index) in comments" :key="comment.id">
                                 <div>
                                     <!-- Label Tanggal/Hari -->
                                     <template x-if="shouldShowDateLabel(index)">
-                                        <div class="text-center py-2 mb-4">
-                                            <span class="text-xs text-gray-400 font-medium" x-text="getDateLabel(comment.createdAt)"></span>
+                                        <div class="text-center py-2 mb-3 sm:mb-4">
+                                            <span class="text-xs sm:text-sm text-gray-500 font-semibold" x-text="getDateLabel(comment.createdAt)"></span>
                                         </div>
                                     </template>
                                     
                                     <!-- Card Komentar -->
-                                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                        <div class="flex items-start gap-3">
-                                            <img :src="comment.author.avatar" alt="" class="w-8 h-8 rounded-full">
-                                            <div class="flex-1">
-                                                <div class="flex justify-between items-center">
-                                                    <p class="text-sm font-semibold text-gray-800" x-text="comment.author.name">
+                                    <div class="bg-[#f8f9fa] rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200 shadow-sm">
+                                        <div class="flex items-start gap-2 sm:gap-3">
+                                            <img :src="comment.author.avatar" alt="" class="w-8 h-8 sm:w-9 sm:h-9 rounded-full">
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex justify-between items-center gap-2">
+                                                    <p class="text-sm sm:text-base font-bold text-gray-900 truncate" x-text="comment.author.name">
                                                     </p>
-                                                    <span class="text-xs text-gray-500"
+                                                    <span class="text-xs sm:text-sm text-gray-500 font-medium whitespace-nowrap"
                                                         x-text="formatCommentDate(comment.createdAt)"></span>
                                                 </div>
 
-                                                <div class="text-sm text-gray-700 mt-1" x-html="comment.content"></div>
+                                                <div class="text-sm sm:text-base text-gray-700 mt-1 sm:mt-1.5 font-medium break-words" x-html="comment.content"></div>
 
                                                 <!-- Tombol Balas -->
-                                                <div class="flex items-center gap-4 mt-2">
+                                                <div class="flex items-center gap-3 sm:gap-4 mt-2">
                                                     <button @click="toggleReply(comment)"
-                                                        class="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 transition">
-                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                        class="flex items-center gap-1 text-xs sm:text-sm text-gray-600 hover:text-blue-600 transition font-semibold">
+                                                        <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor"
                                                             viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round"
                                                                 stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
@@ -150,22 +150,22 @@
 
                                                 <!-- FORM BALAS (inline, hanya 1 instance active pada satu waktu) -->
                                                 <template x-if="replyView.active && replyView.parentComment?.id === comment.id">
-                                                    <div class="mt-4 pl-6 border-l-2 border-gray-200">
-                                                        <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                                            <h4 class="text-sm font-semibold text-gray-800 mb-2">Membalas <span
+                                                    <div class="mt-3 sm:mt-4 pl-4 sm:pl-6 border-l-2 border-gray-300">
+                                                        <div class="bg-white rounded-lg p-3 sm:p-4 border border-gray-200 shadow-sm">
+                                                            <h4 class="text-sm sm:text-base font-bold text-gray-800 mb-2">Membalas <span
                                                                     x-text="comment.author.name"></span></h4>
 
-                                                            <div class="border border-gray-300 rounded-lg overflow-hidden mb-3">
+                                                            <div class="border border-gray-300 rounded-lg overflow-hidden mb-2 sm:mb-3">
                                                                 <!-- container unik untuk reply editor -->
                                                                 <div :id="'reply-editor-' + comment.id"
-                                                                    class="min-h-[120px] p-3 bg-white"></div>
+                                                                    class="min-h-[100px] sm:min-h-[120px] p-2 sm:p-3 bg-white"></div>
                                                             </div>
 
                                                             <div class="flex justify-end gap-2">
                                                                 <button @click="closeReplyView()"
-                                                                    class="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition border border-gray-300 rounded-lg">Batal</button>
+                                                                    class="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-gray-600 hover:text-gray-800 transition border border-gray-300 rounded-lg">Batal</button>
                                                                 <button @click="submitReplyFromEditor()"
-                                                                    class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">Kirim</button>
+                                                                    class="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">Kirim</button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -173,20 +173,20 @@
 
                                                 <!-- Balasan -->
                                                 <template x-if="comment.replies && comment.replies.length > 0">
-                                                    <div class="mt-3 pl-6 border-l-2 border-gray-200 space-y-3">
+                                                    <div class="mt-3 pl-4 sm:pl-6 border-l-2 border-gray-300 space-y-2 sm:space-y-3">
                                                         <template x-for="reply in comment.replies" :key="reply.id">
-                                                            <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                                            <div class="bg-white rounded-lg p-3 border border-gray-200 shadow-sm">
                                                                 <div class="flex items-start gap-2">
                                                                     <img :src="reply.author.avatar"
-                                                                        class="w-6 h-6 rounded-full">
-                                                                    <div>
+                                                                        class="w-7 h-7 sm:w-8 sm:h-8 rounded-full">
+                                                                    <div class="flex-1 min-w-0">
                                                                         <div class="flex items-center gap-2">
-                                                                            <p class="text-sm font-semibold text-gray-800"
+                                                                            <p class="text-sm sm:text-base font-bold text-gray-900 truncate"
                                                                                 x-text="reply.author.name"></p>
-                                                                            <span class="text-xs text-gray-500"
+                                                                            <span class="text-xs sm:text-sm text-gray-500 font-medium whitespace-nowrap"
                                                                                 x-text="formatCommentDate(reply.createdAt)"></span>
                                                                         </div>
-                                                                        <div class="text-sm text-gray-700 mt-1"
+                                                                        <div class="text-sm sm:text-base text-gray-700 mt-1 font-medium break-words"
                                                                             x-html="reply.content"></div>
                                                                     </div>
                                                                 </div>
@@ -203,7 +203,7 @@
                     </template>
 
                     <template x-if="comments.length === 0">
-                        <div class="text-center py-8 text-gray-500 text-sm">Belum ada komentar disini...</div>
+                        <div class="text-center py-6 sm:py-8 text-gray-500 text-xs sm:text-sm font-medium">Belum ada komentar disini...</div>
                     </template>
 
                     
@@ -584,59 +584,5 @@
             Object.keys(editors).forEach(id => destroyEditorFor(id));
         });
     </script>
-
-    <style>
-    /* Responsif untuk Card Pengumuman */
-    @media (max-width: 640px) {
-        .bg-[#e9effd] .flex.items-start.justify-between {
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .bg-[#e9effd] img.rounded-full {
-            width: 3rem;  /* 48px */
-            height: 3rem; /* 48px */
-        }
-        .bg-[#e9effd] h1.text-xl {
-            font-size: 1rem; /* 16px */
-        }
-        .bg-[#e9effd] .flex.items-center.gap-2 p,
-        .bg-[#e9effd] .flex.items-center.gap-2 span {
-            font-size: 0.75rem; /* 12px */
-        }
-        .bg-[#e9effd] span.bg-[#102a63] {
-            width: 70px;
-            height: 24px;
-            font-size: 0.7rem;
-        }
-    }
-
-    /* Responsif untuk Komentar dan Input */
-    @media (max-width: 640px) {
-        .flex.items-start.gap-3 img.rounded-full {
-            width: 2.5rem; /* 40px */
-            height: 2.5rem; /* 40px */
-        }
-        input[type="text"] {
-            font-size: 0.75rem; /* 12px */
-            padding: 0.4rem 0.5rem;
-        }
-        #main-editor,
-        [id^="reply-editor-"] {
-            min-height: 100px !important;
-        }
-        .flex.justify-end.gap-2 button {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.7rem;
-        }
-    }
-
-    /* Avatar penerima responsif */
-    @media (max-width: 640px) {
-        .flex.-space-x-2 img.rounded-full {
-            width: 1.75rem; /* 28px */
-            height: 1.75rem; /* 28px */
-        }
-    }
-</style>
 
 @endsection

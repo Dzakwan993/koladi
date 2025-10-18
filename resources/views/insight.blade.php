@@ -32,7 +32,7 @@
                             <div class="bg-[#dde5f4] rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-5 flex justify-between items-start hover:bg-[#cfd8ec] transition">
                                 <div class="flex flex-col gap-2 sm:gap-3">
                                     <div>
-                                        <p class="text-sm sm:text-base text-[#102A63] font-medium mb-0.5 sm:mb-1">Insight 2 orang tiap Senin pada 09.00 AM</p>
+                                        <p class="text-sm sm:text-base text-[#102A63] font-semibold mb-0.5 sm:mb-1">Insight 2 orang tiap Senin pada 09.00 AM</p>
                                         <p class="text-[#102A63] font-bold text-lg sm:text-xl">Lapor Progres!</p>
                                     </div>
                                     <div class="flex items-center">
@@ -51,7 +51,7 @@
                             <div class="bg-[#dde5f4] rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-5 flex justify-between items-start hover:bg-[#cfd8ec] transition">
                                 <div class="flex flex-col gap-2 sm:gap-3">
                                     <div>
-                                        <p class="text-sm sm:text-base text-[#102A63] font-medium mb-0.5 sm:mb-1">Insight 2 orang tiap Senin pada 09.00 AM</p>
+                                        <p class="text-sm sm:text-base text-[#102A63] font-semibold mb-0.5 sm:mb-1">Insight 2 orang tiap Senin pada 09.00 AM</p>
                                         <p class="text-[#102A63] font-bold text-lg sm:text-xl">Lapor Progres!</p>
                                     </div>
                                     <div class="flex items-center">
@@ -70,7 +70,7 @@
                             <div class="bg-[#dde5f4] rounded-lg sm:rounded-xl shadow-sm p-4 sm:p-5 flex justify-between items-start hover:bg-[#cfd8ec] transition">
                                 <div class="flex flex-col gap-2 sm:gap-3">
                                     <div>
-                                        <p class="text-sm sm:text-base text-[#102A63] font-medium mb-0.5 sm:mb-1">Insight 2 orang tiap Senin pada 09.00 AM</p>
+                                        <p class="text-sm sm:text-base text-[#102A63] font-semibold mb-0.5 sm:mb-1">Insight 2 orang tiap Senin pada 09.00 AM</p>
                                         <p class="text-[#102A63] font-bold text-lg sm:text-xl">Lapor Progres!</p>
                                     </div>
                                     <div class="flex items-center">
