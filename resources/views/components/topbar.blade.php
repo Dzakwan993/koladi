@@ -2,7 +2,9 @@
     <!-- Left Section: Logo & Company Name -->
     <div class="flex items-center gap-3">
         <img src="{{ asset('images/logo-pt.svg') }}" alt="Logo PT" class="h-8 w-8">
-        <span class="text-gray-600 font-medium text-sm whitespace-nowrap">PT. Mencari Cinta Sejati</span>
+        <span class="text-gray-600 font-medium text-sm whitespace-nowrap">
+            {{ $activeCompany->name ?? 'Belum ada perusahaan' }}
+        </span>
     </div>
 
     <!-- Center Section: Search Bar -->
@@ -44,7 +46,7 @@
 
         <!-- Action Buttons -->
         <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Atur Akses" onclick="openModal()">
-            <img src="{{ asset('images/icons/akses.svg') }}"  alt="Atur Akses" class="w-5 h-5">
+            <img src="{{ asset('images/icons/akses.svg') }}" alt="Atur Akses" class="w-5 h-5">
         </button>
 
         <button class="p-2 hover:bg-gray-100 rounded-lg transition" title="Dollar">
@@ -79,139 +81,31 @@
                     <h3 class="text-base font-semibold text-gray-900">Beralih perusahaan</h3>
                 </div>
 
-                <!-- List Perusahaan -->
+                <!-- List Perusahaan di Dropdown -->
                 <div class="py-2 max-h-96 overflow-y-auto">
-                    <!-- PT. Mencari Cinta Sejati -->
-                    <a href="#"
-                        class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition group">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
-                                    </path>
-                                </svg>
-                            </div>
-                            <span class="text-sm font-medium text-gray-700">PT. Mencari Cinta Sejati</span>
-                        </div>
-                        <div x-data="{ showModal: false, showConfirm: false }" class="relative">
-                            <!-- Tombol Pengaturan -->
-                            <div class="flex items-center gap-1">
-                                <img src="{{ asset('images/icons/pengaturan.svg') }}" alt="Perusahaan"
-                                    class="w-5 h-5 cursor-pointer transition duration-200 hover:text-[#225ad6]"
-                                    @click="showModal = true">
-                                <img src="{{ asset('images/icons/centang.svg') }}" alt="Perusahaan" class="w-5 h-5">
-                            </div>
-
-                            <!-- Modal Popup -->
-                            <div x-show="showModal"
-                                class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-                                x-transition>
-                                <div
-                                    class="bg-gradient-to-br from-[#f4f7ff] to-[#e9f0ff] rounded-2xl shadow-2xl w-[520px] p-8 relative border border-white/30">
-                                    <!-- Tombol Close -->
-                                    <button @click="showModal = false"
-                                        class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-
-                                    <!-- Gambar -->
-                                    <div class="flex justify-center mb-6">
-                                        <img src="{{ asset('images/pengaturan-perusahaan.svg') }}" alt="Kantor"
-                                            class="w-64 h-auto drop-shadow-md">
-                                    </div>
-
-                                    <!-- Input Nama -->
-                                    <div class="mb-6">
-                                        <label class="block text-sm font-bold text-gray-700 mb-2">Nama
-                                            perusahaan</label>
-                                        <input type="text" value="PT. Mencari cinta sejati"
-                                            class="w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:ring-2 focus:ring-[#225ad6] focus:border-[#225ad6] shadow-sm transition">
-                                    </div>
-
-                                    <!-- Tombol Aksi -->
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex gap-3">
-                                            <button
-                                                class="bg-[#2563EB] text-white px-5 py-2.5 rounded-lg hover:bg-[#1d4cc1] shadow-sm transition">
-                                                Simpan
-                                            </button>
-                                        </div>
-
-                                        <!-- Tombol Hapus -->
-                                        <button
-                                            class="flex items-center gap-2 bg-[#b7791f] hover:bg-[#695609] text-white px-4 py-2.5 rounded-lg transition shadow-sm"
-                                            @click="showConfirm = true">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none"
-                                                viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" />
-                                            </svg>
-                                            Hapus
-                                        </button>
-                                    </div>
-
-                                    <!-- Konfirmasi Hapus -->
-                                    <div x-show="showConfirm"
-                                        class="absolute right-6 bottom-24 bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-64 transition-all duration-200"
-                                        x-transition>
-                                        <p class="font-semibold text-gray-800 mb-1">Hapus perusahaan?</p>
-                                        <p class="text-sm text-gray-500 mb-4 leading-snug">Perusahaan akan dihapus dan
-                                            semua datanya akan hilang selamanya.</p>
-                                        <button
-                                            class="bg-[#b7791f] hover:bg-[#695609] text-white w-full py-2.5 rounded-lg font-medium transition">
-                                            Hapus
-                                        </button>
-                                    </div>
+                    @forelse($companies as $company)
+                        <a href="{{ route('company.switch', $company->id) }}"
+                            class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition group">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
+                                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
+                                        </path>
+                                    </svg>
                                 </div>
+                                <span class="text-sm font-medium text-gray-700">{{ $company->name }}</span>
                             </div>
+                            @if ($activeCompany && $company->id == $activeCompany->id)
+                                <img src="{{ asset('images/icons/centang.svg') }}" alt="Active" class="w-5 h-5">
+                            @endif
+                        </a>
+                    @empty
+                        <div class="px-4 py-3 text-sm text-gray-500 text-center">
+                            Belum ada perusahaan
                         </div>
-                    </a>
-
-                    <!-- PT. Mencari cinta sejati (3) -->
-                    <a href="#"
-                        class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition group">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
-                                    </path>
-                                </svg>
-                            </div>
-                            <span class="text-sm font-medium text-gray-700">PT. Mencari cinta sejati</span>
-                        </div>
-                        <div
-                            class="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-xs font-bold text-white">
-                            10
-                        </div>
-                    </a>
-
-                    <!-- PT. Mencari cinta sejati (4) -->
-                    <a href="#"
-                        class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition group">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
-                                    </path>
-                                </svg>
-                            </div>
-                            <span class="text-sm font-medium text-gray-700">PT. Mencari cinta sejati</span>
-                        </div>
-                        <div
-                            class="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center text-xs font-bold text-white">
-                            10
-                        </div>
-                    </a>
+                    @endforelse
                 </div>
 
                 <!-- Footer - Tambah Perusahaan -->
@@ -219,8 +113,7 @@
                     <a href="{{ url('buat-perusahaan') }}"
                         class="flex items-center gap-3 px-4 py-3 w-full text-left hover:bg-gray-50 transition">
                         <div class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 4v16m8-8H4"></path>
                             </svg>

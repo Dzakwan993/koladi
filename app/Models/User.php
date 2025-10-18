@@ -2,47 +2,48 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    public $incrementing = false; // karena UUID
+    protected $keyType = 'string';
+
     protected $fillable = [
-        'name',
+        'id',
+        'full_name',
         'email',
         'password',
+        'google_id',
+        'status_active',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected static function boot()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        parent::boot();
+
+        static::creating(function ($model) {
+            $model->id = $model->id ?: Str::uuid()->toString();
+        });
+    }
+
+    protected $hidden = ['password', 'remember_token'];
+
+    public function userCompanies()
+    {
+        return $this->hasMany(UserCompany::class, 'user_id');
+    }
+
+    public function companies()
+    {
+        return $this->belongsToMany(Company::class, 'user_companies', 'user_id', 'company_id')
+            ->withPivot('roles_id')
+            ->withTimestamps();
     }
 }
