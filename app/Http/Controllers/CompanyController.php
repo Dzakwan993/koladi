@@ -86,4 +86,55 @@ class CompanyController extends Controller
 
         return redirect()->route('dashboard')->with('success', 'Perusahaan berhasil dibuat!');
     }
+
+    // 🆕 Update data perusahaan
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $company = Company::findOrFail($id);
+
+        // Pastikan user punya akses ke perusahaan ini
+        $userCompanyIds = Auth::user()->companies->pluck('id')->toArray();
+        if (!in_array($id, $userCompanyIds)) {
+            return redirect()->route('dashboard')->with('error', 'Anda tidak memiliki izin untuk mengedit perusahaan ini');
+        }
+
+        // Update data perusahaan
+        $company->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'address' => $request->address,
+            'phone' => $request->phone,
+        ]);
+
+        return redirect()->route('dashboard')->with('success', 'Data perusahaan berhasil diperbarui!');
+    }
+
+    // 🆕 Hapus perusahaan
+    public function destroy($id)
+    {
+        $company = Company::findOrFail($id);
+
+        // Pastikan user punya akses ke perusahaan ini
+        $userCompanyIds = Auth::user()->companies->pluck('id')->toArray();
+        if (!in_array($id, $userCompanyIds)) {
+            return redirect()->route('dashboard')->with('error', 'Anda tidak memiliki izin untuk menghapus perusahaan ini');
+        }
+
+        // Hapus relasi dari tabel pivot
+        UserCompany::where('company_id', $id)->delete();
+
+        // Hapus perusahaan
+        $company->delete();
+
+        // Hapus dari session kalau sedang aktif
+        if (session('active_company_id') === $id) {
+            session()->forget('active_company_id');
+        }
+
+        return redirect()->route('dashboard')->with('success', 'Perusahaan berhasil dihapus!');
+    }
 }

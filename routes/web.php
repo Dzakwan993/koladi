@@ -45,6 +45,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Switch perusahaan
     Route::get('/company/switch/{company}', [CompanyController::class, 'switchCompany'])->name('company.switch');
+    Route::put('/company/{id}/update', [CompanyController::class, 'update'])->name('company.update');
+    Route::delete('/company/{id}/delete', [CompanyController::class, 'destroy'])->name('company.destroy');
 
     // Halaman Tambah Anggota
     Route::get('/tambah-anggota', function () {

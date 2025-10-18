@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -19,7 +19,7 @@
     {{-- Sidebar --}}
     <x-sidebar />
 
-    <div class="flex-1 flex flex-col overflow-hidden relative z-10">
+    <div class="flex-1 flex flex-col overflow-hidden relative z-5">
         {{-- Topbar --}}
         <x-topbar />
 

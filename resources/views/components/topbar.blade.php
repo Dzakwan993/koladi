@@ -2,7 +2,7 @@
     <!-- Left Section: Logo & Company Name -->
     <div class="flex items-center gap-3">
         <img src="{{ asset('images/logo-pt.svg') }}" alt="Logo PT" class="h-8 w-8">
-        <span class="text-gray-600 font-medium text-sm whitespace-nowrap">
+        <span class="text-gray-600 font-medium whitespace-nowrap">
             {{ $activeCompany->name ?? 'Belum ada perusahaan' }}
         </span>
     </div>
@@ -84,23 +84,123 @@
                 <!-- List Perusahaan di Dropdown -->
                 <div class="py-2 max-h-96 overflow-y-auto">
                     @forelse($companies as $company)
-                        <a href="{{ route('company.switch', $company->id) }}"
-                            class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition group">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
-                                        </path>
-                                    </svg>
+                        <div x-data="{ showModal: false, showConfirm: false }" class="relative">
+
+                            {{-- Wrapper baris perusahaan --}}
+                            <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition group">
+                                {{-- Nama perusahaan (klik untuk switch) --}}
+                                <a href="{{ route('company.switch', $company->id) }}"
+                                    class="flex items-center gap-3 flex-1">
+                                    <div
+                                        class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
+                                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                        </svg>
+                                    </div>
+                                    <span class="text-sm font-medium text-gray-700">{{ $company->name }}</span>
+                                </a>
+
+                                {{-- Tombol pengaturan + centang --}}
+                                <div class="flex items-center gap-2 ml-3">
+                                    <button type="button" @click.stop="showModal = true"
+                                        class="hover:opacity-80 transition">
+                                        <img src="{{ asset('images/icons/pengaturan.svg') }}" alt="Pengaturan"
+                                            class="w-5 h-5 cursor-pointer">
+                                    </button>
+
+                                    @if ($activeCompany && $company->id == $activeCompany->id)
+                                        <img src="{{ asset('images/icons/centang.svg') }}" alt="Active"
+                                            class="w-5 h-5">
+                                    @endif
                                 </div>
-                                <span class="text-sm font-medium text-gray-700">{{ $company->name }}</span>
                             </div>
-                            @if ($activeCompany && $company->id == $activeCompany->id)
-                                <img src="{{ asset('images/icons/centang.svg') }}" alt="Active" class="w-5 h-5">
-                            @endif
-                        </a>
+
+                            {{-- Modal Edit Perusahaan --}}
+                            <div x-show="showModal"
+                                class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                                x-transition>
+                                <div
+                                    class="bg-gradient-to-br from-[#f4f7ff] to-[#e9f0ff] rounded-2xl shadow-2xl w-[520px] p-8 relative border border-white/30">
+
+                                    {{-- Tombol Close --}}
+                                    <button @click="showModal = false"
+                                        class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                                            viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+
+                                    {{-- Gambar Header --}}
+                                    <div class="flex justify-center mb-6">
+                                        <img src="{{ asset('images/pengaturan-perusahaan.svg') }}" alt="Kantor"
+                                            class="w-64 h-auto drop-shadow-md">
+                                    </div>
+
+                                    {{-- Form Edit --}}
+                                    <form action="{{ route('company.update', $company->id) }}" method="POST">
+                                        @csrf
+                                        @method('PUT')
+
+                                        <div class="mb-6">
+                                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                                                Nama perusahaan
+                                            </label>
+                                            <input type="text" name="name" value="{{ $company->name }}"
+                                                class="w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:ring-2 focus:ring-[#225ad6] focus:border-[#225ad6] shadow-sm transition">
+                                        </div>
+
+                                        <div class="flex items-center justify-between">
+                                            <button type="submit"
+                                                class="bg-[#2563EB] text-white px-5 py-2.5 rounded-lg hover:bg-[#1d4cc1] shadow-sm transition">
+                                                Simpan
+                                            </button>
+
+                                            {{-- Tombol Hapus --}}
+                                            <button type="button"
+                                                class="flex items-center gap-2 bg-[#b7791f] hover:bg-[#695609] text-white px-4 py-2.5 rounded-lg transition shadow-sm"
+                                                @click="showConfirm = true">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
+                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" />
+                                                </svg>
+                                                Hapus
+                                            </button>
+                                        </div>
+                                    </form>
+
+                                    {{-- Konfirmasi Hapus --}}
+                                    <div x-show="showConfirm"
+                                        class="absolute right-6 bottom-24 bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-64 transition-all duration-200"
+                                        x-transition>
+                                        <p class="font-semibold text-gray-800 mb-1">Hapus perusahaan?</p>
+                                        <p class="text-sm text-gray-500 mb-4 leading-snug">
+                                            Perusahaan akan dihapus dan semua datanya akan hilang selamanya.
+                                        </p>
+                                        <div class="flex justify-end gap-2">
+                                            <button @click="showConfirm = false"
+                                                class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">
+                                                Batal
+                                            </button>
+                                            <form action="{{ route('company.destroy', $company->id) }}"
+                                                method="POST">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit"
+                                                    class="px-3 py-1.5 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700">
+                                                    Ya, hapus
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     @empty
                         <div class="px-4 py-3 text-sm text-gray-500 text-center">
                             Belum ada perusahaan
@@ -108,12 +208,14 @@
                     @endforelse
                 </div>
 
+
                 <!-- Footer - Tambah Perusahaan -->
                 <div class="border-t border-gray-200">
                     <a href="{{ url('buat-perusahaan') }}"
                         class="flex items-center gap-3 px-4 py-3 w-full text-left hover:bg-gray-50 transition">
                         <div class="w-8 h-8 bg-gray-100 rounded flex items-center justify-center flex-shrink-0">
-                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 4v16m8-8H4"></path>
                             </svg>

@@ -2,21 +2,27 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 
 class Company extends Model
 {
     use HasFactory, SoftDeletes;
 
     public $incrementing = false;
-    protected $keyType = 'uuid';
-    protected $fillable = ['name', 'email', 'address', 'phone'];
+    protected $keyType = 'string';
 
-    public function userCompanies()
+    protected $fillable = ['id', 'name', 'email', 'address', 'phone'];
+
+    protected static function boot()
     {
-        return $this->hasMany(UserCompany::class, 'company_id');
+        parent::boot();
+
+        static::creating(function ($model) {
+            $model->id = $model->id ?: Str::uuid()->toString();
+        });
     }
 
     public function users()

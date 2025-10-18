@@ -14,7 +14,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
 
     {{-- Tombol Toggle (hamburger / close) --}}
     <button @click="openSidebar = !openSidebar"
-        class="absolute top-4 left-4 z-50 bg-white border border-gray-200 shadow-md rounded-lg p-2 hover:bg-gray-100 transition">
+        class="absolute top-4 left-4 z-10 bg-white border border-gray-200 shadow-md rounded-lg p-2 hover:bg-gray-100 transition">
         <template x-if="!openSidebar">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                 stroke="currentColor" class="w-5 h-5 text-gray-700">
@@ -31,7 +31,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
 
     {{-- Sidebar --}}
     <div x-show="openSidebar"
-        class="w-64 bg-white shadow-sm border-r border-gray-200 h-screen transition-all duration-300 fixed md:relative z-40"
+        class="w-64 bg-white shadow-sm border-r border-gray-200 h-screen transition-all duration-300 fixed md:relative "
         x-transition:enter="transform transition ease-in-out duration-300" x-transition:enter-start="-translate-x-full"
         x-transition:enter-end="translate-x-0" x-transition:leave="transform transition ease-in-out duration-300"
         x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full">
@@ -229,6 +229,6 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
 
     {{-- Overlay (blur background di layar kecil) --}}
     <div x-show="openSidebar && window.innerWidth < 768" x-transition.opacity @click="openSidebar = false"
-        class="fixed inset-0 bg-black bg-opacity-30 z-30 md:hidden">
+        class="fixed inset-0 bg-black bg-opacity-30 z-10 md:hidden">
     </div>
 </div>

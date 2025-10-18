@@ -9,7 +9,7 @@
             <div
                 class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-gray-200 pb-3 mb-3.5 flex-shrink-0">
                 <div class="mx-3">
-                    <h1 class="text-xl sm:text-xl font-bold text-gray-900">Selamat datang, Sahroni</h1>
+                    <h1 class="text-xl sm:text-xl font-bold text-gray-900">Selamat datang, {{ Auth::user()->full_name }}</h1>
                     <p class="text-sm text-gray-600 mt-0.5">Silahkan kelola tugas anda.</p>
                 </div>
                 <a href="{{ url('/tambah-anggota') }}"
