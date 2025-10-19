@@ -8,18 +8,18 @@
 
 <div class="bg-white rounded-lg p-4 shadow-sm">
     {{-- Meeting Header --}}
-    <div class="bg-blue-500 text-white px-3 py-2 rounded-lg mb-2 text-xs items-center gap-2 mx inline-flex">
+    <div class="bg-[#6D96F2] text-white px-3 py-2 rounded-lg mb-1.5 text-xs items-center gap-2 inline-flex">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span>{{ $time }}</span>
+        <span class="font-medium">{{ $time }}</span>
     </div>
 
     {{-- Title --}}
-    <h3 class="text-base font-bold text-gray-900 mb-1">{{ $title }}</h3>
+    <h3 class="text-lg font-bold text-[#1E1E1E] mb-1">{{ $title }}</h3>
 
     {{-- Description --}}
-    <p class="text-sm text-gray-600 mb-4 leading-relaxed">
+    <p class="text-sm font-medium text-[#6B7280] mb-4 leading-relaxed">
         {{ $description }}
     </p>
 
@@ -49,7 +49,7 @@
         </div>
 
         {{-- Join Button --}}
-        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
+        <button class="bg-[#225AD6] hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-1">
             <img src="{{ asset('images/icons/Zoom-icon.svg') }}" alt="Zoom" class="w-6 h-6" />
             Gabung rapat
         </button>
