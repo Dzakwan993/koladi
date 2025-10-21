@@ -2,20 +2,25 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class UserCompany extends Model
+class UserWorkspace extends Model
 {
     use HasFactory;
 
-    protected $table = 'user_companies';
+    protected $table = 'user_workspaces';
     public $incrementing = false;
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'user_id', 'company_id', 'roles_id'];
+    protected $fillable = [
+        'id',
+        'user_id',
+        'workspace_id',
+        'roles_id',
+        'status_active'
+    ];
 
     protected static function boot()
     {
@@ -26,21 +31,27 @@ class UserCompany extends Model
         });
     }
 
-    // ✅ Relasi ke User
+    // Relasi ke User
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    // ✅ Relasi ke Company
-    public function company()
+    // Relasi ke Workspace
+    public function workspace()
     {
-        return $this->belongsTo(Company::class, 'company_id');
+        return $this->belongsTo(Workspace::class, 'workspace_id');
     }
 
-    // ✅ Relasi ke Role
+    // Relasi ke Role
     public function role()
     {
         return $this->belongsTo(Role::class, 'roles_id');
+    }
+
+    // Scope untuk anggota aktif
+    public function scopeActive($query)
+    {
+        return $query->where('status_active', true);
     }
 }

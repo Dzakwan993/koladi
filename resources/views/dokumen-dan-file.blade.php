@@ -904,7 +904,7 @@
                                 </div>
                                 <div class="flex justify-end gap-2 mt-2">
                                     <button type="button" @click="clearCommentEditor()"
-                                        class="mt-3 px-4 py-2text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 text-sm rounded-lg">
+                                        class="mt-3 px-4 py-2text-blue-600 bg-white border border-blue-600 hover:bg-gray-50 text-sm rounded-lg">
                                         Batal
                                     </button>
                                     <button type="button" @click="submitComment()"

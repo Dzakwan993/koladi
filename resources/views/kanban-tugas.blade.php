@@ -1090,7 +1090,7 @@
                             <!-- Footer -->
                             <div class="flex justify-end gap-3 p-4 border-t">
                                 <button type="button" @click="openAddMemberModal = false"
-                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50">Batal</button>
+                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 hover:bg-gray-50">Batal</button>
                                 <button type="button" @click="saveSelectedMembers()"
                                     class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Simpan</button>
                             </div>
@@ -1353,7 +1353,7 @@
 
                             <div class="flex justify-center gap-3">
                                 <button type="button" @click="openCeklisModal = false"
-                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 text-sm font-medium">
+                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 hover:bg-gray-50 text-sm font-medium">
                                     Batal
                                 </button>
                                 <button type="button" @click="saveCeklis()"
@@ -1480,7 +1480,7 @@
                             <!-- Tombol Aksi -->
                             <div class="flex justify-end gap-2 mt-4">
                                 <button type="button" @click="openMoveModal = false"
-                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 text-sm ">
+                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 hover:bg-gray-50 text-sm ">
                                     Batal
                                 </button>
                                 <button type="button"
@@ -1565,7 +1565,7 @@
                             <!-- Footer -->
                             <div class="flex justify-end gap-3 p-4 border-t">
                                 <button type="button" @click="openAddMemberModal = false"
-                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50">Batal</button>
+                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 hover:bg-gray-50">Batal</button>
                                 <button type="button" @click="saveSelectedMembers()"
                                     class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Simpan</button>
                             </div>
@@ -1832,7 +1832,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
 
                             <div class="flex justify-center gap-3">
                                 <button type="button" @click="openCeklisModal = false"
-                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 text-sm font-medium">
+                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 hover:bg-gray-50 text-sm font-medium">
                                     Batal
                                 </button>
                                 <button type="button" @click="saveCeklis()"
@@ -1882,7 +1882,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                                 </div>
                                 <div class="flex justify-end gap-2 mt-2">
                                     <button type="button"
-                                        class="mt-3 px-4 py-2 text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 text-sm rounded-lg">
+                                        class="mt-3 px-4 py-2 text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 text-sm">
                                         Batal
                                     </button>
                                     <button type="button"
