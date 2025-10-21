@@ -409,6 +409,609 @@
             gap: 1.25rem !important;
         }
     }
+
+
+
+
+    /* Gantt Chart Timeline Styles */
+    .gantt-container {
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+    .gantt-chart {
+        min-width: 800px;
+        position: relative;
+    }
+
+    .gantt-header {
+        display: flex;
+        border-bottom: 2px solid #e5e7eb;
+        background: #f8fafc;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .gantt-phase-column {
+        width: 200px;
+        min-width: 200px;
+        padding: 1rem;
+        border-right: 1px solid #e5e7eb;
+        font-weight: 600;
+        background: white;
+    }
+
+    .gantt-timeline-columns {
+        display: flex;
+        flex: 1;
+    }
+
+    .gantt-timeline-header {
+        padding: 1rem 0.5rem;
+        text-align: center;
+        border-right: 1px solid #e5e7eb;
+        font-weight: 500;
+        font-size: 0.875rem;
+        background: white;
+        min-width: 80px;
+    }
+
+    .gantt-body {
+        display: flex;
+    }
+
+    .gantt-phases {
+        width: 200px;
+        min-width: 200px;
+    }
+
+    .gantt-phase-row {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        background: white;
+        font-weight: 500;
+    }
+
+    .gantt-timeline {
+        flex: 1;
+        position: relative;
+        background: repeating-linear-gradient(90deg,
+                transparent,
+                transparent 79px,
+                #f1f5f9 79px,
+                #f1f5f9 80px);
+    }
+
+    .gantt-task-bar {
+        position: absolute;
+        height: 30px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 8px;
+        font-size: 0.75rem;
+        color: white;
+        font-weight: 500;
+    }
+
+    .gantt-task-bar:hover {
+        transform: scale(1.02);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .gantt-task-progress {
+        position: absolute;
+        height: 100%;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .gantt-grid-line {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: #e5e7eb;
+    }
+
+    .gantt-current-date {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #ef4444;
+        z-index: 5;
+    }
+
+    .gantt-current-date::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -4px;
+        width: 10px;
+        height: 10px;
+        background: #ef4444;
+        border-radius: 50%;
+    }
+
+    /* Status colors */
+    .gantt-status-todo {
+        background: #3b82f6;
+    }
+
+    .gantt-status-inprogress {
+        background: #f59e0b;
+    }
+
+    .gantt-status-done {
+        background: #10b981;
+    }
+
+    .gantt-status-cancel {
+        background: #6b7280;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+
+        .gantt-phase-column,
+        .gantt-phases {
+            width: 150px;
+            min-width: 150px;
+        }
+
+        .gantt-timeline-header {
+            min-width: 60px;
+            font-size: 0.75rem;
+            padding: 0.5rem 0.25rem;
+        }
+    }
+
+
+
+
+
+    /* Timeline View Styles */
+    .timeline-phase {
+        transition: all 0.3s ease;
+    }
+
+    .timeline-phase:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Progress bar styles untuk timeline */
+    .timeline-progress {
+        transition: width 0.5s ease-in-out;
+    }
+
+    /* Task item dalam timeline */
+    .timeline-task {
+        transition: all 0.2s ease;
+    }
+
+    .timeline-task:hover {
+        background-color: #f8fafc;
+        border-color: #3b82f6;
+    }
+
+    /* Responsive timeline */
+    @media (max-width: 768px) {
+        .timeline-phase {
+            margin-bottom: 1rem;
+        }
+    }
+
+
+    /* Gantt Chart Timeline Styles */
+    .gantt-container {
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+    .gantt-chart {
+        min-width: 800px;
+        position: relative;
+    }
+
+    .gantt-header {
+        display: flex;
+        border-bottom: 2px solid #e5e7eb;
+        background: #f8fafc;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .gantt-phase-column {
+        width: 200px;
+        min-width: 200px;
+        padding: 1rem;
+        border-right: 1px solid #e5e7eb;
+        font-weight: 600;
+        background: white;
+    }
+
+    .gantt-timeline-columns {
+        display: flex;
+        flex: 1;
+    }
+
+    .gantt-timeline-header {
+        padding: 1rem 0.5rem;
+        text-align: center;
+        border-right: 1px solid #e5e7eb;
+        font-weight: 500;
+        font-size: 0.875rem;
+        background: white;
+        min-width: 80px;
+    }
+
+    .gantt-body {
+        display: flex;
+    }
+
+    .gantt-phases {
+        width: 200px;
+        min-width: 200px;
+    }
+
+    .gantt-phase-row {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        background: white;
+        font-weight: 500;
+    }
+
+    .gantt-timeline {
+        flex: 1;
+        position: relative;
+        background: repeating-linear-gradient(90deg,
+                transparent,
+                transparent 79px,
+                #f1f5f9 79px,
+                #f1f5f9 80px);
+    }
+
+    .gantt-task-bar {
+        position: absolute;
+        height: 30px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 8px;
+        font-size: 0.75rem;
+        color: white;
+        font-weight: 500;
+    }
+
+    .gantt-task-bar:hover {
+        transform: scale(1.02);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .gantt-task-progress {
+        position: absolute;
+        height: 100%;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .gantt-grid-line {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 1px;
+        background: #e5e7eb;
+    }
+
+    .gantt-current-date {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #ef4444;
+        z-index: 5;
+    }
+
+    .gantt-current-date::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -4px;
+        width: 10px;
+        height: 10px;
+        background: #ef4444;
+        border-radius: 50%;
+    }
+
+    /* Status colors */
+    .gantt-status-todo {
+        background: #3b82f6;
+    }
+
+    .gantt-status-inprogress {
+        background: #f59e0b;
+    }
+
+    .gantt-status-done {
+        background: #10b981;
+    }
+
+    .gantt-status-cancel {
+        background: #6b7280;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+
+        .gantt-phase-column,
+        .gantt-phases {
+            width: 150px;
+            min-width: 150px;
+        }
+
+        .gantt-timeline-header {
+            min-width: 60px;
+            font-size: 0.75rem;
+            padding: 0.5rem 0.25rem;
+        }
+    }
+
+
+    /* Gantt Chart Horizontal Style */
+    .gantt-horizontal {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .gantt-header {
+        display: flex;
+        background: #1e40af;
+        color: white;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+    }
+
+    .gantt-task-column {
+        width: 300px;
+        min-width: 300px;
+        padding: 1rem;
+        background: #1e40af;
+        border-right: 2px solid #1e3a8a;
+    }
+
+    .gantt-timeline-header {
+        flex: 1;
+        display: flex;
+    }
+
+    .gantt-month-section {
+        flex: 1;
+        text-align: center;
+        padding: 0.75rem 0;
+        border-right: 1px solid #1e3a8a;
+        font-size: 0.9rem;
+    }
+
+    .gantt-days-container {
+        display: flex;
+        background: #374151;
+        color: white;
+        font-weight: 500;
+        position: sticky;
+        top: 60px;
+        z-index: 15;
+    }
+
+    .gantt-days-label {
+        width: 300px;
+        min-width: 300px;
+        padding: 0.5rem 1rem;
+        background: #374151;
+        border-right: 2px solid #1e40af;
+        font-size: 0.8rem;
+    }
+
+    .gantt-days {
+        flex: 1;
+        display: flex;
+    }
+
+    .gantt-day {
+        flex: 1;
+        text-align: center;
+        padding: 0.5rem 0;
+        border-right: 1px solid #4b5563;
+        font-size: 0.75rem;
+        min-width: 30px;
+    }
+
+    .gantt-day.weekend {
+        background: #4b5563;
+    }
+
+    .gantt-body {
+        display: flex;
+        background: #f9fafb;
+    }
+
+    .gantt-tasks {
+        width: 300px;
+        min-width: 300px;
+    }
+
+    .gantt-task-row {
+        padding: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        background: white;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .gantt-task-row:hover {
+        background: #f3f4f6;
+    }
+
+    .gantt-task-row.active {
+        background: #dbeafe;
+        border-left: 4px solid #3b82f6;
+    }
+
+
+
+    .phase-bar {
+        position: absolute;
+        height: 40px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        padding: 0 1rem;
+        color: white;
+        font-weight: 500;
+        font-size: 0.875rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .phase-bar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .gantt-bar {
+        position: absolute;
+        height: 30px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        font-size: 0.75rem;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border-left: 4px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .gantt-bar:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .gantt-bar-progress {
+        position: absolute;
+        height: 100%;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.2);
+        transition: width 0.3s ease;
+    }
+
+    .gantt-milestone {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #dc2626;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        z-index: 10;
+    }
+
+    .gantt-current-date {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #dc2626;
+        z-index: 5;
+    }
+
+    .gantt-current-date::before {
+        content: 'HARI INI';
+        position: absolute;
+        top: -25px;
+        left: -20px;
+        background: #dc2626;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.6rem;
+        font-weight: bold;
+    }
+
+    /* Phase Colors */
+    .phase-planning {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    }
+
+    .phase-analysis {
+        background: linear-gradient(135deg, #10b981, #047857);
+    }
+
+    .phase-design {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+
+    .phase-development {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    }
+
+    .phase-testing {
+        background: linear-gradient(135deg, #ec4899, #db2777);
+    }
+
+    .phase-deployment {
+        background: linear-gradient(135deg, #6366f1, #4f46e5);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+
+        .gantt-task-column,
+        .gantt-days-label,
+        .gantt-tasks {
+            width: 250px;
+            min-width: 250px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .gantt-horizontal {
+            font-size: 0.8rem;
+        }
+
+        .gantt-task-column,
+        .gantt-days-label,
+        .gantt-tasks {
+            width: 200px;
+            min-width: 200px;
+        }
+
+        .gantt-day {
+            min-width: 25px;
+            font-size: 0.7rem;
+            padding: 0.3rem 0;
+        }
+
+        .gantt-bar {
+            height: 25px;
+            font-size: 0.7rem;
+            padding: 0 8px;
+        }
+    }
 </style>
 
 @section('title', 'kanban-tugas')
@@ -519,6 +1122,23 @@
                             class="ml-0.5 text-orange-600 hover:text-orange-800 font-bold text-xs xs:text-sm">×</button>
                     </span>
                 </template>
+            </div>
+        </div>
+
+
+        {{-- 🎯 Toggle View --}}
+        <div class="bg-white border-b px-4 py-2 flex justify-between items-center">
+            <div class="flex space-x-4">
+                <button @click="viewMode = 'kanban'"
+                    :class="{ 'text-blue-600 border-b-2 border-blue-600': viewMode === 'kanban' }"
+                    class="px-3 py-2 text-sm font-medium">
+                    Kanban View
+                </button>
+                <button @click="viewMode = 'timeline'"
+                    :class="{ 'text-blue-600 border-b-2 border-blue-600': viewMode === 'timeline' }"
+                    class="px-3 py-2 text-sm font-medium">
+                    Timeline View
+                </button>
             </div>
         </div>
 
@@ -931,6 +1551,192 @@
 
 
 
+       {{-- 🎯 Gantt Chart Timeline View --}}
+<div 
+    x-show="viewMode === 'timeline'" 
+    class="gantt-horizontal bg-gray-50 min-h-screen p-6"
+>
+    <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
+
+        <!-- 🧭 Header -->
+        <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-4 border-b border-gray-200">
+            <h1 class="text-lg font-bold text-gray-800 tracking-wide">
+                🗓️ TIMELINE PEKERJAAN
+            </h1>
+        </div>
+
+        <!-- 📊 Gantt Chart -->
+        <div class="overflow-x-auto">
+            <!-- Header -->
+            <div class="flex bg-gray-100 border-b border-gray-200 text-gray-700 font-semibold text-sm">
+                <div class="w-64 px-4 py-3 border-r border-gray-200">Phase / Tugas</div>
+                <div class="flex-1 px-4 py-3">Timeline</div>
+            </div>
+
+            <!-- Body -->
+            <div class="relative">
+                <div class="flex">
+                    <!-- Phase List -->
+                    <div class="w-64 border-r border-gray-200 bg-white">
+                        <template x-for="phase in getProjectPhases()" :key="phase.id">
+                            <div 
+                                class="px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100"
+                                :class="{ 'bg-blue-100': selectedPhase === phase.id }"
+                                @click="showPhaseTasks(phase.id)"
+                            >
+                                <div class="font-semibold text-gray-800" x-text="phase.name"></div>
+                                <div class="text-xs text-gray-500 mt-1" x-text="phase.description"></div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Timeline Bars -->
+                    <div 
+                        class="flex-1 relative bg-white"
+                        x-data="{
+                            calculatePhasePosition(phase) {
+                                const tasks = getTasksByPhase(phase.id);
+                                if (tasks.length === 0) return { left: '0%', width: '0%' };
+
+                                let earliestStart = new Date('2024-12-31');
+                                let latestEnd = new Date('2024-01-01');
+
+                                tasks.forEach(task => {
+                                    const startDate = new Date(task.startDate);
+                                    const endDate = new Date(task.dueDate);
+                                    if (startDate < earliestStart) earliestStart = startDate;
+                                    if (endDate > latestEnd) latestEnd = endDate;
+                                });
+
+                                const timelineStart = new Date('2024-01-01');
+                                const timelineEnd = new Date('2024-06-30');
+                                const totalDays = (timelineEnd - timelineStart) / (1000 * 60 * 60 * 24);
+                                const phaseStart = (earliestStart - timelineStart) / (1000 * 60 * 60 * 24);
+                                const phaseDuration = (latestEnd - earliestStart) / (1000 * 60 * 60 * 24);
+
+                                const left = Math.max(0, (phaseStart / totalDays) * 100);
+                                const width = Math.min(100 - left, (phaseDuration / totalDays) * 100);
+
+                                return { left: left + '%', width: Math.max(width, 2) + '%' };
+                            },
+                            getPhaseColor(phaseId) {
+                                const colors = {
+                                    1: 'from-blue-500 to-blue-700',
+                                    2: 'from-green-500 to-green-700',
+                                    3: 'from-orange-500 to-orange-700',
+                                    4: 'from-purple-500 to-purple-700',
+                                    5: 'from-pink-500 to-pink-700',
+                                    6: 'from-indigo-500 to-indigo-700'
+                                };
+                                return colors[phaseId] || 'from-gray-400 to-gray-600';
+                            }
+                        }"
+                    >
+                        <!-- Current Date Line -->
+                        <div class="absolute top-0 bottom-0 w-0.5 bg-red-500 opacity-60" style="left: 30%;"></div>
+
+                        <!-- Phase Bars -->
+                        <template x-for="(phase, index) in getProjectPhases()" :key="phase.id">
+                            <div 
+                                class="absolute h-8 rounded-lg shadow-sm cursor-pointer text-white text-xs flex items-center justify-center font-medium"
+                                :class="`bg-gradient-to-r ${getPhaseColor(phase.id)}`"
+                                :style="`top: ${20 + (index * 60)}px; left: ${calculatePhasePosition(phase).left}; width: ${calculatePhasePosition(phase).width}`"
+                                @click="showPhaseTasks(phase.id)"
+                            >
+                                <span x-text="phase.name"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🧩 Legend -->
+        <div class="bg-gray-50 p-4 border-t border-gray-200">
+            <div class="flex flex-wrap items-center gap-4 text-sm text-gray-700">
+                <span class="font-bold">LEGEND:</span>
+                <template x-for="legend in [
+                    {color: 'from-blue-500 to-blue-700', label: 'Planning'},
+                    {color: 'from-green-500 to-green-700', label: 'Analysis'},
+                    {color: 'from-orange-500 to-orange-700', label: 'Design'},
+                    {color: 'from-purple-500 to-purple-700', label: 'Development'},
+                    {color: 'from-pink-500 to-pink-700', label: 'Testing'},
+                    {color: 'from-indigo-500 to-indigo-700', label: 'Deployment'}
+                ]">
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 rounded bg-gradient-to-br" :class="legend.color"></div>
+                        <span x-text="legend.label"></span>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+        <!-- Modal Detail Phase -->
+        <div x-show="phaseModal.open" x-cloak
+            class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+            <div class="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                <div class="p-6 border-b">
+                    <h2 class="text-xl font-bold text-gray-800" x-text="phaseModal.title"></h2>
+                    <p class="text-gray-600 mt-1" x-text="phaseModal.description"></p>
+                </div>
+
+                <div class="p-6">
+                    <h3 class="text-lg font-semibold mb-4">Daftar Tugas</h3>
+                    <div class="space-y-4">
+                        <template x-for="task in phaseModal.tasks" :key="task.id">
+                            <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
+                                @click="openDetail(task.id)">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="font-medium text-gray-800" x-text="task.title"></h4>
+                                        <div class="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                                            <div class="flex items-center gap-1">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                <span x-text="`Mulai: ${formatDate(task.startDate)}`"></span>
+                                            </div>
+                                            <div class="flex items-center gap-1">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                <span x-text="`Tenggat: ${formatDate(task.dueDate)}`"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm text-gray-600 mb-1" x-text="`${calculateProgress(task)}%`">
+                                        </div>
+                                        <div class="w-24 h-2 bg-gray-200 rounded-full">
+                                            <div class="h-2 bg-green-500 rounded-full transition-all duration-300"
+                                                :style="`width: ${calculateProgress(task)}%`"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="p-6 border-t flex justify-end">
+                    <button @click="phaseModal.open = false"
+                        class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+
         <!-- Modal Aksi List -->
         <div x-show="openListMenu && !replyView.active" x-cloak
             class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4" x-transition
@@ -1020,6 +1826,15 @@
                                 class="text-red-500">*</span></label>
                         <input type="text" placeholder="Masukkan nama tugas..."
                             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
+                    </div>
+
+                    <!-- PHASE INPUT - TEMPATKAN DI SINI -->
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 mb-2 block">Phase <span
+                                class="text-red-500">*</span></label>
+                        <input type="text" x-model="taskForm.phase"
+                            placeholder="Masukkan nama phase (contoh: Inisiasi, Perencanaan, Eksekusi)"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                     </div>
 
                     <!-- Anggota & Tugas Rahasia -->
@@ -1439,6 +2254,20 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                             </svg>
                         </button>
+                    </div>
+
+
+                    <!-- PHASE INFORMATION - TEMPATKAN DI SINI -->
+                    <div class="mb-4">
+                        <label class="text-sm font-medium text-gray-700 mb-2 block">Phase</label>
+                        <div class="flex items-center gap-2">
+                            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                                x-text="currentTask?.phase || 'Tidak ada phase'"></span>
+                            <template x-if="isEditMode">
+                                <input type="text" x-model="currentTask.phase" placeholder="Masukkan phase"
+                                    class="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500">
+                            </template>
+                        </div>
                     </div>
 
                     <!-- Modal Pindahkan -->
@@ -2111,6 +2940,8 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                     // --- Task Form Data ---
                     taskForm: {
                         title: '',
+                        phase: '', // Sekarang string kosong, bukan null/undefined
+
                         members: [],
                         secret: false,
                         notes: '',
@@ -2139,6 +2970,18 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                     selectedLabel: '',
                     selectedMember: '',
                     selectedDeadline: '',
+
+                    // === VIEW MODE & TIMELINE PROPERTIES ===
+                    viewMode: 'kanban',
+                    selectedPhase: null,
+
+                    // === GANTT CHART PROPERTIES ===
+                    phaseModal: {
+                        open: false,
+                        title: '',
+                        description: '',
+                        tasks: []
+                    },
 
                     // --- Members ---
                     searchMember: '',
@@ -2213,10 +3056,11 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                     ],
 
                     // --- Dummy Tasks Database ---
-                    // --- Dummy Tasks Database ---
+                    // --- Dummy Tasks Database dengan Phase ---
                     tasks: [{
                             id: 1,
                             title: "MENYELESAIKAN LAPORAN KEUANGAN",
+                            phase: "Perencanaan",
                             status: "todo",
                             members: [{
                                     name: 'Naufal',
@@ -2251,9 +3095,9 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                                     done: false
                                 }
                             ],
-                            startDate: "2025-09-27",
+                            startDate: "2024-01-15",
                             startTime: "08:00",
-                            dueDate: "2025-09-30",
+                            dueDate: "2024-01-30",
                             dueTime: "17:00",
                             comments: [{
                                     author: "Risi Gustiar",
@@ -2269,7 +3113,8 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         },
                         {
                             id: 2,
-                            title: "Tugas Content IG",
+                            title: "Analisis Kebutuhan User",
+                            phase: "Analisis",
                             status: "todo",
                             members: [{
                                     name: 'Risi',
@@ -2281,42 +3126,43 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                                 }
                             ],
                             secret: false,
-                            notes: "Buat content untuk Instagram feed dan story.",
+                            notes: "Analisis kebutuhan user untuk fitur baru.",
                             attachments: [{
-                                name: "Content_Plan.pdf",
+                                name: "User_Requirements.pdf",
                                 type: "pdf"
                             }],
                             labels: [{
-                                    name: 'Content',
+                                    name: 'Analisis',
                                     color: '#16a34a'
                                 },
                                 {
-                                    name: 'Social Media',
+                                    name: 'Research',
                                     color: '#ec4899'
                                 }
                             ],
                             checklist: [{
-                                    name: "Riset tren terkini",
+                                    name: "Interview user",
                                     done: true
                                 },
                                 {
-                                    name: "Buat draft content",
+                                    name: "Analisis data",
                                     done: true
                                 },
                                 {
-                                    name: "Review oleh tim",
+                                    name: "Buat laporan kebutuhan",
                                     done: false
                                 }
                             ],
-                            startDate: "2025-10-20",
+                            startDate: "2024-02-01",
                             startTime: "09:00",
-                            dueDate: "2025-10-24",
+                            dueDate: "2024-02-15",
                             dueTime: "18:00",
                             comments: []
                         },
                         {
                             id: 3,
-                            title: "Buat Banner Promo",
+                            title: "Desain UI Dashboard",
+                            phase: "Desain",
                             status: "inprogress",
                             members: [{
                                     name: 'Fajar',
@@ -2328,28 +3174,28 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                                 }
                             ],
                             secret: false,
-                            notes: "Design banner untuk promo bulan November.",
+                            notes: "Design dashboard untuk monitoring project.",
                             attachments: [],
                             labels: [{
                                 name: 'Design',
                                 color: '#a855f7'
                             }],
                             checklist: [{
-                                    name: "Concept design",
+                                    name: "Wireframe",
                                     done: true
                                 },
                                 {
-                                    name: "Revisi 1",
+                                    name: "Mockup",
                                     done: true
                                 },
                                 {
-                                    name: "Finalisasi",
+                                    name: "Prototype",
                                     done: false
                                 }
                             ],
-                            startDate: "2025-10-15",
+                            startDate: "2024-03-01",
                             startTime: "10:00",
-                            dueDate: "2025-10-25",
+                            dueDate: "2024-03-20",
                             dueTime: "15:00",
                             comments: [{
                                 author: "Fajar",
@@ -2359,7 +3205,8 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         },
                         {
                             id: 4,
-                            title: "Testing Fitur Login",
+                            title: "Development Fitur Login",
+                            phase: "Development",
                             status: "done",
                             members: [{
                                     name: 'Naufal',
@@ -2371,36 +3218,36 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                                 }
                             ],
                             secret: false,
-                            notes: "Testing comprehensive untuk fitur login baru.",
+                            notes: "Development fitur login dengan authentication.",
                             attachments: [{
                                     name: "Test_Cases.xlsx",
                                     type: "xlsx"
                                 },
                                 {
-                                    name: "Bug_Report.pdf",
+                                    name: "API_Documentation.pdf",
                                     type: "pdf"
                                 }
                             ],
                             labels: [{
-                                name: 'Testing',
+                                name: 'Development',
                                 color: '#0ea5e9'
                             }],
                             checklist: [{
-                                    name: "Unit testing",
+                                    name: "Backend API",
                                     done: true
                                 },
                                 {
-                                    name: "Integration testing",
+                                    name: "Frontend integration",
                                     done: true
                                 },
                                 {
-                                    name: "User acceptance testing",
+                                    name: "Testing",
                                     done: true
                                 }
                             ],
-                            startDate: "2025-10-10",
+                            startDate: "2024-04-01",
                             startTime: "08:00",
-                            dueDate: "2025-10-22",
+                            dueDate: "2024-04-25",
                             dueTime: "17:00",
                             comments: [{
                                 author: "Naufal",
@@ -2410,44 +3257,85 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         },
                         {
                             id: 5,
-                            title: "Riset Vendor Baru",
-                            status: "cancel",
+                            title: "Testing Sistem Integrasi",
+                            phase: "Testing",
+                            status: "inprogress",
                             members: [{
                                 name: 'Dzakwan',
                                 avatar: 'https://i.pravatar.cc/40?img=2'
                             }],
                             secret: true,
-                            notes: "Riset vendor untuk kebutuhan project Q1 2026.",
+                            notes: "Testing integrasi antara modul sistem.",
                             attachments: [{
-                                name: "Vendor_List.xlsx",
+                                name: "Integration_Test_Plan.xlsx",
                                 type: "xlsx"
                             }],
                             labels: [{
-                                name: 'Research',
+                                name: 'Testing',
                                 color: '#f59e0b'
                             }],
                             checklist: [{
-                                    name: "Identifikasi kebutuhan",
+                                    name: "Unit testing",
                                     done: true
                                 },
                                 {
-                                    name: "Cari vendor potensial",
+                                    name: "Integration testing",
                                     done: false
                                 },
                                 {
-                                    name: "Evaluasi proposal",
+                                    name: "User acceptance testing",
                                     done: false
                                 }
                             ],
-                            startDate: "2025-10-05",
+                            startDate: "2024-05-01",
                             startTime: "09:00",
-                            dueDate: "2025-10-20",
+                            dueDate: "2024-05-30",
                             dueTime: "16:00",
                             comments: [{
                                 author: "Manager",
                                 date: "Senin, 20 Okt 2025",
-                                text: "Project ditunda sampai further notice."
+                                text: "Progress testing 60%."
                             }]
+                        },
+                        {
+                            id: 6,
+                            title: "Deployment Production",
+                            phase: "Deployment",
+                            status: "todo",
+                            members: [{
+                                    name: 'Naufal',
+                                    avatar: 'https://i.pravatar.cc/40?img=1'
+                                },
+                                {
+                                    name: 'Fajar',
+                                    avatar: 'https://i.pravatar.cc/40?img=5'
+                                }
+                            ],
+                            secret: false,
+                            notes: "Deploy aplikasi ke server production.",
+                            attachments: [],
+                            labels: [{
+                                name: 'Deployment',
+                                color: '#10b981'
+                            }],
+                            checklist: [{
+                                    name: "Setup server",
+                                    done: false
+                                },
+                                {
+                                    name: "Database migration",
+                                    done: false
+                                },
+                                {
+                                    name: "Deploy aplikasi",
+                                    done: false
+                                }
+                            ],
+                            startDate: "2024-06-01",
+                            startTime: "08:00",
+                            dueDate: "2024-06-10",
+                            dueTime: "17:00",
+                            comments: []
                         }
                     ],
 
@@ -2505,6 +3393,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                     resetTaskForm() {
                         this.taskForm = {
                             title: '',
+                            phase: '',
                             members: [],
                             secret: false,
                             notes: '',
@@ -2533,15 +3422,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                             name: m.name,
                             avatar: m.avatar
                         }));
-                        if (this.isEditMode && this.currentTask) {
-                            selected.forEach(member => {
-                                if (!this.currentTask.members.find(m => m.name === member.name)) {
-                                    this.currentTask.members.push(member);
-                                }
-                            });
-                        } else {
-                            this.taskForm.members = selected;
-                        }
+                        this.taskForm.members = selected;
                         this.members.forEach(m => m.selected = false);
                         this.selectAll = false;
                         this.openAddMemberModal = false;
@@ -2553,7 +3434,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         }
                     },
 
-                    // Labels
+                    // Labels methods untuk form
                     filteredLabels() {
                         if (!this.searchLabel) return this.labels;
                         return this.labels.filter(l => l.name.toLowerCase().includes(this.searchLabel.toLowerCase()));
@@ -2564,11 +3445,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                             name: l.name,
                             color: l.color
                         }));
-                        if (this.isEditMode && this.currentTask) {
-                            this.currentTask.labels = selected;
-                        } else {
-                            this.taskForm.labels = selected;
-                        }
+                        this.taskForm.labels = selected;
                         this.labels.forEach(l => l.selected = false);
                         this.openLabelModal = false;
                     },
@@ -2586,18 +3463,14 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         this.openLabelModal = true;
                     },
 
-                    // Checklist
+                    // Checklist methods untuk form
                     saveCeklis() {
                         if (this.newCeklisName.trim() === '') return;
                         const newItem = {
                             name: this.newCeklisName,
                             done: false
                         };
-                        if (this.isEditMode && this.currentTask) {
-                            this.currentTask.checklist.push(newItem);
-                        } else {
-                            this.taskForm.checklist.push(newItem);
-                        }
+                        this.taskForm.checklist.push(newItem);
                         this.newCeklisName = '';
                         this.openCeklisModal = false;
                     },
@@ -2925,6 +3798,128 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         }
 
                         console.log(`Tasks di ${currentList} diurutkan dengan: ${sortType}`);
+                    },
+
+
+                    // Methods untuk Gantt Chart
+                    getProjectPhases() {
+                        return [{
+                                id: 1,
+                                name: 'Briefing Project & Pembagian Tugas',
+                                description: 'Penyusunan dokumen tujuan, scope, milestone, deliverables'
+                            },
+                            {
+                                id: 2,
+                                name: 'Analisis Kebutuhan Sistem',
+                                description: 'Functional & Non-functional requirements, Arsitektur & Database'
+                            },
+                            {
+                                id: 3,
+                                name: 'Desain UI/UX',
+                                description: 'Wireframe / Prototype Figma, Finalisasi desain'
+                            },
+                            {
+                                id: 4,
+                                name: 'Development',
+                                description: 'Implementasi F001-F020, Deployment ke server'
+                            },
+                            {
+                                id: 5,
+                                name: 'Testing & Quality Assurance',
+                                description: 'Beta Release, UAT, Fix bug & optimasi'
+                            },
+                            {
+                                id: 6,
+                                name: 'Deployment & Dokumentasi',
+                                description: 'Final Release, Presentasi, Dokumentasi teknis'
+                            }
+                        ];
+                    },
+
+                    showPhaseTasks(phaseId) {
+                        const phase = this.getProjectPhases().find(p => p.id === phaseId);
+                        if (!phase) return;
+
+                        this.selectedPhase = phaseId;
+                        this.phaseModal = {
+                            open: true,
+                            title: phase.name,
+                            description: phase.description,
+                            tasks: this.getTasksByPhaseId(phaseId)
+                        };
+                    },
+
+                    getTasksByPhaseId(phaseId) {
+                        // Mapping phase ID ke phase name yang sesuai dengan data tasks
+                        const phaseMap = {
+                            1: 'Perencanaan',
+                            2: 'Analisis',
+                            3: 'Desain',
+                            4: 'Development',
+                            5: 'Testing',
+                            6: 'Deployment'
+                        };
+
+                        const phaseName = phaseMap[phaseId];
+                        return this.tasks.filter(task => task.phase === phaseName);
+                    },
+
+                    showTaskDetails(task) {
+                        this.openDetail(task.id);
+                    },
+
+                    calculateProgress(task) {
+                        if (!task.checklist || task.checklist.length === 0) return 0;
+                        const completed = task.checklist.filter(item => item.done).length;
+                        return Math.round((completed / task.checklist.length) * 100);
+                    },
+
+                    formatDate(dateString) {
+                        if (!dateString) return '';
+                        const date = new Date(dateString);
+                        return date.toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                        });
+                    },
+
+                    // Open task detail modal
+                    openDetail(taskId) {
+                        const task = this.tasks.find(t => t.id === taskId);
+                        if (!task) return;
+
+                        this.currentTask = JSON.parse(JSON.stringify(task));
+                        this.isEditMode = false;
+                        this.openTaskDetail = true;
+                    },
+
+
+                    // Add this to your kanbanApp() methods
+                    getTasksByPhase(phaseId) {
+                        const phaseMap = {
+                            1: 'Perencanaan',
+                            2: 'Analisis',
+                            3: 'Desain',
+                            4: 'Development',
+                            5: 'Testing',
+                            6: 'Deployment'
+                        };
+
+                        const phaseName = phaseMap[phaseId];
+                        const phaseTasks = this.tasks.filter(task => task.phase === phaseName);
+
+                        if (phaseTasks.length === 0) {
+                            // Return default task jika tidak ada task di phase ini
+                            return [{
+                                id: 'default-' + phaseId,
+                                startDate: '2024-01-01',
+                                dueDate: '2024-01-31',
+                                title: 'Task ' + phaseName
+                            }];
+                        }
+
+                        return phaseTasks;
                     },
 
                 }
