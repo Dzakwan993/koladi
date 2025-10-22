@@ -211,59 +211,61 @@ public function index()
     }
 
     // Get anggota workspace
-    public function getMembers($workspaceId)
-    {
-        $workspace = Workspace::with(['userWorkspaces.user', 'userWorkspaces.role'])->findOrFail($workspaceId);
+// Get anggota workspace
+public function getMembers($workspaceId)
+{
+    $workspace = Workspace::with(['userWorkspaces.user', 'userWorkspaces.role'])->findOrFail($workspaceId);
 
-        // Cek apakah user memiliki akses ke workspace ini
-        if (!$this->checkWorkspaceAccess($workspace)) {
-            return response()->json(['error' => 'Anda tidak memiliki akses ke workspace ini'], 403);
+    // Cek apakah user memiliki akses ke workspace ini
+    if (!$this->checkWorkspaceAccess($workspace)) {
+        return response()->json(['error' => 'Anda tidak memiliki akses ke workspace ini'], 403);
+    }
+
+    $members = $workspace->userWorkspaces->map(function ($userWorkspace) {
+        return [
+            'id' => $userWorkspace->user->id,
+            'name' => $userWorkspace->user->full_name,
+            'email' => $userWorkspace->user->email,
+            'role' => $userWorkspace->role->name,
+            'avatar' => 'https://i.pravatar.cc/32?img=' . (rand(1, 70))
+        ];
+    });
+
+    return response()->json($members);
+}
+
+    // Get users yang available untuk di-add ke workspace
+    // Get users yang available untuk di-add ke workspace
+public function getAvailableUsers()
+{
+    try {
+        $user = Auth::user();
+        $activeCompanyId = session('active_company_id');
+
+        if (!$activeCompanyId) {
+            return response()->json(['error' => 'No active company'], 400);
         }
 
-        $members = $workspace->userWorkspaces->map(function ($userWorkspace) {
+        // Ambil users dari company yang aktif
+        $companyUsers = User::whereHas('userCompanies', function ($query) use ($activeCompanyId) {
+            $query->where('company_id', $activeCompanyId);
+        })->get();
+
+        $users = $companyUsers->map(function ($user) {
             return [
-                'id' => $userWorkspace->user->id,
-                'name' => $userWorkspace->user->full_name,
-                'email' => $userWorkspace->user->email,
-                'role' => $userWorkspace->role->name,
+                'id' => $user->id,
+                'name' => $user->full_name,
+                'email' => $user->email,
                 'avatar' => 'https://i.pravatar.cc/32?img=' . (rand(1, 70))
             ];
         });
 
-        return response()->json($members);
+        return response()->json($users);
+    } catch (\Exception $e) {
+        Log::error('Error in getAvailableUsers: ' . $e->getMessage());
+        return response()->json(['error' => 'Server error'], 500);
     }
-
-    // Get users yang available untuk di-add ke workspace
-    public function getAvailableUsers()
-    {
-        try {
-            $user = Auth::user();
-            $activeCompanyId = session('active_company_id');
-
-            if (!$activeCompanyId) {
-                return response()->json(['error' => 'No active company'], 400);
-            }
-
-            // Ambil users dari company yang aktif
-            $companyUsers = User::whereHas('userCompanies', function ($query) use ($activeCompanyId) {
-                $query->where('company_id', $activeCompanyId);
-            })->get();
-
-            $users = $companyUsers->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->full_name,
-                    'email' => $user->email,
-                    'avatar' => 'https://i.pravatar.cc/32?img=' . (rand(1, 70))
-                ];
-            });
-
-            return response()->json($users);
-        } catch (\Exception $e) {
-            Log::error('Error in getAvailableUsers: ' . $e->getMessage()); // <- Ganti \Log menjadi Log
-            return response()->json(['error' => 'Server error'], 500);
-        }
-    }
+}
 
     // Cek akses user ke workspace
     private function checkWorkspaceAccess($workspace)

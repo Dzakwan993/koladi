@@ -6,7 +6,6 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\WorkspaceController;
 
-
 // ✅ TAMBAHKAN INI - Route Landing Page
 Route::get('/', function () {
     // Jika sudah login, redirect ke dashboard
@@ -125,10 +124,14 @@ Route::middleware(['auth'])->group(function () {
         return view('dokumen-dan-file');
     })->name('dokumen-dan-file');
 
-    // kelola-workspace
-    Route::get('/kelola-workspace', function () {
-        return view('kelola-workspace');
-    })->name('kelola-workspace');
+    // ✅ WORKSPACE ROUTES - DIPINDAHKAN KE DALAM AUTH GROUP
+    Route::get('/kelola-workspace', [WorkspaceController::class, 'index'])->name('kelola-workspace');
+    Route::post('/workspace', [WorkspaceController::class, 'store'])->name('workspace.store');
+    Route::put('/workspace/{id}', [WorkspaceController::class, 'update'])->name('workspace.update');
+    Route::delete('/workspace/{id}', [WorkspaceController::class, 'destroy'])->name('workspace.destroy');
+    Route::post('/workspace/{workspaceId}/members', [WorkspaceController::class, 'manageMembers'])->name('workspace.manage-members');
+    Route::get('/workspace/{workspaceId}/members', [WorkspaceController::class, 'getMembers'])->name('workspace.get-members');
+    Route::get('/workspace-available-users', [WorkspaceController::class, 'getAvailableUsers'])->name('workspace.available-users');
 
     // Halaman Profile
     Route::get('/profile', function () {
@@ -164,15 +167,3 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 });
 
-
-
-
-
-// Workspace Routes
-Route::get('/kelola-workspace', [WorkspaceController::class, 'index'])->name('kelola-workspace');
-Route::post('/workspace', [WorkspaceController::class, 'store'])->name('workspace.store');
-Route::put('/workspace/{id}', [WorkspaceController::class, 'update'])->name('workspace.update');
-Route::delete('/workspace/{id}', [WorkspaceController::class, 'destroy'])->name('workspace.destroy');
-Route::post('/workspace/{workspaceId}/members', [WorkspaceController::class, 'manageMembers'])->name('workspace.manage-members');
-Route::get('/workspace/{workspaceId}/members', [WorkspaceController::class, 'getMembers'])->name('workspace.get-members');
-Route::get('/workspace-available-users', [WorkspaceController::class, 'getAvailableUsers'])->name('workspace.available-users');

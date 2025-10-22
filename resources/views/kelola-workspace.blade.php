@@ -290,54 +290,54 @@
                 </button>
             </div>
 
-          <div x-show="hqOpen" x-collapse>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        @forelse($workspaces['HQ'] ?? [] as $workspace)
-            <a href="{{ url('/workspace') }}" 
-               class="block bg-white rounded-xl border border-gray-200 p-4 relative group hover:shadow-md transition-shadow duration-200">
-                <div class="flex justify-between items-start">
-                    <h3 class="font-semibold text-gray-800">{{ $workspace->name }}</h3>
+            <div x-show="hqOpen" x-collapse>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    @forelse($workspaces['HQ'] ?? [] as $workspace)
+                        <a href="{{ url('/workspace') }}"
+                            class="block bg-white rounded-xl border border-gray-200 p-4 relative group hover:shadow-md transition-shadow duration-200">
+                            <div class="flex justify-between items-start">
+                                <h3 class="font-semibold text-gray-800">{{ $workspace->name }}</h3>
 
-                    <!-- tombol titik tiga -->
-                    <button 
-                        @click.stop.prevent="openWorkspaceMenu($event, {{ json_encode($workspace) }})"
-                        class="p-1 hover:bg-gray-100 rounded-lg">
-                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M5 12v.01M12 12v.01M19 12v.01
-                                M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                        </svg>
-                    </button>
-                </div>
-
-                <p class="text-sm text-gray-600 mt-2">
-                    {{ $workspace->description ?? 'Tidak ada deskripsi' }}
-                </p>
-
-                <div class="mt-4">
-                    <div class="flex -space-x-2">
-                        @foreach ($workspace->userWorkspaces->take(4) as $userWorkspace)
-                            <img src="https://i.pravatar.cc/32?img={{ $loop->index + 1 }}"
-                                class="w-8 h-8 rounded-full border-2 border-white"
-                                title="{{ $userWorkspace->user->full_name }}">
-                        @endforeach
-                        @if ($workspace->userWorkspaces->count() > 4)
-                            <div
-                                class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center">
-                                <span class="text-xs text-gray-600">+{{ $workspace->userWorkspaces->count() - 4 }}</span>
+                                <!-- tombol titik tiga -->
+                                <button @click.stop.prevent="openWorkspaceMenu($event, {{ json_encode($workspace) }})"
+                                    class="p-1 hover:bg-gray-100 rounded-lg">
+                                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M5 12v.01M12 12v.01M19 12v.01
+                                    M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                    </svg>
+                                </button>
                             </div>
-                        @endif
-                    </div>
+
+                            <p class="text-sm text-gray-600 mt-2">
+                                {{ $workspace->description ?? 'Tidak ada deskripsi' }}
+                            </p>
+
+                            <div class="mt-4">
+                                <div class="flex -space-x-2">
+                                    @foreach ($workspace->userWorkspaces->take(4) as $userWorkspace)
+                                        <img src="https://i.pravatar.cc/32?img={{ $loop->index + 1 }}"
+                                            class="w-8 h-8 rounded-full border-2 border-white"
+                                            title="{{ $userWorkspace->user->full_name }}">
+                                    @endforeach
+                                    @if ($workspace->userWorkspaces->count() > 4)
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center">
+                                            <span
+                                                class="text-xs text-gray-600">+{{ $workspace->userWorkspaces->count() - 4 }}</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </a>
+                    @empty
+                        <div class="col-span-4 text-center py-8 text-gray-500">
+                            Belum ada workspace HQ
+                        </div>
+                    @endforelse
                 </div>
-            </a>
-        @empty
-            <div class="col-span-4 text-center py-8 text-gray-500">
-                Belum ada workspace HQ
             </div>
-        @endforelse
-    </div>
-</div>
         </div>
 
         <!-- Tim Section -->
@@ -366,53 +366,53 @@
             </div>
 
             <div x-show="timOpen" x-collapse>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        @forelse($workspaces['Tim'] ?? [] as $workspace)
-            <a href="{{ url('/workspace') }}" 
-               class="block bg-white rounded-xl border border-gray-200 p-4 relative group hover:shadow-md transition-shadow duration-200">
-                <div class="flex justify-between items-start">
-                    <h3 class="font-semibold text-gray-800">{{ $workspace->name }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    @forelse($workspaces['Tim'] ?? [] as $workspace)
+                        <a href="{{ url('/workspace') }}"
+                            class="block bg-white rounded-xl border border-gray-200 p-4 relative group hover:shadow-md transition-shadow duration-200">
+                            <div class="flex justify-between items-start">
+                                <h3 class="font-semibold text-gray-800">{{ $workspace->name }}</h3>
 
-                    <!-- tombol titik tiga -->
-                    <button 
-                        @click.stop.prevent="openWorkspaceMenu($event, {{ json_encode($workspace) }})"
-                        class="p-1 hover:bg-gray-100 rounded-lg">
-                        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M5 12v.01M12 12v.01M19 12v.01
-                                M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                        </svg>
-                    </button>
-                </div>
-
-                <p class="text-sm text-gray-600 mt-2">
-                    {{ $workspace->description ?? 'Tidak ada deskripsi' }}
-                </p>
-
-                <div class="mt-4">
-                    <div class="flex -space-x-2">
-                        @foreach ($workspace->userWorkspaces->take(4) as $userWorkspace)
-                            <img src="https://i.pravatar.cc/32?img={{ $loop->index + 1 }}"
-                                class="w-8 h-8 rounded-full border-2 border-white"
-                                title="{{ $userWorkspace->user->full_name }}">
-                        @endforeach
-                        @if ($workspace->userWorkspaces->count() > 4)
-                            <div
-                                class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center">
-                                <span class="text-xs text-gray-600">+{{ $workspace->userWorkspaces->count() - 4 }}</span>
+                                <!-- tombol titik tiga -->
+                                <button @click.stop.prevent="openWorkspaceMenu($event, {{ json_encode($workspace) }})"
+                                    class="p-1 hover:bg-gray-100 rounded-lg">
+                                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M5 12v.01M12 12v.01M19 12v.01
+                                    M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                    </svg>
+                                </button>
                             </div>
-                        @endif
-                    </div>
+
+                            <p class="text-sm text-gray-600 mt-2">
+                                {{ $workspace->description ?? 'Tidak ada deskripsi' }}
+                            </p>
+
+                            <div class="mt-4">
+                                <div class="flex -space-x-2">
+                                    @foreach ($workspace->userWorkspaces->take(4) as $userWorkspace)
+                                        <img src="https://i.pravatar.cc/32?img={{ $loop->index + 1 }}"
+                                            class="w-8 h-8 rounded-full border-2 border-white"
+                                            title="{{ $userWorkspace->user->full_name }}">
+                                    @endforeach
+                                    @if ($workspace->userWorkspaces->count() > 4)
+                                        <div
+                                            class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center">
+                                            <span
+                                                class="text-xs text-gray-600">+{{ $workspace->userWorkspaces->count() - 4 }}</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </a>
+                    @empty
+                        <div class="col-span-4 text-center py-8 text-gray-500">
+                            Belum ada workspace Tim
+                        </div>
+                    @endforelse
                 </div>
-            </a>
-        @empty
-            <div class="col-span-4 text-center py-8 text-gray-500">
-                Belum ada workspace Tim
             </div>
-        @endforelse
-    </div>
-</div>
         </div>
 
         <!-- Proyek Section -->
@@ -455,7 +455,7 @@
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 12v.01M12 12v.01M19 12v.01
-                                    M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                        M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                                     </svg>
                                 </button>
                             </div>
@@ -927,6 +927,7 @@
 
                         if (response.ok) {
                             this.availableMembers = await response.json();
+                            console.log('Available members loaded:', this.availableMembers);
                         } else {
                             console.error('Failed to load available members');
                             this.availableMembers = [];
@@ -936,23 +937,36 @@
                         this.availableMembers = [];
                     }
                 },
-
                 async loadWorkspaceMembers(workspaceId) {
                     try {
+                        console.log('Loading members for workspace:', workspaceId);
                         const response = await fetch(`/workspace/${workspaceId}/members`);
                         if (response.ok) {
-                            this.currentWorkspaceMembers = await response.json();
-                            this.selectedMembers = this.currentWorkspaceMembers.map(member => member
-                                .id);
+                            const members = await response.json();
+                            console.log('Workspace members loaded:', members);
+
+                            // SET selectedMembers dengan ID user yang sudah terdaftar
+                            this.selectedMembers = members.map(member => member.id);
+                            console.log('Selected members set to:', this.selectedMembers);
+
+                            this.currentWorkspaceMembers = members;
+                        } else {
+                            console.error('Failed to load workspace members');
+                            this.selectedMembers = [];
+                            this.currentWorkspaceMembers = [];
                         }
                     } catch (error) {
                         console.error('Error loading workspace members:', error);
+                        this.selectedMembers = [];
+                        this.currentWorkspaceMembers = [];
                     }
                 },
+
 
                 async saveMembers(workspaceId) {
                     try {
                         const csrfToken = this.getCsrfToken();
+                        console.log('Saving members:', this.selectedMembers);
 
                         const response = await fetch(`/workspace/${workspaceId}/members`, {
                             method: 'POST',
@@ -973,7 +987,7 @@
                             this.showManageMembersModal = false;
                             this.selectedMembers = [];
                             this.searchMember = '';
-                            alert('Anggota berhasil disimpan!');
+                            location.reload(); // Reload untuk update tampilan
                         } else {
                             alert('Gagal menyimpan anggota: ' + result.message);
                         }
@@ -997,9 +1011,17 @@
 
                 openManageMembers(workspace) {
                     this.activeWorkspace = workspace;
-                    this.loadWorkspaceMembers(workspace.id);
                     this.showManageMembersModal = true;
                     this.showWorkspaceMenu = false;
+
+                    // Reset selected members terlebih dahulu
+                    this.selectedMembers = [];
+                    this.searchMember = '';
+
+                    // Load members workspace saat modal dibuka
+                    setTimeout(() => {
+                        this.loadWorkspaceMembers(workspace.id);
+                    }, 100);
                 },
 
                 saveWorkspaceChanges() {
@@ -1013,16 +1035,21 @@
                 },
 
                 toggleMember(memberId) {
+                    console.log('Toggling member:', memberId, 'Current selected:', this
+                    .selectedMembers);
                     const index = this.selectedMembers.indexOf(memberId);
                     if (index === -1) {
                         this.selectedMembers.push(memberId);
                     } else {
                         this.selectedMembers.splice(index, 1);
                     }
+                    console.log('After toggle selected:', this.selectedMembers);
                 },
 
                 isMemberSelected(memberId) {
-                    return this.selectedMembers.includes(memberId);
+                    const isSelected = this.selectedMembers.includes(memberId);
+                    console.log(`Checking member ${memberId}:`, isSelected);
+                    return isSelected;
                 },
 
                 get filteredMembers() {
