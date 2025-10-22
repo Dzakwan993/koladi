@@ -158,6 +158,13 @@ Route::middleware(['auth'])->group(function () {
         return view('isi-insight');
     })->name('isi-insight');
 
+
+    // mindmap
+    Route::get('/mindmap', function () {
+        return view('mindmap');
+    })->name('mindmap');
+
+
     // Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 });
