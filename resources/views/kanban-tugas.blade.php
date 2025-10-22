@@ -1,16 +1,37 @@
 @extends('layouts.app')
 
 <style>
+    /* ===== BASE STYLES ===== */
     [x-cloak] {
         display: none !important;
     }
 
-    /* Transisi untuk halaman balas komentar */
+    /* ===== TRANSITIONS & ANIMATIONS ===== */
     .page-transition {
         transition: all 0.3s ease-in-out;
     }
 
-    /* Untuk list di CKEditor */
+
+
+    .modal-enter-active {
+        opacity: 1;
+        transform: scale(1);
+        transition: opacity 200ms ease-out, transform 200ms ease-out;
+    }
+
+    .modal-leave {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .modal-leave-active {
+        opacity: 0;
+        transform: scale(0.95);
+        transition: opacity 150ms ease-in, transform 150ms ease-in;
+    }
+
+    /* ===== EDITOR STYLES ===== */
+    /* CKEditor List Styles */
     #editor-catatan+.ck-editor .ck-content ul,
     #editor-catatan+.ck-editor .ck-content ol {
         padding-left: 1.5rem !important;
@@ -22,13 +43,31 @@
         margin-left: 0 !important;
     }
 
-    /* Tinggi minimal editor */
+    /* CKEditor Dimensions */
     .ck-editor__editable {
         min-height: 120px !important;
         max-height: 200px;
         overflow-y: auto;
     }
 
+    .ck-editor__editable ul,
+    .ck-editor__editable ol {
+        margin-left: 1.5rem !important;
+        padding-left: 1rem !important;
+    }
+
+    /* CKEditor Toolbar */
+    .ck.ck-toolbar {
+        font-size: 14px !important;
+        padding: 6px 8px !important;
+    }
+
+    .ck.ck-toolbar .ck-button {
+        margin: 0 2px !important;
+    }
+
+    /* ===== RESPONSIVE BREAKPOINTS ===== */
+    /* Tablet & Desktop - Editor Height */
     @media (min-width: 768px) {
         .ck-editor__editable {
             min-height: 150px !important;
@@ -36,41 +75,14 @@
         }
     }
 
-    /* Biar toolbar lebih lega */
-    .ck.ck-toolbar {
-        font-size: 14px !important;
-        padding: 6px 8px !important;
+    /* ===== RESPONSIVE TYPOGRAPHY ===== */
+    .responsive-text {
+        font-size: 0.875rem;
     }
 
-    /* Supaya tombol-tombol toolbar tidak terlalu rapat */
-    .ck.ck-toolbar .ck-button {
-        margin: 0 2px !important;
-    }
-
-    /* Rapikan list (bullet & numbering) agar tidak kepotong */
-    .ck-editor__editable ul,
-    .ck-editor__editable ol {
-        margin-left: 1.5rem !important;
-        padding-left: 1rem !important;
-    }
-
-    /* Custom breakpoints untuk responsivitas lebih baik */
-
-    /* Mobile First - Extra Small (default: < 476px) */
-
-    /* Small Mobile (476px - 639px) */
-    @media (min-width: 476px) and (max-width: 639px) {
-
-        /* xs devices - Small Mobile */
-        .responsive-text {
-            font-size: 0.875rem !important;
-        }
-    }
 
     /* Mobile Landscape & Small Tablets (640px - 767px) */
     @media (min-width: 640px) and (max-width: 767px) {
-
-        /* sm devices - Mobile Landscape */
         .responsive-text {
             font-size: 0.9rem !important;
         }
@@ -78,13 +90,10 @@
 
     /* Tablets (768px - 991px) */
     @media (min-width: 768px) and (max-width: 991px) {
-
-        /* md devices - Tablets */
         .responsive-text {
             font-size: 1rem !important;
         }
 
-        /* Optimasi untuk tablet */
         .container-tablet {
             padding-left: 1rem;
             padding-right: 1rem;
@@ -93,8 +102,6 @@
 
     /* Desktop (992px - 1199px) */
     @media (min-width: 992px) and (max-width: 1199px) {
-
-        /* lg devices - Desktop */
         .responsive-text {
             font-size: 1.1rem !important;
         }
@@ -102,20 +109,18 @@
 
     /* Large Desktop (1200px+) */
     @media (min-width: 1200px) {
-
-        /* xl devices - Large Desktop */
         .responsive-text {
             font-size: 1.125rem !important;
         }
 
-        /* Optimasi untuk large screens */
         .container-xl {
             max-width: 1400px;
             margin: 0 auto;
         }
     }
 
-    /* Line clamp utility */
+    /* ===== UTILITY CLASSES ===== */
+    /* Line Clamp */
     .line-clamp-2 {
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -129,28 +134,21 @@
         }
     }
 
-    /* Smooth scrolling untuk mobile */
+    /* Smooth Scrolling */
     .overflow-x-auto {
         -webkit-overflow-scrolling: touch;
     }
 
-    /* Improved hover effects untuk mobile */
+    /* Hover Effects */
     @media (hover: hover) {
         .hover\:shadow-md:hover {
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
     }
 
-    /* Responsive padding utilities */
-    .responsive-padding {
-        padding: 0.5rem;
-    }
 
-    @media (min-width: 476px) {
-        .responsive-padding {
-            padding: 0.75rem;
-        }
-    }
+
+
 
     @media (min-width: 768px) {
         .responsive-padding {
@@ -164,7 +162,7 @@
         }
     }
 
-    /* Responsive gap utilities */
+    /* Responsive Gap */
     .responsive-gap {
         gap: 0.5rem;
     }
@@ -181,87 +179,7 @@
         }
     }
 
-    /* Search & Filter Section Responsive Styles */
-    @media (max-width: 475px) {
-        .search-filter-mobile {
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .filter-dropdowns-mobile {
-            justify-content: flex-start;
-            overflow-x: auto;
-            padding-bottom: 0.25rem;
-        }
-    }
-
-    @media (min-width: 476px) and (max-width: 639px) {
-        .search-filter-xs {
-            flex-direction: row;
-            align-items: center;
-        }
-    }
-
-    /* Modal responsive adjustments */
-    @media (max-width: 475px) {
-        .modal-mobile {
-            margin: 0.5rem;
-            max-height: calc(100vh - 1rem);
-        }
-
-        .modal-content-mobile {
-            padding: 1rem;
-        }
-    }
-
-    @media (min-width: 476px) and (max-width: 767px) {
-        .modal-small {
-            margin: 1rem;
-            max-height: calc(100vh - 2rem);
-        }
-    }
-
-    /* Kanban board responsive */
-    @media (max-width: 475px) {
-        .kanban-column-mobile {
-            width: 85vw;
-            min-width: 85vw;
-        }
-    }
-
-    @media (min-width: 476px) and (max-width: 639px) {
-        .kanban-column-xs {
-            width: 280px;
-            min-width: 280px;
-        }
-    }
-
-    @media (min-width: 640px) and (max-width: 767px) {
-        .kanban-column-sm {
-            width: 300px;
-            min-width: 300px;
-        }
-    }
-
-    @media (min-width: 768px) and (max-width: 991px) {
-        .kanban-column-md {
-            min-width: 320px;
-        }
-    }
-
-    @media (min-width: 992px) and (max-width: 1199px) {
-        .kanban-column-lg {
-            min-width: 340px;
-        }
-    }
-
-    @media (min-width: 1200px) {
-        .kanban-column-xl {
-            min-width: 360px;
-        }
-    }
-
-    /* Button responsive sizes */
+    /* Button Sizes */
     .btn-responsive {
         padding: 0.5rem 1rem;
         font-size: 0.875rem;
@@ -274,7 +192,7 @@
         }
     }
 
-    /* Text truncation for different screens */
+    /* Text Truncation */
     .truncate-mobile {
         max-width: 100px;
     }
@@ -291,7 +209,7 @@
         }
     }
 
-    /* Icon responsive sizing */
+    /* Icon Sizing */
     .icon-responsive {
         width: 1rem;
         height: 1rem;
@@ -311,39 +229,41 @@
         }
     }
 
-
-
-    /* untuk aksi list*/
-    /* Style untuk modal aksi list */
+    /* ===== COMPONENT STYLES ===== */
+    /* Modal Actions */
     .modal-actions-list {
         backdrop-filter: blur(4px);
     }
 
-    /* Animasi untuk modal */
-    .modal-enter {
-        opacity: 0;
-        transform: scale(0.95);
+    /* Kanban Columns */
+    .kanban-column-mobile {
+        width: 85vw;
+        min-width: 85vw;
     }
 
-    .modal-enter-active {
-        opacity: 1;
-        transform: scale(1);
-        transition: opacity 200ms ease-out, transform 200ms ease-out;
+    .kanban-column-xs {
+        width: 280px;
+        min-width: 280px;
     }
 
-    .modal-leave {
-        opacity: 1;
-        transform: scale(1);
+    .kanban-column-sm {
+        width: 300px;
+        min-width: 300px;
     }
 
-    .modal-leave-active {
-        opacity: 0;
-        transform: scale(0.95);
-        transition: opacity 150ms ease-in, transform 150ms ease-in;
+    .kanban-column-md {
+        min-width: 320px;
     }
 
+    .kanban-column-lg {
+        min-width: 340px;
+    }
 
-    /* Ukuran kolom kanban medium */
+    .kanban-column-xl {
+        min-width: 360px;
+    }
+
+    /* Kanban Medium Variant */
     .kanban-column-medium {
         width: 75vw !important;
         min-width: 240px !important;
@@ -382,7 +302,7 @@
         }
     }
 
-    /* Padding medium */
+    /* Kanban Spacing */
     .kanban-padding-medium {
         padding: 0.75rem !important;
     }
@@ -393,7 +313,6 @@
         }
     }
 
-    /* Gap medium */
     .kanban-gap-medium {
         gap: 0.75rem !important;
     }
@@ -410,10 +329,8 @@
         }
     }
 
-
-
-
-    /* Gantt Chart Timeline Styles */
+    /* ===== GANTT CHART STYLES ===== */
+    /* Base Container */
     .gantt-container {
         overflow-x: auto;
         overflow-y: hidden;
@@ -424,6 +341,7 @@
         position: relative;
     }
 
+    /* Header */
     .gantt-header {
         display: flex;
         border-bottom: 2px solid #e5e7eb;
@@ -457,6 +375,7 @@
         min-width: 80px;
     }
 
+    /* Body */
     .gantt-body {
         display: flex;
     }
@@ -474,29 +393,14 @@
     }
 
     .gantt-timeline {
-        flex: 1;
-        position: relative;
         background: repeating-linear-gradient(90deg,
                 transparent,
                 transparent 79px,
                 #f1f5f9 79px,
-                #f1f5f9 80px);
+                #f1f5f9 80px) !important;
     }
 
-    .gantt-task-bar {
-        position: absolute;
-        height: 30px;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 8px;
-        font-size: 0.75rem;
-        color: white;
-        font-weight: 500;
-    }
+
 
     .gantt-task-bar:hover {
         transform: scale(1.02);
@@ -510,6 +414,7 @@
         background: rgba(255, 255, 255, 0.3);
     }
 
+    /* Grid & Markers */
     .gantt-grid-line {
         position: absolute;
         top: 0;
@@ -538,7 +443,7 @@
         border-radius: 50%;
     }
 
-    /* Status colors */
+    /* Status Colors */
     .gantt-status-todo {
         background: #3b82f6;
     }
@@ -555,231 +460,9 @@
         background: #6b7280;
     }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-
-        .gantt-phase-column,
-        .gantt-phases {
-            width: 150px;
-            min-width: 150px;
-        }
-
-        .gantt-timeline-header {
-            min-width: 60px;
-            font-size: 0.75rem;
-            padding: 0.5rem 0.25rem;
-        }
-    }
-
-
-
-
-
-    /* Timeline View Styles */
-    .timeline-phase {
-        transition: all 0.3s ease;
-    }
-
-    .timeline-phase:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    /* Progress bar styles untuk timeline */
-    .timeline-progress {
-        transition: width 0.5s ease-in-out;
-    }
-
-    /* Task item dalam timeline */
-    .timeline-task {
-        transition: all 0.2s ease;
-    }
-
-    .timeline-task:hover {
-        background-color: #f8fafc;
-        border-color: #3b82f6;
-    }
-
-    /* Responsive timeline */
-    @media (max-width: 768px) {
-        .timeline-phase {
-            margin-bottom: 1rem;
-        }
-    }
-
-
-    /* Gantt Chart Timeline Styles */
-    .gantt-container {
-        overflow-x: auto;
-        overflow-y: hidden;
-    }
-
-    .gantt-chart {
-        min-width: 800px;
-        position: relative;
-    }
-
-    .gantt-header {
-        display: flex;
-        border-bottom: 2px solid #e5e7eb;
-        background: #f8fafc;
-        position: sticky;
-        top: 0;
-        z-index: 10;
-    }
-
-    .gantt-phase-column {
-        width: 200px;
-        min-width: 200px;
-        padding: 1rem;
-        border-right: 1px solid #e5e7eb;
-        font-weight: 600;
-        background: white;
-    }
-
-    .gantt-timeline-columns {
-        display: flex;
-        flex: 1;
-    }
-
-    .gantt-timeline-header {
-        padding: 1rem 0.5rem;
-        text-align: center;
-        border-right: 1px solid #e5e7eb;
-        font-weight: 500;
-        font-size: 0.875rem;
-        background: white;
-        min-width: 80px;
-    }
-
-    .gantt-body {
-        display: flex;
-    }
-
-    .gantt-phases {
-        width: 200px;
-        min-width: 200px;
-    }
-
-    .gantt-phase-row {
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid #e5e7eb;
-        background: white;
-        font-weight: 500;
-    }
-
-    .gantt-timeline {
-        flex: 1;
-        position: relative;
-        background: repeating-linear-gradient(90deg,
-                transparent,
-                transparent 79px,
-                #f1f5f9 79px,
-                #f1f5f9 80px);
-    }
-
-    .gantt-task-bar {
-        position: absolute;
-        height: 30px;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 8px;
-        font-size: 0.75rem;
-        color: white;
-        font-weight: 500;
-    }
-
-    .gantt-task-bar:hover {
-        transform: scale(1.02);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-    }
-
-    .gantt-task-progress {
-        position: absolute;
-        height: 100%;
-        border-radius: 4px;
-        background: rgba(255, 255, 255, 0.3);
-    }
-
-    .gantt-grid-line {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 1px;
-        background: #e5e7eb;
-    }
-
-    .gantt-current-date {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background: #ef4444;
-        z-index: 5;
-    }
-
-    .gantt-current-date::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -4px;
-        width: 10px;
-        height: 10px;
-        background: #ef4444;
-        border-radius: 50%;
-    }
-
-    /* Status colors */
-    .gantt-status-todo {
-        background: #3b82f6;
-    }
-
-    .gantt-status-inprogress {
-        background: #f59e0b;
-    }
-
-    .gantt-status-done {
-        background: #10b981;
-    }
-
-    .gantt-status-cancel {
-        background: #6b7280;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-
-        .gantt-phase-column,
-        .gantt-phases {
-            width: 150px;
-            min-width: 150px;
-        }
-
-        .gantt-timeline-header {
-            min-width: 60px;
-            font-size: 0.75rem;
-            padding: 0.5rem 0.25rem;
-        }
-    }
-
-
-    /* Gantt Chart Horizontal Style */
+    /* ===== HORIZONTAL GANTT STYLES ===== */
     .gantt-horizontal {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    .gantt-header {
-        display: flex;
-        background: #1e40af;
-        color: white;
-        font-weight: 600;
-        position: sticky;
-        top: 0;
-        z-index: 20;
     }
 
     .gantt-task-column {
@@ -788,6 +471,7 @@
         padding: 1rem;
         background: #1e40af;
         border-right: 2px solid #1e3a8a;
+        color: white;
     }
 
     .gantt-timeline-header {
@@ -803,6 +487,7 @@
         font-size: 0.9rem;
     }
 
+    /* Days Container */
     .gantt-days-container {
         display: flex;
         background: #374151;
@@ -840,11 +525,7 @@
         background: #4b5563;
     }
 
-    .gantt-body {
-        display: flex;
-        background: #f9fafb;
-    }
-
+    /* Task Rows */
     .gantt-tasks {
         width: 300px;
         min-width: 300px;
@@ -868,8 +549,9 @@
         border-left: 4px solid #3b82f6;
     }
 
+    /* ===== TIMELINE PHASE BAR FIX ===== */
 
-
+    /* Phase bar utama - SELALU berwarna */
     .phase-bar {
         position: absolute;
         height: 40px;
@@ -883,7 +565,28 @@
         font-weight: 500;
         font-size: 0.875rem;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        /* HILANGKAN background-color default */
     }
+
+    /* Progress Bar - GANTI INI */
+    .absolute.top-1\\/2.-translate-y-1\\/2.h-10.rounded-l-xl {
+        border-radius: 6px !important;
+        /* Buat rounded penuh */
+        width: 100% !important;
+        /* Force full width */
+    }
+
+    /* Hapus background gray yang menutupi */
+    .bg-gradient-to-r.from-gray-100.to-gray-200 {
+        display: none !important;
+    }
+
+    /* Outline Bar - pastikan tidak menutupi warna */
+    .absolute.top-1\\/2.-translate-y-1\\/2.h-10.rounded-xl.border-2 {
+        background: transparent !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
+    }
+
 
     .phase-bar:hover {
         transform: translateY(-2px);
@@ -930,54 +633,178 @@
         z-index: 10;
     }
 
-    .gantt-current-date {
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background: #dc2626;
-        z-index: 5;
+    /* Timeline Container */
+    .gantt-timeline-container {
+        position: relative;
+        overflow: hidden;
     }
 
-    .gantt-current-date::before {
-        content: 'HARI INI';
-        position: absolute;
-        top: -25px;
-        left: -20px;
-        background: #dc2626;
-        color: white;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 0.6rem;
-        font-weight: bold;
+    .gantt-progress-bar {
+        display: none;
+        /* HILANGKAN background progress */
     }
 
-    /* Phase Colors */
+    /* Gantt duration bar - HILANGKAN yang tidak perlu */
+    .gantt-duration-bar {
+        display: none;
+        /* HILANGKAN border dashed */
+    }
+
+    /* ===== PHASE COLOR SCHEMES ===== */
     .phase-planning {
-        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
     }
 
     .phase-analysis {
-        background: linear-gradient(135deg, #10b981, #047857);
+        background: linear-gradient(135deg, #10b981, #047857) !important;
     }
 
     .phase-design {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
+        background: linear-gradient(135deg, #f59e0b, #d97706) !important;
     }
 
     .phase-development {
-        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
     }
 
     .phase-testing {
-        background: linear-gradient(135deg, #ec4899, #db2777);
+        background: linear-gradient(135deg, #ec4899, #db2777) !important;
     }
 
     .phase-deployment {
-        background: linear-gradient(135deg, #6366f1, #4f46e5);
+        background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
     }
 
-    /* Responsive */
+
+
+    .timeline-phase-bar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    /* HAPUS background percentage yang tidak perlu */
+    .timeline-phase-progress {
+        display: none;
+        /* HILANGKAN progress bar background */
+    }
+
+
+    /* Timeline View Styles */
+    .timeline-phase {
+        transition: all 0.3s ease;
+    }
+
+    .timeline-phase:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .timeline-progress {
+        transition: width 0.5s ease-in-out;
+    }
+
+    .timeline-task {
+        transition: all 0.2s ease;
+    }
+
+    .timeline-task:hover {
+        background-color: #f8fafc;
+        border-color: #3b82f6;
+    }
+
+    /* Timeline Phase Borders & Backgrounds */
+    .timeline-phase.phase-1 {
+        border-left-color: #3b82f6;
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+    }
+
+    .timeline-phase.phase-2 {
+        border-left-color: #10b981;
+        background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+    }
+
+    .timeline-phase.phase-3 {
+        border-left-color: #f59e0b;
+        background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    }
+
+    .timeline-phase.phase-4 {
+        border-left-color: #8b5cf6;
+        background: linear-gradient(135deg, #faf5ff, #e9d5ff);
+    }
+
+    .timeline-phase.phase-5 {
+        border-left-color: #ec4899;
+        background: linear-gradient(135deg, #fdf2f8, #fbcfe8);
+    }
+
+    .timeline-phase.phase-6 {
+        border-left-color: #6366f1;
+        background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    }
+
+    /* ===== RESPONSIVE ADJUSTMENTS ===== */
+    /* Search & Filter Section */
+    @media (max-width: 475px) {
+        .search-filter-mobile {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .filter-dropdowns-mobile {
+            justify-content: flex-start;
+            overflow-x: auto;
+            padding-bottom: 0.25rem;
+        }
+    }
+
+    @media (min-width: 476px) and (max-width: 639px) {
+        .search-filter-xs {
+            flex-direction: row;
+            align-items: center;
+        }
+    }
+
+    /* Modal Responsive */
+    @media (max-width: 475px) {
+        .modal-mobile {
+            margin: 0.5rem;
+            max-height: calc(100vh - 1rem);
+        }
+
+        .modal-content-mobile {
+            padding: 1rem;
+        }
+    }
+
+    @media (min-width: 476px) and (max-width: 767px) {
+        .modal-small {
+            margin: 1rem;
+            max-height: calc(100vh - 2rem);
+        }
+    }
+
+    /* Gantt Chart Responsive */
+    @media (max-width: 768px) {
+
+        .gantt-phase-column,
+        .gantt-phases {
+            width: 150px;
+            min-width: 150px;
+        }
+
+        .gantt-timeline-header {
+            min-width: 60px;
+            font-size: 0.75rem;
+            padding: 0.5rem 0.25rem;
+        }
+
+        .timeline-phase {
+            margin-bottom: 1rem;
+        }
+    }
+
+    /* Horizontal Gantt Responsive */
     @media (max-width: 1024px) {
 
         .gantt-task-column,
@@ -1011,6 +838,22 @@
             font-size: 0.7rem;
             padding: 0 8px;
         }
+    }
+
+
+    /* Shimmer Animation */
+    @keyframes shimmer {
+        0% {
+            transform: translateX(-100%);
+        }
+
+        100% {
+            transform: translateX(100%);
+        }
+    }
+
+    .animate-shimmer {
+        animation: shimmer 2s infinite;
     }
 </style>
 
@@ -1126,552 +969,573 @@
         </div>
 
 
-        {{-- 🎯 Toggle View --}}
-        <div class="bg-white border-b px-4 py-2 flex justify-between items-center">
-            <div class="flex space-x-4">
+        <div class="bg-white border-b px-2 py-1 flex justify-between items-center">
+            <div class="flex space-x-4 ml-6">
                 <button @click="viewMode = 'kanban'"
                     :class="{ 'text-blue-600 border-b-2 border-blue-600': viewMode === 'kanban' }"
-                    class="px-3 py-2 text-sm font-medium">
+                    class="px-2 py-1 text-xs font-medium">
                     Kanban View
                 </button>
                 <button @click="viewMode = 'timeline'"
                     :class="{ 'text-blue-600 border-b-2 border-blue-600': viewMode === 'timeline' }"
-                    class="px-3 py-2 text-sm font-medium">
+                    class="px-2 py-2 text-xs font-medium">
                     Timeline View
                 </button>
             </div>
         </div>
 
-        {{-- 🎯 Kanban Board --}}
-        <div x-show="!replyView.active">
-            <div class="flex-1 overflow-x-auto" @click.outside="openListMenu = null">
-                <div id="kanban-board" class="flex kanban-gap-medium p-5 xs:p-4 min-w-max">
-                    {{-- 📋 To Do Column --}}
-                    <div
-                        class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
-                        <div class="flex items-center justify-between mb-1 xs:mb-2">
-                            <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">To Do List</h2>
-                            <button @click="openListMenu = openListMenu === 'todo' ? null : 'todo'"
-                                class="text-gray-500 hover:text-gray-700 text-xs p-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 xs:h-4 xs:w-4" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path
-                                        d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                                </svg>
-                            </button>
-                        </div>
 
-                        <div class="flex flex-col flex-1">
-                            <div id="todo"
-                                class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
-                                <template x-for="task in getFilteredTasks('todo')" :key="task.id">
-                                    <div @click="openDetail(task.id)"
-                                        class="bg-white p-1.5 xs:p-2 sm:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
-                                        {{-- Header (Label + Tanggal) --}}
-                                        <div class="flex items-center justify-between mb-1 xs:mb-2 flex-wrap gap-1">
-                                            <div class="flex flex-wrap gap-1">
-                                                <template x-for="label in task.labels" :key="label.name">
-                                                    <span class="font-semibold px-1.5 py-0.5 rounded text-xs xs:text-sm"
-                                                        :style="`background: ${label.color}20; color: ${label.color}`"
-                                                        x-text="label.name"></span>
-                                                </template>
-                                            </div>
-                                            <span x-show="task.dueDate"
-                                                class="font-semibold px-1.5 py-0.5 bg-yellow-100 text-gray-700 rounded text-xs xs:text-sm"
-                                                x-text="formatDate(task.dueDate)"></span>
-                                        </div>
+        <div class="flex-1" x-show="!replyView.active">
 
-                                        {{-- Judul --}}
-                                        <p class="font-medium text-gray-800 mb-1 xs:mb-2 line-clamp-2 text-xs xs:text-sm"
-                                            x-text="task.title"></p>
 
-                                        {{-- Info --}}
-                                        <div class="flex items-center space-x-2 xs:space-x-3 text-gray-500 mb-1 xs:mb-2">
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L4.929 11.586a6 6 0 108.485 8.485L19 14" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.attachments ? task.attachments.length : 0"></span>
-                                            </div>
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.8L3 20l1.8-3.6A7.94 7.94 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.comments ? task.comments.length : 0"></span>
-                                            </div>
-                                        </div>
-
-                                        {{-- Progress + Avatars --}}
-                                        <div class="mt-1 xs:mt-2">
-                                            <div class="flex items-center justify-between mb-1">
-                                                <div class="w-full bg-gray-200 h-1 xs:h-1.5 rounded-full mr-2">
-                                                    <div class="bg-blue-500 h-1 xs:h-1.5 rounded-full transition-all duration-300"
-                                                        :style="`width: ${calculateProgress(task)}%`"></div>
-                                                </div>
-                                                <span class="font-medium text-gray-700 text-xs xs:text-sm"
-                                                    x-text="`${calculateProgress(task)}%`"></span>
-                                            </div>
-                                            <div class="flex mt-1 xs:mt-2 justify-end -space-x-1 xs:-space-x-2">
-                                                <template x-for="member in task.members" :key="member.name">
-                                                    <img :src="member.avatar"
-                                                        class="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-sm"
-                                                        :alt="member.name" :title="member.name">
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-
-                                {{-- No tasks message --}}
-                                <div x-show="getFilteredTasks('todo').length === 0"
-                                    class="text-center text-gray-500 text-xs xs:text-sm py-3 xs:py-4">
-                                    Tidak ada tugas
-                                </div>
+            {{-- 🎯 Kanban Board --}}
+            <div x-show="viewMode === 'kanban'" class="h-full">
+                <div class="flex-1 overflow-x-auto" @click.outside="openListMenu = null">
+                    <div id="kanban-board" class="flex kanban-gap-medium p-5 xs:p-4 min-w-max">
+                        {{-- 📋 To Do Column --}}
+                        <div
+                            class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
+                            <div class="flex items-center justify-between mb-1 xs:mb-2">
+                                <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">To Do List</h2>
+                                <button @click="openListMenu = openListMenu === 'todo' ? null : 'todo'"
+                                    class="text-gray-500 hover:text-gray-700 text-xs p-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 xs:h-4 xs:w-4"
+                                        fill="currentColor" viewBox="0 0 20 20">
+                                        <path
+                                            d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                                    </svg>
+                                </button>
                             </div>
 
-                            <button @click="openTaskModal = true"
-                                class="w-full mt-3 py-2 text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 shadow-sm">
-                                + Buat Tugas
-                            </button>
-                        </div>
-                    </div>
-
-                    {{-- 🔄 Dikerjakan Column --}}
-                    <div
-                        class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
-                        <div class="flex items-center justify-between mb-1 xs:mb-2">
-                            <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">Dikerjakan</h2>
-                            <button @click="openListMenu = openListMenu === 'inprogress' ? null : 'inprogress'"
-                                class="text-gray-500 hover:text-gray-700 text-xs p-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 xs:h-4 xs:w-4" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path
-                                        d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div class="flex flex-col flex-1">
-                            <div id="inprogress"
-                                class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
-                                <template x-for="task in getFilteredTasks('inprogress')" :key="task.id">
-                                    <div @click="openDetail(task.id)"
-                                        class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
-                                        {{-- Header (Label + Tanggal) --}}
-                                        <div class="flex items-center justify-between mb-1 xs:mb-2 flex-wrap gap-1">
-                                            <div class="flex flex-wrap gap-1">
-                                                <template x-for="label in task.labels" :key="label.name">
-                                                    <span class="font-semibold px-1.5 py-0.5 rounded text-xs xs:text-sm"
-                                                        :style="`background: ${label.color}20; color: ${label.color}`"
-                                                        x-text="label.name"></span>
-                                                </template>
-                                            </div>
-                                            <span x-show="task.dueDate"
-                                                class="font-semibold px-1.5 py-0.5 bg-yellow-100 text-gray-700 rounded text-xs xs:text-sm"
-                                                x-text="formatDate(task.dueDate)"></span>
-                                        </div>
-
-                                        {{-- Judul --}}
-                                        <p class="font-medium text-gray-800 mb-1 xs:mb-2 line-clamp-2 text-xs xs:text-sm"
-                                            x-text="task.title"></p>
-
-                                        {{-- Info --}}
-                                        <div class="flex items-center space-x-2 xs:space-x-3 text-gray-500 mb-1 xs:mb-2">
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L4.929 11.586a6 6 0 108.485 8.485L19 14" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.attachments ? task.attachments.length : 0"></span>
-                                            </div>
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.8L3 20l1.8-3.6A7.94 7.94 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.comments ? task.comments.length : 0"></span>
-                                            </div>
-                                        </div>
-
-                                        {{-- Progress + Avatars --}}
-                                        <div class="mt-1 xs:mt-2">
-                                            <div class="flex items-center justify-between mb-1">
-                                                <div class="w-full bg-gray-200 h-1 xs:h-1.5 rounded-full mr-2">
-                                                    <div class="bg-blue-500 h-1 xs:h-1.5 rounded-full transition-all duration-300"
-                                                        :style="`width: ${calculateProgress(task)}%`"></div>
+                            <div class="flex flex-col flex-1">
+                                <div id="todo"
+                                    class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
+                                    <template x-for="task in getFilteredTasks('todo')" :key="task.id">
+                                        <div @click="openDetail(task.id)"
+                                            class="bg-white p-1.5 xs:p-2 sm:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
+                                            {{-- Header (Label + Tanggal) --}}
+                                            <div class="flex items-center justify-between mb-1 xs:mb-2 flex-wrap gap-1">
+                                                <div class="flex flex-wrap gap-1">
+                                                    <template x-for="label in task.labels" :key="label.name">
+                                                        <span class="font-semibold px-1.5 py-0.5 rounded text-xs xs:text-sm"
+                                                            :style="`background: ${label.color}20; color: ${label.color}`"
+                                                            x-text="label.name"></span>
+                                                    </template>
                                                 </div>
-                                                <span class="font-medium text-gray-700 text-xs xs:text-sm"
-                                                    x-text="`${calculateProgress(task)}%`"></span>
+                                                <span x-show="task.dueDate"
+                                                    class="font-semibold px-1.5 py-0.5 bg-yellow-100 text-gray-700 rounded text-xs xs:text-sm"
+                                                    x-text="formatDate(task.dueDate)"></span>
                                             </div>
-                                            <div class="flex mt-1 xs:mt-2 justify-end -space-x-1 xs:-space-x-2">
-                                                <template x-for="member in task.members" :key="member.name">
-                                                    <img :src="member.avatar"
-                                                        class="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-sm"
-                                                        :alt="member.name" :title="member.name">
-                                                </template>
+
+                                            {{-- Judul --}}
+                                            <p class="font-medium text-gray-800 mb-1 xs:mb-2 line-clamp-2 text-xs xs:text-sm"
+                                                x-text="task.title"></p>
+
+                                            {{-- Info --}}
+                                            <div
+                                                class="flex items-center space-x-2 xs:space-x-3 text-gray-500 mb-1 xs:mb-2">
+                                                <div class="flex items-center space-x-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L4.929 11.586a6 6 0 108.485 8.485L19 14" />
+                                                    </svg>
+                                                    <span class="text-xs xs:text-sm"
+                                                        x-text="task.attachments ? task.attachments.length : 0"></span>
+                                                </div>
+                                                <div class="flex items-center space-x-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.8L3 20l1.8-3.6A7.94 7.94 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                    </svg>
+                                                    <span class="text-xs xs:text-sm"
+                                                        x-text="task.comments ? task.comments.length : 0"></span>
+                                                </div>
+                                            </div>
+
+                                            {{-- Progress + Avatars --}}
+                                            <div class="mt-1 xs:mt-2">
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <div class="w-full bg-gray-200 h-1 xs:h-1.5 rounded-full mr-2">
+                                                        <div class="bg-blue-500 h-1 xs:h-1.5 rounded-full transition-all duration-300"
+                                                            :style="`width: ${calculateProgress(task)}%`"></div>
+                                                    </div>
+                                                    <span class="font-medium text-gray-700 text-xs xs:text-sm"
+                                                        x-text="`${calculateProgress(task)}%`"></span>
+                                                </div>
+                                                <div class="flex mt-1 xs:mt-2 justify-end -space-x-1 xs:-space-x-2">
+                                                    <template x-for="member in task.members" :key="member.name">
+                                                        <img :src="member.avatar"
+                                                            class="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-sm"
+                                                            :alt="member.name" :title="member.name">
+                                                    </template>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </template>
+                                    </template>
 
-                                {{-- No tasks message --}}
-                                <div x-show="getFilteredTasks('inprogress').length === 0"
-                                    class="text-center text-gray-500 text-xs xs:text-sm py-3 xs:py-4">
-                                    Tidak ada tugas
+                                    {{-- No tasks message --}}
+                                    <div x-show="getFilteredTasks('todo').length === 0"
+                                        class="text-center text-gray-500 text-xs xs:text-sm py-3 xs:py-4">
+                                        Tidak ada tugas
+                                    </div>
                                 </div>
+
+                                <button @click="openTaskModal = true"
+                                    class="w-full mt-3 py-2 text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 shadow-sm">
+                                    + Buat Tugas
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- 🔄 Dikerjakan Column --}}
+                        <div
+                            class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
+                            <div class="flex items-center justify-between mb-1 xs:mb-2">
+                                <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">Dikerjakan</h2>
+                                <button @click="openListMenu = openListMenu === 'inprogress' ? null : 'inprogress'"
+                                    class="text-gray-500 hover:text-gray-700 text-xs p-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 xs:h-4 xs:w-4"
+                                        fill="currentColor" viewBox="0 0 20 20">
+                                        <path
+                                            d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                                    </svg>
+                                </button>
                             </div>
 
-                            <button @click="openTaskModal = true"
-                                class="w-full mt-2 xs:mt-3 py-1.5 xs:py-2 text-xs xs:text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 shadow-sm">
-                                + Buat Tugas
-                            </button>
-                        </div>
-                    </div>
-
-                    {{-- ✅ Selesai Column --}}
-                    <div
-                        class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
-                        <div class="flex items-center justify-between mb-1 xs:mb-2">
-                            <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">Selesai</h2>
-                            <button @click="openListMenu = openListMenu === 'done' ? null : 'done'"
-                                class="text-gray-500 hover:text-gray-700 text-xs p-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 xs:h-4 xs:w-4" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path
-                                        d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div class="flex flex-col flex-1">
-                            <div id="done"
-                                class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
-                                <template x-for="task in getFilteredTasks('done')" :key="task.id">
-                                    <div @click="openDetail(task.id)"
-                                        class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
-                                        {{-- Header (Label + Tanggal) --}}
-                                        <div class="flex items-center justify-between mb-1 xs:mb-2 flex-wrap gap-1">
-                                            <div class="flex flex-wrap gap-1">
-                                                <template x-for="label in task.labels" :key="label.name">
-                                                    <span class="font-semibold px-1.5 py-0.5 rounded text-xs xs:text-sm"
-                                                        :style="`background: ${label.color}20; color: ${label.color}`"
-                                                        x-text="label.name"></span>
-                                                </template>
-                                            </div>
-                                            <span x-show="task.dueDate"
-                                                class="font-semibold px-1.5 py-0.5 bg-yellow-100 text-gray-700 rounded text-xs xs:text-sm"
-                                                x-text="formatDate(task.dueDate)"></span>
-                                        </div>
-
-                                        {{-- Judul --}}
-                                        <p class="font-medium text-gray-800 mb-1 xs:mb-2 line-clamp-2 text-xs xs:text-sm"
-                                            x-text="task.title"></p>
-
-                                        {{-- Info --}}
-                                        <div class="flex items-center space-x-2 xs:space-x-3 text-gray-500 mb-1 xs:mb-2">
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L4.929 11.586a6 6 0 108.485 8.485L19 14" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.attachments ? task.attachments.length : 0"></span>
-                                            </div>
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.8L3 20l1.8-3.6A7.94 7.94 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.comments ? task.comments.length : 0"></span>
-                                            </div>
-                                        </div>
-
-                                        {{-- Progress + Avatars --}}
-                                        <div class="mt-1 xs:mt-2">
-                                            <div class="flex items-center justify-between mb-1">
-                                                <div class="w-full bg-gray-200 h-1 xs:h-1.5 rounded-full mr-2">
-                                                    <div class="bg-green-500 h-1 xs:h-1.5 rounded-full transition-all duration-300"
-                                                        :style="`width: ${calculateProgress(task)}%`"></div>
+                            <div class="flex flex-col flex-1">
+                                <div id="inprogress"
+                                    class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
+                                    <template x-for="task in getFilteredTasks('inprogress')" :key="task.id">
+                                        <div @click="openDetail(task.id)"
+                                            class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
+                                            {{-- Header (Label + Tanggal) --}}
+                                            <div class="flex items-center justify-between mb-1 xs:mb-2 flex-wrap gap-1">
+                                                <div class="flex flex-wrap gap-1">
+                                                    <template x-for="label in task.labels" :key="label.name">
+                                                        <span
+                                                            class="font-semibold px-1.5 py-0.5 rounded text-xs xs:text-sm"
+                                                            :style="`background: ${label.color}20; color: ${label.color}`"
+                                                            x-text="label.name"></span>
+                                                    </template>
                                                 </div>
-                                                <span class="font-medium text-gray-700 text-xs xs:text-sm"
-                                                    x-text="`${calculateProgress(task)}%`"></span>
+                                                <span x-show="task.dueDate"
+                                                    class="font-semibold px-1.5 py-0.5 bg-yellow-100 text-gray-700 rounded text-xs xs:text-sm"
+                                                    x-text="formatDate(task.dueDate)"></span>
                                             </div>
-                                            <div class="flex mt-1 xs:mt-2 justify-end -space-x-1 xs:-space-x-2">
-                                                <template x-for="member in task.members" :key="member.name">
-                                                    <img :src="member.avatar"
-                                                        class="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-sm"
-                                                        :alt="member.name" :title="member.name">
-                                                </template>
+
+                                            {{-- Judul --}}
+                                            <p class="font-medium text-gray-800 mb-1 xs:mb-2 line-clamp-2 text-xs xs:text-sm"
+                                                x-text="task.title"></p>
+
+                                            {{-- Info --}}
+                                            <div
+                                                class="flex items-center space-x-2 xs:space-x-3 text-gray-500 mb-1 xs:mb-2">
+                                                <div class="flex items-center space-x-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L4.929 11.586a6 6 0 108.485 8.485L19 14" />
+                                                    </svg>
+                                                    <span class="text-xs xs:text-sm"
+                                                        x-text="task.attachments ? task.attachments.length : 0"></span>
+                                                </div>
+                                                <div class="flex items-center space-x-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.8L3 20l1.8-3.6A7.94 7.94 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                    </svg>
+                                                    <span class="text-xs xs:text-sm"
+                                                        x-text="task.comments ? task.comments.length : 0"></span>
+                                                </div>
+                                            </div>
+
+                                            {{-- Progress + Avatars --}}
+                                            <div class="mt-1 xs:mt-2">
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <div class="w-full bg-gray-200 h-1 xs:h-1.5 rounded-full mr-2">
+                                                        <div class="bg-blue-500 h-1 xs:h-1.5 rounded-full transition-all duration-300"
+                                                            :style="`width: ${calculateProgress(task)}%`"></div>
+                                                    </div>
+                                                    <span class="font-medium text-gray-700 text-xs xs:text-sm"
+                                                        x-text="`${calculateProgress(task)}%`"></span>
+                                                </div>
+                                                <div class="flex mt-1 xs:mt-2 justify-end -space-x-1 xs:-space-x-2">
+                                                    <template x-for="member in task.members" :key="member.name">
+                                                        <img :src="member.avatar"
+                                                            class="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-sm"
+                                                            :alt="member.name" :title="member.name">
+                                                    </template>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </template>
+                                    </template>
 
-                                {{-- No tasks message --}}
-                                <div x-show="getFilteredTasks('done').length === 0"
-                                    class="text-center text-gray-500 text-xs xs:text-sm py-3 xs:py-4">
-                                    Tidak ada tugas
+                                    {{-- No tasks message --}}
+                                    <div x-show="getFilteredTasks('inprogress').length === 0"
+                                        class="text-center text-gray-500 text-xs xs:text-sm py-3 xs:py-4">
+                                        Tidak ada tugas
+                                    </div>
                                 </div>
+
+                                <button @click="openTaskModal = true"
+                                    class="w-full mt-2 xs:mt-3 py-1.5 xs:py-2 text-xs xs:text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 shadow-sm">
+                                    + Buat Tugas
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- ✅ Selesai Column --}}
+                        <div
+                            class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
+                            <div class="flex items-center justify-between mb-1 xs:mb-2">
+                                <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">Selesai</h2>
+                                <button @click="openListMenu = openListMenu === 'done' ? null : 'done'"
+                                    class="text-gray-500 hover:text-gray-700 text-xs p-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 xs:h-4 xs:w-4"
+                                        fill="currentColor" viewBox="0 0 20 20">
+                                        <path
+                                            d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                                    </svg>
+                                </button>
                             </div>
 
-                            <button @click="openTaskModal = true"
-                                class="w-full mt-2 xs:mt-3 py-1.5 xs:py-2 text-xs xs:text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 shadow-sm">
-                                + Buat Tugas
-                            </button>
-                        </div>
-                    </div>
-
-                    {{-- ❌ Batal Column --}}
-                    <div
-                        class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
-                        <div class="flex items-center justify-between mb-1 xs:mb-2">
-                            <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">Batal</h2>
-                            <button @click="openListMenu = openListMenu === 'cancel' ? null : 'cancel'"
-                                class="text-gray-500 hover:text-gray-700 text-xs p-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 xs:h-4 xs:w-4" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path
-                                        d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="flex flex-col flex-1">
-                            <div id="cancel"
-                                class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
-                                <template x-for="task in getFilteredTasks('cancel')" :key="task.id">
-                                    <div @click="openDetail(task.id)"
-                                        class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
-                                        {{-- Header (Label + Tanggal) --}}
-                                        <div class="flex items-center justify-between mb-1 xs:mb-2 flex-wrap gap-1">
-                                            <div class="flex flex-wrap gap-1">
-                                                <template x-for="label in task.labels" :key="label.name">
-                                                    <span class="font-semibold px-1.5 py-0.5 rounded text-xs xs:text-sm"
-                                                        :style="`background: ${label.color}20; color: ${label.color}`"
-                                                        x-text="label.name"></span>
-                                                </template>
-                                            </div>
-                                            <span x-show="task.dueDate"
-                                                class="font-semibold px-1.5 py-0.5 bg-yellow-100 text-gray-700 rounded text-xs xs:text-sm"
-                                                x-text="formatDate(task.dueDate)"></span>
-                                        </div>
-
-                                        {{-- Judul --}}
-                                        <p class="font-medium text-gray-800 mb-1 xs:mb-2 line-clamp-2 text-xs xs:text-sm"
-                                            x-text="task.title"></p>
-
-                                        {{-- Info --}}
-                                        <div class="flex items-center space-x-2 xs:space-x-3 text-gray-500 mb-1 xs:mb-2">
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L4.929 11.586a6 6 0 108.485 8.485L19 14" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.attachments ? task.attachments.length : 0"></span>
-                                            </div>
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.8L3 20l1.8-3.6A7.94 7.94 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.comments ? task.comments.length : 0"></span>
-                                            </div>
-                                        </div>
-
-                                        {{-- Progress + Avatars --}}
-                                        <div class="mt-1 xs:mt-2">
-                                            <div class="flex items-center justify-between mb-1">
-                                                <div class="w-full bg-gray-200 h-1 xs:h-1.5 rounded-full mr-2">
-                                                    <div class="bg-red-500 h-1 xs:h-1.5 rounded-full transition-all duration-300"
-                                                        :style="`width: ${calculateProgress(task)}%`"></div>
+                            <div class="flex flex-col flex-1">
+                                <div id="done"
+                                    class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
+                                    <template x-for="task in getFilteredTasks('done')" :key="task.id">
+                                        <div @click="openDetail(task.id)"
+                                            class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
+                                            {{-- Header (Label + Tanggal) --}}
+                                            <div class="flex items-center justify-between mb-1 xs:mb-2 flex-wrap gap-1">
+                                                <div class="flex flex-wrap gap-1">
+                                                    <template x-for="label in task.labels" :key="label.name">
+                                                        <span
+                                                            class="font-semibold px-1.5 py-0.5 rounded text-xs xs:text-sm"
+                                                            :style="`background: ${label.color}20; color: ${label.color}`"
+                                                            x-text="label.name"></span>
+                                                    </template>
                                                 </div>
-                                                <span class="font-medium text-gray-700 text-xs xs:text-sm"
-                                                    x-text="`${calculateProgress(task)}%`"></span>
+                                                <span x-show="task.dueDate"
+                                                    class="font-semibold px-1.5 py-0.5 bg-yellow-100 text-gray-700 rounded text-xs xs:text-sm"
+                                                    x-text="formatDate(task.dueDate)"></span>
                                             </div>
-                                            <div class="flex mt-1 xs:mt-2 justify-end -space-x-1 xs:-space-x-2">
-                                                <template x-for="member in task.members" :key="member.name">
-                                                    <img :src="member.avatar"
-                                                        class="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-sm"
-                                                        :alt="member.name" :title="member.name">
-                                                </template>
+
+                                            {{-- Judul --}}
+                                            <p class="font-medium text-gray-800 mb-1 xs:mb-2 line-clamp-2 text-xs xs:text-sm"
+                                                x-text="task.title"></p>
+
+                                            {{-- Info --}}
+                                            <div
+                                                class="flex items-center space-x-2 xs:space-x-3 text-gray-500 mb-1 xs:mb-2">
+                                                <div class="flex items-center space-x-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L4.929 11.586a6 6 0 108.485 8.485L19 14" />
+                                                    </svg>
+                                                    <span class="text-xs xs:text-sm"
+                                                        x-text="task.attachments ? task.attachments.length : 0"></span>
+                                                </div>
+                                                <div class="flex items-center space-x-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.8L3 20l1.8-3.6A7.94 7.94 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                    </svg>
+                                                    <span class="text-xs xs:text-sm"
+                                                        x-text="task.comments ? task.comments.length : 0"></span>
+                                                </div>
+                                            </div>
+
+                                            {{-- Progress + Avatars --}}
+                                            <div class="mt-1 xs:mt-2">
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <div class="w-full bg-gray-200 h-1 xs:h-1.5 rounded-full mr-2">
+                                                        <div class="bg-green-500 h-1 xs:h-1.5 rounded-full transition-all duration-300"
+                                                            :style="`width: ${calculateProgress(task)}%`"></div>
+                                                    </div>
+                                                    <span class="font-medium text-gray-700 text-xs xs:text-sm"
+                                                        x-text="`${calculateProgress(task)}%`"></span>
+                                                </div>
+                                                <div class="flex mt-1 xs:mt-2 justify-end -space-x-1 xs:-space-x-2">
+                                                    <template x-for="member in task.members" :key="member.name">
+                                                        <img :src="member.avatar"
+                                                            class="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-sm"
+                                                            :alt="member.name" :title="member.name">
+                                                    </template>
+                                                </div>
                                             </div>
                                         </div>
+                                    </template>
+
+                                    {{-- No tasks message --}}
+                                    <div x-show="getFilteredTasks('done').length === 0"
+                                        class="text-center text-gray-500 text-xs xs:text-sm py-3 xs:py-4">
+                                        Tidak ada tugas
                                     </div>
-                                </template>
-
-                                {{-- No tasks message --}}
-                                <div x-show="getFilteredTasks('cancel').length === 0"
-                                    class="text-center text-gray-500 text-xs xs:text-sm py-3 xs:py-4">
-                                    Tidak ada tugas
                                 </div>
-                            </div>
 
-                            <button @click="openTaskModal = true"
-                                class="w-full mt-2 xs:mt-3 py-1.5 xs:py-2 text-xs xs:text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 shadow-sm">
-                                + Buat Tugas
+                                <button @click="openTaskModal = true"
+                                    class="w-full mt-2 xs:mt-3 py-1.5 xs:py-2 text-xs xs:text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 shadow-sm">
+                                    + Buat Tugas
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- ❌ Batal Column --}}
+                        <div
+                            class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
+                            <div class="flex items-center justify-between mb-1 xs:mb-2">
+                                <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">Batal</h2>
+                                <button @click="openListMenu = openListMenu === 'cancel' ? null : 'cancel'"
+                                    class="text-gray-500 hover:text-gray-700 text-xs p-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 xs:h-4 xs:w-4"
+                                        fill="currentColor" viewBox="0 0 20 20">
+                                        <path
+                                            d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="flex flex-col flex-1">
+                                <div id="cancel"
+                                    class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
+                                    <template x-for="task in getFilteredTasks('cancel')" :key="task.id">
+                                        <div @click="openDetail(task.id)"
+                                            class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
+                                            {{-- Header (Label + Tanggal) --}}
+                                            <div class="flex items-center justify-between mb-1 xs:mb-2 flex-wrap gap-1">
+                                                <div class="flex flex-wrap gap-1">
+                                                    <template x-for="label in task.labels" :key="label.name">
+                                                        <span
+                                                            class="font-semibold px-1.5 py-0.5 rounded text-xs xs:text-sm"
+                                                            :style="`background: ${label.color}20; color: ${label.color}`"
+                                                            x-text="label.name"></span>
+                                                    </template>
+                                                </div>
+                                                <span x-show="task.dueDate"
+                                                    class="font-semibold px-1.5 py-0.5 bg-yellow-100 text-gray-700 rounded text-xs xs:text-sm"
+                                                    x-text="formatDate(task.dueDate)"></span>
+                                            </div>
+
+                                            {{-- Judul --}}
+                                            <p class="font-medium text-gray-800 mb-1 xs:mb-2 line-clamp-2 text-xs xs:text-sm"
+                                                x-text="task.title"></p>
+
+                                            {{-- Info --}}
+                                            <div
+                                                class="flex items-center space-x-2 xs:space-x-3 text-gray-500 mb-1 xs:mb-2">
+                                                <div class="flex items-center space-x-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L4.929 11.586a6 6 0 108.485 8.485L19 14" />
+                                                    </svg>
+                                                    <span class="text-xs xs:text-sm"
+                                                        x-text="task.attachments ? task.attachments.length : 0"></span>
+                                                </div>
+                                                <div class="flex items-center space-x-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.8L3 20l1.8-3.6A7.94 7.94 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                    </svg>
+                                                    <span class="text-xs xs:text-sm"
+                                                        x-text="task.comments ? task.comments.length : 0"></span>
+                                                </div>
+                                            </div>
+
+                                            {{-- Progress + Avatars --}}
+                                            <div class="mt-1 xs:mt-2">
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <div class="w-full bg-gray-200 h-1 xs:h-1.5 rounded-full mr-2">
+                                                        <div class="bg-red-500 h-1 xs:h-1.5 rounded-full transition-all duration-300"
+                                                            :style="`width: ${calculateProgress(task)}%`"></div>
+                                                    </div>
+                                                    <span class="font-medium text-gray-700 text-xs xs:text-sm"
+                                                        x-text="`${calculateProgress(task)}%`"></span>
+                                                </div>
+                                                <div class="flex mt-1 xs:mt-2 justify-end -space-x-1 xs:-space-x-2">
+                                                    <template x-for="member in task.members" :key="member.name">
+                                                        <img :src="member.avatar"
+                                                            class="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-sm"
+                                                            :alt="member.name" :title="member.name">
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    {{-- No tasks message --}}
+                                    <div x-show="getFilteredTasks('cancel').length === 0"
+                                        class="text-center text-gray-500 text-xs xs:text-sm py-3 xs:py-4">
+                                        Tidak ada tugas
+                                    </div>
+                                </div>
+
+                                <button @click="openTaskModal = true"
+                                    class="w-full mt-2 xs:mt-3 py-1.5 xs:py-2 text-xs xs:text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 shadow-sm">
+                                    + Buat Tugas
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- ➕ Tombol Tambah List --}}
+                        <div class="flex items-start justify-center pr-2 xs:pr-3">
+                            <button @click="openModal = true"
+                                class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 xs:px-3 xs:py-2 rounded-lg text-xs xs:text-sm shadow-md hover:shadow-lg transition-all duration-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                                </svg>
+                                <span class="hidden xs:inline">Tambah List</span>
+                                <span class="xs:hidden">Tambah</span>
                             </button>
                         </div>
-                    </div>
-
-                    {{-- ➕ Tombol Tambah List --}}
-                    <div class="flex items-start justify-center pr-2 xs:pr-3">
-                        <button @click="openModal = true"
-                            class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 xs:px-3 xs:py-2 rounded-lg text-xs xs:text-sm shadow-md hover:shadow-lg transition-all duration-200">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                            </svg>
-                            <span class="hidden xs:inline">Tambah List</span>
-                            <span class="xs:hidden">Tambah</span>
-                        </button>
                     </div>
                 </div>
             </div>
-        </div>
 
 
-        {{-- Halaman Balas Komentar --}}
-        @include('components.balas-komentar')
+            {{-- Halaman Balas Komentar --}}
+            @include('components.balas-komentar')
 
 
 
-       {{-- 🎯 Gantt Chart Timeline View --}}
-<div 
-    x-show="viewMode === 'timeline'" 
-    class="gantt-horizontal bg-gray-50 min-h-screen p-6"
->
-    <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden">
+            {{-- 🎯 Gantt Chart Timeline View --}}
+            <div x-show="viewMode === 'timeline'" class="h-full p-3">
+                <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
 
-        <!-- 🧭 Header -->
-        <div class="bg-gradient-to-r from-blue-50 to-blue-100 p-4 border-b border-gray-200">
-            <h1 class="text-lg font-bold text-gray-800 tracking-wide">
-                🗓️ TIMELINE PEKERJAAN
-            </h1>
-        </div>
-
-        <!-- 📊 Gantt Chart -->
-        <div class="overflow-x-auto">
-            <!-- Header -->
-            <div class="flex bg-gray-100 border-b border-gray-200 text-gray-700 font-semibold text-sm">
-                <div class="w-64 px-4 py-3 border-r border-gray-200">Phase / Tugas</div>
-                <div class="flex-1 px-4 py-3">Timeline</div>
-            </div>
-
-            <!-- Body -->
-            <div class="relative">
-                <div class="flex">
-                    <!-- Phase List -->
-                    <div class="w-64 border-r border-gray-200 bg-white">
-                        <template x-for="phase in getProjectPhases()" :key="phase.id">
-                            <div 
-                                class="px-4 py-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100"
-                                :class="{ 'bg-blue-100': selectedPhase === phase.id }"
-                                @click="showPhaseTasks(phase.id)"
-                            >
-                                <div class="font-semibold text-gray-800" x-text="phase.name"></div>
-                                <div class="text-xs text-gray-500 mt-1" x-text="phase.description"></div>
-                            </div>
-                        </template>
+                    <!-- 🧭 Header -->
+                    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-2">
+                        <h1 class="text-base font-bold text-white tracking-wide flex items-center gap-2">
+                            <span>TIMELINE PEKERJAAN</span>
+                        </h1>
                     </div>
 
-                    <!-- Timeline Bars -->
-                    <div 
-                        class="flex-1 relative bg-white"
-                        x-data="{
-                            calculatePhasePosition(phase) {
-                                const tasks = getTasksByPhase(phase.id);
-                                if (tasks.length === 0) return { left: '0%', width: '0%' };
+                    <!-- 📊 Gantt Chart -->
+                    <div class="overflow-x-auto">
 
-                                let earliestStart = new Date('2024-12-31');
-                                let latestEnd = new Date('2024-01-01');
+                        <!-- Header -->
+                        <div class="flex bg-gray-100 border-b border-gray-200 text-gray-700 font-semibold text-xs">
+                            <div class="w-56 px-3 py-2 border-r border-gray-200">Phase / Tugas</div>
+                            <div class="flex-1 px-3 py-2">Timeline & Progress</div>
+                        </div>
 
-                                tasks.forEach(task => {
-                                    const startDate = new Date(task.startDate);
-                                    const endDate = new Date(task.dueDate);
-                                    if (startDate < earliestStart) earliestStart = startDate;
-                                    if (endDate > latestEnd) latestEnd = endDate;
-                                });
-
-                                const timelineStart = new Date('2024-01-01');
-                                const timelineEnd = new Date('2024-06-30');
-                                const totalDays = (timelineEnd - timelineStart) / (1000 * 60 * 60 * 24);
-                                const phaseStart = (earliestStart - timelineStart) / (1000 * 60 * 60 * 24);
-                                const phaseDuration = (latestEnd - earliestStart) / (1000 * 60 * 60 * 24);
-
-                                const left = Math.max(0, (phaseStart / totalDays) * 100);
-                                const width = Math.min(100 - left, (phaseDuration / totalDays) * 100);
-
-                                return { left: left + '%', width: Math.max(width, 2) + '%' };
-                            },
-                            getPhaseColor(phaseId) {
-                                const colors = {
-                                    1: 'from-blue-500 to-blue-700',
-                                    2: 'from-green-500 to-green-700',
-                                    3: 'from-orange-500 to-orange-700',
-                                    4: 'from-purple-500 to-purple-700',
-                                    5: 'from-pink-500 to-pink-700',
-                                    6: 'from-indigo-500 to-indigo-700'
-                                };
-                                return colors[phaseId] || 'from-gray-400 to-gray-600';
-                            }
-                        }"
-                    >
-                        <!-- Current Date Line -->
-                        <div class="absolute top-0 bottom-0 w-0.5 bg-red-500 opacity-60" style="left: 30%;"></div>
-
-                        <!-- Phase Bars -->
+                        <!-- Body -->
                         <template x-for="(phase, index) in getProjectPhases()" :key="phase.id">
-                            <div 
-                                class="absolute h-8 rounded-lg shadow-sm cursor-pointer text-white text-xs flex items-center justify-center font-medium"
-                                :class="`bg-gradient-to-r ${getPhaseColor(phase.id)}`"
-                                :style="`top: ${20 + (index * 60)}px; left: ${calculatePhasePosition(phase).left}; width: ${calculatePhasePosition(phase).width}`"
-                                @click="showPhaseTasks(phase.id)"
-                            >
-                                <span x-text="phase.name"></span>
+                            <div class="flex border-b border-gray-100 transition-all duration-200">
+
+                                <!-- 🧩 Kolom Phase -->
+                                <div class="w-56 px-3 py-3 border-r border-gray-200 bg-white cursor-pointer"
+                                    :class="{ 'bg-blue-50 font-semibold': selectedPhase === phase.id }"
+                                    @click="showPhaseTasks(phase.id)">
+                                    <div class="text-gray-800 font-medium text-sm" x-text="phase.name"></div>
+                                    <div class="text-xs text-gray-500 mt-0.5" x-text="phase.description"></div>
+                                </div>
+
+                                <!-- 📈 Kolom Timeline -->
+                                <div class="flex-1 relative bg-white h-[70px]" x-data="{
+                                    calculatePhasePosition(phase) {
+                                            const tasks = getTasksByPhase(phase.id);
+                                            if (tasks.length === 0) return { left: '0%', width: '0%' };
+                                
+                                            let earliestStart = new Date('2024-12-31');
+                                            let latestEnd = new Date('2024-01-01');
+                                
+                                            tasks.forEach(task => {
+                                                const startDate = new Date(task.startDate);
+                                                const endDate = new Date(task.dueDate);
+                                                if (startDate < earliestStart) earliestStart = startDate;
+                                                if (endDate > latestEnd) latestEnd = endDate;
+                                            });
+                                
+                                            const timelineStart = new Date('2024-01-01');
+                                            const timelineEnd = new Date('2024-06-30');
+                                            const totalDays = (timelineEnd - timelineStart) / (1000 * 60 * 60 * 24);
+                                            const phaseStart = (earliestStart - timelineStart) / (1000 * 60 * 60 * 24);
+                                            const phaseDuration = (latestEnd - earliestStart) / (1000 * 60 * 60 * 24);
+                                
+                                            const left = Math.max(0, (phaseStart / totalDays) * 100);
+                                            const width = Math.min(100 - left, (phaseDuration / totalDays) * 100);
+                                
+                                            return {
+                                                left: left + '%',
+                                                width: Math.max(width, 2) + '%'
+                                            };
+                                        },
+                                
+                                        getPhaseColor(phaseId) {
+                                            const colors = {
+                                                1: 'phase-planning',
+                                                2: 'phase-analysis',
+                                                3: 'phase-design',
+                                                4: 'phase-development',
+                                                5: 'phase-testing',
+                                                6: 'phase-deployment'
+                                            };
+                                            return colors[phaseId] || 'phase-planning';
+                                        }
+                                }">
+
+                                    <!-- Progress Bar - FULL WIDTH dengan warna phase -->
+                                    <div class="absolute top-1/2 -translate-y-1/2 h-8 rounded-lg shadow-md transition-all duration-500 overflow-hidden"
+                                        :class="getPhaseColor(phase.id)"
+                                        :style="`left: ${calculatePhasePosition(phase).left}; width: ${calculatePhasePosition(phase).width}`">
+
+                                        <!-- Progress Percentage -->
+                                        <div class="relative z-10 text-white text-xs font-semibold flex items-center justify-center h-full w-full"
+                                            x-text="`${getPhaseStats(phase.id).progress}%`">
+                                        </div>
+
+                                        <!-- Shimmer Effect -->
+                                        <div
+                                            class="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20 animate-shimmer">
+                                        </div>
+                                    </div>
+
+                                </div>
                             </div>
                         </template>
+                    </div>
+
+                    <!-- 🧩 Legend -->
+                    <div class="bg-gray-50 p-3 border-t border-gray-200">
+                        <div class="flex flex-wrap items-center gap-3 text-xs text-gray-700">
+                            <span class="font-bold">LEGEND:</span>
+                            <template
+                                x-for="legend in [
+                        {color: 'from-blue-500 to-blue-700', label: 'Perencanaan'},
+                        {color: 'from-green-500 to-green-700', label: 'Analisis'},
+                        {color: 'from-orange-500 to-orange-700', label: 'Desain'},
+                        {color: 'from-purple-500 to-purple-700', label: 'Development'},
+                        {color: 'from-pink-500 to-pink-700', label: 'Testing'},
+                        {color: 'from-indigo-500 to-indigo-700', label: 'Deployment'}
+                    ]"
+                                :key="legend.label">
+                                <div class="flex items-center gap-1.5">
+                                    <div class="w-3 h-3 rounded bg-gradient-to-br" :class="legend.color"></div>
+                                    <span x-text="legend.label"></span>
+                                </div>
+                            </template>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 🧩 Legend -->
-        <div class="bg-gray-50 p-4 border-t border-gray-200">
-            <div class="flex flex-wrap items-center gap-4 text-sm text-gray-700">
-                <span class="font-bold">LEGEND:</span>
-                <template x-for="legend in [
-                    {color: 'from-blue-500 to-blue-700', label: 'Planning'},
-                    {color: 'from-green-500 to-green-700', label: 'Analysis'},
-                    {color: 'from-orange-500 to-orange-700', label: 'Design'},
-                    {color: 'from-purple-500 to-purple-700', label: 'Development'},
-                    {color: 'from-pink-500 to-pink-700', label: 'Testing'},
-                    {color: 'from-indigo-500 to-indigo-700', label: 'Deployment'}
-                ]">
-                    <div class="flex items-center gap-2">
-                        <div class="w-4 h-4 rounded bg-gradient-to-br" :class="legend.color"></div>
-                        <span x-text="legend.label"></span>
-                    </div>
-                </template>
-            </div>
-        </div>
-    </div>
-</div>
+
+
 
 
 
@@ -1682,17 +1546,61 @@
                 <div class="p-6 border-b">
                     <h2 class="text-xl font-bold text-gray-800" x-text="phaseModal.title"></h2>
                     <p class="text-gray-600 mt-1" x-text="phaseModal.description"></p>
+
+                    <!-- Progress Overview -->
+                    <div class="mt-4 bg-blue-50 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-medium text-gray-700">Progress Phase</span>
+                            <span class="font-bold text-lg"
+                                :class="{
+                                    'text-green-600': phaseModal.progress === 100,
+                                    'text-blue-600': phaseModal.progress > 0 && phaseModal.progress < 100,
+                                    'text-gray-400': phaseModal.progress === 0
+                                }"
+                                x-text="`${phaseModal.progress}%`">
+                            </span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3">
+                            <div class="h-3 rounded-full transition-all duration-500"
+                                :class="{
+                                    'bg-green-500': phaseModal.progress === 100,
+                                    'bg-blue-500': phaseModal.progress > 0 && phaseModal.progress < 100,
+                                    'bg-gray-300': phaseModal.progress === 0
+                                }"
+                                :style="`width: ${phaseModal.progress}%`">
+                            </div>
+                        </div>
+                        <div class="flex justify-between text-sm text-gray-600 mt-1">
+                            <span x-text="`${phaseModal.completedTasks} tugas selesai`"></span>
+                            <span x-text="`${phaseModal.totalTasks} total tugas`"></span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="p-6">
                     <h3 class="text-lg font-semibold mb-4">Daftar Tugas</h3>
                     <div class="space-y-4">
                         <template x-for="task in phaseModal.tasks" :key="task.id">
-                            <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer"
+                            <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-all duration-200"
+                                :class="{
+                                    'border-green-200 bg-green-50': task.status === 'done',
+                                    'border-blue-200 bg-blue-50': task.status === 'inprogress',
+                                    'border-gray-200': task.status === 'todo'
+                                }"
                                 @click="openDetail(task.id)">
                                 <div class="flex justify-between items-start">
-                                    <div>
-                                        <h4 class="font-medium text-gray-800" x-text="task.title"></h4>
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <h4 class="font-medium text-gray-800" x-text="task.title"></h4>
+                                            <span class="text-xs px-2 py-1 rounded-full"
+                                                :class="{
+                                                    'bg-green-100 text-green-800': task.status === 'done',
+                                                    'bg-blue-100 text-blue-800': task.status === 'inprogress',
+                                                    'bg-gray-100 text-gray-800': task.status === 'todo'
+                                                }"
+                                                x-text="task.status === 'done' ? 'Selesai' : (task.status === 'inprogress' ? 'Dikerjakan' : 'To Do')">
+                                            </span>
+                                        </div>
                                         <div class="flex items-center gap-4 mt-2 text-sm text-gray-600">
                                             <div class="flex items-center gap-1">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor"
@@ -1716,7 +1624,12 @@
                                         <div class="text-sm text-gray-600 mb-1" x-text="`${calculateProgress(task)}%`">
                                         </div>
                                         <div class="w-24 h-2 bg-gray-200 rounded-full">
-                                            <div class="h-2 bg-green-500 rounded-full transition-all duration-300"
+                                            <div class="h-2 rounded-full transition-all duration-300"
+                                                :class="{
+                                                    'bg-green-500': task.status === 'done',
+                                                    'bg-blue-500': task.status === 'inprogress',
+                                                    'bg-gray-400': task.status === 'todo'
+                                                }"
                                                 :style="`width: ${calculateProgress(task)}%`"></div>
                                         </div>
                                     </div>
@@ -2553,8 +2466,14 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                                 </svg>
                             </button>
                         </label>
-                        <span
-                            class="inline-block w-full px-4 py-2 rounded-md bg-yellow-100 text-yellow-700 text-sm text-center font-medium">Finance</span>
+                        <!-- Tampilkan semua label tugas -->
+                        <div class="flex flex-wrap gap-2">
+                            <template x-for="label in currentTask.labels" :key="label.name">
+                                <span class="inline-block px-3 py-1 rounded-md text-white text-sm font-medium shadow-sm"
+                                    :style="`background:${label.color}`" x-text="label.name">
+                                </span>
+                            </template>
+                        </div>
                     </div>
 
                     <!-- Modal Pilih Label -->
@@ -3115,7 +3034,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                             id: 2,
                             title: "Analisis Kebutuhan User",
                             phase: "Analisis",
-                            status: "todo",
+                            status: "done",
                             members: [{
                                     name: 'Risi',
                                     avatar: 'https://i.pravatar.cc/40?img=3'
@@ -3750,11 +3669,8 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         });
                     },
 
-                    calculateProgress(task) {
-                        if (!task.checklist || task.checklist.length === 0) return 0;
-                        const completed = task.checklist.filter(item => item.done).length;
-                        return Math.round((completed / task.checklist.length) * 100);
-                    },
+
+
 
 
 
@@ -3805,50 +3721,52 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                     getProjectPhases() {
                         return [{
                                 id: 1,
-                                name: 'Briefing Project & Pembagian Tugas',
-                                description: 'Penyusunan dokumen tujuan, scope, milestone, deliverables'
+                                name: 'Perencanaan',
                             },
                             {
                                 id: 2,
-                                name: 'Analisis Kebutuhan Sistem',
-                                description: 'Functional & Non-functional requirements, Arsitektur & Database'
+                                name: 'Analisis',
                             },
                             {
                                 id: 3,
-                                name: 'Desain UI/UX',
-                                description: 'Wireframe / Prototype Figma, Finalisasi desain'
+                                name: 'Desain',
                             },
                             {
                                 id: 4,
                                 name: 'Development',
-                                description: 'Implementasi F001-F020, Deployment ke server'
                             },
                             {
                                 id: 5,
-                                name: 'Testing & Quality Assurance',
-                                description: 'Beta Release, UAT, Fix bug & optimasi'
+                                name: 'Testing',
                             },
                             {
                                 id: 6,
-                                name: 'Deployment & Dokumentasi',
-                                description: 'Final Release, Presentasi, Dokumentasi teknis'
+                                name: 'Deployment',
                             }
                         ];
                     },
 
+                    // Update method showPhaseTasks
                     showPhaseTasks(phaseId) {
                         const phase = this.getProjectPhases().find(p => p.id === phaseId);
                         if (!phase) return;
+
+                        const phaseTasks = this.getTasksByPhaseId(phaseId);
+                        const totalTasks = phaseTasks.length;
+                        const completedTasks = phaseTasks.filter(task => task.status === 'done').length;
+                        const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
                         this.selectedPhase = phaseId;
                         this.phaseModal = {
                             open: true,
                             title: phase.name,
                             description: phase.description,
-                            tasks: this.getTasksByPhaseId(phaseId)
+                            tasks: phaseTasks,
+                            progress: progress,
+                            totalTasks: totalTasks,
+                            completedTasks: completedTasks
                         };
                     },
-
                     getTasksByPhaseId(phaseId) {
                         // Mapping phase ID ke phase name yang sesuai dengan data tasks
                         const phaseMap = {
@@ -3868,10 +3786,37 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         this.openDetail(task.id);
                     },
 
+                    // Methods untuk menghitung progress
                     calculateProgress(task) {
                         if (!task.checklist || task.checklist.length === 0) return 0;
                         const completed = task.checklist.filter(item => item.done).length;
                         return Math.round((completed / task.checklist.length) * 100);
+                    },
+
+                    // Method untuk menghitung persentase phase berdasarkan tugas selesai
+                    calculatePhaseProgress(phaseId) {
+                        const phaseTasks = this.getTasksByPhaseId(phaseId);
+                        if (phaseTasks.length === 0) return 0;
+
+                        const completedTasks = phaseTasks.filter(task => task.status === 'done').length;
+                        return Math.round((completedTasks / phaseTasks.length) * 100);
+                    },
+
+                    // Method untuk mendapatkan statistik phase
+                    getPhaseStats(phaseId) {
+                        const phaseTasks = this.getTasksByPhaseId(phaseId);
+                        const totalTasks = phaseTasks.length;
+                        const completedTasks = phaseTasks.filter(task => task.status === 'done').length;
+                        const inProgressTasks = phaseTasks.filter(task => task.status === 'inprogress').length;
+                        const todoTasks = phaseTasks.filter(task => task.status === 'todo').length;
+
+                        return {
+                            total: totalTasks,
+                            completed: completedTasks,
+                            inProgress: inProgressTasks,
+                            todo: todoTasks,
+                            progress: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+                        };
                     },
 
                     formatDate(dateString) {
@@ -3896,6 +3841,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
 
 
                     // Add this to your kanbanApp() methods
+                    // Update method getTasksByPhase
                     getTasksByPhase(phaseId) {
                         const phaseMap = {
                             1: 'Perencanaan',
@@ -3909,14 +3855,9 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         const phaseName = phaseMap[phaseId];
                         const phaseTasks = this.tasks.filter(task => task.phase === phaseName);
 
+                        // Jika tidak ada tugas, return array kosong agar timeline tidak muncul
                         if (phaseTasks.length === 0) {
-                            // Return default task jika tidak ada task di phase ini
-                            return [{
-                                id: 'default-' + phaseId,
-                                startDate: '2024-01-01',
-                                dueDate: '2024-01-31',
-                                title: 'Task ' + phaseName
-                            }];
+                            return [];
                         }
 
                         return phaseTasks;
