@@ -69,6 +69,17 @@
                             <span x-text="isConnecting ? 'Mode Koneksi (Klik untuk Batal)' : 'Buat Koneksi'"></span>
                         </button>
                     </div>
+
+                    <!-- Connection Style Toggle -->
+                    <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
+                        <button @click="toggleConnectionStyle()" class="text-sm font-medium text-gray-700 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path x-show="connectionStyle === 'straight'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"/>
+                                <path x-show="connectionStyle === 'curved'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                            </svg>
+                            <span x-text="connectionStyle === 'straight' ? 'Garis Lurus' : 'Garis Lengkung'"></span>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Info Stats -->
@@ -149,9 +160,21 @@
                                 </div>
                             </div>
 
-                            <!-- Connection Point -->
+                            <!-- Connection Points di Semua Sisi -->
+                            <div class="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-md hover:bg-blue-600 cursor-pointer"
+                                 @click.stop="handleConnectionPointClick(node, 'top')"
+                                 :class="isConnecting ? 'animate-pulse ring-2 ring-yellow-400' : ''">
+                            </div>
                             <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-md hover:bg-blue-600 cursor-pointer"
-                                 @click.stop="handleConnectionPointClick(node)"
+                                 @click.stop="handleConnectionPointClick(node, 'bottom')"
+                                 :class="isConnecting ? 'animate-pulse ring-2 ring-yellow-400' : ''">
+                            </div>
+                            <div class="absolute -left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-md hover:bg-blue-600 cursor-pointer"
+                                 @click.stop="handleConnectionPointClick(node, 'left')"
+                                 :class="isConnecting ? 'animate-pulse ring-2 ring-yellow-400' : ''">
+                            </div>
+                            <div class="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-md hover:bg-blue-600 cursor-pointer"
+                                 @click.stop="handleConnectionPointClick(node, 'right')"
                                  :class="isConnecting ? 'animate-pulse ring-2 ring-yellow-400' : ''">
                             </div>
                         </div>
@@ -220,6 +243,18 @@
                             </template>
                         </select>
                     </div>
+
+                    <!-- Connection Side Selection -->
+                    <div x-show="editingNode.parentId">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Sisi Koneksi dari Parent</label>
+                        <select x-model="editingNode.connectionSide" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
+                            <option value="auto">Auto</option>
+                            <option value="top">Atas</option>
+                            <option value="right">Kanan</option>
+                            <option value="bottom">Bawah</option>
+                            <option value="left">Kiri</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <div class="bg-gray-50 px-6 py-4 rounded-b-2xl flex justify-end gap-3">
@@ -259,7 +294,9 @@ function mindmapApp() {
         // Connection mode
         isConnecting: false,
         connectionSource: null,
+        connectionSourceSide: null,
         tempConnectionTarget: null,
+        connectionStyle: 'straight', // 'straight' atau 'curved'
 
         // Computed property untuk menghitung jumlah koneksi
         get connectionCount() {
@@ -285,7 +322,8 @@ function mindmapApp() {
                 y: this.canvas.height / 2,
                 isRoot: true,
                 type: 'default',
-                parentId: null
+                parentId: null,
+                connectionSide: 'auto'
             }];
             
             this.drawConnections();
@@ -346,7 +384,7 @@ function mindmapApp() {
                 if (node.parentId) {
                     const parent = this.nodes.find(n => n.id === node.parentId);
                     if (parent) {
-                        this.drawLine(parent, node);
+                        this.drawConnection(parent, node);
                     }
                 }
             });
@@ -374,39 +412,34 @@ function mindmapApp() {
             this.ctx.stroke();
         },
 
-        drawLine(from, to) {
+        drawConnection(from, to) {
+            // Hitung posisi dalam koordinat screen dengan benar
             const startX = from.x * this.zoomLevel + this.panX;
             const startY = from.y * this.zoomLevel + this.panY;
-            const endX = to.x * this.zoomLevel + this.panX; // Fixed: menggunakan panX untuk kedua koordinat
-            const endY = to.y * this.zoomLevel + this.panY; // Fixed: menggunakan panY untuk kedua koordinat
+            const endX = to.x * this.zoomLevel + this.panX;
+            const endY = to.y * this.zoomLevel + this.panY;
             
             // Hitung warna berdasarkan tipe node
             let strokeColor = '#60a5fa'; // default blue
             if (to.type === 'idea') strokeColor = '#a855f7'; // purple
             if (to.type === 'task') strokeColor = '#10b981'; // green
             
-            // Hitung jarak dan sudut untuk kurva yang lebih smooth
-            const dx = endX - startX;
-            const dy = endY - startY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+            // Tentukan sisi koneksi
+            const fromSide = this.getConnectionSide(from, to);
+            const toSide = this.getConnectionSide(to, from);
             
-            // Kontrol points untuk kurva Bezier yang lebih smooth
-            const controlOffset = Math.min(distance * 0.3, 100);
+            // Hitung titik awal dan akhir berdasarkan sisi
+            const startPoint = this.getConnectionPoint(from, fromSide, startX, startY);
+            const endPoint = this.getConnectionPoint(to, toSide, endX, endY);
             
             this.ctx.beginPath();
-            this.ctx.moveTo(startX, startY);
             
-            // Gunakan quadratic curve untuk garis yang lebih smooth
-            if (Math.abs(dx) > Math.abs(dy)) {
-                // Horizontal curve
-                const controlX = startX + dx * 0.5;
-                const controlY = startY + (dy > 0 ? -controlOffset : controlOffset);
-                this.ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+            if (this.connectionStyle === 'straight') {
+                // Garis lurus dengan sudut siku-siku
+                this.drawStraightLine(startPoint, endPoint);
             } else {
-                // Vertical curve
-                const controlX = startX + (dx > 0 ? -controlOffset : controlOffset);
-                const controlY = startY + dy * 0.5;
-                this.ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+                // Garis lengkung (seperti sebelumnya)
+                this.drawCurvedLine(startPoint, endPoint);
             }
             
             this.ctx.strokeStyle = strokeColor;
@@ -415,23 +448,114 @@ function mindmapApp() {
             this.ctx.lineJoin = 'round';
             this.ctx.stroke();
             
-            // Draw arrow head yang lebih smooth
-            const angle = Math.atan2(dy, dx);
+            // Draw arrow head
+            this.drawArrow(endPoint.x, endPoint.y, endPoint.angle, strokeColor);
+        },
+
+        getConnectionSide(from, to) {
+            // Jika node memiliki sisi koneksi yang ditentukan, gunakan itu
+            if (from.connectionSide && from.connectionSide !== 'auto') {
+                return from.connectionSide;
+            }
+            
+            // Tentukan sisi otomatis berdasarkan posisi relatif
+            const dx = to.x - from.x;
+            const dy = to.y - from.y;
+            
+            if (Math.abs(dx) > Math.abs(dy)) {
+                return dx > 0 ? 'right' : 'left';
+            } else {
+                return dy > 0 ? 'bottom' : 'top';
+            }
+        },
+
+        getConnectionPoint(node, side, screenX, screenY) {
+            const nodeWidth = 192; // approx width of node
+            const nodeHeight = 80; // approx height of node
+            
+            let x = screenX;
+            let y = screenY;
+            let angle = 0;
+            
+            switch (side) {
+                case 'top':
+                    y = screenY - nodeHeight/2;
+                    angle = -Math.PI/2;
+                    break;
+                case 'bottom':
+                    y = screenY + nodeHeight/2;
+                    angle = Math.PI/2;
+                    break;
+                case 'left':
+                    x = screenX - nodeWidth/2;
+                    angle = Math.PI;
+                    break;
+                case 'right':
+                    x = screenX + nodeWidth/2;
+                    angle = 0;
+                    break;
+            }
+            
+            return { x, y, angle };
+        },
+
+        drawStraightLine(start, end) {
+            // Garis lurus dengan sudut siku-siku (seperti di draw.io)
+            const midX = (start.x + end.x) / 2;
+            const midY = (start.y + end.y) / 2;
+            
+            this.ctx.moveTo(start.x, start.y);
+            
+            // Horizontal lalu vertikal, atau sebaliknya, tergantung mana yang lebih pendek
+            if (Math.abs(start.x - end.x) > Math.abs(start.y - end.y)) {
+                this.ctx.lineTo(midX, start.y);
+                this.ctx.lineTo(midX, end.y);
+            } else {
+                this.ctx.lineTo(start.x, midY);
+                this.ctx.lineTo(end.x, midY);
+            }
+            
+            this.ctx.lineTo(end.x, end.y);
+        },
+
+        drawCurvedLine(start, end) {
+            // Kurva untuk garis lengkung
+            const dx = end.x - start.x;
+            const dy = end.y - start.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const controlOffset = Math.min(distance * 0.3, 100);
+            
+            this.ctx.moveTo(start.x, start.y);
+            
+            if (Math.abs(dx) > Math.abs(dy)) {
+                // Horizontal curve
+                const controlX = start.x + dx * 0.5;
+                const controlY = start.y + (dy > 0 ? -controlOffset : controlOffset);
+                this.ctx.quadraticCurveTo(controlX, controlY, end.x, end.y);
+            } else {
+                // Vertical curve
+                const controlX = start.x + (dx > 0 ? -controlOffset : controlOffset);
+                const controlY = start.y + dy * 0.5;
+                this.ctx.quadraticCurveTo(controlX, controlY, end.x, end.y);
+            }
+        },
+
+        drawArrow(x, y, angle, color) {
             const arrowLength = 12 * this.zoomLevel;
             const arrowWidth = 8 * this.zoomLevel;
             
             this.ctx.beginPath();
-            this.ctx.moveTo(endX, endY);
+            this.ctx.moveTo(x, y);
             this.ctx.lineTo(
-                endX - arrowLength * Math.cos(angle) - arrowWidth * Math.sin(angle),
-                endY - arrowLength * Math.sin(angle) + arrowWidth * Math.cos(angle)
+                x - arrowLength * Math.cos(angle) - arrowWidth * Math.sin(angle),
+                y - arrowLength * Math.sin(angle) + arrowWidth * Math.cos(angle)
             );
             this.ctx.lineTo(
-                endX - arrowLength * Math.cos(angle) + arrowWidth * Math.sin(angle),
-                endY - arrowLength * Math.sin(angle) - arrowWidth * Math.cos(angle)
+                x - arrowLength * Math.cos(angle) + arrowWidth * Math.sin(angle),
+                y - arrowLength * Math.sin(angle) - arrowWidth * Math.cos(angle)
             );
             this.ctx.closePath();
-            this.ctx.fillStyle = strokeColor;
+            this.ctx.fillStyle = color;
             this.ctx.fill();
         },
 
@@ -441,16 +565,41 @@ function mindmapApp() {
             const endX = this.tempConnectionTarget.x;
             const endY = this.tempConnectionTarget.y;
             
+            // Hitung titik awal berdasarkan sisi yang dipilih
+            const startPoint = this.getConnectionPoint(
+                this.connectionSource, 
+                this.connectionSourceSide, 
+                startX, 
+                startY
+            );
+            
             this.ctx.beginPath();
-            this.ctx.moveTo(startX, startY);
             
-            // Kurva untuk temporary connection
-            const dx = endX - startX;
-            const dy = endY - startY;
-            const controlX = startX + dx * 0.5;
-            const controlY = startY + (dy > 0 ? -100 : 100);
-            
-            this.ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+            if (this.connectionStyle === 'straight') {
+                // Garis lurus sementara
+                const midX = (startPoint.x + endX) / 2;
+                const midY = (startPoint.y + endY) / 2;
+                
+                this.ctx.moveTo(startPoint.x, startPoint.y);
+                
+                if (Math.abs(startPoint.x - endX) > Math.abs(startPoint.y - endY)) {
+                    this.ctx.lineTo(midX, startPoint.y);
+                    this.ctx.lineTo(midX, endY);
+                } else {
+                    this.ctx.lineTo(startPoint.x, midY);
+                    this.ctx.lineTo(endX, midY);
+                }
+                
+                this.ctx.lineTo(endX, endY);
+            } else {
+                // Kurva untuk temporary connection
+                const dx = endX - startPoint.x;
+                const dy = endY - startPoint.y;
+                const controlX = startPoint.x + dx * 0.5;
+                const controlY = startPoint.y + (dy > 0 ? -100 : 100);
+                
+                this.ctx.quadraticCurveTo(controlX, controlY, endX, endY);
+            }
             
             this.ctx.strokeStyle = '#f59e0b';
             this.ctx.lineWidth = 2;
@@ -472,7 +621,8 @@ function mindmapApp() {
                 y: centerY + (Math.random() * 200 - 100),
                 isRoot: false,
                 type: 'default',
-                parentId: null
+                parentId: null,
+                connectionSide: 'auto'
             };
             this.nodes.push(newNode);
         },
@@ -488,7 +638,8 @@ function mindmapApp() {
                 y: parent.y + Math.sin(angle) * distance,
                 isRoot: false,
                 type: 'default',
-                parentId: parent.id
+                parentId: parent.id,
+                connectionSide: 'auto'
             };
             this.nodes.push(newNode);
         },
@@ -548,15 +699,22 @@ function mindmapApp() {
             this.isConnecting = !this.isConnecting;
             if (!this.isConnecting) {
                 this.connectionSource = null;
+                this.connectionSourceSide = null;
                 this.tempConnectionTarget = null;
             }
             this.canvas.style.cursor = this.isConnecting ? 'crosshair' : 'move';
         },
 
-        handleConnectionPointClick(node) {
+        toggleConnectionStyle() {
+            this.connectionStyle = this.connectionStyle === 'straight' ? 'curved' : 'straight';
+            this.scheduleRedraw();
+        },
+
+        handleConnectionPointClick(node, side) {
             if (!this.isConnecting) {
                 this.toggleConnectionMode();
                 this.connectionSource = node;
+                this.connectionSourceSide = side;
                 return;
             }
 
@@ -567,18 +725,34 @@ function mindmapApp() {
                 } else if (this.willCreateCycle(this.connectionSource.id, node.id)) {
                     alert('Tidak dapat membuat koneksi sirkular!');
                 } else {
-                    node.parentId = this.connectionSource.id;
-                    // Reposition child node untuk layout yang lebih baik
-                    this.repositionChildNode(node, this.connectionSource);
+                    this.createConnection(this.connectionSource, node, side);
                 }
             }
             
             this.toggleConnectionMode();
         },
 
+        createConnection(source, target, sourceSide) {
+            // Set parentId tanpa mengubah posisi node
+            target.parentId = source.id;
+            target.connectionSide = this.getOppositeSide(sourceSide);
+        },
+
+        getOppositeSide(side) {
+            switch(side) {
+                case 'top': return 'bottom';
+                case 'bottom': return 'top';
+                case 'left': return 'right';
+                case 'right': return 'left';
+                default: return 'auto';
+            }
+        },
+
         handleNodeClick(node) {
             if (this.isConnecting && this.connectionSource && this.connectionSource.id !== node.id) {
-                this.handleConnectionPointClick(node);
+                // Jika klik node langsung (bukan connection point), gunakan sisi otomatis
+                this.connectionSourceSide = this.getConnectionSide(this.connectionSource, node);
+                this.handleConnectionPointClick(node, this.getOppositeSide(this.connectionSourceSide));
             }
         },
 
@@ -605,24 +779,16 @@ function mindmapApp() {
             return false;
         },
 
-        repositionChildNode(child, parent) {
-            // Reposition child node secara radial di sekitar parent
-            const children = this.nodes.filter(n => n.parentId === parent.id);
-            const angle = (children.length - 1) * (2 * Math.PI / 6); // Maks 6 children per level
-            const distance = 200 / this.zoomLevel;
-            
-            child.x = parent.x + Math.cos(angle) * distance;
-            child.y = parent.y + Math.sin(angle) * distance;
-        },
-
         // === DRAG & PAN ===
         startDrag(node, event) {
             if (this.isConnecting) return;
             
             this.draggingNode = node;
-            const rect = event.currentTarget.getBoundingClientRect();
-            this.dragOffsetX = event.clientX - rect.left;
-            this.dragOffsetY = event.clientY - rect.top;
+            const rect = this.canvas.getBoundingClientRect();
+            
+            // Simpan posisi awal untuk perhitungan delta
+            this.dragStartX = (event.clientX - rect.left - this.panX) / this.zoomLevel;
+            this.dragStartY = (event.clientY - rect.top - this.panY) / this.zoomLevel;
             
             this.handleDragBound = this.handleDrag.bind(this);
             this.stopDragBound = this.stopDrag.bind(this);
@@ -631,16 +797,25 @@ function mindmapApp() {
             document.addEventListener('mouseup', this.stopDragBound);
             
             event.currentTarget.style.zIndex = '1000';
+            
+            // Hentikan event propagation untuk mencegah konflik dengan pan
+            event.stopPropagation();
         },
 
         handleDrag(event) {
             if (this.draggingNode && !this.isConnecting) {
-                // Gunakan requestAnimationFrame untuk smooth dragging
-                requestAnimationFrame(() => {
-                    const rect = this.canvas.getBoundingClientRect();
-                    this.draggingNode.x = (event.clientX - rect.left - this.panX) / this.zoomLevel;
-                    this.draggingNode.y = (event.clientY - rect.top - this.panY) / this.zoomLevel;
-                });
+                const rect = this.canvas.getBoundingClientRect();
+                
+                // Hitung posisi baru dalam koordinat world space
+                const newX = (event.clientX - rect.left - this.panX) / this.zoomLevel;
+                const newY = (event.clientY - rect.top - this.panY) / this.zoomLevel;
+                
+                // Update posisi node
+                this.draggingNode.x = newX;
+                this.draggingNode.y = newY;
+                
+                // Force immediate redraw untuk koneksi yang smooth
+                this.drawConnections();
             }
         },
 
@@ -658,7 +833,8 @@ function mindmapApp() {
         },
 
         startPan(event) {
-            if (event.target === this.canvas && !this.isConnecting) {
+            // Hanya mulai pan jika tidak sedang drag node dan tidak sedang mode koneksi
+            if (event.target === this.canvas && !this.isConnecting && !this.draggingNode) {
                 this.isPanning = true;
                 this.panStartX = event.clientX - this.panX;
                 this.panStartY = event.clientY - this.panY;
@@ -668,11 +844,9 @@ function mindmapApp() {
 
         pan(event) {
             if (this.isPanning) {
-                // Smooth panning dengan requestAnimationFrame
-                requestAnimationFrame(() => {
-                    this.panX = event.clientX - this.panStartX;
-                    this.panY = event.clientY - this.panStartY;
-                });
+                this.panX = event.clientX - this.panStartX;
+                this.panY = event.clientY - this.panStartY;
+                this.drawConnections();
             }
         },
 
@@ -689,6 +863,8 @@ function mindmapApp() {
             const zoomFactor = this.zoomLevel / oldZoom;
             this.panX = this.canvas.width/2 - (this.canvas.width/2 - this.panX) * zoomFactor;
             this.panY = this.canvas.height/2 - (this.canvas.height/2 - this.panY) * zoomFactor;
+            
+            this.drawConnections();
         },
 
         handleWheel(event) {
@@ -704,12 +880,15 @@ function mindmapApp() {
             const zoomFactor = this.zoomLevel / oldZoom;
             this.panX = zoomPointX - (zoomPointX - this.panX) * zoomFactor;
             this.panY = zoomPointY - (zoomPointY - this.panY) * zoomFactor;
+            
+            this.drawConnections();
         },
 
         resetView() {
             this.zoomLevel = 1;
             this.panX = 0;
             this.panY = 0;
+            this.drawConnections();
         },
 
         exportMindmap() {
@@ -752,6 +931,74 @@ function mindmapApp() {
     }
 }
 </script>
+@endpush
+
+@push('styles')
+<style>
+[x-cloak] {
+    display: none !important;
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Smooth scrolling dan rendering untuk canvas */
+#mindmap-canvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    image-rendering: pixelated;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000;
+}
+
+/* Improved cursor feedback */
+.cursor-move {
+    cursor: grab;
+    transition: transform 0.15s ease-out;
+}
+
+.cursor-move:active {
+    cursor: grabbing;
+    transform: scale(0.98);
+}
+
+/* Connection mode cursor */
+#mindmap-canvas[style*="cursor: crosshair"] {
+    cursor: crosshair;
+}
+
+/* Smooth transitions untuk nodes */
+[x-for="node in nodes"] {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+}
+
+/* Enhanced hover effects */
+.group:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease-out;
+}
+
+/* Performance optimizations */
+#mindmap-canvas {
+    will-change: transform;
+    contain: layout style paint;
+}
+
+/* Connection points styling */
+.absolute.w-4.h-4 {
+    transition: all 0.2s ease;
+}
+
+.absolute.w-4.h-4:hover {
+    transform: scale(1.2);
+}
+</style>
 @endpush
 
 @push('styles')
