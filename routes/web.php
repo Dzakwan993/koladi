@@ -1,9 +1,13 @@
 <?php
 
 use Illuminate\Support\Facades\Auth;
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\Auth\GoogleController;
 
 // ✅ TAMBAHKAN INI - Route Landing Page
 Route::get('/', function () {
@@ -23,12 +27,25 @@ Route::post('/daftar', [AuthController::class, 'register'])->name('daftar.store'
 Route::get('/masuk', [AuthController::class, 'showLogin'])->name('masuk');
 Route::post('/masuk', [AuthController::class, 'login'])->name('login');
 
+// Google OAuth Routes
+Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
+Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
+
+// Kirim undangan
+Route::post('/invite/send', [InvitationController::class, 'send'])->name('invite.send');
+// Terima undangan (bisa di luar auth, karena penerima belum login)
+Route::get('/invite/accept/{token}', [InvitationController::class, 'accept'])->name('invite.accept');
+
+
 // ✅ GRUP ROUTES YANG BUTUH AUTH
 Route::middleware(['auth'])->group(function () {
 
     // Dashboard - GUNAKAN INI SAJA
     Route::get('/dashboard', [CompanyController::class, 'dashboard'])->name('dashboard');
 
+    // 🆕 TAMBAHKAN INI - Route halaman member removed
+    Route::get('/member-removed', [CompanyController::class, 'memberRemoved'])->name('member.removed');
+    
     // Halaman Dashboard Awal Tambah Anggota
     Route::get('/dashboard-awal', function () {
         return view('dashboard-awal');
@@ -52,6 +69,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/tambah-anggota', function () {
         return view('tambah-anggota');
     })->name('tambah-anggota');
+
+    Route::get('/tambah-anggota', [CompanyController::class, 'showMembers'])->name('tambah-anggota');
+    // Hapus anggota perusahaan
+    Route::delete('/members/{id}/delete', [CompanyController::class, 'deleteMember'])->name('member.delete');
+    // Hapus undangan pending
+    Route::delete('/invitation/{id}/delete', [InvitationController::class, 'delete'])->name('invitation.delete');
+
+    // Halaman profil
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
 
     // Halaman Workspace
     Route::get('/workspace', function () {
