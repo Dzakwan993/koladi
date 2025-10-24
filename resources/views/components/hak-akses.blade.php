@@ -1,19 +1,19 @@
 <!-- Modal Popup Atur Akses -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden font-[Inter,sans-serif]" id="accessModal">
+<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden" id="accessModal">
     <div class="bg-white pt-2 px-4 sm:px-6 rounded-lg sm:rounded-xl shadow-xl w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl lg:max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
         <!-- Header -->
         <div class="relative flex flex-col sm:flex-row justify-between items-start p-4 sm:p-6 gap-4">
             <div class="flex-1 w-full">
                 <h2 class="text-lg sm:text-xl md:text-2xl text-[#0F172A] font-bold mb-3 sm:mb-4">Akses Anda di PT. Mencari Cinta Sejati</h2>
-                
+
                 <div class="relative sm:pl-14 mt-2 w-full">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mt-1">
                         <!-- Avatar - di kiri di mobile, absolute di desktop -->
-                        <img src="https://i.pravatar.cc/50?img=1" alt="Avatar" 
+                        <img src="https://i.pravatar.cc/50?img=1" alt="Avatar"
                             class="w-10 h-10 sm:w-10 sm:h-10 rounded-full sm:absolute sm:left-0 sm:top-1/2 sm:-translate-y-1/2">
-                        
+
                         <div class="flex flex-col gap-1">
                             <span class="text-base sm:text-lg md:text-xl text-[#0F172A] font-bold">Muhammad Sahroni</span>
                             <span class="bg-[#102A63] text-white text-xs font-semibold px-2 sm:px-3 py-0.5 rounded-bl-2xl rounded-tr-2xl inline-block w-fit">
@@ -21,7 +21,7 @@
                             </span>
                         </div>
                     </div>
-                    
+
                     <!-- Button Atur akses pengguna -->
                     <button onclick="openRoleModal();" class="bg-[#225AD6] hover:bg-blue-600 text-white px-3 py-2 sm:py-2.5 text-xs sm:text-sm rounded-lg font-semibold transition flex items-center gap-1.5 sm:gap-2 shadow-lg mt-3 sm:mt-0 sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 w-full sm:w-auto justify-center">
                         <img src="{{ asset('images/icons/Protect.svg') }}" alt="Plus" class="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
@@ -151,18 +151,22 @@
 </div>
 
 <script>
-function openModal() {
-    document.getElementById('accessModal').classList.remove('hidden');
+function openAccessModal() {
+    const modal = document.getElementById('accessModal');
+    modal.classList.remove('hidden');
 }
 
-function closeModal() {
-    document.getElementById('accessModal').classList.add('hidden');
+function closeAccessModal() {
+    const modal = document.getElementById('accessModal');
+    modal.classList.add('hidden');
 }
 
-// Close modal when clicking outside
-document.getElementById('accessModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeModal();
+// Tambahkan event listener biar klik luar modal menutup
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('accessModal');
+    if (modal && !modal.classList.contains('hidden') && event.target === modal) {
+        closeAccessModal();
     }
 });
 </script>
+

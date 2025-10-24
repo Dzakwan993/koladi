@@ -45,13 +45,14 @@
         <div class="h-6 w-px bg-gray-200"></div>
 
         <!-- Action Buttons -->
-        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Atur Akses" onclick="openModal()">
+        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Atur Akses" onclick="openAccessModal()">
             <img src="{{ asset('images/icons/akses.svg') }}" alt="Atur Akses" class="w-5 h-5">
         </button>
 
-        <button class="p-2 hover:bg-gray-100 rounded-lg transition" title="Dollar">
+
+        <a href="{{ url('/pembayaran') }}" class="p-2 hover:bg-gray-100 rounded-lg transition" title="Dollar">
             <img src="{{ asset('images/icons/dollar.svg') }}" alt="Dollar" class="w-5 h-5">
-        </button>
+        </a>
 
         <button class="p-2 hover:bg-gray-100 rounded-lg transition relative" title="Notifikasi">
             <img src="{{ asset('images/icons/notifikasi.svg') }}" alt="Notifikasi" class="w-5 h-5">

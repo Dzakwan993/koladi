@@ -158,6 +158,11 @@ Route::middleware(['auth'])->group(function () {
         return view('isi-insight');
     })->name('isi-insight');
 
+    // Halaman Pembayaran
+    Route::get('/pembayaran', function () {
+        return view('pembayaran');
+    })->name('pembayaran');
+
     // Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 });
