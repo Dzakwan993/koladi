@@ -1,6 +1,7 @@
 <!-- Modal Popup Atur Akses -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+<!-- ✅ TAMBAHKAN: class "hidden" di awal -->
 <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden font-[Inter,sans-serif]" id="accessModal">
     <div class="bg-white pt-2 px-4 sm:px-6 rounded-lg sm:rounded-xl shadow-xl w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl lg:max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
         <!-- Header -->
@@ -45,38 +46,21 @@
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Mengatur akses pengguna</span>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Punya akses penuh ke seluruh sistem tanpa batasan</span>
                         </div>
                         <div class="flex items-start space-x-2">
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Mengundang anggota tim</span>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Bisa mengatur dan mengelola seluruh data perusahaan, pengguna, workspace, tugas, tagihan, serta semua pengaturan sistem</span>
                         </div>
                         <div class="flex items-start space-x-2">
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Mengundang anggota tim</span>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">SuperAdmin memiliki izin tanpa batas untuk seluruh sistem</span>
                         </div>
-                        <div class="flex items-start space-x-2">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Membuat tim dan tugas dan Membuat tim dan tugas Membuat tim dan tugas</span>
-                        </div>
-                        <div class="flex items-start space-x-2">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Mengundang anggota tim</span>
-                        </div>
-                        <div class="flex items-start space-x-2">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Super admin memiki semua hak akses yang itu</span>
-                        </div>
+                        
                     </div>
                 </div>
 
@@ -88,37 +72,31 @@
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Mengatur akses pengguna</span>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Mengelola perusahaan: menambah, menghapus, dan mengatur akses pengguna</span>
                         </div>
                         <div class="flex items-start space-x-2">
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Mengundang anggota tim</span>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Membuat dan mengatur workspace serta tim di seluruh perusahaan</span>
                         </div>
                         <div class="flex items-start space-x-2">
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Mengundang anggota tim</span>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Mengelola tagihan, dokumen, insight, dan pengumuman</span>
                         </div>
                         <div class="flex items-start space-x-2">
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
-                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Membuat tim dan tugas dan Membuat tim dan tugas Membuat tim dan tugas</span>
-                        </div>
-                        <div class="flex items-start space-x-2">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Mengundang anggota tim</span>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Melihat dan memantau statistik kinerja seluruh pengguna</span>
                         </div>
                         <div class="flex items-start space-x-2">
                             <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
-                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Super admin memiki semua hak akses yang itu</span>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Tidak dapat mengatur workspace yang dibuat di luar perusahaan tempatnya berada</span>
                         </div>
                     </div>
                 </div>
@@ -127,7 +105,30 @@
                 <div class="bg-[#BBCFF9] rounded-lg p-4 sm:p-5 md:p-6">
                     <h3 class="text-base sm:text-lg md:text-xl text-[#0F172A] font-bold mb-3 sm:mb-4 text-center">Manager</h3>
                     <div class="space-y-2 sm:space-y-3">
-                        <!-- Add manager permissions here -->
+                        <div class="flex items-start space-x-2">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Mengatur workspace yang dia pimpin: mengundang anggota, mengatur role akses, serta membuat dan mengedit tugas di kanban</span>
+                        </div>
+                        <div class="flex items-start space-x-2">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Memantau progres kerja tim, mengelola kalender, dokumen, dan komunikasi dalam ruangannya</span>
+                        </div>
+                        <div class="flex items-start space-x-2">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Tidak bisa mengubah data perusahaan, tagihan, atau workspace lain</span>
+                        </div>
+                        <div class="flex items-start space-x-2">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Tidak bisa menghapus atau memodifikasi akses pengguna di luar ruangannya</span>
+                        </div>
                     </div>
                 </div>
 
@@ -135,16 +136,37 @@
                 <div class="bg-[#BBCFF9] rounded-lg p-4 sm:p-5 md:p-6">
                     <h3 class="text-base sm:text-lg md:text-xl text-[#0F172A] font-bold mb-3 sm:mb-4 text-center">Member</h3>
                     <div class="space-y-2 sm:space-y-3">
-                        <!-- Add member permissions here -->
+                        <div class="flex items-start space-x-2">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Mengakses dan mengerjakan tugas dalam workspace yang diikutinya</span>
+                        </div>
+                        <div class="flex items-start space-x-2">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Memperbarui progres kerja, mengunggah dokumen, mengisi absen, dan berkomunikasi melalui chat</span>
+                        </div>
+                        <div class="flex items-start space-x-2">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Tidak bisa membuat workspace baru atau mengatur role akses</span>
+                        </div>
+                        <div class="flex items-start space-x-2">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            <span class="text-xs sm:text-sm text-gray-700 font-medium">Tidak bisa mengedit struktur workspace atau tugas milik tim lain</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Footer Note -->
             <div class="rounded-lg p-3 sm:p-4 text-xs sm:text-sm text-[#6B7280]">
-                <p class="mb-1 font-medium">Ini adalah Akses default perusahaan kamu. Kamu memiliki Akses yang sama di semua tempat berdasarkan ini.</p>
-                <p class="mb-1 font-medium">Hingga Super User/Admin mengubah Akses Kamu secara khusus di suatu Tim atau Tugas/Dokumen lain.</p>
-                <p class="font-medium">Kalo Kamu mengalami kendala saat melakukan sesuatu, harap hubungi orang diatas.</p>
+            <p class="mb-1 font-medium">Ini adalah Akses default di tingkat perusahaan. <br> Untuk hak akses di setiap workspace akan disesuaikan kembali berdasarkan peranmu di dalam workspace tersebut.</p>
             </div>
         </div>
     </div>

@@ -46,4 +46,9 @@ class User extends Authenticatable
             ->withPivot('roles_id')
             ->withTimestamps();
     }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'roles_id');
+    }
 }

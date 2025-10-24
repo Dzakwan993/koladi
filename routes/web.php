@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\UserController;
 
 // ✅ TAMBAHKAN INI - Route Landing Page
 Route::get('/', function () {
@@ -23,7 +24,7 @@ Route::post('/daftar', [AuthController::class, 'register'])->name('daftar.store'
 Route::get('/masuk', [AuthController::class, 'showLogin'])->name('masuk');
 Route::post('/masuk', [AuthController::class, 'login'])->name('login');
 
-// ✅ GRUP ROUTES YANG BUTUH AUTH
+// ✅ UBAH: Pindahkan route hak-akses ke dalam middleware auth
 Route::middleware(['auth'])->group(function () {
 
     // Dashboard - GUNAKAN INI SAJA
@@ -160,4 +161,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
+
+    // ✅ TAMBAHKAN: Route untuk hak akses (pindahkan ke dalam middleware)
+    Route::get('/hak-akses', [UserController::class, 'hakAkses'])->name('hakAkses');
+    Route::post('/update-user-roles', [UserController::class, 'updateUserRoles'])->name('user.updateRoles');
 });
