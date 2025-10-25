@@ -273,17 +273,26 @@ public function getAvailableUsers()
         $user = Auth::user();
         $activeCompanyId = session('active_company_id');
 
-        // Cek apakah workspace milik company yang aktif
-        if ($workspace->company_id !== $activeCompanyId) {
+        // Jika user adalah pembuat workspace => selalu boleh
+        if ($workspace->created_by === $user->id) {
+            return true;
+        }
+
+        // Jika ada active company dalam session dan workspace bukan milik company aktif => tolak
+        if ($activeCompanyId && $workspace->company_id !== $activeCompanyId) {
             return false;
         }
 
-        // Cek apakah user adalah creator atau memiliki akses ke workspace
+        // Cek apakah user adalah anggota aktif dan memiliki role yang diizinkan
         $userWorkspace = UserWorkspace::where('user_id', $user->id)
             ->where('workspace_id', $workspace->id)
-            ->active()
             ->first();
 
-        return $userWorkspace && in_array($userWorkspace->role->name, ['SuperAdmin', 'Admin']);
+        if (!$userWorkspace || !$userWorkspace->status_active) {
+            return false;
+        }
+
+        $roleName = optional($userWorkspace->role)->name;
+        return in_array($roleName, ['SuperAdmin', 'Admin']);
     }
 }

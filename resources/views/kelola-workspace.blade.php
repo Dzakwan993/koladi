@@ -184,8 +184,7 @@
                         </button>
                         <button type="button"
                             class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                            @click="applyMembers" :disabled="selectedMembers.length === 0"
-                            :class="selectedMembers.length === 0 ? 'opacity-50 cursor-not-allowed' : ''">
+                            @click="applyMembers">
                             Terapkan
                         </button>
                     </div>
@@ -964,9 +963,14 @@
 
 
                 async saveMembers(workspaceId) {
+                    this.isSubmitting = true;
                     try {
                         const csrfToken = this.getCsrfToken();
-                        console.log('Saving members:', this.selectedMembers);
+                        const payload = {
+                            user_ids: this.selectedMembers,
+                            role_id: this.getDefaultRoleId()
+                        };
+                        console.log('Saving members payload:', payload, 'workspaceId:', workspaceId);
 
                         const response = await fetch(`/workspace/${workspaceId}/members`, {
                             method: 'POST',
@@ -975,25 +979,42 @@
                                 'X-CSRF-TOKEN': csrfToken,
                                 'X-Requested-With': 'XMLHttpRequest'
                             },
-                            body: JSON.stringify({
-                                user_ids: this.selectedMembers,
-                                role_id: this.getDefaultRoleId()
-                            })
+                            body: JSON.stringify(payload)
                         });
 
-                        const result = await response.json();
+                        const rawText = await response.text();
+                        let result = null;
+                        try {
+                            result = rawText ? JSON.parse(rawText) : null;
+                        } catch (e) {
+                            console.warn('Response is not JSON:', rawText);
+                        }
 
-                        if (result.success) {
+                        console.log('Response status:', response.status, 'parsed:', result, 'raw:', rawText);
+
+                        if (response.ok) {
+                            // sukses
                             this.showManageMembersModal = false;
                             this.selectedMembers = [];
                             this.searchMember = '';
-                            location.reload(); // Reload untuk update tampilan
+                            location.reload();
+                            return { success: true, message: result?.message || 'Berhasil' };
                         } else {
-                            alert('Gagal menyimpan anggota: ' + result.message);
+                            // ambil pesan error yang paling bermakna
+                            const serverMsg = result?.message
+                                || (result?.errors ? JSON.stringify(result.errors) : null)
+                                || rawText
+                                || response.statusText;
+                            console.error('Failed saving members:', response.status, serverMsg);
+                            alert('Gagal menyimpan anggota: ' + serverMsg);
+                            return { success: false, message: serverMsg };
                         }
                     } catch (error) {
-                        console.error('Error:', error);
-                        alert('Terjadi kesalahan saat menyimpan anggota');
+                        console.error('saveMembers exception:', error);
+                        alert('Gagal menyimpan anggota: ' + (error.message || error));
+                        return { success: false, message: error.message || String(error) };
+                    } finally {
+                        this.isSubmitting = false;
                     }
                 },
 
