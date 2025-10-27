@@ -46,4 +46,17 @@ class User extends Authenticatable
             ->withPivot('roles_id')
             ->withTimestamps();
     }
+
+    public function userWorkspaces()
+{
+    return $this->hasMany(\App\Models\UserWorkspace::class, 'user_id', 'id');
+}
+public function getAvatarUrlAttribute()
+{
+    return $this->avatar
+        ? asset('storage/' . $this->avatar) // path avatar di storage
+        : asset('images/dk.jpg');          // default jika tidak ada
+}
+
+
 }

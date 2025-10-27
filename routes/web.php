@@ -4,6 +4,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\FileController;
+use App\Http\Controllers\PengumumanController;
+use App\Http\Controllers\UploadController;
+use App\Http\Controllers\UserWorkspacesController;
 
 // ✅ TAMBAHKAN INI - Route Landing Page
 Route::get('/', function () {
@@ -89,9 +95,24 @@ Route::middleware(['auth'])->group(function () {
     })->name('notulensi');
 
     // pengumuman
-    Route::get('/pengumuman', function () {
-        return view('pengumuman');
-    })->name('pengumuman');
+    Route::middleware(['auth'])->group(function () {
+    Route::get('/pengumuman', [PengumumanController::class, 'index'])->name('pengumuman.index');
+    Route::post('/pengumuman', [PengumumanController::class, 'store'])->name('pengumuman.store');
+    Route::get('/pengumuman/anggota', [App\Http\Controllers\PengumumanController::class, 'getAnggota'])
+    ->name('pengumuman.anggota');
+    Route::get('/pengumuman/{id}', [PengumumanController::class, 'show'])->name('pengumuman.show');
+    Route::post('/comments', [CommentController::class, 'store'])->name('comments.store');
+    Route::get('/comments/{pengumuman}', [CommentController::class, 'index'])->name('comments.index');
+    Route::post('/upload', [App\Http\Controllers\FileController::class, 'upload'])->name('upload');
+
+
+});
+
+    Route::get('/workspace/{workspaceId}', [UserWorkspacesController::class, 'show'])->name('workspace.show');
+
+    //role workspaces
+    Route::get('/api/workspaces/{workspace_id}/members', [UserWorkspacesController::class, 'index'])
+    ->name('api.workspace.members');
 
     // statistik
     Route::get('/statistik', function () {
