@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\InvitationController;
@@ -152,10 +153,14 @@ Route::middleware(['auth'])->group(function () {
         return view('dokumen-dan-file');
     })->name('dokumen-dan-file');
 
-    // kelola-workspace
-    Route::get('/kelola-workspace', function () {
-        return view('kelola-workspace');
-    })->name('kelola-workspace');
+    // ✅ WORKSPACE ROUTES - DIPINDAHKAN KE DALAM AUTH GROUP
+    Route::get('/kelola-workspace', [WorkspaceController::class, 'index'])->name('kelola-workspace');
+    Route::post('/workspace', [WorkspaceController::class, 'store'])->name('workspace.store');
+    Route::put('/workspace/{id}', [WorkspaceController::class, 'update'])->name('workspace.update');
+    Route::delete('/workspace/{id}', [WorkspaceController::class, 'destroy'])->name('workspace.destroy');
+    Route::post('/workspace/{workspaceId}/members', [WorkspaceController::class, 'manageMembers'])->name('workspace.manage-members');
+    Route::get('/workspace/{workspaceId}/members', [WorkspaceController::class, 'getMembers'])->name('workspace.get-members');
+    Route::get('/workspace-available-users', [WorkspaceController::class, 'getAvailableUsers'])->name('workspace.available-users');
 
     // Halaman Profile
     Route::get('/profile', function () {
@@ -206,3 +211,4 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/hak-akses', [UserController::class, 'hakAkses'])->name('hakAkses');
     Route::post('/update-user-roles', [UserController::class, 'updateUserRoles'])->name('user.updateRoles');
 });
+
