@@ -187,6 +187,13 @@ Route::middleware(['auth'])->group(function () {
         return view('isi-insight');
     })->name('isi-insight');
 
+
+    // mindmap
+    Route::get('/mindmap', function () {
+        return view('mindmap');
+    })->name('mindmap');
+
+
     // Halaman Pembayaran
     Route::get('/pembayaran', function () {
         return view('pembayaran');
