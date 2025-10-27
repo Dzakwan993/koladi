@@ -1,932 +1,913 @@
 @extends('layouts.app')
 
-<style>
-    [x-cloak] {
-        display: none !important;
-    }
-
-    /* Transisi untuk halaman balas komentar */
-    .page-transition {
-        transition: all 0.3s ease-in-out;
-    }
-
-    /* Untuk list di CKEditor */
-    #editor-catatan+.ck-editor .ck-content ul,
-    #editor-catatan+.ck-editor .ck-content ol {
-        padding-left: 1.5rem !important;
-        margin-left: 0 !important;
-        list-style-position: outside !important;
-    }
-
-    #editor-catatan+.ck-editor .ck-content li {
-        margin-left: 0 !important;
-    }
-
-    /* Tinggi minimal editor */
-    .ck-editor__editable {
-        min-height: 120px !important;
-        max-height: 200px;
-        overflow-y: auto;
-    }
-
-    @media (min-width: 768px) {
-        .ck-editor__editable {
-            min-height: 150px !important;
-            max-height: 300px;
-        }
-    }
-
-    /* Biar toolbar lebih lega */
-    .ck.ck-toolbar {
-        font-size: 14px !important;
-        padding: 6px 8px !important;
-    }
-
-    /* Supaya tombol-tombol toolbar tidak terlalu rapat */
-    .ck.ck-toolbar .ck-button {
-        margin: 0 2px !important;
-    }
-
-    /* Rapikan list (bullet & numbering) agar tidak kepotong */
-    .ck-editor__editable ul,
-    .ck-editor__editable ol {
-        margin-left: 1.5rem !important;
-        padding-left: 1rem !important;
-    }
-
-    /* Custom breakpoints untuk responsivitas lebih baik */
-
-    /* Mobile First - Extra Small (default: < 476px) */
-
-    /* Small Mobile (476px - 639px) */
-    @media (min-width: 476px) and (max-width: 639px) {
-
-        /* xs devices - Small Mobile */
-        .responsive-text {
-            font-size: 0.875rem !important;
-        }
-    }
-
-    /* Mobile Landscape & Small Tablets (640px - 767px) */
-    @media (min-width: 640px) and (max-width: 767px) {
-
-        /* sm devices - Mobile Landscape */
-        .responsive-text {
-            font-size: 0.9rem !important;
-        }
-    }
-
-    /* Tablets (768px - 991px) */
-    @media (min-width: 768px) and (max-width: 991px) {
-
-        /* md devices - Tablets */
-        .responsive-text {
-            font-size: 1rem !important;
-        }
-
-        /* Optimasi untuk tablet */
-        .container-tablet {
-            padding-left: 1rem;
-            padding-right: 1rem;
-        }
-    }
-
-    /* Desktop (992px - 1199px) */
-    @media (min-width: 992px) and (max-width: 1199px) {
-
-        /* lg devices - Desktop */
-        .responsive-text {
-            font-size: 1.1rem !important;
-        }
-    }
-
-    /* Large Desktop (1200px+) */
-    @media (min-width: 1200px) {
-
-        /* xl devices - Large Desktop */
-        .responsive-text {
-            font-size: 1.125rem !important;
-        }
-
-        /* Optimasi untuk large screens */
-        .container-xl {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-    }
-
-    /* Line clamp utility */
-    .line-clamp-2 {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    @media (max-width: 475px) {
-        .line-clamp-2 {
-            -webkit-line-clamp: 1;
-        }
-    }
-
-    /* Smooth scrolling untuk mobile */
-    .overflow-x-auto {
-        -webkit-overflow-scrolling: touch;
-    }
-
-    /* Improved hover effects untuk mobile */
-    @media (hover: hover) {
-        .hover\:shadow-md:hover {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-    }
-
-    /* Responsive padding utilities */
-    .responsive-padding {
-        padding: 0.5rem;
-    }
-
-    @media (min-width: 476px) {
-        .responsive-padding {
-            padding: 0.75rem;
-        }
-    }
-
-    @media (min-width: 768px) {
-        .responsive-padding {
-            padding: 1rem;
-        }
-    }
-
-    @media (min-width: 992px) {
-        .responsive-padding {
-            padding: 1.25rem;
-        }
-    }
-
-    /* Responsive gap utilities */
-    .responsive-gap {
-        gap: 0.5rem;
-    }
-
-    @media (min-width: 476px) {
-        .responsive-gap {
-            gap: 0.75rem;
-        }
-    }
-
-    @media (min-width: 768px) {
-        .responsive-gap {
-            gap: 1rem;
-        }
-    }
-
-    /* Search & Filter Section Responsive Styles */
-    @media (max-width: 475px) {
-        .search-filter-mobile {
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .filter-dropdowns-mobile {
-            justify-content: flex-start;
-            overflow-x: auto;
-            padding-bottom: 0.25rem;
-        }
-    }
-
-    @media (min-width: 476px) and (max-width: 639px) {
-        .search-filter-xs {
-            flex-direction: row;
-            align-items: center;
-        }
-    }
-
-    /* Modal responsive adjustments */
-    @media (max-width: 475px) {
-        .modal-mobile {
-            margin: 0.5rem;
-            max-height: calc(100vh - 1rem);
-        }
-
-        .modal-content-mobile {
-            padding: 1rem;
-        }
-    }
-
-    @media (min-width: 476px) and (max-width: 767px) {
-        .modal-small {
-            margin: 1rem;
-            max-height: calc(100vh - 2rem);
-        }
-    }
-
-    /* Kanban board responsive */
-    @media (max-width: 475px) {
-        .kanban-column-mobile {
-            width: 85vw;
-            min-width: 85vw;
-        }
-    }
-
-    @media (min-width: 476px) and (max-width: 639px) {
-        .kanban-column-xs {
-            width: 280px;
-            min-width: 280px;
-        }
-    }
-
-    @media (min-width: 640px) and (max-width: 767px) {
-        .kanban-column-sm {
-            width: 300px;
-            min-width: 300px;
-        }
-    }
-
-    @media (min-width: 768px) and (max-width: 991px) {
-        .kanban-column-md {
-            min-width: 320px;
-        }
-    }
-
-    @media (min-width: 992px) and (max-width: 1199px) {
-        .kanban-column-lg {
-            min-width: 340px;
-        }
-    }
-
-    @media (min-width: 1200px) {
-        .kanban-column-xl {
-            min-width: 360px;
-        }
-    }
-
-    /* Button responsive sizes */
-    .btn-responsive {
-        padding: 0.5rem 1rem;
-        font-size: 0.875rem;
-    }
-
-    @media (min-width: 768px) {
-        .btn-responsive {
-            padding: 0.75rem 1.5rem;
-            font-size: 1rem;
-        }
-    }
-
-    /* Text truncation for different screens */
-    .truncate-mobile {
-        max-width: 100px;
-    }
-
-    @media (min-width: 476px) {
-        .truncate-mobile {
-            max-width: 120px;
-        }
-    }
-
-    @media (min-width: 640px) {
-        .truncate-mobile {
-            max-width: none;
-        }
-    }
-
-    /* Icon responsive sizing */
-    .icon-responsive {
-        width: 1rem;
-        height: 1rem;
-    }
-
-    @media (min-width: 476px) {
-        .icon-responsive {
-            width: 1.25rem;
-            height: 1.25rem;
-        }
-    }
-
-    @media (min-width: 768px) {
-        .icon-responsive {
-            width: 1.5rem;
-            height: 1.5rem;
-        }
-    }
-
-
-
-    /* untuk aksi list*/
-    /* Style untuk modal aksi list */
-    .modal-actions-list {
-        backdrop-filter: blur(4px);
-    }
-
-    /* Animasi untuk modal */
-    .modal-enter {
-        opacity: 0;
-        transform: scale(0.95);
-    }
-
-    .modal-enter-active {
-        opacity: 1;
-        transform: scale(1);
-        transition: opacity 200ms ease-out, transform 200ms ease-out;
-    }
-
-    .modal-leave {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    .modal-leave-active {
-        opacity: 0;
-        transform: scale(0.95);
-        transition: opacity 150ms ease-in, transform 150ms ease-in;
-    }
-
-
-    /* Ukuran kolom kanban medium */
-    .kanban-column-medium {
-        width: 75vw !important;
-        min-width: 240px !important;
-        max-width: 280px !important;
-    }
-
-    @media (min-width: 476px) {
-        .kanban-column-medium {
-            width: 220px !important;
-            min-width: 220px !important;
-            max-width: 260px !important;
-        }
-    }
-
-    @media (min-width: 640px) {
-        .kanban-column-medium {
-            width: 240px !important;
-            min-width: 240px !important;
-            max-width: 280px !important;
-        }
-    }
-
-    @media (min-width: 768px) {
-        .kanban-column-medium {
-            width: 260px !important;
-            min-width: 260px !important;
-            max-width: 300px !important;
-        }
-    }
-
-    @media (min-width: 1024px) {
-        .kanban-column-medium {
-            width: 280px !important;
-            min-width: 280px !important;
-            max-width: 320px !important;
-        }
-    }
-
-    /* Padding medium */
-    .kanban-padding-medium {
-        padding: 0.75rem !important;
-    }
-
-    @media (min-width: 476px) {
-        .kanban-padding-medium {
-            padding: 1rem !important;
-        }
-    }
-
-    /* Gap medium */
-    .kanban-gap-medium {
-        gap: 0.75rem !important;
-    }
-
-    @media (min-width: 476px) {
-        .kanban-gap-medium {
-            gap: 1rem !important;
-        }
-    }
-
-    @media (min-width: 768px) {
-        .kanban-gap-medium {
-            gap: 1.25rem !important;
-        }
-    }
-</style>
-
-@section('title', 'kanban-tugas')
+@section('title', 'Kanban Tugas')
 
 @section('content')
-
     <div class="bg-gray-50 min-h-screen flex flex-col" x-data="kanbanApp()">
-
 
         {{-- Workspace Nav --}}
         @include('components.workspace-nav', ['active' => 'tugas'])
 
+        {{-- Search & Filter Section --}}
+        @include('components.pencarian-tugas')
 
-        {{-- 🔍 Search & Filter Section --}}
-        <div class="bg-white border-b px-3 xs:px-4 sm:px-5 md:px-6 py-2 xs:py-3 sm:py-4 shadow-sm">
-            <div class="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 xs:gap-3 sm:gap-4">
-
-
-                {{-- 🔎 Search & Filters --}}
-                <div class="w-full xs:w-auto flex flex-col sm:flex-row sm:items-center gap-2 xs:gap-3">
-                    {{-- Search Input --}}
-                    <div class="relative flex-1 min-w-0 xs:min-w-[200px] sm:min-w-[250px] md:min-w-[300px]">
-                        <input type="text" x-model="searchQuery" placeholder="Cari tugas..."
-                            class="w-full pl-8 xs:pl-9 pr-3 py-2 xs:py-2.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-xs xs:text-sm sm:text-base">
-                        <svg class="absolute left-2.5 xs:left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 xs:h-4 xs:w-4 text-gray-400"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                    </div>
-
-                    {{-- Filter Dropdowns --}}
-                    <div class="flex flex-wrap gap-1 xs:gap-2">
-                        {{-- Label Filter --}}
-                        <select x-model="selectedLabel"
-                            class="px-2 xs:px-3 pr-6 xs:pr-7 py-1.5 xs:py-2 border border-gray-300 rounded text-xs xs:text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition bg-white min-w-[100px] xs:min-w-[110px]">
-                            <option value="">Semua Label</option>
-                            <template x-for="label in availableLabels" :key="label.name">
-                                <option :value="label.name" x-text="label.name"></option>
-                            </template>
-                        </select>
-
-                        {{-- Member Filter --}}
-                        <select x-model="selectedMember"
-                            class="px-2 xs:px-3 pr-6 xs:pr-7 py-1.5 xs:py-2 border border-gray-300 rounded text-xs xs:text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition bg-white min-w-[120px] xs:min-w-[130px]">
-                            <option value="">Semua Peserta</option>
-                            <template x-for="member in availableMembers" :key="member.name">
-                                <option :value="member.name" x-text="member.name"></option>
-                            </template>
-                        </select>
-
-                        {{-- Deadline Filter --}}
-                        <select x-model="selectedDeadline"
-                            class="px-2 xs:px-3 pr-6 xs:pr-7 py-1.5 xs:py-2 border border-gray-300 rounded text-xs xs:text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition bg-white min-w-[110px] xs:min-w-[120px]">
-                            <option value="">Semua Tenggat</option>
-                            <option value="segera">Segera</option>
-                            <option value="hari-ini">Hari Ini</option>
-                            <option value="terlambat">Terlambat</option>
-                        </select>
-
-                        {{-- Reset Button --}}
-                        <button @click="resetFilters()"
-                            class="px-2 xs:px-3 py-1.5 xs:py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded text-xs xs:text-sm font-medium transition whitespace-nowrap">
-                            Reset
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {{-- 🎯 Active Filters Display --}}
-            <div x-show="hasActiveFilters()" class="mt-2 xs:mt-3 flex flex-wrap gap-1 xs:gap-2">
-                <template x-if="searchQuery">
-                    <span
-                        class="inline-flex items-center gap-1 px-2 xs:px-2.5 py-1 xs:py-1.5 bg-blue-100 text-blue-800 text-xs xs:text-sm rounded">
-                        Pencarian: "<span x-text="searchQuery"
-                            class="max-w-[100px] xs:max-w-[120px] sm:max-w-none truncate"></span>"
-                        <button @click="searchQuery = ''"
-                            class="ml-0.5 text-blue-600 hover:text-blue-800 font-bold text-xs xs:text-sm">×</button>
-                    </span>
-                </template>
-
-                <template x-if="selectedLabel">
-                    <span
-                        class="inline-flex items-center gap-1 px-2 xs:px-2.5 py-1 xs:py-1.5 bg-green-100 text-green-800 text-xs xs:text-sm rounded">
-                        Label: <span x-text="selectedLabel"
-                            class="max-w-[80px] xs:max-w-[100px] sm:max-w-none truncate"></span>
-                        <button @click="selectedLabel = ''"
-                            class="ml-0.5 text-green-600 hover:text-green-800 font-bold text-xs xs:text-sm">×</button>
-                    </span>
-                </template>
-
-                <template x-if="selectedMember">
-                    <span
-                        class="inline-flex items-center gap-1 px-2 xs:px-2.5 py-1 xs:py-1.5 bg-purple-100 text-purple-800 text-xs xs:text-sm rounded">
-                        Peserta: <span x-text="selectedMember"
-                            class="max-w-[80px] xs:max-w-[100px] sm:max-w-none truncate"></span>
-                        <button @click="selectedMember = ''"
-                            class="ml-0.5 text-purple-600 hover:text-purple-800 font-bold text-xs xs:text-sm">×</button>
-                    </span>
-                </template>
-
-                <template x-if="selectedDeadline">
-                    <span
-                        class="inline-flex items-center gap-1 px-2 xs:px-2.5 py-1 xs:py-1.5 bg-orange-100 text-orange-800 text-xs xs:text-sm rounded">
-                        <span x-text="getDeadlineFilterText()"
-                            class="max-w-[80px] xs:max-w-[100px] sm:max-w-none truncate"></span>
-                        <button @click="selectedDeadline = ''"
-                            class="ml-0.5 text-orange-600 hover:text-orange-800 font-bold text-xs xs:text-sm">×</button>
-                    </span>
-                </template>
+        {{-- View Mode Toggle --}}
+        <div class="bg-white border-b px-2 py-1 flex justify-between items-center">
+            <div class="flex space-x-4 ml-6">
+                <button @click="viewMode = 'kanban'"
+                    :class="{ 'text-blue-600 border-b-2 border-blue-600': viewMode === 'kanban' }"
+                    class="px-2 py-1 text-xs font-medium">
+                    Kanban View
+                </button>
+                <button @click="viewMode = 'timeline'"
+                    :class="{ 'text-blue-600 border-b-2 border-blue-600': viewMode === 'timeline' }"
+                    class="px-2 py-2 text-xs font-medium">
+                    Timeline View
+                </button>
             </div>
         </div>
 
-        {{-- 🎯 Kanban Board --}}
-        <div x-show="!replyView.active">
-            <div class="flex-1 overflow-x-auto" @click.outside="openListMenu = null">
-                <div id="kanban-board" class="flex kanban-gap-medium p-5 xs:p-4 min-w-max">
-                    {{-- 📋 To Do Column --}}
-                    <div
-                        class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
-                        <div class="flex items-center justify-between mb-1 xs:mb-2">
-                            <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">To Do List</h2>
-                            <button @click="openListMenu = openListMenu === 'todo' ? null : 'todo'"
-                                class="text-gray-500 hover:text-gray-700 text-xs p-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 xs:h-4 xs:w-4" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path
-                                        d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                                </svg>
-                            </button>
-                        </div>
+        <div class="flex-1" x-show="!replyView.active">
 
-                        <div class="flex flex-col flex-1">
-                            <div id="todo"
-                                class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
-                                <template x-for="task in getFilteredTasks('todo')" :key="task.id">
-                                    <div @click="openDetail(task.id)"
-                                        class="bg-white p-1.5 xs:p-2 sm:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
-                                        {{-- Header (Label + Tanggal) --}}
-                                        <div class="flex items-center justify-between mb-1 xs:mb-2 flex-wrap gap-1">
-                                            <div class="flex flex-wrap gap-1">
-                                                <template x-for="label in task.labels" :key="label.name">
-                                                    <span class="font-semibold px-1.5 py-0.5 rounded text-xs xs:text-sm"
-                                                        :style="`background: ${label.color}20; color: ${label.color}`"
-                                                        x-text="label.name"></span>
-                                                </template>
-                                            </div>
-                                            <span x-show="task.dueDate"
-                                                class="font-semibold px-1.5 py-0.5 bg-yellow-100 text-gray-700 rounded text-xs xs:text-sm"
-                                                x-text="formatDate(task.dueDate)"></span>
-                                        </div>
+            {{-- Kanban Board --}}
+            @include('components.kanban')
 
-                                        {{-- Judul --}}
-                                        <p class="font-medium text-gray-800 mb-1 xs:mb-2 line-clamp-2 text-xs xs:text-sm"
-                                            x-text="task.title"></p>
+            {{-- Timeline View --}}
+            @include('components.timeline')
 
-                                        {{-- Info --}}
-                                        <div class="flex items-center space-x-2 xs:space-x-3 text-gray-500 mb-1 xs:mb-2">
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L4.929 11.586a6 6 0 108.485 8.485L19 14" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.attachments ? task.attachments.length : 0"></span>
-                                            </div>
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.8L3 20l1.8-3.6A7.94 7.94 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.comments ? task.comments.length : 0"></span>
-                                            </div>
-                                        </div>
-
-                                        {{-- Progress + Avatars --}}
-                                        <div class="mt-1 xs:mt-2">
-                                            <div class="flex items-center justify-between mb-1">
-                                                <div class="w-full bg-gray-200 h-1 xs:h-1.5 rounded-full mr-2">
-                                                    <div class="bg-blue-500 h-1 xs:h-1.5 rounded-full transition-all duration-300"
-                                                        :style="`width: ${calculateProgress(task)}%`"></div>
-                                                </div>
-                                                <span class="font-medium text-gray-700 text-xs xs:text-sm"
-                                                    x-text="`${calculateProgress(task)}%`"></span>
-                                            </div>
-                                            <div class="flex mt-1 xs:mt-2 justify-end -space-x-1 xs:-space-x-2">
-                                                <template x-for="member in task.members" :key="member.name">
-                                                    <img :src="member.avatar"
-                                                        class="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-sm"
-                                                        :alt="member.name" :title="member.name">
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-
-                                {{-- No tasks message --}}
-                                <div x-show="getFilteredTasks('todo').length === 0"
-                                    class="text-center text-gray-500 text-xs xs:text-sm py-3 xs:py-4">
-                                    Tidak ada tugas
-                                </div>
-                            </div>
-
-                            <button @click="openTaskModal = true"
-                                class="w-full mt-3 py-2 text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 shadow-sm">
-                                + Buat Tugas
-                            </button>
-                        </div>
-                    </div>
-
-                    {{-- 🔄 Dikerjakan Column --}}
-                    <div
-                        class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
-                        <div class="flex items-center justify-between mb-1 xs:mb-2">
-                            <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">Dikerjakan</h2>
-                            <button @click="openListMenu = openListMenu === 'inprogress' ? null : 'inprogress'"
-                                class="text-gray-500 hover:text-gray-700 text-xs p-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 xs:h-4 xs:w-4" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path
-                                        d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div class="flex flex-col flex-1">
-                            <div id="inprogress"
-                                class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
-                                <template x-for="task in getFilteredTasks('inprogress')" :key="task.id">
-                                    <div @click="openDetail(task.id)"
-                                        class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
-                                        {{-- Header (Label + Tanggal) --}}
-                                        <div class="flex items-center justify-between mb-1 xs:mb-2 flex-wrap gap-1">
-                                            <div class="flex flex-wrap gap-1">
-                                                <template x-for="label in task.labels" :key="label.name">
-                                                    <span class="font-semibold px-1.5 py-0.5 rounded text-xs xs:text-sm"
-                                                        :style="`background: ${label.color}20; color: ${label.color}`"
-                                                        x-text="label.name"></span>
-                                                </template>
-                                            </div>
-                                            <span x-show="task.dueDate"
-                                                class="font-semibold px-1.5 py-0.5 bg-yellow-100 text-gray-700 rounded text-xs xs:text-sm"
-                                                x-text="formatDate(task.dueDate)"></span>
-                                        </div>
-
-                                        {{-- Judul --}}
-                                        <p class="font-medium text-gray-800 mb-1 xs:mb-2 line-clamp-2 text-xs xs:text-sm"
-                                            x-text="task.title"></p>
-
-                                        {{-- Info --}}
-                                        <div class="flex items-center space-x-2 xs:space-x-3 text-gray-500 mb-1 xs:mb-2">
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L4.929 11.586a6 6 0 108.485 8.485L19 14" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.attachments ? task.attachments.length : 0"></span>
-                                            </div>
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.8L3 20l1.8-3.6A7.94 7.94 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.comments ? task.comments.length : 0"></span>
-                                            </div>
-                                        </div>
-
-                                        {{-- Progress + Avatars --}}
-                                        <div class="mt-1 xs:mt-2">
-                                            <div class="flex items-center justify-between mb-1">
-                                                <div class="w-full bg-gray-200 h-1 xs:h-1.5 rounded-full mr-2">
-                                                    <div class="bg-blue-500 h-1 xs:h-1.5 rounded-full transition-all duration-300"
-                                                        :style="`width: ${calculateProgress(task)}%`"></div>
-                                                </div>
-                                                <span class="font-medium text-gray-700 text-xs xs:text-sm"
-                                                    x-text="`${calculateProgress(task)}%`"></span>
-                                            </div>
-                                            <div class="flex mt-1 xs:mt-2 justify-end -space-x-1 xs:-space-x-2">
-                                                <template x-for="member in task.members" :key="member.name">
-                                                    <img :src="member.avatar"
-                                                        class="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-sm"
-                                                        :alt="member.name" :title="member.name">
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-
-                                {{-- No tasks message --}}
-                                <div x-show="getFilteredTasks('inprogress').length === 0"
-                                    class="text-center text-gray-500 text-xs xs:text-sm py-3 xs:py-4">
-                                    Tidak ada tugas
-                                </div>
-                            </div>
-
-                            <button @click="openTaskModal = true"
-                                class="w-full mt-2 xs:mt-3 py-1.5 xs:py-2 text-xs xs:text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 shadow-sm">
-                                + Buat Tugas
-                            </button>
-                        </div>
-                    </div>
-
-                    {{-- ✅ Selesai Column --}}
-                    <div
-                        class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
-                        <div class="flex items-center justify-between mb-1 xs:mb-2">
-                            <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">Selesai</h2>
-                            <button @click="openListMenu = openListMenu === 'done' ? null : 'done'"
-                                class="text-gray-500 hover:text-gray-700 text-xs p-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 xs:h-4 xs:w-4" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path
-                                        d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div class="flex flex-col flex-1">
-                            <div id="done"
-                                class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
-                                <template x-for="task in getFilteredTasks('done')" :key="task.id">
-                                    <div @click="openDetail(task.id)"
-                                        class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
-                                        {{-- Header (Label + Tanggal) --}}
-                                        <div class="flex items-center justify-between mb-1 xs:mb-2 flex-wrap gap-1">
-                                            <div class="flex flex-wrap gap-1">
-                                                <template x-for="label in task.labels" :key="label.name">
-                                                    <span class="font-semibold px-1.5 py-0.5 rounded text-xs xs:text-sm"
-                                                        :style="`background: ${label.color}20; color: ${label.color}`"
-                                                        x-text="label.name"></span>
-                                                </template>
-                                            </div>
-                                            <span x-show="task.dueDate"
-                                                class="font-semibold px-1.5 py-0.5 bg-yellow-100 text-gray-700 rounded text-xs xs:text-sm"
-                                                x-text="formatDate(task.dueDate)"></span>
-                                        </div>
-
-                                        {{-- Judul --}}
-                                        <p class="font-medium text-gray-800 mb-1 xs:mb-2 line-clamp-2 text-xs xs:text-sm"
-                                            x-text="task.title"></p>
-
-                                        {{-- Info --}}
-                                        <div class="flex items-center space-x-2 xs:space-x-3 text-gray-500 mb-1 xs:mb-2">
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L4.929 11.586a6 6 0 108.485 8.485L19 14" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.attachments ? task.attachments.length : 0"></span>
-                                            </div>
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.8L3 20l1.8-3.6A7.94 7.94 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.comments ? task.comments.length : 0"></span>
-                                            </div>
-                                        </div>
-
-                                        {{-- Progress + Avatars --}}
-                                        <div class="mt-1 xs:mt-2">
-                                            <div class="flex items-center justify-between mb-1">
-                                                <div class="w-full bg-gray-200 h-1 xs:h-1.5 rounded-full mr-2">
-                                                    <div class="bg-green-500 h-1 xs:h-1.5 rounded-full transition-all duration-300"
-                                                        :style="`width: ${calculateProgress(task)}%`"></div>
-                                                </div>
-                                                <span class="font-medium text-gray-700 text-xs xs:text-sm"
-                                                    x-text="`${calculateProgress(task)}%`"></span>
-                                            </div>
-                                            <div class="flex mt-1 xs:mt-2 justify-end -space-x-1 xs:-space-x-2">
-                                                <template x-for="member in task.members" :key="member.name">
-                                                    <img :src="member.avatar"
-                                                        class="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-sm"
-                                                        :alt="member.name" :title="member.name">
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-
-                                {{-- No tasks message --}}
-                                <div x-show="getFilteredTasks('done').length === 0"
-                                    class="text-center text-gray-500 text-xs xs:text-sm py-3 xs:py-4">
-                                    Tidak ada tugas
-                                </div>
-                            </div>
-
-                            <button @click="openTaskModal = true"
-                                class="w-full mt-2 xs:mt-3 py-1.5 xs:py-2 text-xs xs:text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 shadow-sm">
-                                + Buat Tugas
-                            </button>
-                        </div>
-                    </div>
-
-                    {{-- ❌ Batal Column --}}
-                    <div
-                        class="bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col">
-                        <div class="flex items-center justify-between mb-1 xs:mb-2">
-                            <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">Batal</h2>
-                            <button @click="openListMenu = openListMenu === 'cancel' ? null : 'cancel'"
-                                class="text-gray-500 hover:text-gray-700 text-xs p-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 xs:h-4 xs:w-4" fill="currentColor"
-                                    viewBox="0 0 20 20">
-                                    <path
-                                        d="M6 10a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div class="flex flex-col flex-1">
-                            <div id="cancel"
-                                class="space-y-2 flex-1 overflow-y-auto max-h-[50vh] xs:max-h-[55vh] sm:max-h-[60vh] pr-1">
-                                <template x-for="task in getFilteredTasks('cancel')" :key="task.id">
-                                    <div @click="openDetail(task.id)"
-                                        class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
-                                        {{-- Header (Label + Tanggal) --}}
-                                        <div class="flex items-center justify-between mb-1 xs:mb-2 flex-wrap gap-1">
-                                            <div class="flex flex-wrap gap-1">
-                                                <template x-for="label in task.labels" :key="label.name">
-                                                    <span class="font-semibold px-1.5 py-0.5 rounded text-xs xs:text-sm"
-                                                        :style="`background: ${label.color}20; color: ${label.color}`"
-                                                        x-text="label.name"></span>
-                                                </template>
-                                            </div>
-                                            <span x-show="task.dueDate"
-                                                class="font-semibold px-1.5 py-0.5 bg-yellow-100 text-gray-700 rounded text-xs xs:text-sm"
-                                                x-text="formatDate(task.dueDate)"></span>
-                                        </div>
-
-                                        {{-- Judul --}}
-                                        <p class="font-medium text-gray-800 mb-1 xs:mb-2 line-clamp-2 text-xs xs:text-sm"
-                                            x-text="task.title"></p>
-
-                                        {{-- Info --}}
-                                        <div class="flex items-center space-x-2 xs:space-x-3 text-gray-500 mb-1 xs:mb-2">
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828L18 9.828a4 4 0 10-5.656-5.656L4.929 11.586a6 6 0 108.485 8.485L19 14" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.attachments ? task.attachments.length : 0"></span>
-                                            </div>
-                                            <div class="flex items-center space-x-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.77 9.77 0 01-4-.8L3 20l1.8-3.6A7.94 7.94 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                </svg>
-                                                <span class="text-xs xs:text-sm"
-                                                    x-text="task.comments ? task.comments.length : 0"></span>
-                                            </div>
-                                        </div>
-
-                                        {{-- Progress + Avatars --}}
-                                        <div class="mt-1 xs:mt-2">
-                                            <div class="flex items-center justify-between mb-1">
-                                                <div class="w-full bg-gray-200 h-1 xs:h-1.5 rounded-full mr-2">
-                                                    <div class="bg-red-500 h-1 xs:h-1.5 rounded-full transition-all duration-300"
-                                                        :style="`width: ${calculateProgress(task)}%`"></div>
-                                                </div>
-                                                <span class="font-medium text-gray-700 text-xs xs:text-sm"
-                                                    x-text="`${calculateProgress(task)}%`"></span>
-                                            </div>
-                                            <div class="flex mt-1 xs:mt-2 justify-end -space-x-1 xs:-space-x-2">
-                                                <template x-for="member in task.members" :key="member.name">
-                                                    <img :src="member.avatar"
-                                                        class="w-4 h-4 xs:w-5 xs:h-5 sm:w-6 sm:h-6 rounded-full border-2 border-white shadow-sm"
-                                                        :alt="member.name" :title="member.name">
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-
-                                {{-- No tasks message --}}
-                                <div x-show="getFilteredTasks('cancel').length === 0"
-                                    class="text-center text-gray-500 text-xs xs:text-sm py-3 xs:py-4">
-                                    Tidak ada tugas
-                                </div>
-                            </div>
-
-                            <button @click="openTaskModal = true"
-                                class="w-full mt-2 xs:mt-3 py-1.5 xs:py-2 text-xs xs:text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 shadow-sm">
-                                + Buat Tugas
-                            </button>
-                        </div>
-                    </div>
-
-                    {{-- ➕ Tombol Tambah List --}}
-                    <div class="flex items-start justify-center pr-2 xs:pr-3">
-                        <button @click="openModal = true"
-                            class="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1.5 xs:px-3 xs:py-2 rounded-lg text-xs xs:text-sm shadow-md hover:shadow-lg transition-all duration-200">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 xs:h-4 xs:w-4" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-                            </svg>
-                            <span class="hidden xs:inline">Tambah List</span>
-                            <span class="xs:hidden">Tambah</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
         </div>
-
 
         {{-- Halaman Balas Komentar --}}
+<<<<<<< HEAD
+            @include('components.balas-komentar')
+
+        {{-- All Modals --}}
+        @include('components.modal-tugas')
+
+    </div>
+
+    {{-- Include CSS and Scripts --}}
+    <style>
+        /* ===== BASE STYLES ===== */
+        [x-cloak] {
+            display: none !important;
+        }
+
+        /* ===== TRANSITIONS & ANIMATIONS ===== */
+        .page-transition {
+            transition: all 0.3s ease-in-out;
+        }
+
+
+
+        .modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 200ms ease-out, transform 200ms ease-out;
+        }
+
+        .modal-leave {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .modal-leave-active {
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 150ms ease-in, transform 150ms ease-in;
+        }
+
+        /* ===== EDITOR STYLES ===== */
+        /* CKEditor List Styles */
+        #editor-catatan+.ck-editor .ck-content ul,
+        #editor-catatan+.ck-editor .ck-content ol {
+            padding-left: 1.5rem !important;
+            margin-left: 0 !important;
+            list-style-position: outside !important;
+        }
+
+        #editor-catatan+.ck-editor .ck-content li {
+            margin-left: 0 !important;
+        }
+
+        /* CKEditor Dimensions */
+        .ck-editor__editable {
+            min-height: 120px !important;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .ck-editor__editable ul,
+        .ck-editor__editable ol {
+            margin-left: 1.5rem !important;
+            padding-left: 1rem !important;
+        }
+
+        /* CKEditor Toolbar */
+        .ck.ck-toolbar {
+            font-size: 14px !important;
+            padding: 6px 8px !important;
+        }
+
+        .ck.ck-toolbar .ck-button {
+            margin: 0 2px !important;
+        }
+
+        /* ===== RESPONSIVE BREAKPOINTS ===== */
+        /* Tablet & Desktop - Editor Height */
+        @media (min-width: 768px) {
+            .ck-editor__editable {
+                min-height: 150px !important;
+                max-height: 300px;
+            }
+        }
+
+        /* ===== RESPONSIVE TYPOGRAPHY ===== */
+        .responsive-text {
+            font-size: 0.875rem;
+        }
+
+
+        /* Mobile Landscape & Small Tablets (640px - 767px) */
+        @media (min-width: 640px) and (max-width: 767px) {
+            .responsive-text {
+                font-size: 0.9rem !important;
+            }
+        }
+
+        /* Tablets (768px - 991px) */
+        @media (min-width: 768px) and (max-width: 991px) {
+            .responsive-text {
+                font-size: 1rem !important;
+            }
+
+            .container-tablet {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+        }
+
+        /* Desktop (992px - 1199px) */
+        @media (min-width: 992px) and (max-width: 1199px) {
+            .responsive-text {
+                font-size: 1.1rem !important;
+            }
+        }
+
+        /* Large Desktop (1200px+) */
+        @media (min-width: 1200px) {
+            .responsive-text {
+                font-size: 1.125rem !important;
+            }
+
+            .container-xl {
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+        }
+
+        /* ===== UTILITY CLASSES ===== */
+        /* Line Clamp */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        @media (max-width: 475px) {
+            .line-clamp-2 {
+                -webkit-line-clamp: 1;
+            }
+        }
+
+        /* Smooth Scrolling */
+        .overflow-x-auto {
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Hover Effects */
+        @media (hover: hover) {
+            .hover\:shadow-md:hover {
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            }
+        }
+
+
+
+
+
+        @media (min-width: 768px) {
+            .responsive-padding {
+                padding: 1rem;
+            }
+        }
+
+        @media (min-width: 992px) {
+            .responsive-padding {
+                padding: 1.25rem;
+            }
+        }
+
+        /* Responsive Gap */
+        .responsive-gap {
+            gap: 0.5rem;
+        }
+
+        @media (min-width: 476px) {
+            .responsive-gap {
+                gap: 0.75rem;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .responsive-gap {
+                gap: 1rem;
+            }
+        }
+
+        /* Button Sizes */
+        .btn-responsive {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        @media (min-width: 768px) {
+            .btn-responsive {
+                padding: 0.75rem 1.5rem;
+                font-size: 1rem;
+            }
+        }
+
+        /* Text Truncation */
+        .truncate-mobile {
+            max-width: 100px;
+        }
+
+        @media (min-width: 476px) {
+            .truncate-mobile {
+                max-width: 120px;
+            }
+        }
+
+        @media (min-width: 640px) {
+            .truncate-mobile {
+                max-width: none;
+            }
+        }
+
+        /* Icon Sizing */
+        .icon-responsive {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        @media (min-width: 476px) {
+            .icon-responsive {
+                width: 1.25rem;
+                height: 1.25rem;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .icon-responsive {
+                width: 1.5rem;
+                height: 1.5rem;
+            }
+        }
+
+        /* ===== COMPONENT STYLES ===== */
+        /* Modal Actions */
+        .modal-actions-list {
+            backdrop-filter: blur(4px);
+        }
+
+        /* Kanban Columns */
+        .kanban-column-mobile {
+            width: 85vw;
+            min-width: 85vw;
+        }
+
+        .kanban-column-xs {
+            width: 280px;
+            min-width: 280px;
+        }
+
+        .kanban-column-sm {
+            width: 300px;
+            min-width: 300px;
+        }
+
+        .kanban-column-md {
+            min-width: 320px;
+        }
+
+        .kanban-column-lg {
+            min-width: 340px;
+        }
+
+        .kanban-column-xl {
+            min-width: 360px;
+        }
+
+        /* Kanban Medium Variant */
+        .kanban-column-medium {
+            width: 75vw !important;
+            min-width: 240px !important;
+            max-width: 280px !important;
+        }
+
+        @media (min-width: 476px) {
+            .kanban-column-medium {
+                width: 220px !important;
+                min-width: 220px !important;
+                max-width: 260px !important;
+            }
+        }
+
+        @media (min-width: 640px) {
+            .kanban-column-medium {
+                width: 240px !important;
+                min-width: 240px !important;
+                max-width: 280px !important;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .kanban-column-medium {
+                width: 260px !important;
+                min-width: 260px !important;
+                max-width: 300px !important;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .kanban-column-medium {
+                width: 280px !important;
+                min-width: 280px !important;
+                max-width: 320px !important;
+            }
+        }
+
+        /* Kanban Spacing */
+        .kanban-padding-medium {
+            padding: 0.75rem !important;
+        }
+
+        @media (min-width: 476px) {
+            .kanban-padding-medium {
+                padding: 1rem !important;
+            }
+        }
+
+        .kanban-gap-medium {
+            gap: 0.75rem !important;
+        }
+
+        @media (min-width: 476px) {
+            .kanban-gap-medium {
+                gap: 1rem !important;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .kanban-gap-medium {
+                gap: 1.25rem !important;
+            }
+        }
+
+        /* ===== GANTT CHART STYLES ===== */
+        /* Base Container */
+        .gantt-container {
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        .gantt-chart {
+            min-width: 800px;
+            position: relative;
+        }
+
+        /* Header */
+        .gantt-header {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+            background: #f8fafc;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .gantt-phase-column {
+            width: 200px;
+            min-width: 200px;
+            padding: 1rem;
+            border-right: 1px solid #e5e7eb;
+            font-weight: 600;
+            background: white;
+        }
+
+        .gantt-timeline-columns {
+            display: flex;
+            flex: 1;
+        }
+
+        .gantt-timeline-header {
+            padding: 1rem 0.5rem;
+            text-align: center;
+            border-right: 1px solid #e5e7eb;
+            font-weight: 500;
+            font-size: 0.875rem;
+            background: white;
+            min-width: 80px;
+        }
+
+        /* Body */
+        .gantt-body {
+            display: flex;
+        }
+
+        .gantt-phases {
+            width: 200px;
+            min-width: 200px;
+        }
+
+        .gantt-phase-row {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            background: white;
+            font-weight: 500;
+        }
+
+        .gantt-timeline {
+            background: repeating-linear-gradient(90deg,
+                    transparent,
+                    transparent 79px,
+                    #f1f5f9 79px,
+                    #f1f5f9 80px) !important;
+        }
+
+
+
+        .gantt-task-bar:hover {
+            transform: scale(1.02);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .gantt-task-progress {
+            position: absolute;
+            height: 100%;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Grid & Markers */
+        .gantt-grid-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: #e5e7eb;
+        }
+
+        .gantt-current-date {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #ef4444;
+            z-index: 5;
+        }
+
+        .gantt-current-date::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -4px;
+            width: 10px;
+            height: 10px;
+            background: #ef4444;
+            border-radius: 50%;
+        }
+
+        /* Status Colors */
+        .gantt-status-todo {
+            background: #3b82f6;
+        }
+
+        .gantt-status-inprogress {
+            background: #f59e0b;
+        }
+
+        .gantt-status-done {
+            background: #10b981;
+        }
+
+        .gantt-status-cancel {
+            background: #6b7280;
+        }
+
+        /* ===== HORIZONTAL GANTT STYLES ===== */
+        .gantt-horizontal {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .gantt-task-column {
+            width: 300px;
+            min-width: 300px;
+            padding: 1rem;
+            background: #1e40af;
+            border-right: 2px solid #1e3a8a;
+            color: white;
+        }
+
+        .gantt-timeline-header {
+            flex: 1;
+            display: flex;
+        }
+
+        .gantt-month-section {
+            flex: 1;
+            text-align: center;
+            padding: 0.75rem 0;
+            border-right: 1px solid #1e3a8a;
+            font-size: 0.9rem;
+        }
+
+        /* Days Container */
+        .gantt-days-container {
+            display: flex;
+            background: #374151;
+            color: white;
+            font-weight: 500;
+            position: sticky;
+            top: 60px;
+            z-index: 15;
+        }
+
+        .gantt-days-label {
+            width: 300px;
+            min-width: 300px;
+            padding: 0.5rem 1rem;
+            background: #374151;
+            border-right: 2px solid #1e40af;
+            font-size: 0.8rem;
+        }
+
+        .gantt-days {
+            flex: 1;
+            display: flex;
+        }
+
+        .gantt-day {
+            flex: 1;
+            text-align: center;
+            padding: 0.5rem 0;
+            border-right: 1px solid #4b5563;
+            font-size: 0.75rem;
+            min-width: 30px;
+        }
+
+        .gantt-day.weekend {
+            background: #4b5563;
+        }
+
+        /* Task Rows */
+        .gantt-tasks {
+            width: 300px;
+            min-width: 300px;
+        }
+
+        .gantt-task-row {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            background: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .gantt-task-row:hover {
+            background: #f3f4f6;
+        }
+
+        .gantt-task-row.active {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+        }
+
+        /* ===== TIMELINE PHASE BAR FIX ===== */
+
+        /* Phase bar utama - SELALU berwarna */
+        .phase-bar {
+            position: absolute;
+            height: 40px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            color: white;
+            font-weight: 500;
+            font-size: 0.875rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            /* HILANGKAN background-color default */
+        }
+
+        /* Progress Bar - GANTI INI */
+        .absolute.top-1\\/2.-translate-y-1\\/2.h-10.rounded-l-xl {
+            border-radius: 6px !important;
+            /* Buat rounded penuh */
+            width: 100% !important;
+            /* Force full width */
+        }
+
+        /* Hapus background gray yang menutupi */
+        .bg-gradient-to-r.from-gray-100.to-gray-200 {
+            display: none !important;
+        }
+
+        /* Outline Bar - pastikan tidak menutupi warna */
+        .absolute.top-1\\/2.-translate-y-1\\/2.h-10.rounded-xl.border-2 {
+            background: transparent !important;
+            border-color: rgba(255, 255, 255, 0.3) !important;
+        }
+
+
+        .phase-bar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .gantt-bar {
+            position: absolute;
+            height: 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            font-size: 0.75rem;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .gantt-bar:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .gantt-bar-progress {
+            position: absolute;
+            height: 100%;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            transition: width 0.3s ease;
+        }
+
+        .gantt-milestone {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #dc2626;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+
+        /* Timeline Container */
+        .gantt-timeline-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gantt-progress-bar {
+            display: none;
+            /* HILANGKAN background progress */
+        }
+
+        /* Gantt duration bar - HILANGKAN yang tidak perlu */
+        .gantt-duration-bar {
+            display: none;
+            /* HILANGKAN border dashed */
+        }
+
+        /* ===== PHASE COLOR SCHEMES ===== */
+        .phase-planning {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+        }
+
+        .phase-analysis {
+            background: linear-gradient(135deg, #10b981, #047857) !important;
+        }
+
+        .phase-design {
+            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+        }
+
+        .phase-development {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+        }
+
+        .phase-testing {
+            background: linear-gradient(135deg, #ec4899, #db2777) !important;
+        }
+
+        .phase-deployment {
+            background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+        }
+
+
+
+        .timeline-phase-bar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* HAPUS background percentage yang tidak perlu */
+        .timeline-phase-progress {
+            display: none;
+            /* HILANGKAN progress bar background */
+        }
+
+
+        /* Timeline View Styles */
+        .timeline-phase {
+            transition: all 0.3s ease;
+        }
+
+        .timeline-phase:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .timeline-progress {
+            transition: width 0.5s ease-in-out;
+        }
+
+        .timeline-task {
+            transition: all 0.2s ease;
+        }
+
+        .timeline-task:hover {
+            background-color: #f8fafc;
+            border-color: #3b82f6;
+        }
+
+        /* Timeline Phase Borders & Backgrounds */
+        .timeline-phase.phase-1 {
+            border-left-color: #3b82f6;
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        }
+
+        .timeline-phase.phase-2 {
+            border-left-color: #10b981;
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+        }
+
+        .timeline-phase.phase-3 {
+            border-left-color: #f59e0b;
+            background: linear-gradient(135deg, #fffbeb, #fef3c7);
+        }
+
+        .timeline-phase.phase-4 {
+            border-left-color: #8b5cf6;
+            background: linear-gradient(135deg, #faf5ff, #e9d5ff);
+        }
+
+        .timeline-phase.phase-5 {
+            border-left-color: #ec4899;
+            background: linear-gradient(135deg, #fdf2f8, #fbcfe8);
+        }
+
+        .timeline-phase.phase-6 {
+            border-left-color: #6366f1;
+            background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+        }
+
+        /* ===== RESPONSIVE ADJUSTMENTS ===== */
+        /* Search & Filter Section */
+        @media (max-width: 475px) {
+            .search-filter-mobile {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .filter-dropdowns-mobile {
+                justify-content: flex-start;
+                overflow-x: auto;
+                padding-bottom: 0.25rem;
+            }
+        }
+
+        @media (min-width: 476px) and (max-width: 639px) {
+            .search-filter-xs {
+                flex-direction: row;
+                align-items: center;
+            }
+        }
+
+        /* Modal Responsive */
+        @media (max-width: 475px) {
+            .modal-mobile {
+                margin: 0.5rem;
+                max-height: calc(100vh - 1rem);
+            }
+
+            .modal-content-mobile {
+                padding: 1rem;
+            }
+        }
+
+        @media (min-width: 476px) and (max-width: 767px) {
+            .modal-small {
+                margin: 1rem;
+                max-height: calc(100vh - 2rem);
+            }
+        }
+
+        /* Gantt Chart Responsive */
+        @media (max-width: 768px) {
+
+            .gantt-phase-column,
+            .gantt-phases {
+                width: 150px;
+                min-width: 150px;
+            }
+
+            .gantt-timeline-header {
+                min-width: 60px;
+                font-size: 0.75rem;
+                padding: 0.5rem 0.25rem;
+            }
+
+            .timeline-phase {
+                margin-bottom: 1rem;
+            }
+        }
+
+        /* Horizontal Gantt Responsive */
+        @media (max-width: 1024px) {
+
+            .gantt-task-column,
+            .gantt-days-label,
+            .gantt-tasks {
+                width: 250px;
+                min-width: 250px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .gantt-horizontal {
+                font-size: 0.8rem;
+            }
+
+            .gantt-task-column,
+            .gantt-days-label,
+            .gantt-tasks {
+                width: 200px;
+                min-width: 200px;
+            }
+
+            .gantt-day {
+                min-width: 25px;
+                font-size: 0.7rem;
+                padding: 0.3rem 0;
+            }
+
+            .gantt-bar {
+                height: 25px;
+                font-size: 0.7rem;
+                padding: 0 8px;
+            }
+        }
+
+
+        /* Shimmer Animation */
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .animate-shimmer {
+            animation: shimmer 2s infinite;
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+    <script>
+=======
         @include('components.balas-komentar')
 
 
@@ -1090,7 +1071,7 @@
                             <!-- Footer -->
                             <div class="flex justify-end gap-3 p-4 border-t">
                                 <button type="button" @click="openAddMemberModal = false"
-                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50">Batal</button>
+                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 hover:bg-gray-50">Batal</button>
                                 <button type="button" @click="saveSelectedMembers()"
                                     class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Simpan</button>
                             </div>
@@ -1353,7 +1334,7 @@
 
                             <div class="flex justify-center gap-3">
                                 <button type="button" @click="openCeklisModal = false"
-                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 text-sm font-medium">
+                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 hover:bg-gray-50 text-sm font-medium">
                                     Batal
                                 </button>
                                 <button type="button" @click="saveCeklis()"
@@ -1480,7 +1461,7 @@
                             <!-- Tombol Aksi -->
                             <div class="flex justify-end gap-2 mt-4">
                                 <button type="button" @click="openMoveModal = false"
-                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 text-sm ">
+                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 hover:bg-gray-50 text-sm ">
                                     Batal
                                 </button>
                                 <button type="button"
@@ -1565,7 +1546,7 @@
                             <!-- Footer -->
                             <div class="flex justify-end gap-3 p-4 border-t">
                                 <button type="button" @click="openAddMemberModal = false"
-                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50">Batal</button>
+                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 hover:bg-gray-50">Batal</button>
                                 <button type="button" @click="saveSelectedMembers()"
                                     class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Simpan</button>
                             </div>
@@ -1832,7 +1813,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
 
                             <div class="flex justify-center gap-3">
                                 <button type="button" @click="openCeklisModal = false"
-                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 text-sm font-medium">
+                                    class="px-4 py-2 rounded-lg text-blue-600 bg-white border border-blue-600 hover:bg-gray-50 text-sm font-medium">
                                     Batal
                                 </button>
                                 <button type="button" @click="saveCeklis()"
@@ -1882,7 +1863,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                                 </div>
                                 <div class="flex justify-end gap-2 mt-2">
                                     <button type="button"
-                                        class="mt-3 px-4 py-2 text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 text-sm rounded-lg">
+                                        class="mt-3 px-4 py-2 text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 text-sm">
                                         Batal
                                     </button>
                                     <button type="button"
@@ -2082,6 +2063,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
         {{-- Script SortableJS --}}
         <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
         <script>
+>>>>>>> backend-kelola-workspace
             ['todo', 'inprogress', 'done', 'cancel'].forEach(id => {
                 let el = document.getElementById(id);
                 if (el) {
@@ -2111,6 +2093,8 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                     // --- Task Form Data ---
                     taskForm: {
                         title: '',
+                        phase: '', // Sekarang string kosong, bukan null/undefined
+
                         members: [],
                         secret: false,
                         notes: '',
@@ -2139,6 +2123,18 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                     selectedLabel: '',
                     selectedMember: '',
                     selectedDeadline: '',
+
+                    // === VIEW MODE & TIMELINE PROPERTIES ===
+                    viewMode: 'kanban',
+                    selectedPhase: null,
+
+                    // === GANTT CHART PROPERTIES ===
+                    phaseModal: {
+                        open: false,
+                        title: '',
+                        description: '',
+                        tasks: []
+                    },
 
                     // --- Members ---
                     searchMember: '',
@@ -2213,10 +2209,11 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                     ],
 
                     // --- Dummy Tasks Database ---
-                    // --- Dummy Tasks Database ---
+                    // --- Dummy Tasks Database dengan Phase ---
                     tasks: [{
                             id: 1,
                             title: "MENYELESAIKAN LAPORAN KEUANGAN",
+                            phase: "Perencanaan",
                             status: "todo",
                             members: [{
                                     name: 'Naufal',
@@ -2251,9 +2248,9 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                                     done: false
                                 }
                             ],
-                            startDate: "2025-09-27",
+                            startDate: "2024-01-15",
                             startTime: "08:00",
-                            dueDate: "2025-09-30",
+                            dueDate: "2024-01-30",
                             dueTime: "17:00",
                             comments: [{
                                     author: "Risi Gustiar",
@@ -2269,8 +2266,9 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         },
                         {
                             id: 2,
-                            title: "Tugas Content IG",
-                            status: "todo",
+                            title: "Analisis Kebutuhan User",
+                            phase: "Analisis",
+                            status: "done",
                             members: [{
                                     name: 'Risi',
                                     avatar: 'https://i.pravatar.cc/40?img=3'
@@ -2281,43 +2279,44 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                                 }
                             ],
                             secret: false,
-                            notes: "Buat content untuk Instagram feed dan story.",
+                            notes: "Analisis kebutuhan user untuk fitur baru.",
                             attachments: [{
-                                name: "Content_Plan.pdf",
+                                name: "User_Requirements.pdf",
                                 type: "pdf"
                             }],
                             labels: [{
-                                    name: 'Content',
+                                    name: 'Analisis',
                                     color: '#16a34a'
                                 },
                                 {
-                                    name: 'Social Media',
+                                    name: 'Research',
                                     color: '#ec4899'
                                 }
                             ],
                             checklist: [{
-                                    name: "Riset tren terkini",
+                                    name: "Interview user",
                                     done: true
                                 },
                                 {
-                                    name: "Buat draft content",
+                                    name: "Analisis data",
                                     done: true
                                 },
                                 {
-                                    name: "Review oleh tim",
+                                    name: "Buat laporan kebutuhan",
                                     done: false
                                 }
                             ],
-                            startDate: "2025-10-20",
+                            startDate: "2024-02-01",
                             startTime: "09:00",
-                            dueDate: "2025-10-24",
+                            dueDate: "2024-02-15",
                             dueTime: "18:00",
                             comments: []
                         },
                         {
                             id: 3,
-                            title: "Buat Banner Promo",
-                            status: "inprogress",
+                            title: "Desain UI Dashboard",
+                            phase: "Desain",
+                            status: "done",
                             members: [{
                                     name: 'Fajar',
                                     avatar: 'https://i.pravatar.cc/40?img=5'
@@ -2328,28 +2327,28 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                                 }
                             ],
                             secret: false,
-                            notes: "Design banner untuk promo bulan November.",
+                            notes: "Design dashboard untuk monitoring project.",
                             attachments: [],
                             labels: [{
                                 name: 'Design',
                                 color: '#a855f7'
                             }],
                             checklist: [{
-                                    name: "Concept design",
+                                    name: "Wireframe",
                                     done: true
                                 },
                                 {
-                                    name: "Revisi 1",
+                                    name: "Mockup",
                                     done: true
                                 },
                                 {
-                                    name: "Finalisasi",
+                                    name: "Prototype",
                                     done: false
                                 }
                             ],
-                            startDate: "2025-10-15",
+                            startDate: "2024-03-01",
                             startTime: "10:00",
-                            dueDate: "2025-10-25",
+                            dueDate: "2024-03-20",
                             dueTime: "15:00",
                             comments: [{
                                 author: "Fajar",
@@ -2359,7 +2358,8 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         },
                         {
                             id: 4,
-                            title: "Testing Fitur Login",
+                            title: "Development Fitur Login",
+                            phase: "Development",
                             status: "done",
                             members: [{
                                     name: 'Naufal',
@@ -2371,36 +2371,36 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                                 }
                             ],
                             secret: false,
-                            notes: "Testing comprehensive untuk fitur login baru.",
+                            notes: "Development fitur login dengan authentication.",
                             attachments: [{
                                     name: "Test_Cases.xlsx",
                                     type: "xlsx"
                                 },
                                 {
-                                    name: "Bug_Report.pdf",
+                                    name: "API_Documentation.pdf",
                                     type: "pdf"
                                 }
                             ],
                             labels: [{
-                                name: 'Testing',
+                                name: 'Development',
                                 color: '#0ea5e9'
                             }],
                             checklist: [{
-                                    name: "Unit testing",
+                                    name: "Backend API",
                                     done: true
                                 },
                                 {
-                                    name: "Integration testing",
+                                    name: "Frontend integration",
                                     done: true
                                 },
                                 {
-                                    name: "User acceptance testing",
+                                    name: "Testing",
                                     done: true
                                 }
                             ],
-                            startDate: "2025-10-10",
+                            startDate: "2024-04-01",
                             startTime: "08:00",
-                            dueDate: "2025-10-22",
+                            dueDate: "2024-04-25",
                             dueTime: "17:00",
                             comments: [{
                                 author: "Naufal",
@@ -2410,44 +2410,85 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         },
                         {
                             id: 5,
-                            title: "Riset Vendor Baru",
-                            status: "cancel",
+                            title: "Testing Sistem Integrasi",
+                            phase: "Testing",
+                            status: "inprogress",
                             members: [{
                                 name: 'Dzakwan',
                                 avatar: 'https://i.pravatar.cc/40?img=2'
                             }],
                             secret: true,
-                            notes: "Riset vendor untuk kebutuhan project Q1 2026.",
+                            notes: "Testing integrasi antara modul sistem.",
                             attachments: [{
-                                name: "Vendor_List.xlsx",
+                                name: "Integration_Test_Plan.xlsx",
                                 type: "xlsx"
                             }],
                             labels: [{
-                                name: 'Research',
+                                name: 'Testing',
                                 color: '#f59e0b'
                             }],
                             checklist: [{
-                                    name: "Identifikasi kebutuhan",
+                                    name: "Unit testing",
                                     done: true
                                 },
                                 {
-                                    name: "Cari vendor potensial",
+                                    name: "Integration testing",
                                     done: false
                                 },
                                 {
-                                    name: "Evaluasi proposal",
+                                    name: "User acceptance testing",
                                     done: false
                                 }
                             ],
-                            startDate: "2025-10-05",
+                            startDate: "2024-05-01",
                             startTime: "09:00",
-                            dueDate: "2025-10-20",
+                            dueDate: "2024-05-30",
                             dueTime: "16:00",
                             comments: [{
                                 author: "Manager",
                                 date: "Senin, 20 Okt 2025",
-                                text: "Project ditunda sampai further notice."
+                                text: "Progress testing 60%."
                             }]
+                        },
+                        {
+                            id: 6,
+                            title: "Deployment Production",
+                            phase: "Deployment",
+                            status: "todo",
+                            members: [{
+                                    name: 'Naufal',
+                                    avatar: 'https://i.pravatar.cc/40?img=1'
+                                },
+                                {
+                                    name: 'Fajar',
+                                    avatar: 'https://i.pravatar.cc/40?img=5'
+                                }
+                            ],
+                            secret: false,
+                            notes: "Deploy aplikasi ke server production.",
+                            attachments: [],
+                            labels: [{
+                                name: 'Deployment',
+                                color: '#10b981'
+                            }],
+                            checklist: [{
+                                    name: "Setup server",
+                                    done: false
+                                },
+                                {
+                                    name: "Database migration",
+                                    done: false
+                                },
+                                {
+                                    name: "Deploy aplikasi",
+                                    done: false
+                                }
+                            ],
+                            startDate: "2024-06-01",
+                            startTime: "08:00",
+                            dueDate: "2024-06-10",
+                            dueTime: "17:00",
+                            comments: []
                         }
                     ],
 
@@ -2505,6 +2546,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                     resetTaskForm() {
                         this.taskForm = {
                             title: '',
+                            phase: '',
                             members: [],
                             secret: false,
                             notes: '',
@@ -2533,15 +2575,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                             name: m.name,
                             avatar: m.avatar
                         }));
-                        if (this.isEditMode && this.currentTask) {
-                            selected.forEach(member => {
-                                if (!this.currentTask.members.find(m => m.name === member.name)) {
-                                    this.currentTask.members.push(member);
-                                }
-                            });
-                        } else {
-                            this.taskForm.members = selected;
-                        }
+                        this.taskForm.members = selected;
                         this.members.forEach(m => m.selected = false);
                         this.selectAll = false;
                         this.openAddMemberModal = false;
@@ -2553,7 +2587,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         }
                     },
 
-                    // Labels
+                    // Labels methods untuk form
                     filteredLabels() {
                         if (!this.searchLabel) return this.labels;
                         return this.labels.filter(l => l.name.toLowerCase().includes(this.searchLabel.toLowerCase()));
@@ -2564,11 +2598,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                             name: l.name,
                             color: l.color
                         }));
-                        if (this.isEditMode && this.currentTask) {
-                            this.currentTask.labels = selected;
-                        } else {
-                            this.taskForm.labels = selected;
-                        }
+                        this.taskForm.labels = selected;
                         this.labels.forEach(l => l.selected = false);
                         this.openLabelModal = false;
                     },
@@ -2586,18 +2616,14 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         this.openLabelModal = true;
                     },
 
-                    // Checklist
+                    // Checklist methods untuk form
                     saveCeklis() {
                         if (this.newCeklisName.trim() === '') return;
                         const newItem = {
                             name: this.newCeklisName,
                             done: false
                         };
-                        if (this.isEditMode && this.currentTask) {
-                            this.currentTask.checklist.push(newItem);
-                        } else {
-                            this.taskForm.checklist.push(newItem);
-                        }
+                        this.taskForm.checklist.push(newItem);
                         this.newCeklisName = '';
                         this.openCeklisModal = false;
                     },
@@ -2877,11 +2903,8 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         });
                     },
 
-                    calculateProgress(task) {
-                        if (!task.checklist || task.checklist.length === 0) return 0;
-                        const completed = task.checklist.filter(item => item.done).length;
-                        return Math.round((completed / task.checklist.length) * 100);
-                    },
+
+
 
 
 
@@ -2927,12 +2950,161 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                         console.log(`Tasks di ${currentList} diurutkan dengan: ${sortType}`);
                     },
 
+
+                    // Methods untuk Gantt Chart
+                    getProjectPhases() {
+                        return [{
+                                id: 1,
+                                name: 'Perencanaan',
+                            },
+                            {
+                                id: 2,
+                                name: 'Analisis',
+                            },
+                            {
+                                id: 3,
+                                name: 'Desain',
+                            },
+                            {
+                                id: 4,
+                                name: 'Development',
+                            },
+                            {
+                                id: 5,
+                                name: 'Testing',
+                            },
+                            {
+                                id: 6,
+                                name: 'Deployment',
+                            }
+                        ];
+                    },
+
+                    // Update method showPhaseTasks
+                    showPhaseTasks(phaseId) {
+                        const phase = this.getProjectPhases().find(p => p.id === phaseId);
+                        if (!phase) return;
+
+                        const phaseTasks = this.getTasksByPhaseId(phaseId);
+                        const totalTasks = phaseTasks.length;
+                        const completedTasks = phaseTasks.filter(task => task.status === 'done').length;
+                        const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+                        this.selectedPhase = phaseId;
+                        this.phaseModal = {
+                            open: true,
+                            title: phase.name,
+                            description: phase.description,
+                            tasks: phaseTasks,
+                            progress: progress,
+                            totalTasks: totalTasks,
+                            completedTasks: completedTasks
+                        };
+                    },
+                    getTasksByPhaseId(phaseId) {
+                        // Mapping phase ID ke phase name yang sesuai dengan data tasks
+                        const phaseMap = {
+                            1: 'Perencanaan',
+                            2: 'Analisis',
+                            3: 'Desain',
+                            4: 'Development',
+                            5: 'Testing',
+                            6: 'Deployment'
+                        };
+
+                        const phaseName = phaseMap[phaseId];
+                        return this.tasks.filter(task => task.phase === phaseName);
+                    },
+
+                    showTaskDetails(task) {
+                        this.openDetail(task.id);
+                    },
+
+                    // Methods untuk menghitung progress
+                    calculateProgress(task) {
+                        if (!task.checklist || task.checklist.length === 0) return 0;
+                        const completed = task.checklist.filter(item => item.done).length;
+                        return Math.round((completed / task.checklist.length) * 100);
+                    },
+
+                    // Method untuk menghitung persentase phase berdasarkan tugas selesai
+                    calculatePhaseProgress(phaseId) {
+                        const phaseTasks = this.getTasksByPhaseId(phaseId);
+                        if (phaseTasks.length === 0) return 0;
+
+                        const completedTasks = phaseTasks.filter(task => task.status === 'done').length;
+                        return Math.round((completedTasks / phaseTasks.length) * 100);
+                    },
+
+                    // Method untuk mendapatkan statistik phase
+                    getPhaseStats(phaseId) {
+                        const phaseTasks = this.getTasksByPhaseId(phaseId);
+                        const totalTasks = phaseTasks.length;
+                        const completedTasks = phaseTasks.filter(task => task.status === 'done').length;
+                        const inProgressTasks = phaseTasks.filter(task => task.status === 'inprogress').length;
+                        const todoTasks = phaseTasks.filter(task => task.status === 'todo').length;
+
+                        return {
+                            total: totalTasks,
+                            completed: completedTasks,
+                            inProgress: inProgressTasks,
+                            todo: todoTasks,
+                            progress: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+                        };
+                    },
+
+                    formatDate(dateString) {
+                        if (!dateString) return '';
+                        const date = new Date(dateString);
+                        return date.toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                        });
+                    },
+
+                    // Open task detail modal
+                    openDetail(taskId) {
+                        const task = this.tasks.find(t => t.id === taskId);
+                        if (!task) return;
+
+                        this.currentTask = JSON.parse(JSON.stringify(task));
+                        this.isEditMode = false;
+                        this.openTaskDetail = true;
+                    },
+
+
+                    // Add this to your kanbanApp() methods
+                    // Update method getTasksByPhase
+                    getTasksByPhase(phaseId) {
+                        const phaseMap = {
+                            1: 'Perencanaan',
+                            2: 'Analisis',
+                            3: 'Desain',
+                            4: 'Development',
+                            5: 'Testing',
+                            6: 'Deployment'
+                        };
+
+                        const phaseName = phaseMap[phaseId];
+                        const phaseTasks = this.tasks.filter(task => task.phase === phaseName);
+
+                        // Jika tidak ada tugas, return array kosong agar timeline tidak muncul
+                        if (phaseTasks.length === 0) {
+                            return [];
+                        }
+
+                        return phaseTasks;
+                    },
+
                 }
             }
         </script>
+@endsection
 
 
 
 
 
-    @endsection
+
+
