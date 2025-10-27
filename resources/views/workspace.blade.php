@@ -48,12 +48,12 @@
             </a>
 
             {{-- Card Insight --}}
-            <a href="{{ url('/insight') }}" @click="$store.workspace.selectedMenu = 'insight'"
+            <a href="{{ url('/mindmap') }}" @click="$store.workspace.selectedMenu = 'insight'"
                 class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
                 <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
                     <img src="{{ asset('images/icons/workspace_insight.svg') }}" alt="Insight Icon" class="w-full h-full">
                 </div>
-                <span class="text-gray-700 font-medium">Insight</span>
+                <span class="text-gray-700 font-medium">Mindmap</span>
             </a>
 
             {{-- Card Dokumen --}}
