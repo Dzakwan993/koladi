@@ -6,7 +6,7 @@
 <div class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen" x-data="mindmapApp()">
     <!-- Workspace Nav untuk Mind Map -->
     @include('components.workspace-nav', ['active' => 'mindmap'])
-    
+
     <!-- Header Section -->
     <div class="container mx-auto px-6 py-8">
         <div class="flex items-center justify-between mb-8">
@@ -14,7 +14,7 @@
                 <h1 class="text-4xl font-bold text-gray-800 mb-2">Mind Map Proyek</h1>
                 <p class="text-gray-600">Visualisasi ide dan struktur proyek Anda secara interaktif</p>
             </div>
-            
+
             <!-- Action Buttons -->
             <div class="flex gap-3">
                 <button @click="addNode()" class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center gap-2">
@@ -29,7 +29,7 @@
                     </svg>
                     Reset View
                 </button>
-                <!-- Tombol untuk mengekspor mindmap 
+                <!-- Tombol untuk mengekspor mindmap
 
                 <button @click="exportMindmap()" class="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,8 +86,8 @@
 
                     <!-- Connection Mode -->
                     <div class="flex items-center gap-2">
-                        <button @click="toggleConnectionMode()" 
-                                :class="isConnecting ? 'bg-red-600 text-white' : 'bg-white text-gray-600'" 
+                        <button @click="toggleConnectionMode()"
+                                :class="isConnecting ? 'bg-red-600 text-white' : 'bg-white text-gray-600'"
                                 class="px-4 py-2 rounded-lg transition shadow-sm border border-gray-200 text-sm font-medium flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
@@ -123,12 +123,12 @@
                         <span class="font-medium text-green-700"><span x-text="connectionCount">0</span> Connections</span>
                     </div>
                 </div>
-                
+
             </div>
 
             <!-- Canvas Area -->
             <div id="mindmap-area" class="relative" style="height: 700px; background: linear-gradient(to right, #f8fafc 1px, transparent 1px), linear-gradient(to bottom, #f8fafc 1px, transparent 1px); background-size: 20px 20px;">
-                <canvas id="mindmap-canvas" 
+                <canvas id="mindmap-canvas"
                         class="absolute inset-0 w-full h-full cursor-move"
                         @mousedown="startPan($event)"
                         @mousemove="pan($event)"
@@ -144,12 +144,12 @@
                          @mousedown.stop="startDrag(node, $event)"
                          @dblclick="editNode(node)"
                          @click="handleNodeClick(node)">
-                        
+
                         <div class="group relative">
                             <!-- Node Card -->
                             <div :class="[
                                 'px-6 py-4 rounded-xl shadow-lg hover:shadow-2xl transition-all cursor-move border-2 min-w-48 max-w-64',
-                                node.isRoot ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white border-blue-700' : 
+                                node.isRoot ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white border-blue-700' :
                                 node.type === 'idea' ? 'bg-gradient-to-br from-purple-500 to-pink-500 text-white border-purple-600' :
                                 node.type === 'task' ? 'bg-gradient-to-br from-green-500 to-emerald-500 text-white border-green-600' :
                                 'bg-white text-gray-800 border-gray-300',
@@ -158,19 +158,19 @@
                                 <div class="flex items-start justify-between gap-2">
                                     <div class="flex-1">
                                         <div class="font-bold text-lg mb-1 truncate" x-text="node.title"></div>
-                                        <div :class="node.isRoot || node.type === 'idea' || node.type === 'task' ? 'text-white/90' : 'text-gray-600'" 
-                                             class="text-sm line-clamp-2" 
+                                        <div :class="node.isRoot || node.type === 'idea' || node.type === 'task' ? 'text-white/90' : 'text-gray-600'"
+                                             class="text-sm line-clamp-2"
                                              x-text="node.description"></div>
-                                        
+
                                         <!-- Child Count Badge -->
                                         <div x-show="getChildCount(node.id) > 0" class="mt-2">
-                                            <span :class="node.isRoot || node.type === 'idea' || node.type === 'task' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-700'" 
+                                            <span :class="node.isRoot || node.type === 'idea' || node.type === 'task' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-700'"
                                                   class="text-xs px-2 py-1 rounded-full">
                                                 <span x-text="getChildCount(node.id)"></span> children
                                             </span>
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Node Actions -->
                                     <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button @click.stop="addChildNode(node)" :class="node.isRoot || node.type === 'idea' || node.type === 'task' ? 'text-white hover:bg-white/20' : 'text-gray-600 hover:bg-gray-100'" class="p-1.5 rounded transition" title="Tambah Child Node">
@@ -225,7 +225,7 @@
         </div>
 
         <!-- Node Editor Modal -->
-        <div x-show="showModal" 
+        <div x-show="showModal"
              x-cloak
              @click.self="showModal = false"
              class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -239,18 +239,18 @@
                 <div class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 rounded-t-2xl">
                     <h3 class="text-xl font-bold" x-text="editingNode.id ? 'Edit Node' : 'Tambah Node'"></h3>
                 </div>
-                
+
                 <div class="p-6 space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Judul</label>
                         <input x-model="editingNode.title" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Masukkan judul node">
                     </div>
-                    
+
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
                         <textarea x-model="editingNode.description" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition" placeholder="Masukkan deskripsi node"></textarea>
                     </div>
-                    
+
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Tipe Node</label>
                         <select x-model="editingNode.type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
@@ -283,7 +283,7 @@
                         </select>
                     </div>
                 </div>
-                
+
                 <div class="bg-gray-50 px-6 py-4 rounded-b-2xl flex justify-end gap-3">
                     <button @click="showModal = false" class="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition">
                         Batal
@@ -655,9 +655,9 @@ function mindmapApp() {
             // Garis lurus dengan sudut siku-siku (seperti di draw.io)
             const midX = (start.x + end.x) / 2;
             const midY = (start.y + end.y) / 2;
-            
+
             this.ctx.moveTo(start.x, start.y);
-            
+
             // Horizontal lalu vertikal, atau sebaliknya, tergantung mana yang lebih pendek
             if (Math.abs(start.x - end.x) > Math.abs(start.y - end.y)) {
                 this.ctx.lineTo(midX, start.y);
@@ -666,7 +666,7 @@ function mindmapApp() {
                 this.ctx.lineTo(start.x, midY);
                 this.ctx.lineTo(end.x, midY);
             }
-            
+
             this.ctx.lineTo(end.x, end.y);
         },
 
@@ -676,9 +676,9 @@ function mindmapApp() {
             const dy = end.y - start.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
             const controlOffset = Math.min(distance * 0.3, 100);
-            
+
             this.ctx.moveTo(start.x, start.y);
-            
+
             if (Math.abs(dx) > Math.abs(dy)) {
                 // Horizontal curve
                 const controlX = start.x + dx * 0.5;
@@ -695,7 +695,7 @@ function mindmapApp() {
         drawArrow(x, y, angle, color) {
             const arrowLength = 12 * this.zoomLevel;
             const arrowWidth = 8 * this.zoomLevel;
-            
+
             this.ctx.beginPath();
             this.ctx.moveTo(x, y);
             this.ctx.lineTo(
@@ -740,7 +740,7 @@ function mindmapApp() {
                 // Kurva untuk temporary connection
                 this.drawCurvedLine(startPoint, {x: endX, y: endY});
             }
-            
+
             this.ctx.strokeStyle = '#f59e0b';
             this.ctx.lineWidth = 2;
             this.ctx.setLineDash([5, 5]);
@@ -752,7 +752,7 @@ function mindmapApp() {
         addNode() {
             const centerX = (this.canvas.width / 2 - this.panX) / this.zoomLevel;
             const centerY = (this.canvas.height / 2 - this.panY) / this.zoomLevel;
-            
+
             const newNode = {
                 id: this.nodeIdCounter++,
                 title: `Node ${this.nodeIdCounter - 1}`,
@@ -823,18 +823,18 @@ function mindmapApp() {
                 alert('Tidak dapat menghapus node utama!');
                 return;
             }
-            
+
             if (!confirm(`Hapus node "${node.title}" dan semua node anaknya?`)) {
                 return;
             }
-            
+
             // Delete children recursively
             const deleteRecursive = (nodeId) => {
                 const children = this.nodes.filter(n => n.parentId === nodeId);
                 children.forEach(child => deleteRecursive(child.id));
                 this.nodes = this.nodes.filter(n => n.id !== nodeId);
             };
-            
+
             deleteRecursive(node.id);
             this.pushHistory('deleteNode');
         },
@@ -873,7 +873,7 @@ function mindmapApp() {
                     this.pushHistory('createConnection');
                 }
             }
-            
+
             this.toggleConnectionMode();
         },
 
@@ -926,27 +926,27 @@ function mindmapApp() {
         // === DRAG & PAN ===
         startDrag(node, event) {
             if (this.isConnecting) return;
-            
+
             this.draggingNode = node;
             const rect = this.canvas.getBoundingClientRect();
-            
+
             // Simpan posisi awal untuk perhitungan delta
             this.dragStartX = (event.clientX - rect.left - this.panX) / this.zoomLevel;
             this.dragStartY = (event.clientY - rect.top - this.panY) / this.zoomLevel;
-            
+
             this.handleDragBound = this.handleDrag.bind(this);
             this.stopDragBound = this.stopDrag.bind(this);
-            
+
             document.addEventListener('mousemove', this.handleDragBound);
             document.addEventListener('mouseup', this.stopDragBound);
-            
+
             // tandai elemen sehingga transisi dimatikan untuk menghindari lag visual
             this.draggedElement = event.currentTarget;
             if (this.draggedElement) {
                 this.draggedElement.classList.add('node-dragging');
                 this.draggedElement.style.zIndex = '1000';
             }
-            
+
             // Hentikan event propagation untuk mencegah konflik dengan pan
             event.stopPropagation();
         },
@@ -954,11 +954,11 @@ function mindmapApp() {
         handleDrag(event) {
             if (this.draggingNode && !this.isConnecting) {
                 const rect = this.canvas.getBoundingClientRect();
-                
+
                 // Hitung posisi baru dalam koordinat world space
                 const newX = (event.clientX - rect.left - this.panX) / this.zoomLevel;
                 const newY = (event.clientY - rect.top - this.panY) / this.zoomLevel;
-                
+
                 // BUFFER posisi untuk diterapkan di animation frame berikutnya
                 this.pendingDrag = { x: newX, y: newY };
             }
@@ -969,14 +969,14 @@ function mindmapApp() {
                 this.draggingNode = null;
                 document.removeEventListener('mousemove', this.handleDragBound);
                 document.removeEventListener('mouseup', this.stopDragBound);
-                
+
                 // Reset z-index dan kelas pada elemen yang sedang didrag
                 if (this.draggedElement) {
                     this.draggedElement.classList.remove('node-dragging');
                     this.draggedElement.style.zIndex = '';
                     this.draggedElement = null;
                 }
-                
+
                 // Pastikan redraw untuk menyelaraskan koneksi akhir
                 this.drawConnections();
 
@@ -1404,7 +1404,7 @@ function mindmapApp() {
 
 /* Canvas grid pattern enhancement */
 .bg-grid-pattern {
-    background-image: 
+    background-image:
         linear-gradient(to right, #f1f5f9 1px, transparent 1px),
         linear-gradient(to bottom, #f1f5f9 1px, transparent 1px);
     background-size: 20px 20px;
@@ -1467,15 +1467,15 @@ function mindmapApp() {
         padding-left: 1rem;
         padding-right: 1rem;
     }
-    
+
     .text-4xl {
         font-size: 2rem;
     }
-    
+
     .min-w-48 {
         min-width: 12rem;
     }
-    
+
     .max-w-64 {
         max-width: 16rem;
     }
@@ -1494,19 +1494,19 @@ function mindmapApp() {
     .bg-white {
         background-color: #1f2937;
     }
-    
+
     .text-gray-800 {
         color: #f9fafb;
     }
-    
+
     .text-gray-600 {
         color: #d1d5db;
     }
-    
+
     .border-gray-200 {
         border-color: #374151;
     }
-    
+
     .bg-gray-50 {
         background-color: #111827;
     }
@@ -1518,7 +1518,7 @@ function mindmapApp() {
     .bg-gradient-to-r {
         background: none !important;
     }
-    
+
     .shadow-lg,
     .shadow-2xl {
         box-shadow: none !important;
@@ -1587,5 +1587,5 @@ textarea:focus {
 }
 </style>
 
-@endpush@endpush
+@endpush
 @endsection
