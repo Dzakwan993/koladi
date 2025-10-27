@@ -30,7 +30,7 @@
                     <img src="{{ asset('images/icons/Schedule.svg') }}" alt="Schedule" class="w-5 h-5 sm:w-6 sm:h-6" />
                     <p class="text-xs sm:text-sm text-[#6B7280] font-medium">Ringkasan tugas saya</p>
                 </div>
-                
+
                 {{-- Container Putih Terluar --}}
                 <div class="bg-white rounded-lg sm:rounded-xl shadow-sm px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex-1 flex flex-col overflow-hidden min-h-0">
                     {{-- Header: Judul + Search + Sort --}}
@@ -38,19 +38,19 @@
                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-center gap-2 sm:gap-4 md:gap-6">
                             {{-- Judul Perencanaan --}}
                             <h2 class="text-base sm:text-lg font-bold text-[#6B7280]">Perencanaan</h2>
-                            
+
                             {{-- Search Box --}}
                             <div class="w-full sm:w-48 md:w-60 relative">
-                                <input 
-                                    type="text" 
-                                    placeholder="Cari tugas..." 
+                                <input
+                                    type="text"
+                                    placeholder="Cari tugas..."
                                     class="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 bg-[#E9EFFD] border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-xs sm:text-sm placeholder-gray-400 font-medium"
                                 />
                                 <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 absolute left-2 sm:left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                 </svg>
                             </div>
-                            
+
                             {{-- Sort Button --}}
                             <button class="p-1.5 sm:p-2 rounded-lg hover:bg-gray-200 transition flex-shrink-0">
                                 <img src="{{ asset('images/icons/Sort.svg') }}" alt="Sort" class="w-4 h-4 sm:w-5 sm:h-5" />
@@ -171,7 +171,7 @@
             <div class="flex flex-col h-full overflow-hidden mx-2 sm:mx-4">
                 {{-- Jadwal Header --}}
                 <div class="flex items-center gap-2 mb-2 sm:mb-3 flex-shrink-0">
-                    <img src="{{ asset('images/icons/Calendar.svg') }}" alt="Schedule" class="w-5 h-5 sm:w-6 sm:h-6" />
+                    <img src="{{ asset('images/icons/calendar-dashboard.svg') }}" alt="Schedule" class="w-5 h-5 sm:w-6 sm:h-6" />
                     <p class="text-xs sm:text-sm text-[#6B7280] font-medium">Jadwal</p>
                 </div>
 
@@ -402,7 +402,7 @@
         overflow: hidden !important;
         height: 100% !important;
     }
-    
+
     .fc .fc-scroller {
         overflow: hidden !important;
     }
@@ -410,7 +410,7 @@
     .fc .fc-daygrid-day-events {
         display: none !important;
     }
-    
+
     .fc .fc-daygrid-event {
         background: transparent !important;
         border: none !important;
