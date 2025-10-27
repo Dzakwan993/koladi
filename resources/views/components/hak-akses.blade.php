@@ -3,7 +3,6 @@
 
 <!-- ✅ TAMBAHKAN: class "hidden" di awal -->
 <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden font-[Inter,sans-serif]" id="accessModal">
-<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden" id="accessModal">
     <div class="bg-white pt-2 px-4 sm:px-6 rounded-lg sm:rounded-xl shadow-xl w-full max-w-[95%] sm:max-w-4xl md:max-w-5xl lg:max-w-6xl mx-4 max-h-[90vh] overflow-y-auto">
         <!-- Header -->
         <div class="relative flex flex-col sm:flex-row justify-between items-start p-4 sm:p-6 gap-4">
