@@ -5,9 +5,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\PengumumanController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\FileController;
-use App\Http\Controllers\PengumumanController;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\UserWorkspacesController;
 
