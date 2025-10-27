@@ -24,6 +24,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Register view composer untuk component atur-hak
+        View::composer('components.atur-hak', UserRoleComposer::class);
         View::composer('*', function ($view) {
             $user = Auth::user();
 

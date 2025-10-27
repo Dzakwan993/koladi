@@ -65,6 +65,11 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'roles_id');
+    }
+
     // Relasi ke user_companies
     public function userCompanies()
     {

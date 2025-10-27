@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Auth\GoogleController;
@@ -37,7 +38,7 @@ Route::post('/invite/send', [InvitationController::class, 'send'])->name('invite
 Route::get('/invite/accept/{token}', [InvitationController::class, 'accept'])->name('invite.accept');
 
 
-// ✅ GRUP ROUTES YANG BUTUH AUTH
+// ✅ UBAH: Pindahkan route hak-akses ke dalam middleware auth
 Route::middleware(['auth'])->group(function () {
 
     // Dashboard - GUNAKAN INI SAJA
@@ -45,7 +46,7 @@ Route::middleware(['auth'])->group(function () {
 
     // 🆕 TAMBAHKAN INI - Route halaman member removed
     Route::get('/member-removed', [CompanyController::class, 'memberRemoved'])->name('member.removed');
-    
+
     // Halaman Dashboard Awal Tambah Anggota
     Route::get('/dashboard-awal', function () {
         return view('dashboard-awal');
@@ -193,4 +194,8 @@ Route::middleware(['auth'])->group(function () {
 
     // Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
+
+    // ✅ TAMBAHKAN: Route untuk hak akses (pindahkan ke dalam middleware)
+    Route::get('/hak-akses', [UserController::class, 'hakAkses'])->name('hakAkses');
+    Route::post('/update-user-roles', [UserController::class, 'updateUserRoles'])->name('user.updateRoles');
 });
