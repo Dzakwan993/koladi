@@ -46,12 +46,12 @@
                     </div>
                 </div>
             </div>
+
             <!-- Card hitam full di bawah -->
             <div class="flex justify-center">
                 <div class="w-[930px] flex flex-col gap-3 schedule-list">
                     <div class="flex justify-center">
                         <div class="w-[930px] flex flex-col gap-4 schedule-list">
-
 
                             <!-- Wrapper semua item -->
                             <div class="space-y-6 font-inter">
@@ -61,7 +61,7 @@
 
                                     <!-- start -->
                                     <!-- Item Card 1 -->
-                                    <div
+                                    <a href="{{ url('/isiJadwalOnline') }}"
                                         class="bg-[#bbcff9] rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition schedule-item">
 
                                         <!-- Tanggal -->
@@ -75,8 +75,7 @@
                                             <div class="flex items-center gap-2">
                                                 <img src="{{ asset('images/icons/Zoom.png') }}" class="w-6 h-6"
                                                     alt="Zoom">
-                                                <span class="font-semibold text-[#090909] text-base">Pengumuman
-                                                    Darurat</span>
+                                                <span class="font-semibold text-[#090909] text-base">Membahas projek terbaru</span>
                                             </div>
 
                                             <!-- Jam + Profil sejajar -->
@@ -94,13 +93,13 @@
                                                 2
                                             </span>
                                         </div>
-                                    </div>
+                                    </a>
                                     <!-- end -->
 
 
                                     <!-- start -->
-                                    <!-- Item Card 1 -->
-                                    <div
+                                    <!-- Item Card 2 -->
+                                    <a href="{{ url('/isiJadwalOffline') }}"
                                         class="bg-[#bbcff9] rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition schedule-item">
 
                                         <!-- Tanggal -->
@@ -114,8 +113,7 @@
                                             <div class="flex items-center gap-2">
                                                 <img src="{{ asset('images/icons/Zoom.png') }}" class="w-6 h-6"
                                                     alt="Zoom">
-                                                <span class="font-semibold text-[#090909] text-base">Pengumuman
-                                                    Darurat</span>
+                                                <span class="font-semibold text-[#090909] text-base">Rapat dilakukan di kantor</span>
                                             </div>
 
                                             <!-- Jam + Profil sejajar -->
@@ -133,17 +131,16 @@
                                                 2
                                             </span>
                                         </div>
-                                    </div>
+                                    </a>
                                     <!-- end -->
-
 
                                     <!-- Divider antar hari -->
                                     <hr class="border-t border-gray-300">
 
 
                                     <!-- start -->
-                                    <!-- Item Card 1 -->
-                                    <div
+                                    <!-- Item Card 3 -->
+                                    <a href="{{ url('/isiJadwalTidakAdaRapat') }}"
                                         class="bg-[#bbcff9] rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition schedule-item">
 
                                         <!-- Tanggal -->
@@ -157,8 +154,7 @@
                                             <div class="flex items-center gap-2">
                                                 <img src="{{ asset('images/icons/Zoom.png') }}" class="w-6 h-6"
                                                     alt="Zoom">
-                                                <span class="font-semibold text-[#090909] text-base">Pengumuman
-                                                    Darurat</span>
+                                                <span class="font-semibold text-[#090909] text-base">Rapat dilakukan di kantor</span>
                                             </div>
 
                                             <!-- Jam + Profil sejajar -->
@@ -176,7 +172,7 @@
                                                 2
                                             </span>
                                         </div>
-                                    </div>
+                                    </a>
                                     <!-- end -->
 
 
@@ -227,8 +223,6 @@
 
                     </div>
                 </div>
-
-
 
                 {{-- font --}}
                 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"

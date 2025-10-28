@@ -425,7 +425,7 @@
             <img src="/images/dk.jpg" alt="Profile Picture">
           </div>
           <div class="profile-info">
-            <h3>Bapaknya Sahroni</h3>
+            <h3>Asep</h3>
             <p>Manager</p>
           </div>
         </div>
@@ -566,21 +566,21 @@
        style="display:flex; align-items:center; gap:8px; background:#f9fafb; border-radius:8px; padding:6px 8px; cursor:pointer; transition:0.2s; border:1px solid #e5e7eb;"
        onclick="selectMember(this)">
     <img src="https://i.pravatar.cc/40?img=1" alt="Jokowi" style="width:28px; height:28px; border-radius:50%; object-fit:cover;">
-    <span class="member-name" style="font-size:14px; color:#374151;">Jokowi</span>
+    <span class="member-name" style="font-size:14px; color:#374151;">Upin</span>
   </div>
 
   <div class="member-item"
        style="display:flex; align-items:center; gap:8px; background:#f9fafb; border-radius:8px; padding:6px 8px; cursor:pointer; transition:0.2s; border:1px solid #e5e7eb;"
        onclick="selectMember(this)">
     <img src="https://i.pravatar.cc/40?img=2" alt="Prabowo" style="width:28px; height:28px; border-radius:50%; object-fit:cover;">
-    <span class="member-name" style="font-size:14px; color:#374151;">Prabowo</span>
+    <span class="member-name" style="font-size:14px; color:#374151;">Ipin</span>
   </div>
 
   <div class="member-item"
        style="display:flex; align-items:center; gap:8px; background:#f9fafb; border-radius:8px; padding:6px 8px; cursor:pointer; transition:0.2s; border:1px solid #e5e7eb;"
        onclick="selectMember(this)">
     <img src="https://i.pravatar.cc/40?img=3" alt="Megawati" style="width:28px; height:28px; border-radius:50%; object-fit:cover;">
-    <span class="member-name" style="font-size:14px; color:#374151;">Megawati</span>
+    <span class="member-name" style="font-size:14px; color:#374151;">Jarjit</span>
   </div>
 </div>
 

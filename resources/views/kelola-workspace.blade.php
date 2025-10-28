@@ -34,12 +34,12 @@
                             <p class="block text-sm font-medium text-gray-700 mb-3">Untuk apakah workspace ini?</p>
 
                             <div class="space-y-3">
-                                <label class="flex items-center">
+                                {{-- <label class="flex items-center">
                                     <input type="radio" name="workspace-type" value="HQ"
                                         class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                                         x-model="workspaceData.type">
                                     <span class="ml-2 text-gray-700">HQ</span>
-                                </label>
+                                </label> --}}
 
                                 <label class="flex items-center">
                                     <input type="radio" name="workspace-type" value="Tim"
@@ -264,7 +264,7 @@
             </div>
         </div>
 
-        <!-- HQ Section -->
+        {{-- <!-- HQ Section -->
         <div class="mt-2 mx-8 mb-8">
             <div class="flex items-center justify-between mb-4">
                 <button @click="hqOpen = !hqOpen"
@@ -337,7 +337,7 @@
                     @endforelse
                 </div>
             </div>
-        </div>
+        </div> --}}
 
         <!-- Tim Section -->
         <div class="m-8">
@@ -763,7 +763,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <script>

@@ -6,7 +6,7 @@
     <div class="bg-[#e9effd] min-h-screen">
         @include('components.workspace-nav')
 
-        <div class="min-h-screen flex justify-center items-start pt-10 bg-[#f3f6fc] ">
+        <div x-data="{ openPopup: false }" class="min-h-screen flex justify-center items-start pt-10 bg-[#f3f6fc] ">
             <div class="bg-white rounded-[8px] shadow-xl p-8 w-full max-w-3xl flex flex-col gap-6">
 
                 <header class="flex justify-between items-start">
@@ -157,30 +157,33 @@
                 {{-- End komentar --}}
 
             </div>
-            {{-- KODE POP UP --}}
-            {{-- Perbaikan: Menghapus style="display: none;" --}}
-            {{-- <div x-show="openPopup" x-transition class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-  <div @click.away="openPopup = false" class="bg-[#f3f6fc] rounded-2xl shadow-lg p-8 w-full max-w-sm text-center">
 
-    <img src="{{ asset('images/icons/teamimage.svg') }}" alt="Ilustrasi rapat" class="w-48 mx-auto mb-6">
+            {{-- POPUP --}}
+            <div x-show="openPopup" x-transition
+                class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+                <div @click.away="openPopup = false"
+                    class="bg-[#f3f6fc] rounded-2xl shadow-lg p-8 w-full max-w-sm text-center">
 
-    <h2 class="text-xl font-medium text-black">
-      Apakah anda ingin bergabung dengan rapat?
-    </h2>
+                    <img src="{{ asset('images/icons/teamimage.svg') }}" alt="Ilustrasi rapat" class="w-48 mx-auto mb-6">
 
-    <div class="flex justify-center gap-4 mt-8">
+                    <h2 class="text-xl font-medium text-black">
+                        Apakah anda ingin bergabung dengan rapat?
+                    </h2>
 
-      <button @click="openPopup = false" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-8 rounded-lg transition-colors">
-        Batal
-      </button>
+                    <div class="flex justify-center gap-4 mt-8">
+                        <button @click="openPopup = false"
+                            class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-8 rounded-lg transition-colors">
+                            Batal
+                        </button>
 
-      <button @click="openPopup = false" class="bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-10 rounded-lg transition-colors">
-        Ya
-      </button>
+                        <button @click="openPopup = false"
+                            class="bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-10 rounded-lg transition-colors">
+                            Ya
+                        </button>
 
-    </div>
-  </div>
-</div> --}}
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 @endsection
