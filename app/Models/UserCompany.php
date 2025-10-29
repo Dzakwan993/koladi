@@ -4,12 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class UserCompany extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $table = 'user_companies';
     public $incrementing = false;
@@ -26,19 +25,16 @@ class UserCompany extends Model
         });
     }
 
-    // ✅ Relasi ke User
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    // ✅ Relasi ke Company
     public function company()
     {
         return $this->belongsTo(Company::class, 'company_id');
     }
 
-    // ✅ Relasi ke Role
     public function role()
     {
         return $this->belongsTo(Role::class, 'roles_id');

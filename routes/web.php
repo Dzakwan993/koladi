@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Auth;
+
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CompanyController;
@@ -10,6 +11,12 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\UploadController;
 use App\Http\Controllers\UserWorkspacesController;
+use App\Http\Controllers\WorkspaceController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\Auth\GoogleController;
+
 
 // ✅ TAMBAHKAN INI - Route Landing Page
 Route::get('/', function () {
@@ -29,11 +36,24 @@ Route::post('/daftar', [AuthController::class, 'register'])->name('daftar.store'
 Route::get('/masuk', [AuthController::class, 'showLogin'])->name('masuk');
 Route::post('/masuk', [AuthController::class, 'login'])->name('login');
 
-// ✅ GRUP ROUTES YANG BUTUH AUTH
+// Google OAuth Routes
+Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
+Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
+
+// Kirim undangan
+Route::post('/invite/send', [InvitationController::class, 'send'])->name('invite.send');
+// Terima undangan (bisa di luar auth, karena penerima belum login)
+Route::get('/invite/accept/{token}', [InvitationController::class, 'accept'])->name('invite.accept');
+
+
+// ✅ UBAH: Pindahkan route hak-akses ke dalam middleware auth
 Route::middleware(['auth'])->group(function () {
 
     // Dashboard - GUNAKAN INI SAJA
     Route::get('/dashboard', [CompanyController::class, 'dashboard'])->name('dashboard');
+
+    // 🆕 TAMBAHKAN INI - Route halaman member removed
+    Route::get('/member-removed', [CompanyController::class, 'memberRemoved'])->name('member.removed');
 
     // Halaman Dashboard Awal Tambah Anggota
     Route::get('/dashboard-awal', function () {
@@ -58,6 +78,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/tambah-anggota', function () {
         return view('tambah-anggota');
     })->name('tambah-anggota');
+
+    Route::get('/tambah-anggota', [CompanyController::class, 'showMembers'])->name('tambah-anggota');
+    // Hapus anggota perusahaan
+    Route::delete('/members/{id}/delete', [CompanyController::class, 'deleteMember'])->name('member.delete');
+    // Hapus undangan pending
+    Route::delete('/invitation/{id}/delete', [InvitationController::class, 'delete'])->name('invitation.delete');
+
+    // Halaman profil
+    Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
 
     // Halaman Workspace
     Route::get('/workspace', function () {
@@ -144,10 +175,14 @@ Route::middleware(['auth'])->group(function () {
         return view('dokumen-dan-file');
     })->name('dokumen-dan-file');
 
-    // kelola-workspace
-    Route::get('/kelola-workspace', function () {
-        return view('kelola-workspace');
-    })->name('kelola-workspace');
+    // ✅ WORKSPACE ROUTES - DIPINDAHKAN KE DALAM AUTH GROUP
+    Route::get('/kelola-workspace', [WorkspaceController::class, 'index'])->name('kelola-workspace');
+    Route::post('/workspace', [WorkspaceController::class, 'store'])->name('workspace.store');
+    Route::put('/workspace/{id}', [WorkspaceController::class, 'update'])->name('workspace.update');
+    Route::delete('/workspace/{id}', [WorkspaceController::class, 'destroy'])->name('workspace.destroy');
+    Route::post('/workspace/{workspaceId}/members', [WorkspaceController::class, 'manageMembers'])->name('workspace.manage-members');
+    Route::get('/workspace/{workspaceId}/members', [WorkspaceController::class, 'getMembers'])->name('workspace.get-members');
+    Route::get('/workspace-available-users', [WorkspaceController::class, 'getAvailableUsers'])->name('workspace.available-users');
 
     // Halaman Profile
     Route::get('/profile', function () {
@@ -179,6 +214,23 @@ Route::middleware(['auth'])->group(function () {
         return view('isi-insight');
     })->name('isi-insight');
 
+
+    // mindmap
+    Route::get('/mindmap', function () {
+        return view('mindmap');
+    })->name('mindmap');
+
+
+    // Halaman Pembayaran
+    Route::get('/pembayaran', function () {
+        return view('pembayaran');
+    })->name('pembayaran');
+
     // Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
+
+    // ✅ TAMBAHKAN: Route untuk hak akses (pindahkan ke dalam middleware)
+    Route::get('/hak-akses', [UserController::class, 'hakAkses'])->name('hakAkses');
+    Route::post('/update-user-roles', [UserController::class, 'updateUserRoles'])->name('user.updateRoles');
 });
+

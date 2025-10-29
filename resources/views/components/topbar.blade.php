@@ -45,13 +45,14 @@
         <div class="h-6 w-px bg-gray-200"></div>
 
         <!-- Action Buttons -->
-        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Atur Akses" onclick="openModal()">
+        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Atur Akses" onclick="openAccessModal()">
             <img src="{{ asset('images/icons/akses.svg') }}" alt="Atur Akses" class="w-5 h-5">
         </button>
 
-        <button class="p-2 hover:bg-gray-100 rounded-lg transition" title="Dollar">
+
+        <a href="{{ url('/pembayaran') }}" class="p-2 hover:bg-gray-100 rounded-lg transition" title="Dollar">
             <img src="{{ asset('images/icons/dollar.svg') }}" alt="Dollar" class="w-5 h-5">
-        </button>
+        </a>
 
         <button class="p-2 hover:bg-gray-100 rounded-lg transition relative" title="Notifikasi">
             <img src="{{ asset('images/icons/notifikasi.svg') }}" alt="Notifikasi" class="w-5 h-5">
@@ -228,10 +229,13 @@
 
         <!-- Profile Dropdown -->
         <div class="relative" x-data="{ open: false }">
+
             <button @click="open = !open" @click.away="open = false"
-                class="w-9 h-9 rounded-full overflow-hidden border-2 border-gray-200 hover:border-[#225ad6] transition">
-                <img src="https://i.pravatar.cc/36?img=8" alt="Profile" class="w-full h-full object-cover">
+                class="rounded-full overflow-hidden border-2 border-gray-200 hover:border-[#225ad6] transition">
+                <img src="{{ $avatar }}" alt="{{ $user->name }}"
+                    class="w-8 h-8 rounded-full object-cover border border-gray-300">
             </button>
+
 
             <!-- Dropdown -->
             <div x-show="open" x-transition
@@ -246,19 +250,21 @@
                 <!-- User Info -->
                 <div class="px-6 py-5">
                     <div class="flex items-center gap-3">
-                        <img src="https://i.pravatar.cc/80?img=12" alt="User Photo"
-                            class="w-12 h-12 rounded-full object-cover flex-shrink-0">
+                        <img src="{{ $avatar }}" alt="{{ $user->name }}"
+                            class="w-10 h-10 rounded-full object-cover border border-gray-300 flex-shrink-0">
+
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <h4 class="font-semibold text-gray-900 text-base">Muhammad Sahroni</h4>
+                                <h4 class="font-semibold text-gray-900 text-base">{{ $user->full_name }}</h4>
                             </div>
                             <span
                                 class="inline-block bg-[#225ad6] text-white text-xs font-semibold px-2.5 py-1 rounded mt-1">
-                                Super Admin
+                                {{ $user->getRoleName($activeCompany->id) ?? 'Tanpa Role' }}
                             </span>
                         </div>
                     </div>
                 </div>
+
 
                 <!-- Menu Items -->
                 <div class="border-t border-gray-200">

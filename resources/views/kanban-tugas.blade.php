@@ -38,7 +38,7 @@
         </div>
 
         {{-- Halaman Balas Komentar --}}
-<<<<<<< HEAD
+
             @include('components.balas-komentar')
 
         {{-- All Modals --}}
@@ -907,7 +907,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
     <script>
-=======
+
         @include('components.balas-komentar')
 
 
@@ -2064,6 +2064,8 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
         <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
         <script>
 >>>>>>> backend-kelola-workspace
+=======
+>>>>>>> origin/main
             ['todo', 'inprogress', 'done', 'cancel'].forEach(id => {
                 let el = document.getElementById(id);
                 if (el) {
@@ -3101,10 +3103,3 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
             }
         </script>
 @endsection
-
-
-
-
-
-
-
