@@ -159,7 +159,7 @@
 
 
          <!-- Modal Tambah List -->
-        <div x-show="openModal && !replyView.active"
+        <div x-show="openModal && !replyView.active" x-cloak
             class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div class="bg-white p-6 rounded-xl w-80 shadow-lg">
                 <h2 class="text-center font-bold text-lg mb-4">Kanban List</h2>
@@ -530,7 +530,7 @@
                     </div>
 
                     <!-- Modal Tambah Ceklis -->
-                    <div x-show="openCeklisModal"
+                    <div x-show="openCeklisModal" x-cloak
                         class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" x-cloak>
                         <div class="bg-blue-50 rounded-xl shadow-lg w-96 p-6 text-center">
                             <h2 class="text-lg font-semibold text-gray-800 mb-4">Ceklis</h2>
@@ -1029,7 +1029,7 @@ Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September. Data transa
                     </div>
 
                     <!-- Modal Tambah Ceklis -->
-                    <div x-show="openCeklisModal && !replyView.active"
+                    <div x-show="openCeklisModal && !replyView.active" x-cloak 
                         class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" x-cloak>
                         <div class="bg-blue-50 rounded-xl shadow-lg w-96 p-6 text-center">
                             <h2 class="text-lg font-semibold text-gray-800 mb-4">Ceklis</h2>

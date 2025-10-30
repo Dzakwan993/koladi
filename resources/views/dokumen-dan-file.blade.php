@@ -2,57 +2,12 @@
 
 @section('title', 'Dokumen dan File')
 
-@section('content')
-    <div x-data="documentSearch()" x-init="$store.workspace = { selectedMenu: 'dokumen' }" class="bg-[#f3f6fc] min-h-screen">
+{{-- Include CSS --}}
+<style>
+    [x-cloak] {
+        display: none !important;
+    }
 
-        {{-- Workspace Navigation --}}
-        @include('components.workspace-nav', ['active' => 'dokumen'])
-
-        {{-- All Modals --}}
-        @include('components.dokumen-modal')
-
-        {{-- Konten Halaman --}}
-        <div class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto">
-            {{-- Container dengan border dan padding --}}
-            <div
-                class="border border-gray-200 rounded-lg bg-white p-4 sm:p-6 flex flex-col h-[calc(100vh-140px)] sm:h-[calc(100vh-160px)] lg:h-[calc(100vh-200px)]">
-
-                {{-- Header dengan Pencarian dan Tombol Aksi --}}
-                @include('components.dokumen-header')
-
-                {{-- Breadcrumb dan Info Folder --}}
-                @include('components.dokumen-breadcrumb')
-
-                {{-- Grid Dokumen di Dalam Folder --}}
-                @include('components.dokumen-grid')
-
-                {{-- Hasil Pencarian Info --}}
-                @include('components.dokumen-search-info')
-
-                {{-- Header Pilihan (muncul saat select mode) --}}
-                @include('components.dokumen-selection-header')
-
-                {{-- Breadcrumb dan Info File --}}
-                @include('components.dokumen-file-header')
-
-                {{-- Konten File dan Komentar --}}
-                @include('components.dokumen-file-content')
-
-                {{-- Halaman Balas Komentar --}}
-                @include('components.balas-komentar')
-
-                {{-- Grid Dokumen Utama (Scrollable) --}}
-                @include('components.dokumen-main-grid')
-
-                {{-- Default View (ketika tidak ada pencarian dan tidak di dalam folder) --}}
-                @include('components.dokumen-default-view')
-
-            </div>
-        </div>
-    </div>
-
-    {{-- Include CSS and Scripts --}}
-    <style>
     /* Styling untuk CKEditor */
     .ck-editor__editable {
         min-height: 100px;
@@ -171,8 +126,60 @@
     }
 </style>
 
+@section('content')
+    <div x-data="documentSearch()" x-init="$store.workspace = { selectedMenu: 'dokumen' }" class="bg-[#f3f6fc] min-h-screen">
+
+        {{-- Workspace Navigation --}}
+        @include('components.workspace-nav', ['active' => 'dokumen'])
+
+        {{-- All Modals --}}
+        @include('components.dokumen-modal')
+
+        {{-- Konten Halaman --}}
+        <div class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto">
+            {{-- Container dengan border dan padding --}}
+            <div
+                class="border border-gray-200 rounded-lg bg-white p-4 sm:p-6 flex flex-col h-[calc(100vh-140px)] sm:h-[calc(100vh-160px)] lg:h-[calc(100vh-200px)]">
+
+                {{-- Header dengan Pencarian dan Tombol Aksi --}}
+                @include('components.dokumen-header')
+
+                {{-- Breadcrumb dan Info Folder --}}
+                @include('components.dokumen-breadcrumb')
+
+                {{-- Grid Dokumen di Dalam Folder --}}
+                @include('components.dokumen-grid')
+
+                {{-- Hasil Pencarian Info --}}
+                @include('components.dokumen-search-info')
+
+                {{-- Header Pilihan (muncul saat select mode) --}}
+                @include('components.dokumen-selection-header')
+
+                {{-- Breadcrumb dan Info File --}}
+                @include('components.dokumen-file-header')
+
+                {{-- Konten File dan Komentar --}}
+                @include('components.dokumen-file-content')
+
+                {{-- Halaman Balas Komentar --}}
+                @include('components.balas-komentar')
+
+                {{-- Grid Dokumen Utama (Scrollable) --}}
+                @include('components.dokumen-main-grid')
+
+                {{-- Default View (ketika tidak ada pencarian dan tidak di dalam folder) --}}
+                @include('components.dokumen-default-view')
+
+            </div>
+        </div>
+    </div>
+
+
+    {{-- Include script --}}
+
     <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
-   <script>
+    <script>
         function documentSearch() {
             return {
                 // Search & Filter Properties

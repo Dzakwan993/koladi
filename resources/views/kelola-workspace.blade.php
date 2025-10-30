@@ -2,11 +2,17 @@
 
 @section('title', 'Kelola Workspace')
 
+<style>
+        [x-cloak] { 
+            display: none !important; 
+        }
+    </style>
+
 @section('content')
     <div class="p-6" x-data="workspaceManager">
 
         <!-- Modal untuk Buat Workspace -->
-        <div x-show="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div x-show="showModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div class="bg-white rounded-xl shadow-lg w-full max-w-md" @click.outside="showModal = false">
                 <form id="createWorkspaceForm" @submit.prevent="createWorkspace">
                     <div class="p-6">
@@ -75,8 +81,8 @@
             </div>
         </div>
 
-        <!-- Modal Menu Workspace (titik tiga) -->
-        <div x-show="showWorkspaceMenu" class="fixed inset-0 z-50" @click="showWorkspaceMenu = false">
+        <!-- Modal Menu Workspace -->
+        <div x-show="showWorkspaceMenu" x-cloak class="fixed inset-0 z-50" @click="showWorkspaceMenu = false">
             <div class="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-2 w-64"
                 :style="`top: ${workspaceMenuPosition.y}px; left: ${workspaceMenuPosition.x}px`" @click.stop>
                 <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
@@ -122,8 +128,7 @@
         </div>
 
         <!-- Modal Kelola Anggota -->
-        <div x-show="showManageMembersModal"
-            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        <div x-show="showManageMembersModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             @click="showManageMembersModal = false; selectedMembers = []; searchMember = ''">
             <div class="bg-white rounded-xl shadow-lg w-full max-w-md max-h-[90vh] flex flex-col" @click.stop>
                 <!-- Header -->
@@ -193,8 +198,7 @@
         </div>
 
         <!-- Modal Edit Ruang Kerja -->
-        <div x-show="showEditWorkspaceModal"
-            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        <div x-show="showEditWorkspaceModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             @click="showEditWorkspaceModal = false">
             <div class="bg-white rounded-xl shadow-lg w-full max-w-md" @click.stop>
                 <div class="p-6">
@@ -491,8 +495,7 @@
         </div>
 
         <!-- Modal Atur Hak Akses -->
-        <div x-show="showAccessRightsModal"
-            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        <div x-show="showAccessRightsModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             @click="showAccessRightsModal = false">
             <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-hidden" @click.stop>
                 <!-- Header -->
@@ -625,7 +628,7 @@
 
 
         <!-- Modal Atur Role -->
-        <div x-show="showRoleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        <div x-show="showRoleModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             @click="showRoleModal = false">
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl" @click.stop>
                 <!-- Header -->
