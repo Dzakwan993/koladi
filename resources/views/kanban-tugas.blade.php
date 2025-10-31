@@ -38,7 +38,7 @@
         </div>
 
         {{-- Halaman Balas Komentar --}}
-            @include('components.balas-komentar')
+        @include('components.balas-komentar')
 
         {{-- All Modals --}}
         @include('components.modal-tugas')
@@ -901,42 +901,515 @@
         .animate-shimmer {
             animation: shimmer 2s infinite;
         }
+
+
+
+        /* ===== EDITOR STYLES ===== */
+        /* CKEditor untuk komentar utama */
+        #task-main-comment-editor+.ck-editor .ck-content {
+            min-height: 120px !important;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        #task-main-comment-editor+.ck-editor .ck-content ul,
+        #task-main-comment-editor+.ck-editor .ck-content ol {
+            padding-left: 1.5rem !important;
+            margin-left: 0 !important;
+            list-style-position: outside !important;
+        }
+
+        #task-main-comment-editor+.ck-editor .ck-content li {
+            margin-left: 0 !important;
+        }
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
     <script>
-            ['todo', 'inprogress', 'done', 'cancel'].forEach(id => {
-                let el = document.getElementById(id);
-                if (el) {
-                    new Sortable(el, {
-                        group: 'kanban',
-                        animation: 150,
-                        ghostClass: 'bg-blue-300'
-                    });
-                }
-            });
+        ['todo', 'inprogress', 'done', 'cancel'].forEach(id => {
+            let el = document.getElementById(id);
+            if (el) {
+                new Sortable(el, {
+                    group: 'kanban',
+                    animation: 150,
+                    ghostClass: 'bg-blue-300'
+                });
+            }
+        });
 
-            function kanbanApp() {
-                return {
-                    // --- Modal state ---
-                    openModal: false,
-                    openTaskModal: false,
-                    openAddMemberModal: false,
-                    openLabelModal: false,
-                    openAddLabelModal: false,
-                    openCeklisModal: false,
-                    openTaskDetail: false, // untuk modal detail tugas
-                    openMoveModal: false,
-                    openListMenu: null,
-                    newCeklisName: '',
-                    newListName: '',
+        function kanbanApp() {
+            return {
+                // --- Modal state ---
+                openModal: false,
+                openTaskModal: false,
+                openAddMemberModal: false,
+                openLabelModal: false,
+                openAddLabelModal: false,
+                openCeklisModal: false,
+                openTaskDetail: false, // untuk modal detail tugas
+                openMoveModal: false,
+                openListMenu: null,
+                newCeklisName: '',
+                newListName: '',
 
-                    // --- Task Form Data ---
-                    taskForm: {
+                // --- Task Form Data ---
+                taskForm: {
+                    title: '',
+                    phase: '', // Sekarang string kosong, bukan null/undefined
+
+                    members: [],
+                    secret: false,
+                    notes: '',
+                    attachments: [],
+                    labels: [],
+                    checklist: [],
+                    startDate: '',
+                    startTime: '',
+                    dueDate: '',
+                    dueTime: ''
+                },
+
+                // --- Current Task (for detail/edit) ---
+                currentTask: null,
+                isEditMode: false,
+
+
+                // --- NEW: State untuk halaman balas komentar ---
+                showReplyView: false,
+                currentComment: null,
+                replyContent: '',
+
+
+                // === SEARCH & FILTER PROPERTIES ===
+                searchQuery: '',
+                selectedLabel: '',
+                selectedMember: '',
+                selectedDeadline: '',
+
+                // === VIEW MODE & TIMELINE PROPERTIES ===
+                viewMode: 'kanban',
+                selectedPhase: null,
+
+                // === GANTT CHART PROPERTIES ===
+                phaseModal: {
+                    open: false,
+                    title: '',
+                    description: '',
+                    tasks: []
+                },
+
+                // --- Members ---
+                searchMember: '',
+                selectAll: false,
+                members: [{
+                        name: 'Naufal',
+                        avatar: 'https://i.pravatar.cc/40?img=1',
+                        selected: false
+                    },
+                    {
+                        name: 'Dzakwan',
+                        avatar: 'https://i.pravatar.cc/40?img=2',
+                        selected: false
+                    },
+                    {
+                        name: 'Risi',
+                        avatar: 'https://i.pravatar.cc/40?img=3',
+                        selected: false
+                    },
+                    {
+                        name: 'Rendi',
+                        avatar: 'https://i.pravatar.cc/40?img=4',
+                        selected: false
+                    },
+                    {
+                        name: 'Fajar',
+                        avatar: 'https://i.pravatar.cc/40?img=5',
+                        selected: false
+                    },
+                    {
+                        name: 'Dina',
+                        avatar: 'https://i.pravatar.cc/40?img=6',
+                        selected: false
+                    },
+                ],
+
+                // --- Labels ---
+                searchLabel: '',
+                labels: [{
+                        name: 'Reels',
+                        color: '#2563eb',
+                        selected: false
+                    },
+                    {
+                        name: 'Feeds',
+                        color: '#16a34a',
+                        selected: false
+                    },
+                    {
+                        name: 'Story',
+                        color: '#f59e0b',
+                        selected: false
+                    },
+                    {
+                        name: 'Finance',
+                        color: '#3b82f6',
+                        selected: false
+                    },
+                    {
+                        name: 'Design',
+                        color: '#a855f7',
+                        selected: false
+                    },
+                ],
+                newLabelName: '',
+                newLabelColor: null,
+                colorPalette: [
+                    "#EF4444", "#F97316", "#F59E0B", "#EAB308", "#84CC16",
+                    "#22C55E", "#10B981", "#14B8A6", "#06B6D4", "#0EA5E9",
+                    "#3B82F6", "#6366F1", "#8B5CF6", "#A855F7", "#D946EF",
+                    "#EC4899", "#F43F5E", "#6B7280", "#1F2937", "#000000"
+                ],
+
+                // --- Dummy Tasks Database ---
+                // --- Dummy Tasks Database dengan Phase ---
+                tasks: [{
+                        id: 1,
+                        title: "MENYELESAIKAN LAPORAN KEUANGAN",
+                        phase: "Perencanaan",
+                        status: "todo",
+                        members: [{
+                                name: 'Naufal',
+                                avatar: 'https://i.pravatar.cc/40?img=1'
+                            },
+                            {
+                                name: 'Dzakwan',
+                                avatar: 'https://i.pravatar.cc/40?img=2'
+                            }
+                        ],
+                        secret: true,
+                        notes: "Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September.",
+                        attachments: [{
+                                name: "Draft_Laporan_Q4.docx",
+                                type: "docx"
+                            },
+                            {
+                                name: "Data_Transaksi_Q4.xlsx",
+                                type: "xlsx"
+                            }
+                        ],
+                        labels: [{
+                            name: 'Finance',
+                            color: '#3b82f6'
+                        }],
+                        checklist: [{
+                                name: "Kumpulkan data transaksi",
+                                done: true
+                            },
+                            {
+                                name: "Verifikasi data dengan tim Finance",
+                                done: false
+                            }
+                        ],
+                        startDate: "2024-01-15",
+                        startTime: "08:00",
+                        dueDate: "2024-01-30",
+                        dueTime: "17:00",
+                        comments: [{
+                                author: "Risi Gustiar",
+                                date: "Sabtu, 27 Sep 2025",
+                                text: "Data transaksi sudah saya update di file Excel."
+                            },
+                            {
+                                author: "Rendi Sinaga",
+                                date: "Minggu, 28 Sep 2025",
+                                text: "Draft laporan hampir selesai, tinggal verifikasi."
+                            }
+                        ]
+                    },
+                    {
+                        id: 2,
+                        title: "Analisis Kebutuhan User",
+                        phase: "Analisis",
+                        status: "done",
+                        members: [{
+                                name: 'Risi',
+                                avatar: 'https://i.pravatar.cc/40?img=3'
+                            },
+                            {
+                                name: 'Rendi',
+                                avatar: 'https://i.pravatar.cc/40?img=4'
+                            }
+                        ],
+                        secret: false,
+                        notes: "Analisis kebutuhan user untuk fitur baru.",
+                        attachments: [{
+                            name: "User_Requirements.pdf",
+                            type: "pdf"
+                        }],
+                        labels: [{
+                                name: 'Analisis',
+                                color: '#16a34a'
+                            },
+                            {
+                                name: 'Research',
+                                color: '#ec4899'
+                            }
+                        ],
+                        checklist: [{
+                                name: "Interview user",
+                                done: true
+                            },
+                            {
+                                name: "Analisis data",
+                                done: true
+                            },
+                            {
+                                name: "Buat laporan kebutuhan",
+                                done: false
+                            }
+                        ],
+                        startDate: "2024-02-01",
+                        startTime: "09:00",
+                        dueDate: "2024-02-15",
+                        dueTime: "18:00",
+                        comments: []
+                    },
+                    {
+                        id: 3,
+                        title: "Desain UI Dashboard",
+                        phase: "Desain",
+                        status: "done",
+                        members: [{
+                                name: 'Fajar',
+                                avatar: 'https://i.pravatar.cc/40?img=5'
+                            },
+                            {
+                                name: 'Dina',
+                                avatar: 'https://i.pravatar.cc/40?img=6'
+                            }
+                        ],
+                        secret: false,
+                        notes: "Design dashboard untuk monitoring project.",
+                        attachments: [],
+                        labels: [{
+                            name: 'Design',
+                            color: '#a855f7'
+                        }],
+                        checklist: [{
+                                name: "Wireframe",
+                                done: true
+                            },
+                            {
+                                name: "Mockup",
+                                done: true
+                            },
+                            {
+                                name: "Prototype",
+                                done: false
+                            }
+                        ],
+                        startDate: "2024-03-01",
+                        startTime: "10:00",
+                        dueDate: "2024-03-20",
+                        dueTime: "15:00",
+                        comments: [{
+                            author: "Fajar",
+                            date: "Kamis, 23 Okt 2025",
+                            text: "Design sudah 80% selesai."
+                        }]
+                    },
+                    {
+                        id: 4,
+                        title: "Development Fitur Login",
+                        phase: "Development",
+                        status: "done",
+                        members: [{
+                                name: 'Naufal',
+                                avatar: 'https://i.pravatar.cc/40?img=1'
+                            },
+                            {
+                                name: 'Risi',
+                                avatar: 'https://i.pravatar.cc/40?img=3'
+                            }
+                        ],
+                        secret: false,
+                        notes: "Development fitur login dengan authentication.",
+                        attachments: [{
+                                name: "Test_Cases.xlsx",
+                                type: "xlsx"
+                            },
+                            {
+                                name: "API_Documentation.pdf",
+                                type: "pdf"
+                            }
+                        ],
+                        labels: [{
+                            name: 'Development',
+                            color: '#0ea5e9'
+                        }],
+                        checklist: [{
+                                name: "Backend API",
+                                done: true
+                            },
+                            {
+                                name: "Frontend integration",
+                                done: true
+                            },
+                            {
+                                name: "Testing",
+                                done: true
+                            }
+                        ],
+                        startDate: "2024-04-01",
+                        startTime: "08:00",
+                        dueDate: "2024-04-25",
+                        dueTime: "17:00",
+                        comments: [{
+                            author: "Naufal",
+                            date: "Rabu, 22 Okt 2025",
+                            text: "Semua test case passed."
+                        }]
+                    },
+                    {
+                        id: 5,
+                        title: "Testing Sistem Integrasi",
+                        phase: "Testing",
+                        status: "inprogress",
+                        members: [{
+                            name: 'Dzakwan',
+                            avatar: 'https://i.pravatar.cc/40?img=2'
+                        }],
+                        secret: true,
+                        notes: "Testing integrasi antara modul sistem.",
+                        attachments: [{
+                            name: "Integration_Test_Plan.xlsx",
+                            type: "xlsx"
+                        }],
+                        labels: [{
+                            name: 'Testing',
+                            color: '#f59e0b'
+                        }],
+                        checklist: [{
+                                name: "Unit testing",
+                                done: true
+                            },
+                            {
+                                name: "Integration testing",
+                                done: false
+                            },
+                            {
+                                name: "User acceptance testing",
+                                done: false
+                            }
+                        ],
+                        startDate: "2024-05-01",
+                        startTime: "09:00",
+                        dueDate: "2024-05-30",
+                        dueTime: "16:00",
+                        comments: [{
+                            author: "Manager",
+                            date: "Senin, 20 Okt 2025",
+                            text: "Progress testing 60%."
+                        }]
+                    },
+                    {
+                        id: 6,
+                        title: "Deployment Production",
+                        phase: "Deployment",
+                        status: "todo",
+                        members: [{
+                                name: 'Naufal',
+                                avatar: 'https://i.pravatar.cc/40?img=1'
+                            },
+                            {
+                                name: 'Fajar',
+                                avatar: 'https://i.pravatar.cc/40?img=5'
+                            }
+                        ],
+                        secret: false,
+                        notes: "Deploy aplikasi ke server production.",
+                        attachments: [],
+                        labels: [{
+                            name: 'Deployment',
+                            color: '#10b981'
+                        }],
+                        checklist: [{
+                                name: "Setup server",
+                                done: false
+                            },
+                            {
+                                name: "Database migration",
+                                done: false
+                            },
+                            {
+                                name: "Deploy aplikasi",
+                                done: false
+                            }
+                        ],
+                        startDate: "2024-06-01",
+                        startTime: "08:00",
+                        dueDate: "2024-06-10",
+                        dueTime: "17:00",
+                        comments: []
+                    }
+                ],
+
+                // === METHODS ===
+
+                // Open task detail modal
+                openDetail(taskId) {
+                    const task = this.tasks.find(t => t.id === taskId);
+                    if (!task) return;
+
+                    this.currentTask = JSON.parse(JSON.stringify(task));
+                    this.isEditMode = false;
+                    this.openTaskDetail = true;
+                },
+
+                // Enable edit mode
+                enableEditMode() {
+                    this.isEditMode = true;
+                },
+
+                // Save edited task
+                saveTaskEdit() {
+                    if (!this.currentTask) return;
+                    const index = this.tasks.findIndex(t => t.id === this.currentTask.id);
+                    if (index !== -1) {
+                        this.tasks[index] = JSON.parse(JSON.stringify(this.currentTask));
+                    }
+                    this.isEditMode = false;
+                    this.openTaskDetail = false;
+                    alert("Tugas berhasil diperbarui!");
+                },
+
+                // Cancel edit
+                cancelEdit() {
+                    if (!this.currentTask) return;
+                    const task = this.tasks.find(t => t.id === this.currentTask.id);
+                    this.currentTask = JSON.parse(JSON.stringify(task));
+                    this.isEditMode = false;
+                },
+
+                // Create new task
+                createTask() {
+                    const newTask = {
+                        id: Date.now(),
+                        ...this.taskForm,
+                        comments: []
+                    };
+                    this.tasks.push(newTask);
+                    this.resetTaskForm();
+                    this.openTaskModal = false;
+                    alert("Tugas berhasil dibuat!");
+                },
+
+                // Reset form
+                resetTaskForm() {
+                    this.taskForm = {
                         title: '',
-                        phase: '', // Sekarang string kosong, bukan null/undefined
-
+                        phase: '',
                         members: [],
                         secret: false,
                         notes: '',
@@ -947,561 +1420,109 @@
                         startTime: '',
                         dueDate: '',
                         dueTime: ''
-                    },
+                    };
+                },
 
-                    // --- Current Task (for detail/edit) ---
-                    currentTask: null,
-                    isEditMode: false,
+                // Members
+                filteredMembers() {
+                    if (!this.searchMember) return this.members;
+                    return this.members.filter(m => m.name.toLowerCase().includes(this.searchMember.toLowerCase()));
+                },
 
+                toggleSelectAll() {
+                    this.members.forEach(m => m.selected = this.selectAll);
+                },
 
-                    // --- NEW: State untuk halaman balas komentar ---
-                    showReplyView: false,
-                    currentComment: null,
-                    replyContent: '',
+                saveSelectedMembers() {
+                    const selected = this.members.filter(m => m.selected).map(m => ({
+                        name: m.name,
+                        avatar: m.avatar
+                    }));
+                    this.taskForm.members = selected;
+                    this.members.forEach(m => m.selected = false);
+                    this.selectAll = false;
+                    this.openAddMemberModal = false;
+                },
 
+                removeMember(index) {
+                    if (this.isEditMode && this.currentTask) {
+                        this.currentTask.members.splice(index, 1);
+                    }
+                },
 
-                    // === SEARCH & FILTER PROPERTIES ===
-                    searchQuery: '',
-                    selectedLabel: '',
-                    selectedMember: '',
-                    selectedDeadline: '',
+                // Labels methods untuk form
+                filteredLabels() {
+                    if (!this.searchLabel) return this.labels;
+                    return this.labels.filter(l => l.name.toLowerCase().includes(this.searchLabel.toLowerCase()));
+                },
 
-                    // === VIEW MODE & TIMELINE PROPERTIES ===
-                    viewMode: 'kanban',
-                    selectedPhase: null,
+                saveSelectedLabels() {
+                    const selected = this.labels.filter(l => l.selected).map(l => ({
+                        name: l.name,
+                        color: l.color
+                    }));
+                    this.taskForm.labels = selected;
+                    this.labels.forEach(l => l.selected = false);
+                    this.openLabelModal = false;
+                },
 
-                    // === GANTT CHART PROPERTIES ===
-                    phaseModal: {
-                        open: false,
-                        title: '',
-                        description: '',
-                        tasks: []
-                    },
+                addNewLabel() {
+                    if (this.newLabelName.trim() === '' || !this.newLabelColor) return;
+                    this.labels.push({
+                        name: this.newLabelName,
+                        color: this.newLabelColor,
+                        selected: false
+                    });
+                    this.newLabelName = '';
+                    this.newLabelColor = null;
+                    this.openAddLabelModal = false;
+                    this.openLabelModal = true;
+                },
 
-                    // --- Members ---
-                    searchMember: '',
-                    selectAll: false,
-                    members: [{
-                            name: 'Naufal',
-                            avatar: 'https://i.pravatar.cc/40?img=1',
-                            selected: false
-                        },
-                        {
-                            name: 'Dzakwan',
-                            avatar: 'https://i.pravatar.cc/40?img=2',
-                            selected: false
-                        },
-                        {
-                            name: 'Risi',
-                            avatar: 'https://i.pravatar.cc/40?img=3',
-                            selected: false
-                        },
-                        {
-                            name: 'Rendi',
-                            avatar: 'https://i.pravatar.cc/40?img=4',
-                            selected: false
-                        },
-                        {
-                            name: 'Fajar',
-                            avatar: 'https://i.pravatar.cc/40?img=5',
-                            selected: false
-                        },
-                        {
-                            name: 'Dina',
-                            avatar: 'https://i.pravatar.cc/40?img=6',
-                            selected: false
-                        },
-                    ],
+                // Checklist methods untuk form
+                saveCeklis() {
+                    if (this.newCeklisName.trim() === '') return;
+                    const newItem = {
+                        name: this.newCeklisName,
+                        done: false
+                    };
+                    this.taskForm.checklist.push(newItem);
+                    this.newCeklisName = '';
+                    this.openCeklisModal = false;
+                },
 
-                    // --- Labels ---
-                    searchLabel: '',
-                    labels: [{
-                            name: 'Reels',
-                            color: '#2563eb',
-                            selected: false
-                        },
-                        {
-                            name: 'Feeds',
-                            color: '#16a34a',
-                            selected: false
-                        },
-                        {
-                            name: 'Story',
-                            color: '#f59e0b',
-                            selected: false
-                        },
-                        {
-                            name: 'Finance',
-                            color: '#3b82f6',
-                            selected: false
-                        },
-                        {
-                            name: 'Design',
-                            color: '#a855f7',
-                            selected: false
-                        },
-                    ],
-                    newLabelName: '',
-                    newLabelColor: null,
-                    colorPalette: [
-                        "#EF4444", "#F97316", "#F59E0B", "#EAB308", "#84CC16",
-                        "#22C55E", "#10B981", "#14B8A6", "#06B6D4", "#0EA5E9",
-                        "#3B82F6", "#6366F1", "#8B5CF6", "#A855F7", "#D946EF",
-                        "#EC4899", "#F43F5E", "#6B7280", "#1F2937", "#000000"
-                    ],
+                toggleChecklistItem(index) {
+                    if (this.currentTask) {
+                        this.currentTask.checklist[index].done = !this.currentTask.checklist[index].done;
+                    }
+                },
 
-                    // --- Dummy Tasks Database ---
-                    // --- Dummy Tasks Database dengan Phase ---
-                    tasks: [{
-                            id: 1,
-                            title: "MENYELESAIKAN LAPORAN KEUANGAN",
-                            phase: "Perencanaan",
-                            status: "todo",
-                            members: [{
-                                    name: 'Naufal',
-                                    avatar: 'https://i.pravatar.cc/40?img=1'
-                                },
-                                {
-                                    name: 'Dzakwan',
-                                    avatar: 'https://i.pravatar.cc/40?img=2'
-                                }
-                            ],
-                            secret: true,
-                            notes: "Laporan keuangan Q4 harus diselesaikan sebelum tanggal 30 September.",
-                            attachments: [{
-                                    name: "Draft_Laporan_Q4.docx",
-                                    type: "docx"
-                                },
-                                {
-                                    name: "Data_Transaksi_Q4.xlsx",
-                                    type: "xlsx"
-                                }
-                            ],
-                            labels: [{
-                                name: 'Finance',
-                                color: '#3b82f6'
-                            }],
-                            checklist: [{
-                                    name: "Kumpulkan data transaksi",
-                                    done: true
-                                },
-                                {
-                                    name: "Verifikasi data dengan tim Finance",
-                                    done: false
-                                }
-                            ],
-                            startDate: "2024-01-15",
-                            startTime: "08:00",
-                            dueDate: "2024-01-30",
-                            dueTime: "17:00",
-                            comments: [{
-                                    author: "Risi Gustiar",
-                                    date: "Sabtu, 27 Sep 2025",
-                                    text: "Data transaksi sudah saya update di file Excel."
-                                },
-                                {
-                                    author: "Rendi Sinaga",
-                                    date: "Minggu, 28 Sep 2025",
-                                    text: "Draft laporan hampir selesai, tinggal verifikasi."
-                                }
-                            ]
-                        },
-                        {
-                            id: 2,
-                            title: "Analisis Kebutuhan User",
-                            phase: "Analisis",
-                            status: "done",
-                            members: [{
-                                    name: 'Risi',
-                                    avatar: 'https://i.pravatar.cc/40?img=3'
-                                },
-                                {
-                                    name: 'Rendi',
-                                    avatar: 'https://i.pravatar.cc/40?img=4'
-                                }
-                            ],
-                            secret: false,
-                            notes: "Analisis kebutuhan user untuk fitur baru.",
-                            attachments: [{
-                                name: "User_Requirements.pdf",
-                                type: "pdf"
-                            }],
-                            labels: [{
-                                    name: 'Analisis',
-                                    color: '#16a34a'
-                                },
-                                {
-                                    name: 'Research',
-                                    color: '#ec4899'
-                                }
-                            ],
-                            checklist: [{
-                                    name: "Interview user",
-                                    done: true
-                                },
-                                {
-                                    name: "Analisis data",
-                                    done: true
-                                },
-                                {
-                                    name: "Buat laporan kebutuhan",
-                                    done: false
-                                }
-                            ],
-                            startDate: "2024-02-01",
-                            startTime: "09:00",
-                            dueDate: "2024-02-15",
-                            dueTime: "18:00",
-                            comments: []
-                        },
-                        {
-                            id: 3,
-                            title: "Desain UI Dashboard",
-                            phase: "Desain",
-                            status: "done",
-                            members: [{
-                                    name: 'Fajar',
-                                    avatar: 'https://i.pravatar.cc/40?img=5'
-                                },
-                                {
-                                    name: 'Dina',
-                                    avatar: 'https://i.pravatar.cc/40?img=6'
-                                }
-                            ],
-                            secret: false,
-                            notes: "Design dashboard untuk monitoring project.",
-                            attachments: [],
-                            labels: [{
-                                name: 'Design',
-                                color: '#a855f7'
-                            }],
-                            checklist: [{
-                                    name: "Wireframe",
-                                    done: true
-                                },
-                                {
-                                    name: "Mockup",
-                                    done: true
-                                },
-                                {
-                                    name: "Prototype",
-                                    done: false
-                                }
-                            ],
-                            startDate: "2024-03-01",
-                            startTime: "10:00",
-                            dueDate: "2024-03-20",
-                            dueTime: "15:00",
-                            comments: [{
-                                author: "Fajar",
-                                date: "Kamis, 23 Okt 2025",
-                                text: "Design sudah 80% selesai."
-                            }]
-                        },
-                        {
-                            id: 4,
-                            title: "Development Fitur Login",
-                            phase: "Development",
-                            status: "done",
-                            members: [{
-                                    name: 'Naufal',
-                                    avatar: 'https://i.pravatar.cc/40?img=1'
-                                },
-                                {
-                                    name: 'Risi',
-                                    avatar: 'https://i.pravatar.cc/40?img=3'
-                                }
-                            ],
-                            secret: false,
-                            notes: "Development fitur login dengan authentication.",
-                            attachments: [{
-                                    name: "Test_Cases.xlsx",
-                                    type: "xlsx"
-                                },
-                                {
-                                    name: "API_Documentation.pdf",
-                                    type: "pdf"
-                                }
-                            ],
-                            labels: [{
-                                name: 'Development',
-                                color: '#0ea5e9'
-                            }],
-                            checklist: [{
-                                    name: "Backend API",
-                                    done: true
-                                },
-                                {
-                                    name: "Frontend integration",
-                                    done: true
-                                },
-                                {
-                                    name: "Testing",
-                                    done: true
-                                }
-                            ],
-                            startDate: "2024-04-01",
-                            startTime: "08:00",
-                            dueDate: "2024-04-25",
-                            dueTime: "17:00",
-                            comments: [{
-                                author: "Naufal",
-                                date: "Rabu, 22 Okt 2025",
-                                text: "Semua test case passed."
-                            }]
-                        },
-                        {
-                            id: 5,
-                            title: "Testing Sistem Integrasi",
-                            phase: "Testing",
-                            status: "inprogress",
-                            members: [{
-                                name: 'Dzakwan',
-                                avatar: 'https://i.pravatar.cc/40?img=2'
-                            }],
-                            secret: true,
-                            notes: "Testing integrasi antara modul sistem.",
-                            attachments: [{
-                                name: "Integration_Test_Plan.xlsx",
-                                type: "xlsx"
-                            }],
-                            labels: [{
-                                name: 'Testing',
-                                color: '#f59e0b'
-                            }],
-                            checklist: [{
-                                    name: "Unit testing",
-                                    done: true
-                                },
-                                {
-                                    name: "Integration testing",
-                                    done: false
-                                },
-                                {
-                                    name: "User acceptance testing",
-                                    done: false
-                                }
-                            ],
-                            startDate: "2024-05-01",
-                            startTime: "09:00",
-                            dueDate: "2024-05-30",
-                            dueTime: "16:00",
-                            comments: [{
-                                author: "Manager",
-                                date: "Senin, 20 Okt 2025",
-                                text: "Progress testing 60%."
-                            }]
-                        },
-                        {
-                            id: 6,
-                            title: "Deployment Production",
-                            phase: "Deployment",
-                            status: "todo",
-                            members: [{
-                                    name: 'Naufal',
-                                    avatar: 'https://i.pravatar.cc/40?img=1'
-                                },
-                                {
-                                    name: 'Fajar',
-                                    avatar: 'https://i.pravatar.cc/40?img=5'
-                                }
-                            ],
-                            secret: false,
-                            notes: "Deploy aplikasi ke server production.",
-                            attachments: [],
-                            labels: [{
-                                name: 'Deployment',
-                                color: '#10b981'
-                            }],
-                            checklist: [{
-                                    name: "Setup server",
-                                    done: false
-                                },
-                                {
-                                    name: "Database migration",
-                                    done: false
-                                },
-                                {
-                                    name: "Deploy aplikasi",
-                                    done: false
-                                }
-                            ],
-                            startDate: "2024-06-01",
-                            startTime: "08:00",
-                            dueDate: "2024-06-10",
-                            dueTime: "17:00",
-                            comments: []
-                        }
-                    ],
+                removeChecklistItem(index) {
+                    if (this.currentTask) {
+                        this.currentTask.checklist.splice(index, 1);
+                    }
+                },
 
-                    // === METHODS ===
+                // Attachments
+                removeAttachment(index) {
+                    if (this.isEditMode && this.currentTask) {
+                        this.currentTask.attachments.splice(index, 1);
+                    }
+                },
 
-                    // Open task detail modal
-                    openDetail(taskId) {
-                        const task = this.tasks.find(t => t.id === taskId);
-                        if (!task) return;
+                // Add new list
+                // Add new list
+                addList() {
+                    let newListName = this.newListName.trim();
+                    if (newListName === '') return;
 
-                        this.currentTask = JSON.parse(JSON.stringify(task));
-                        this.isEditMode = false;
-                        this.openTaskDetail = true;
-                    },
+                    let listId = newListName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
+                    const board = document.getElementById('kanban-board');
 
-                    // Enable edit mode
-                    enableEditMode() {
-                        this.isEditMode = true;
-                    },
-
-                    // Save edited task
-                    saveTaskEdit() {
-                        if (!this.currentTask) return;
-                        const index = this.tasks.findIndex(t => t.id === this.currentTask.id);
-                        if (index !== -1) {
-                            this.tasks[index] = JSON.parse(JSON.stringify(this.currentTask));
-                        }
-                        this.isEditMode = false;
-                        this.openTaskDetail = false;
-                        alert("Tugas berhasil diperbarui!");
-                    },
-
-                    // Cancel edit
-                    cancelEdit() {
-                        if (!this.currentTask) return;
-                        const task = this.tasks.find(t => t.id === this.currentTask.id);
-                        this.currentTask = JSON.parse(JSON.stringify(task));
-                        this.isEditMode = false;
-                    },
-
-                    // Create new task
-                    createTask() {
-                        const newTask = {
-                            id: Date.now(),
-                            ...this.taskForm,
-                            comments: []
-                        };
-                        this.tasks.push(newTask);
-                        this.resetTaskForm();
-                        this.openTaskModal = false;
-                        alert("Tugas berhasil dibuat!");
-                    },
-
-                    // Reset form
-                    resetTaskForm() {
-                        this.taskForm = {
-                            title: '',
-                            phase: '',
-                            members: [],
-                            secret: false,
-                            notes: '',
-                            attachments: [],
-                            labels: [],
-                            checklist: [],
-                            startDate: '',
-                            startTime: '',
-                            dueDate: '',
-                            dueTime: ''
-                        };
-                    },
-
-                    // Members
-                    filteredMembers() {
-                        if (!this.searchMember) return this.members;
-                        return this.members.filter(m => m.name.toLowerCase().includes(this.searchMember.toLowerCase()));
-                    },
-
-                    toggleSelectAll() {
-                        this.members.forEach(m => m.selected = this.selectAll);
-                    },
-
-                    saveSelectedMembers() {
-                        const selected = this.members.filter(m => m.selected).map(m => ({
-                            name: m.name,
-                            avatar: m.avatar
-                        }));
-                        this.taskForm.members = selected;
-                        this.members.forEach(m => m.selected = false);
-                        this.selectAll = false;
-                        this.openAddMemberModal = false;
-                    },
-
-                    removeMember(index) {
-                        if (this.isEditMode && this.currentTask) {
-                            this.currentTask.members.splice(index, 1);
-                        }
-                    },
-
-                    // Labels methods untuk form
-                    filteredLabels() {
-                        if (!this.searchLabel) return this.labels;
-                        return this.labels.filter(l => l.name.toLowerCase().includes(this.searchLabel.toLowerCase()));
-                    },
-
-                    saveSelectedLabels() {
-                        const selected = this.labels.filter(l => l.selected).map(l => ({
-                            name: l.name,
-                            color: l.color
-                        }));
-                        this.taskForm.labels = selected;
-                        this.labels.forEach(l => l.selected = false);
-                        this.openLabelModal = false;
-                    },
-
-                    addNewLabel() {
-                        if (this.newLabelName.trim() === '' || !this.newLabelColor) return;
-                        this.labels.push({
-                            name: this.newLabelName,
-                            color: this.newLabelColor,
-                            selected: false
-                        });
-                        this.newLabelName = '';
-                        this.newLabelColor = null;
-                        this.openAddLabelModal = false;
-                        this.openLabelModal = true;
-                    },
-
-                    // Checklist methods untuk form
-                    saveCeklis() {
-                        if (this.newCeklisName.trim() === '') return;
-                        const newItem = {
-                            name: this.newCeklisName,
-                            done: false
-                        };
-                        this.taskForm.checklist.push(newItem);
-                        this.newCeklisName = '';
-                        this.openCeklisModal = false;
-                    },
-
-                    toggleChecklistItem(index) {
-                        if (this.currentTask) {
-                            this.currentTask.checklist[index].done = !this.currentTask.checklist[index].done;
-                        }
-                    },
-
-                    removeChecklistItem(index) {
-                        if (this.currentTask) {
-                            this.currentTask.checklist.splice(index, 1);
-                        }
-                    },
-
-                    // Attachments
-                    removeAttachment(index) {
-                        if (this.isEditMode && this.currentTask) {
-                            this.currentTask.attachments.splice(index, 1);
-                        }
-                    },
-
-                    // Add new list
-                    // Add new list
-                    addList() {
-                        let newListName = this.newListName.trim();
-                        if (newListName === '') return;
-
-                        let listId = newListName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
-                        const board = document.getElementById('kanban-board');
-
-                        const div = document.createElement('div');
-                        div.className =
-                            'bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col';
-                        div.innerHTML = `
+                    const div = document.createElement('div');
+                    div.className =
+                        'bg-blue-100 rounded-lg kanban-padding-medium kanban-column-medium flex-shrink-0 flex flex-col';
+                    div.innerHTML = `
         <div class="flex items-center justify-between mb-1 xs:mb-2">
             <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base">${newListName}</h2>
             <button @click="openListMenu = openListMenu === '${listId}' ? null : '${listId}'"
@@ -1524,422 +1545,744 @@
         </div>
     `;
 
-                        board.insertBefore(div, board.lastElementChild);
+                    board.insertBefore(div, board.lastElementChild);
 
-                        // Initialize Sortable for the new list
-                        new Sortable(document.getElementById(listId), {
-                            group: 'kanban',
-                            animation: 150,
-                            ghostClass: 'bg-blue-300'
-                        });
+                    // Initialize Sortable for the new list
+                    new Sortable(document.getElementById(listId), {
+                        group: 'kanban',
+                        animation: 150,
+                        ghostClass: 'bg-blue-300'
+                    });
 
-                        this.newListName = '';
-                        this.openModal = false;
-                    },
-
-
-                    // === NEW METHODS FOR REPLY INTERACTION ===
+                    this.newListName = '';
+                    this.openModal = false;
+                },
 
 
-                    replyView: {
-                        active: false,
-                        parentComment: null,
-                        replyContent: '',
-                        currentTask: null,
-                        context: 'task' // Konteks tugas
-                    },
+                // === NEW METHODS FOR REPLY INTERACTION ===
 
 
-                    // Buka halaman balas komentar dari modal detail
-                    // Fungsi untuk membuka halaman balas komentar (TUGAS)
-                    openReplyFromModal(comment) {
-                        this.replyView.active = true;
-                        this.replyView.parentComment = comment;
-                        this.replyView.replyContent = '';
-                        this.replyView.currentTask = this.currentTask;
-                        this.replyView.context = 'task';
+                replyView: {
+                    active: false,
+                    parentComment: null,
+                    replyContent: '',
+                    currentTask: null,
+                    context: 'task' // Konteks tugas
+                },
 
-                        // Tutup modal detail
-                        this.openTaskDetail = false;
-                    },
 
-                    // Fungsi untuk kembali (TUGAS)
-                    closeReplyView() {
-                        this.replyView.active = false;
-                        this.replyView.parentComment = null;
-                        this.replyView.replyContent = '';
-                        this.replyView.currentTask = null;
+                // Buka halaman balas komentar dari modal detail
+                // Fungsi untuk membuka halaman balas komentar (TUGAS)
+                openReplyFromModal(comment) {
+                    this.replyView.active = true;
+                    this.replyView.parentComment = comment;
+                    this.replyView.replyContent = '';
+                    this.replyView.currentTask = this.currentTask;
+                    this.replyView.context = 'task';
 
-                        // Buka kembali modal detail
-                        this.openTaskDetail = true;
-                    },
+                    // Tutup modal detail
+                    this.openTaskDetail = false;
+                },
 
-                    // Submit balasan komentar
-                    // Fungsi untuk submit balasan komentar (TUGAS)
-                    submitReply() {
-                        const content = this.replyView.replyContent ? this.replyView.replyContent.trim() : '';
-                        if (!content || !this.replyView.parentComment) return;
+                // Fungsi untuk kembali (TUGAS)
+                closeReplyView() {
+                    this.replyView.active = false;
+                    this.replyView.parentComment = null;
+                    this.replyView.replyContent = '';
+                    this.replyView.currentTask = null;
 
-                        const newReply = {
-                            id: Date.now(),
-                            author: {
-                                name: 'Anda',
-                                avatar: 'https://i.pravatar.cc/40?img=11'
-                            },
-                            content: content,
-                            createdAt: new Date().toISOString()
-                        };
+                    // Buka kembali modal detail
+                    this.openTaskDetail = true;
+                },
 
-                        if (!this.replyView.parentComment.replies) {
-                            this.replyView.parentComment.replies = [];
+                // Submit balasan komentar
+                // Fungsi untuk submit balasan komentar (TUGAS)
+                submitReply() {
+                    const content = this.replyView.replyContent ? this.replyView.replyContent.trim() : '';
+                    if (!content || !this.replyView.parentComment) return;
+
+                    const newReply = {
+                        id: Date.now(),
+                        author: {
+                            name: 'Anda',
+                            avatar: 'https://i.pravatar.cc/40?img=11'
+                        },
+                        content: content,
+                        createdAt: new Date().toISOString()
+                    };
+
+                    if (!this.replyView.parentComment.replies) {
+                        this.replyView.parentComment.replies = [];
+                    }
+
+                    this.replyView.parentComment.replies.push(newReply);
+                    this.closeReplyView();
+
+                    alert('Balasan berhasil dikirim!');
+                },
+
+                // Format tanggal untuk komentar
+                formatCommentDate(dateString) {
+                    if (!dateString) return '';
+
+                    const date = new Date(dateString);
+                    const now = new Date();
+                    const diffTime = Math.abs(now - date);
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+                    const diffMinutes = Math.floor(diffTime / (1000 * 60));
+
+                    if (diffMinutes < 1) return 'beberapa detik yang lalu';
+                    if (diffMinutes < 60) return `${diffMinutes} menit yang lalu`;
+                    if (diffHours < 24) return `${diffHours} jam yang lalu`;
+                    if (diffDays < 7) return `${diffDays} hari yang lalu`;
+
+                    return date.toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                    });
+                },
+
+
+
+                // === SEARCH & FILTER METHODS ===
+                filterTasks(tasks) {
+                    if (!Array.isArray(tasks)) return [];
+
+                    return tasks.filter(task => {
+                        // Search by task title
+                        if (this.searchQuery && !task.title.toLowerCase().includes(this.searchQuery
+                                .toLowerCase())) {
+                            return false;
                         }
 
-                        this.replyView.parentComment.replies.push(newReply);
-                        this.closeReplyView();
-
-                        alert('Balasan berhasil dikirim!');
-                    },
-
-                    // Format tanggal untuk komentar
-                    formatCommentDate(dateString) {
-                        if (!dateString) return '';
-
-                        const date = new Date(dateString);
-                        const now = new Date();
-                        const diffTime = Math.abs(now - date);
-                        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                        const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-                        const diffMinutes = Math.floor(diffTime / (1000 * 60));
-
-                        if (diffMinutes < 1) return 'beberapa detik yang lalu';
-                        if (diffMinutes < 60) return `${diffMinutes} menit yang lalu`;
-                        if (diffHours < 24) return `${diffHours} jam yang lalu`;
-                        if (diffDays < 7) return `${diffDays} hari yang lalu`;
-
-                        return date.toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric'
-                        });
-                    },
-
-
-
-                    // === SEARCH & FILTER METHODS ===
-                    filterTasks(tasks) {
-                        if (!Array.isArray(tasks)) return [];
-
-                        return tasks.filter(task => {
-                            // Search by task title
-                            if (this.searchQuery && !task.title.toLowerCase().includes(this.searchQuery
-                                    .toLowerCase())) {
-                                return false;
-                            }
-
-                            // Filter by label
-                            if (this.selectedLabel && (!task.labels || !task.labels.some(label =>
-                                    label.name.toLowerCase().includes(this.selectedLabel.toLowerCase())))) {
-                                return false;
-                            }
-
-                            // Filter by member
-                            if (this.selectedMember && (!task.members || !task.members.some(member =>
-                                    member.name.toLowerCase().includes(this.selectedMember.toLowerCase())))) {
-                                return false;
-                            }
-
-                            // Filter by deadline
-                            if (this.selectedDeadline && task.dueDate) {
-                                const today = new Date();
-                                today.setHours(0, 0, 0, 0);
-
-                                const dueDate = new Date(task.dueDate);
-                                dueDate.setHours(0, 0, 0, 0);
-
-                                switch (this.selectedDeadline) {
-                                    case 'segera':
-                                        const threeDaysFromNow = new Date(today);
-                                        threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
-                                        if (dueDate < today || dueDate > threeDaysFromNow) {
-                                            return false;
-                                        }
-                                        break;
-
-                                    case 'hari-ini':
-                                        if (dueDate.getTime() !== today.getTime()) {
-                                            return false;
-                                        }
-                                        break;
-
-                                    case 'terlambat':
-                                        if (dueDate >= today) {
-                                            return false;
-                                        }
-                                        break;
-                                }
-                            }
-
-                            return true;
-                        });
-                    },
-
-                    get availableLabels() {
-                        const labels = new Set();
-                        this.tasks.forEach(task => {
-                            if (task.labels && task.labels.length > 0) {
-                                task.labels.forEach(label => labels.add(label.name));
-                            }
-                        });
-                        return Array.from(labels).map(name => ({
-                            name
-                        }));
-                    },
-
-                    get availableMembers() {
-                        const members = new Set();
-                        this.tasks.forEach(task => {
-                            if (task.members && task.members.length > 0) {
-                                task.members.forEach(member => members.add(member.name));
-                            }
-                        });
-                        return Array.from(members).map(name => ({
-                            name
-                        }));
-                    },
-
-                    getFilteredTasks(columnName) {
-                        const columnTasks = this.tasks.filter(task => task.status === columnName);
-                        return this.filterTasks(columnTasks);
-                    },
-
-                    resetFilters() {
-                        this.searchQuery = '';
-                        this.selectedLabel = '';
-                        this.selectedMember = '';
-                        this.selectedDeadline = '';
-                    },
-
-                    hasActiveFilters() {
-                        return this.searchQuery || this.selectedLabel || this.selectedMember || this.selectedDeadline;
-                    },
-
-                    getDeadlineFilterText() {
-                        switch (this.selectedDeadline) {
-                            case 'segera':
-                                return 'Tenggat Segera';
-                            case 'hari-ini':
-                                return 'Tenggat Hari Ini';
-                            case 'terlambat':
-                                return 'Terlambat';
-                            default:
-                                return '';
-                        }
-                    },
-
-                    formatDate(dateString) {
-                        if (!dateString) return '';
-                        const date = new Date(dateString);
-                        return date.toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'short'
-                        });
-                    },
-
-
-
-
-
-
-                    // untuk modal aksi list
-                    // untuk modal aksi list
-                    sortTasks(sortType) {
-                        const currentList = this.openListMenu; // 'todo', 'inprogress', dll. atau ID list baru
-
-                        if (!currentList) return;
-
-                        // Untuk list default (todo, inprogress, done, cancel)
-                        if (['todo', 'inprogress', 'done', 'cancel'].includes(currentList)) {
-                            const listTasks = this.tasks.filter(task => task.status === currentList);
-
-                            // Implementasi sorting berdasarkan jenis
-                            switch (sortType) {
-                                case 'deadline-asc': // Tenggat waktu terdekat
-                                    listTasks.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-                                    break;
-
-                                case 'deadline-desc': // Tenggat waktu terjauh
-                                    listTasks.sort((a, b) => new Date(b.dueDate) - new Date(a.dueDate));
-                                    break;
-
-                                case 'created-asc': // Waktu dibuat terdekat
-                                    listTasks.sort((a, b) => a.id - b.id);
-                                    break;
-
-                                case 'created-desc': // Waktu dibuat terjauh
-                                    listTasks.sort((a, b) => b.id - a.id);
-                                    break;
-                            }
-
-                            // Update tasks dengan urutan baru
-                            this.tasks = this.tasks.filter(task => task.status !== currentList);
-                            this.tasks = [...this.tasks, ...listTasks];
-                        } else {
-                            // Untuk list baru (akan diimplementasikan nanti)
-                            console.log(`Sorting untuk list baru: ${currentList} dengan tipe: ${sortType}`);
-                            alert('Fitur sorting untuk list baru akan segera tersedia!');
+                        // Filter by label
+                        if (this.selectedLabel && (!task.labels || !task.labels.some(label =>
+                                label.name.toLowerCase().includes(this.selectedLabel.toLowerCase())))) {
+                            return false;
                         }
 
-                        console.log(`Tasks di ${currentList} diurutkan dengan: ${sortType}`);
-                    },
-
-
-                    // Methods untuk Gantt Chart
-                    getProjectPhases() {
-                        return [{
-                                id: 1,
-                                name: 'Perencanaan',
-                            },
-                            {
-                                id: 2,
-                                name: 'Analisis',
-                            },
-                            {
-                                id: 3,
-                                name: 'Desain',
-                            },
-                            {
-                                id: 4,
-                                name: 'Development',
-                            },
-                            {
-                                id: 5,
-                                name: 'Testing',
-                            },
-                            {
-                                id: 6,
-                                name: 'Deployment',
-                            }
-                        ];
-                    },
-
-                    // Update method showPhaseTasks
-                    showPhaseTasks(phaseId) {
-                        const phase = this.getProjectPhases().find(p => p.id === phaseId);
-                        if (!phase) return;
-
-                        const phaseTasks = this.getTasksByPhaseId(phaseId);
-                        const totalTasks = phaseTasks.length;
-                        const completedTasks = phaseTasks.filter(task => task.status === 'done').length;
-                        const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-                        this.selectedPhase = phaseId;
-                        this.phaseModal = {
-                            open: true,
-                            title: phase.name,
-                            description: phase.description,
-                            tasks: phaseTasks,
-                            progress: progress,
-                            totalTasks: totalTasks,
-                            completedTasks: completedTasks
-                        };
-                    },
-                    getTasksByPhaseId(phaseId) {
-                        // Mapping phase ID ke phase name yang sesuai dengan data tasks
-                        const phaseMap = {
-                            1: 'Perencanaan',
-                            2: 'Analisis',
-                            3: 'Desain',
-                            4: 'Development',
-                            5: 'Testing',
-                            6: 'Deployment'
-                        };
-
-                        const phaseName = phaseMap[phaseId];
-                        return this.tasks.filter(task => task.phase === phaseName);
-                    },
-
-                    showTaskDetails(task) {
-                        this.openDetail(task.id);
-                    },
-
-                    // Methods untuk menghitung progress
-                    calculateProgress(task) {
-                        if (!task.checklist || task.checklist.length === 0) return 0;
-                        const completed = task.checklist.filter(item => item.done).length;
-                        return Math.round((completed / task.checklist.length) * 100);
-                    },
-
-                    // Method untuk menghitung persentase phase berdasarkan tugas selesai
-                    calculatePhaseProgress(phaseId) {
-                        const phaseTasks = this.getTasksByPhaseId(phaseId);
-                        if (phaseTasks.length === 0) return 0;
-
-                        const completedTasks = phaseTasks.filter(task => task.status === 'done').length;
-                        return Math.round((completedTasks / phaseTasks.length) * 100);
-                    },
-
-                    // Method untuk mendapatkan statistik phase
-                    getPhaseStats(phaseId) {
-                        const phaseTasks = this.getTasksByPhaseId(phaseId);
-                        const totalTasks = phaseTasks.length;
-                        const completedTasks = phaseTasks.filter(task => task.status === 'done').length;
-                        const inProgressTasks = phaseTasks.filter(task => task.status === 'inprogress').length;
-                        const todoTasks = phaseTasks.filter(task => task.status === 'todo').length;
-
-                        return {
-                            total: totalTasks,
-                            completed: completedTasks,
-                            inProgress: inProgressTasks,
-                            todo: todoTasks,
-                            progress: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
-                        };
-                    },
-
-                    formatDate(dateString) {
-                        if (!dateString) return '';
-                        const date = new Date(dateString);
-                        return date.toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric'
-                        });
-                    },
-
-                    // Open task detail modal
-                    openDetail(taskId) {
-                        const task = this.tasks.find(t => t.id === taskId);
-                        if (!task) return;
-
-                        this.currentTask = JSON.parse(JSON.stringify(task));
-                        this.isEditMode = false;
-                        this.openTaskDetail = true;
-                    },
-
-
-                    // Add this to your kanbanApp() methods
-                    // Update method getTasksByPhase
-                    getTasksByPhase(phaseId) {
-                        const phaseMap = {
-                            1: 'Perencanaan',
-                            2: 'Analisis',
-                            3: 'Desain',
-                            4: 'Development',
-                            5: 'Testing',
-                            6: 'Deployment'
-                        };
-
-                        const phaseName = phaseMap[phaseId];
-                        const phaseTasks = this.tasks.filter(task => task.phase === phaseName);
-
-                        // Jika tidak ada tugas, return array kosong agar timeline tidak muncul
-                        if (phaseTasks.length === 0) {
-                            return [];
+                        // Filter by member
+                        if (this.selectedMember && (!task.members || !task.members.some(member =>
+                                member.name.toLowerCase().includes(this.selectedMember.toLowerCase())))) {
+                            return false;
                         }
 
-                        return phaseTasks;
-                    },
+                        // Filter by deadline
+                        if (this.selectedDeadline && task.dueDate) {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
 
-                }
+                            const dueDate = new Date(task.dueDate);
+                            dueDate.setHours(0, 0, 0, 0);
+
+                            switch (this.selectedDeadline) {
+                                case 'segera':
+                                    const threeDaysFromNow = new Date(today);
+                                    threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+                                    if (dueDate < today || dueDate > threeDaysFromNow) {
+                                        return false;
+                                    }
+                                    break;
+
+                                case 'hari-ini':
+                                    if (dueDate.getTime() !== today.getTime()) {
+                                        return false;
+                                    }
+                                    break;
+
+                                case 'terlambat':
+                                    if (dueDate >= today) {
+                                        return false;
+                                    }
+                                    break;
+                            }
+                        }
+
+                        return true;
+                    });
+                },
+
+                get availableLabels() {
+                    const labels = new Set();
+                    this.tasks.forEach(task => {
+                        if (task.labels && task.labels.length > 0) {
+                            task.labels.forEach(label => labels.add(label.name));
+                        }
+                    });
+                    return Array.from(labels).map(name => ({
+                        name
+                    }));
+                },
+
+                get availableMembers() {
+                    const members = new Set();
+                    this.tasks.forEach(task => {
+                        if (task.members && task.members.length > 0) {
+                            task.members.forEach(member => members.add(member.name));
+                        }
+                    });
+                    return Array.from(members).map(name => ({
+                        name
+                    }));
+                },
+
+                getFilteredTasks(columnName) {
+                    const columnTasks = this.tasks.filter(task => task.status === columnName);
+                    return this.filterTasks(columnTasks);
+                },
+
+                resetFilters() {
+                    this.searchQuery = '';
+                    this.selectedLabel = '';
+                    this.selectedMember = '';
+                    this.selectedDeadline = '';
+                },
+
+                hasActiveFilters() {
+                    return this.searchQuery || this.selectedLabel || this.selectedMember || this.selectedDeadline;
+                },
+
+                getDeadlineFilterText() {
+                    switch (this.selectedDeadline) {
+                        case 'segera':
+                            return 'Tenggat Segera';
+                        case 'hari-ini':
+                            return 'Tenggat Hari Ini';
+                        case 'terlambat':
+                            return 'Terlambat';
+                        default:
+                            return '';
+                    }
+                },
+
+                formatDate(dateString) {
+                    if (!dateString) return '';
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'short'
+                    });
+                },
+
+
+
+
+
+
+                // untuk modal aksi list
+                // untuk modal aksi list
+                sortTasks(sortType) {
+                    const currentList = this.openListMenu; // 'todo', 'inprogress', dll. atau ID list baru
+
+                    if (!currentList) return;
+
+                    // Untuk list default (todo, inprogress, done, cancel)
+                    if (['todo', 'inprogress', 'done', 'cancel'].includes(currentList)) {
+                        const listTasks = this.tasks.filter(task => task.status === currentList);
+
+                        // Implementasi sorting berdasarkan jenis
+                        switch (sortType) {
+                            case 'deadline-asc': // Tenggat waktu terdekat
+                                listTasks.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+                                break;
+
+                            case 'deadline-desc': // Tenggat waktu terjauh
+                                listTasks.sort((a, b) => new Date(b.dueDate) - new Date(a.dueDate));
+                                break;
+
+                            case 'created-asc': // Waktu dibuat terdekat
+                                listTasks.sort((a, b) => a.id - b.id);
+                                break;
+
+                            case 'created-desc': // Waktu dibuat terjauh
+                                listTasks.sort((a, b) => b.id - a.id);
+                                break;
+                        }
+
+                        // Update tasks dengan urutan baru
+                        this.tasks = this.tasks.filter(task => task.status !== currentList);
+                        this.tasks = [...this.tasks, ...listTasks];
+                    } else {
+                        // Untuk list baru (akan diimplementasikan nanti)
+                        console.log(`Sorting untuk list baru: ${currentList} dengan tipe: ${sortType}`);
+                        alert('Fitur sorting untuk list baru akan segera tersedia!');
+                    }
+
+                    console.log(`Tasks di ${currentList} diurutkan dengan: ${sortType}`);
+                },
+
+
+                // Methods untuk Gantt Chart
+                getProjectPhases() {
+                    return [{
+                            id: 1,
+                            name: 'Perencanaan',
+                        },
+                        {
+                            id: 2,
+                            name: 'Analisis',
+                        },
+                        {
+                            id: 3,
+                            name: 'Desain',
+                        },
+                        {
+                            id: 4,
+                            name: 'Development',
+                        },
+                        {
+                            id: 5,
+                            name: 'Testing',
+                        },
+                        {
+                            id: 6,
+                            name: 'Deployment',
+                        }
+                    ];
+                },
+
+                // Update method showPhaseTasks
+                showPhaseTasks(phaseId) {
+                    const phase = this.getProjectPhases().find(p => p.id === phaseId);
+                    if (!phase) return;
+
+                    const phaseTasks = this.getTasksByPhaseId(phaseId);
+                    const totalTasks = phaseTasks.length;
+                    const completedTasks = phaseTasks.filter(task => task.status === 'done').length;
+                    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+                    this.selectedPhase = phaseId;
+                    this.phaseModal = {
+                        open: true,
+                        title: phase.name,
+                        description: phase.description,
+                        tasks: phaseTasks,
+                        progress: progress,
+                        totalTasks: totalTasks,
+                        completedTasks: completedTasks
+                    };
+                },
+                getTasksByPhaseId(phaseId) {
+                    // Mapping phase ID ke phase name yang sesuai dengan data tasks
+                    const phaseMap = {
+                        1: 'Perencanaan',
+                        2: 'Analisis',
+                        3: 'Desain',
+                        4: 'Development',
+                        5: 'Testing',
+                        6: 'Deployment'
+                    };
+
+                    const phaseName = phaseMap[phaseId];
+                    return this.tasks.filter(task => task.phase === phaseName);
+                },
+
+                showTaskDetails(task) {
+                    this.openDetail(task.id);
+                },
+
+                // Methods untuk menghitung progress
+                calculateProgress(task) {
+                    if (!task.checklist || task.checklist.length === 0) return 0;
+                    const completed = task.checklist.filter(item => item.done).length;
+                    return Math.round((completed / task.checklist.length) * 100);
+                },
+
+                // Method untuk menghitung persentase phase berdasarkan tugas selesai
+                calculatePhaseProgress(phaseId) {
+                    const phaseTasks = this.getTasksByPhaseId(phaseId);
+                    if (phaseTasks.length === 0) return 0;
+
+                    const completedTasks = phaseTasks.filter(task => task.status === 'done').length;
+                    return Math.round((completedTasks / phaseTasks.length) * 100);
+                },
+
+                // Method untuk mendapatkan statistik phase
+                getPhaseStats(phaseId) {
+                    const phaseTasks = this.getTasksByPhaseId(phaseId);
+                    const totalTasks = phaseTasks.length;
+                    const completedTasks = phaseTasks.filter(task => task.status === 'done').length;
+                    const inProgressTasks = phaseTasks.filter(task => task.status === 'inprogress').length;
+                    const todoTasks = phaseTasks.filter(task => task.status === 'todo').length;
+
+                    return {
+                        total: totalTasks,
+                        completed: completedTasks,
+                        inProgress: inProgressTasks,
+                        todo: todoTasks,
+                        progress: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+                    };
+                },
+
+                formatDate(dateString) {
+                    if (!dateString) return '';
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                    });
+                },
+
+                // Open task detail modal
+                openDetail(taskId) {
+                    const task = this.tasks.find(t => t.id === taskId);
+                    if (!task) return;
+
+                    this.currentTask = JSON.parse(JSON.stringify(task));
+                    this.isEditMode = false;
+                    this.openTaskDetail = true;
+                },
+
+
+                // Add this to your kanbanApp() methods
+                // Update method getTasksByPhase
+                getTasksByPhase(phaseId) {
+                    const phaseMap = {
+                        1: 'Perencanaan',
+                        2: 'Analisis',
+                        3: 'Desain',
+                        4: 'Development',
+                        5: 'Testing',
+                        6: 'Deployment'
+                    };
+
+                    const phaseName = phaseMap[phaseId];
+                    const phaseTasks = this.tasks.filter(task => task.phase === phaseName);
+
+                    // Jika tidak ada tugas, return array kosong agar timeline tidak muncul
+                    if (phaseTasks.length === 0) {
+                        return [];
+                    }
+
+                    return phaseTasks;
+                },
+
+                
+
+
+                closeTaskDetail() {
+                    this.openTaskDetail = false;
+                    // Clean up editors - gunakan ID yang benar
+                    destroyMainEditorForTask('task-main-comment-editor');
+                    Object.keys(taskEditors).forEach(id => destroyEditorForTask(id));
+                },
+
             }
-        </script>
+        }
+
+
+
+
+
+        const taskEditors = {}; // map id -> editor instance untuk tugas
+
+        // create editor in containerId (string) untuk tugas
+        async function createEditorForTask(containerId, options = {}) {
+            const el = document.getElementById(containerId);
+            if (!el) {
+                console.warn('createEditorForTask: element not found', containerId);
+                return null;
+            }
+
+            // clear existing content to avoid duplicates
+            el.innerHTML = '';
+
+            // default toolbar (safe — avoids plugins that might not exist in CDN build)
+            const baseConfig = {
+                toolbar: {
+                    items: [
+                        'undo', 'redo', '|',
+                        'heading', '|',
+                        'bold', 'italic', 'underline', 'strikethrough', '|',
+                        'link', 'blockQuote', '|',
+                        'bulletedList', 'numberedList', '|',
+                        'insertTable', 'imageUpload', 'mediaEmbed'
+                    ],
+                    shouldNotGroupWhenFull: true
+                },
+                heading: {
+                    options: [{
+                            model: 'paragraph',
+                            title: 'Paragraf',
+                            class: 'ck-heading_paragraph'
+                        },
+                        {
+                            model: 'heading1',
+                            view: 'h1',
+                            title: 'Heading 1',
+                            class: 'ck-heading_heading1'
+                        },
+                        {
+                            model: 'heading2',
+                            view: 'h2',
+                            title: 'Heading 2',
+                            class: 'ck-heading_heading2'
+                        }
+                    ]
+                },
+                placeholder: options.placeholder || ''
+            };
+
+            // try to create editor, fallback to textarea on error
+            try {
+                const editor = await ClassicEditor.create(el, baseConfig);
+                taskEditors[containerId] = editor;
+
+                // safe: focus editor when created
+                try {
+                    editor.editing.view.focus();
+                } catch (e) {}
+
+                // wire change event for debug (and to keep Alpine in sync via dispatch)
+                editor.model.document.on('change:data', () => {
+                    const data = editor.getData();
+                    // dispatch a custom event so Alpine can listen if needed
+                    const ev = new CustomEvent('editor-change', {
+                        detail: {
+                            id: containerId,
+                            data
+                        }
+                    });
+                    window.dispatchEvent(ev);
+                });
+
+                return editor;
+            } catch (err) {
+                console.error('createEditorForTask error for', containerId, err);
+                // fallback to textarea
+                el.innerHTML =
+                    `<textarea id="${containerId}-fallback" class="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg bg-white resize-none">${options.initial || ''}</textarea>`;
+                return null;
+            }
+        }
+
+        function destroyEditorForTask(containerId) {
+            const ed = taskEditors[containerId];
+            if (ed) {
+                ed.destroy().then(() => {
+                    delete taskEditors[containerId];
+                }).catch((e) => {
+                    console.warn('destroyEditorForTask error', containerId, e);
+                    delete taskEditors[containerId];
+                });
+            } else {
+                // remove fallback textarea if existed
+                const ta = document.getElementById(containerId + '-fallback');
+                if (ta) ta.remove();
+            }
+        }
+
+        function getTaskEditorData(containerId) {
+            const ed = taskEditors[containerId];
+            if (ed) return ed.getData();
+            const ta = document.getElementById(containerId + '-fallback');
+            return ta ? ta.value : '';
+        }
+
+        // helper to init main (top) editor untuk tugas
+        function initMainEditorForTask(containerId = 'task-comment-editor') {
+            return createEditorForTask(containerId, {
+                placeholder: 'Ketik komentar Anda di sini...'
+            });
+        }
+
+        function destroyMainEditorForTask(containerId = 'task-comment-editor') {
+            destroyEditorForTask(containerId);
+        }
+
+        // helper to init reply editor for a specific comment id untuk tugas
+        function initReplyEditorForTask(commentId) {
+            const containerId = 'task-reply-editor-' + commentId;
+            return createEditorForTask(containerId, {
+                placeholder: 'Ketik balasan Anda di sini...'
+            });
+        }
+
+        function destroyReplyEditorForTask(commentId) {
+            const containerId = 'task-reply-editor-' + commentId;
+            destroyEditorForTask(containerId);
+        }
+
+        function getTaskReplyEditorDataFor(commentId) {
+            return getTaskEditorData('task-reply-editor-' + commentId);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+        // Tambahkan fungsi commentSection di dalam script Alpine.js
+        function commentSection() {
+            return {
+                comments: [
+                    // Data dummy komentar untuk tugas
+                    {
+                        id: 1,
+                        author: {
+                            name: 'Risi Gustiar',
+                            avatar: 'https://i.pravatar.cc/40?img=3'
+                        },
+                        content: 'Data transaksi sudah saya update di file Excel.',
+                        createdAt: new Date(Date.now() - (1000 * 60 * 60 * 24)).toISOString(),
+                        replies: [{
+                            id: 11,
+                            author: {
+                                name: 'Naufal',
+                                avatar: 'https://i.pravatar.cc/40?img=1'
+                            },
+                            content: 'Terima kasih, saya akan cek datanya.',
+                            createdAt: new Date(Date.now() - (1000 * 60 * 60 * 12)).toISOString()
+                        }]
+                    },
+                    {
+                        id: 2,
+                        author: {
+                            name: 'Rendi Sinaga',
+                            avatar: 'https://i.pravatar.cc/40?img=4'
+                        },
+                        content: 'Draft laporan hampir selesai, tinggal verifikasi',
+                        createdAt: new Date(Date.now() - (1000 * 60 * 60 * 6)).toISOString(),
+                        replies: []
+                    }
+                ],
+
+                // replyView untuk inline reply form
+                replyView: {
+                    active: false,
+                    parentComment: null
+                },
+
+                // ✅ TAMBAHKAN INIT METHOD
+                init() {
+                    // Inisialisasi editor komentar utama ketika komponen dimuat
+                    this.$nextTick(() => {
+                        setTimeout(() => {
+                            createEditorForTask('task-main-comment-editor', {
+                                placeholder: 'Ketik komentar Anda di sini...'
+                            });
+                        }, 300);
+                    });
+                },
+
+                /* toggle reply inline */
+                toggleReply(comment) {
+                    if (this.replyView.active && this.replyView.parentComment?.id === comment.id) {
+                        this.closeReplyView();
+                        return;
+                    }
+                    // close any previous reply editor
+                    if (this.replyView.active && this.replyView.parentComment) {
+                        destroyReplyEditorForTask(this.replyView.parentComment.id);
+                    }
+                    this.replyView.active = true;
+                    this.replyView.parentComment = comment;
+
+                    // give DOM time to render the template, kemudian inisialisasi editor untuk that comment
+                    setTimeout(() => {
+                        initReplyEditorForTask(comment.id);
+                    }, 150);
+                },
+
+                closeReplyView() {
+                    if (this.replyView.parentComment) {
+                        destroyReplyEditorForTask(this.replyView.parentComment.id);
+                    }
+                    this.replyView.active = false;
+                    this.replyView.parentComment = null;
+                },
+
+                /* submit reply dari editor inline */
+                submitReplyFromEditor() {
+                    if (!this.replyView.parentComment) {
+                        alert('Komentar induk tidak ditemukan');
+                        return;
+                    }
+                    const parentId = this.replyView.parentComment.id;
+                    const content = getTaskReplyEditorDataFor(parentId).trim();
+                    if (!content) {
+                        alert('Komentar balasan tidak boleh kosong!');
+                        return;
+                    }
+
+                    const newReply = {
+                        id: Date.now(),
+                        author: {
+                            name: 'Anda',
+                            avatar: 'https://i.pravatar.cc/40?img=11'
+                        },
+                        content,
+                        createdAt: new Date().toISOString()
+                    };
+
+                    // push ke parent comment
+                    if (!this.replyView.parentComment.replies) {
+                        this.replyView.parentComment.replies = [];
+                    }
+                    this.replyView.parentComment.replies.push(newReply);
+
+                    // tutup & destroy editor
+                    this.closeReplyView();
+                },
+
+                /* submit main (top) comment */
+                submitMain() {
+                    // ✅ PERBAIKI: Gunakan ID yang benar
+                    const content = getTaskEditorData('task-main-comment-editor').trim();
+                    if (!content) {
+                        alert('Komentar tidak boleh kosong!');
+                        return;
+                    }
+
+                    this.comments.unshift({
+                        id: Date.now(),
+                        author: {
+                            name: 'Anda',
+                            avatar: 'https://i.pravatar.cc/40?img=11'
+                        },
+                        content,
+                        createdAt: new Date().toISOString(),
+                        replies: []
+                    });
+
+                    // ✅ PERBAIKI: Clear editor setelah submit
+                    const editor = taskEditors['task-main-comment-editor'];
+                    if (editor) {
+                        editor.setData('');
+                    }
+                },
+
+                /* helper tanggal */
+                formatCommentDate(dateString) {
+                    if (!dateString) return '';
+                    const date = new Date(dateString);
+                    const now = new Date();
+                    const diffMs = Math.abs(now - date);
+                    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                    if (diffMinutes < 1) return 'beberapa detik yang lalu';
+                    if (diffMinutes < 60) return `${diffMinutes} menit yang lalu`;
+                    if (diffHours < 24) return `${diffHours} jam yang lalu`;
+                    if (diffDays < 7) return `${diffDays} hari yang lalu`;
+
+                    return date.toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                    });
+                }
+            };
+        }
+    </script>
 @endsection

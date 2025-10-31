@@ -124,6 +124,34 @@
             grid-template-columns: repeat(4, 1fr) !important;
         }
     }
+
+
+
+    /* ===== DOKUMEN EDITOR STYLES ===== */
+    /* CKEditor untuk komentar dokumen */
+    #document-main-comment-editor+.ck-editor .ck-content {
+        min-height: 120px !important;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    #document-main-comment-editor+.ck-editor .ck-content ul,
+    #document-main-comment-editor+.ck-editor .ck-content ol {
+        padding-left: 1.5rem !important;
+        margin-left: 0 !important;
+        list-style-position: outside !important;
+    }
+
+    #document-main-comment-editor+.ck-editor .ck-content li {
+        margin-left: 0 !important;
+    }
+
+    /* Styling untuk editor balasan dokumen */
+    [id^="document-reply-editor-"]+.ck-editor .ck-content {
+        min-height: 100px !important;
+        max-height: 150px;
+        overflow-y: auto;
+    }
 </style>
 
 @section('content')
@@ -978,8 +1006,7 @@
                         },
                         content: content.trim(),
                         createdAt: new Date().toISOString(),
-                        replies: [],
-                        showReply: false
+                        replies: []
                     };
 
                     if (!file.comments) {
@@ -1293,6 +1320,267 @@
                 },
 
             }
+        }
+
+
+
+
+
+
+
+
+
+
+
+        // ===== DOKUMEN COMMENT SECTION =====
+        function documentCommentSection() {
+            return {
+                // replyView untuk inline reply form
+                replyView: {
+                    active: false,
+                    parentComment: null
+                },
+
+                init() {
+                    // Inisialisasi editor komentar utama ketika komponen dimuat
+                    this.$nextTick(() => {
+                        setTimeout(() => {
+                            createEditorForDocument('document-main-comment-editor', {
+                                placeholder: 'Ketik komentar Anda di sini...'
+                            });
+                        }, 300);
+                    });
+                },
+
+                /* toggle reply inline */
+                toggleReply(comment) {
+                    if (this.replyView.active && this.replyView.parentComment?.id === comment.id) {
+                        this.closeReplyView();
+                        return;
+                    }
+                    // close any previous reply editor
+                    if (this.replyView.active && this.replyView.parentComment) {
+                        destroyReplyEditorForDocument(this.replyView.parentComment.id);
+                    }
+                    this.replyView.active = true;
+                    this.replyView.parentComment = comment;
+
+                    // give DOM time to render the template, kemudian inisialisasi editor untuk that comment
+                    setTimeout(() => {
+                        initReplyEditorForDocument(comment.id);
+                    }, 150);
+                },
+
+                closeReplyView() {
+                    if (this.replyView.parentComment) {
+                        destroyReplyEditorForDocument(this.replyView.parentComment.id);
+                    }
+                    this.replyView.active = false;
+                    this.replyView.parentComment = null;
+                },
+
+                /* submit reply dari editor inline */
+                submitReplyFromEditor() {
+                    if (!this.replyView.parentComment) {
+                        alert('Komentar induk tidak ditemukan');
+                        return;
+                    }
+                    const parentId = this.replyView.parentComment.id;
+                    const content = getDocumentReplyEditorDataFor(parentId).trim();
+                    if (!content) {
+                        alert('Komentar balasan tidak boleh kosong!');
+                        return;
+                    }
+
+                    const newReply = {
+                        id: Date.now(),
+                        author: {
+                            name: 'Anda',
+                            avatar: 'https://i.pravatar.cc/32?img=11'
+                        },
+                        content,
+                        createdAt: new Date().toISOString()
+                    };
+
+                    // push ke parent comment
+                    if (!this.replyView.parentComment.replies) {
+                        this.replyView.parentComment.replies = [];
+                    }
+                    this.replyView.parentComment.replies.push(newReply);
+
+                    // tutup & destroy editor
+                    this.closeReplyView();
+                },
+
+                /* submit main (top) comment */
+                submitMainComment() {
+                    const content = getDocumentEditorData('document-main-comment-editor').trim();
+                    if (!content) {
+                        alert('Komentar tidak boleh kosong!');
+                        return;
+                    }
+
+                    // Panggil fungsi addComment dari Alpine.js component utama
+                    const alpineComponent = document.querySelector('[x-data]').__x.$data;
+                    alpineComponent.addComment(alpineComponent.currentFile, content);
+
+                    // Clear editor setelah submit
+                    const editor = documentEditors['document-main-comment-editor'];
+                    if (editor) {
+                        editor.setData('');
+                    }
+                },
+
+                /* helper tanggal */
+                formatCommentDate(dateString) {
+                    if (!dateString) return '';
+                    const date = new Date(dateString);
+                    const now = new Date();
+                    const diffMs = Math.abs(now - date);
+                    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                    if (diffMinutes < 1) return 'beberapa detik yang lalu';
+                    if (diffMinutes < 60) return `${diffMinutes} menit yang lalu`;
+                    if (diffHours < 24) return `${diffHours} jam yang lalu`;
+                    if (diffDays < 7) return `${diffDays} hari yang lalu`;
+
+                    return date.toLocaleDateString('id-ID', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                    });
+                },
+
+                // Fungsi untuk destroy editor utama
+                destroyDocumentMainEditor() {
+                    destroyEditorForDocument('document-main-comment-editor');
+                }
+            };
+        }
+
+        // ===== DOKUMEN EDITOR FUNCTIONS =====
+        const documentEditors = {}; // map id -> editor instance untuk dokumen
+
+        // create editor in containerId (string) untuk dokumen
+        async function createEditorForDocument(containerId, options = {}) {
+            const el = document.getElementById(containerId);
+            if (!el) {
+                console.warn('createEditorForDocument: element not found', containerId);
+                return null;
+            }
+
+            // clear existing content to avoid duplicates
+            el.innerHTML = '';
+
+            // default toolbar (safe — avoids plugins that might not exist in CDN build)
+            const baseConfig = {
+                toolbar: {
+                    items: [
+                        'undo', 'redo', '|',
+                        'heading', '|',
+                        'bold', 'italic', 'underline', 'strikethrough', '|',
+                        'link', 'blockQuote', '|',
+                        'bulletedList', 'numberedList', '|',
+                        'insertTable', 'imageUpload', 'mediaEmbed'
+                    ],
+                    shouldNotGroupWhenFull: true
+                },
+                heading: {
+                    options: [{
+                            model: 'paragraph',
+                            title: 'Paragraf',
+                            class: 'ck-heading_paragraph'
+                        },
+                        {
+                            model: 'heading1',
+                            view: 'h1',
+                            title: 'Heading 1',
+                            class: 'ck-heading_heading1'
+                        },
+                        {
+                            model: 'heading2',
+                            view: 'h2',
+                            title: 'Heading 2',
+                            class: 'ck-heading_heading2'
+                        }
+                    ]
+                },
+                placeholder: options.placeholder || ''
+            };
+
+            // try to create editor, fallback to textarea on error
+            try {
+                const editor = await ClassicEditor.create(el, baseConfig);
+                documentEditors[containerId] = editor;
+
+                // safe: focus editor when created
+                try {
+                    editor.editing.view.focus();
+                } catch (e) {}
+
+                // wire change event for debug (and to keep Alpine in sync via dispatch)
+                editor.model.document.on('change:data', () => {
+                    const data = editor.getData();
+                    // dispatch a custom event so Alpine can listen if needed
+                    const ev = new CustomEvent('editor-change', {
+                        detail: {
+                            id: containerId,
+                            data
+                        }
+                    });
+                    window.dispatchEvent(ev);
+                });
+
+                return editor;
+            } catch (err) {
+                console.error('createEditorForDocument error for', containerId, err);
+                // fallback to textarea
+                el.innerHTML =
+                    `<textarea id="${containerId}-fallback" class="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg bg-white resize-none">${options.initial || ''}</textarea>`;
+                return null;
+            }
+        }
+
+        function destroyEditorForDocument(containerId) {
+            const ed = documentEditors[containerId];
+            if (ed) {
+                ed.destroy().then(() => {
+                    delete documentEditors[containerId];
+                }).catch((e) => {
+                    console.warn('destroyEditorForDocument error', containerId, e);
+                    delete documentEditors[containerId];
+                });
+            } else {
+                // remove fallback textarea if existed
+                const ta = document.getElementById(containerId + '-fallback');
+                if (ta) ta.remove();
+            }
+        }
+
+        function getDocumentEditorData(containerId) {
+            const ed = documentEditors[containerId];
+            if (ed) return ed.getData();
+            const ta = document.getElementById(containerId + '-fallback');
+            return ta ? ta.value : '';
+        }
+
+        // helper to init reply editor for a specific comment id untuk dokumen
+        function initReplyEditorForDocument(commentId) {
+            const containerId = 'document-reply-editor-' + commentId;
+            return createEditorForDocument(containerId, {
+                placeholder: 'Ketik balasan Anda di sini...'
+            });
+        }
+
+        function destroyReplyEditorForDocument(commentId) {
+            const containerId = 'document-reply-editor-' + commentId;
+            destroyEditorForDocument(containerId);
+        }
+
+        function getDocumentReplyEditorDataFor(commentId) {
+            return getDocumentEditorData('document-reply-editor-' + commentId);
         }
     </script>
 @endsection
