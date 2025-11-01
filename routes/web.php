@@ -16,7 +16,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Auth\GoogleController;
-
+use App\Models\Workspace;
 
 // ✅ TAMBAHKAN INI - Route Landing Page
 Route::get('/', function () {
@@ -91,9 +91,10 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
 
     // Halaman Workspace
-    Route::get('/workspace', function () {
-        return view('workspace');
-    })->name('workspace');
+    Route::get('/workspace/{id}', function ($id) {
+        $workspace = Workspace::findOrFail($id);
+        return view('workspace', compact('workspace'));
+    })->name('workspace.show');
 
     // Halaman Jadwal
     Route::get('/jadwal', function () {
@@ -127,23 +128,28 @@ Route::middleware(['auth'])->group(function () {
 
     // pengumuman
     Route::middleware(['auth'])->group(function () {
-    Route::get('/pengumuman', [PengumumanController::class, 'index'])->name('pengumuman.index');
-    Route::post('/pengumuman', [PengumumanController::class, 'store'])->name('pengumuman.store');
-    Route::get('/pengumuman/anggota', [App\Http\Controllers\PengumumanController::class, 'getAnggota'])
-    ->name('pengumuman.anggota');
-    Route::get('/pengumuman/{id}', [PengumumanController::class, 'show'])->name('pengumuman.show');
-    Route::post('/comments', [CommentController::class, 'store'])->name('comments.store');
-    Route::get('/comments/{pengumuman}', [CommentController::class, 'index'])->name('comments.index');
-    Route::post('/upload', [App\Http\Controllers\FileController::class, 'upload'])->name('upload');
+        Route::post('/workspace/{id}/pengumuman/store', [PengumumanController::class, 'store'])
+            ->name('pengumuman.store');
+        Route::get(
+            '/pengumuman/anggota/{workspaceId}',
+            [App\Http\Controllers\PengumumanController::class, 'getAnggota']
+        )->name('pengumuman.anggota');
 
 
-});
+
+        Route::get('/pengumuman/{pengumuman}', [PengumumanController::class, 'show'])->name('pengumuman.show');
+        Route::post('/comments', [CommentController::class, 'store'])->name('comments.store');
+        Route::get('/comments/{pengumuman}', [CommentController::class, 'index'])->name('comments.index');
+        Route::post('/upload', [App\Http\Controllers\FileController::class, 'upload'])->name('upload');
+        Route::get('/workspace/{id}/pengumuman', [PengumumanController::class, 'index'])
+            ->name('workspace.pengumuman');
+    });
 
     Route::get('/workspace/{workspaceId}', [UserWorkspacesController::class, 'show'])->name('workspace.show');
 
     //role workspaces
     Route::get('/api/workspaces/{workspace_id}/members', [UserWorkspacesController::class, 'index'])
-    ->name('api.workspace.members');
+        ->name('api.workspace.members');
 
     // statistik
     Route::get('/statistik', function () {
@@ -233,4 +239,3 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/hak-akses', [UserController::class, 'hakAkses'])->name('hakAkses');
     Route::post('/update-user-roles', [UserController::class, 'updateUserRoles'])->name('user.updateRoles');
 });
-

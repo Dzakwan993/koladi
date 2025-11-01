@@ -20,80 +20,80 @@
             </div>
 
             @php
-    \Carbon\Carbon::setLocale('id');
-@endphp
+                \Carbon\Carbon::setLocale('id');
+            @endphp
 
-<div class="max-w-5xl mx-auto mt-4">
-    <div class="bg-white rounded-2xl shadow-md p-6 h-[500px] overflow-hidden">
-        <div class="space-y-4 h-full overflow-y-auto pr-2">
+            <div class="max-w-5xl mx-auto mt-4">
+                <div class="bg-white rounded-2xl shadow-md p-6 h-[500px] overflow-hidden">
+                    <div class="space-y-4 h-full overflow-y-auto pr-2">
 
-            @forelse($pengumumans as $p)
-                @php
-                    $canAccess = $p->isVisibleTo($user);
-                @endphp
+                        @forelse($pengumumans as $p)
+                            @php
+                                $canAccess = $p->isVisibleTo($user);
+                            @endphp
 
-                <div
-                    @if($canAccess)
-                        onclick="window.location='{{ route('pengumuman.show', $p->id) }}'"
+                            <div
+                                @if ($canAccess) onclick="window.location='{{ route('pengumuman.show', $p->id) }}'"
                         class="cursor-pointer bg-[#e9effd] hover:bg-[#dce6fc] transition-colors rounded-xl shadow-sm p-4 flex justify-between items-start"
                     @else
                         class="bg-[#e9effd] rounded-xl shadow-sm p-4 flex justify-between items-start opacity-70"
-                        title="Private - Anda tidak memiliki akses"
-                    @endif
-                >
-                    <div class="flex items-start space-x-3">
-                        <img src="https://i.pravatar.cc/36" alt="Avatar" class="rounded-full w-10 h-10">
-                        <div>
-                            <p class="font-semibold">{{ $p->creator->full_name ?? 'Unknown' }}</p>
+                        title="Private - Anda tidak memiliki akses" @endif>
+                                <div class="flex items-start space-x-3">
+                                    <img src="https://i.pravatar.cc/36" alt="Avatar" class="rounded-full w-10 h-10">
+                                    <div>
+                                        <p class="font-semibold">{{ $p->creator->full_name ?? 'Unknown' }}</p>
 
-                            <p class="font-medium flex items-center gap-1 text-[#000000]/80">
-                                @if($p->is_private)
-                                    <img src="{{ asset('images/icons/Lock.svg') }}" alt="Lock" class="w-5 h-5">
-                                @endif
+                                        <p class="font-medium flex items-center gap-1 text-[#000000]/80">
+                                            @if ($p->is_private)
+                                                <img src="{{ asset('images/icons/Lock.svg') }}" alt="Lock"
+                                                    class="w-5 h-5">
+                                            @endif
 
-                                @if($canAccess)
-                                    <span class="hover:underline text-black font-semibold font-inter">
-                                        {{ $p->title }}
-                                    </span>
-                                @else
-                                    <span class="font-medium text-gray-500">
-                                        {{ $p->title }}
-                                    </span>
-                                @endif
-                            </p>
+                                            @if ($canAccess)
+                                                <span class="hover:underline text-black font-semibold font-inter">
+                                                    {{ $p->title }}
+                                                </span>
+                                            @else
+                                                <span class="font-medium text-gray-500">
+                                                    {{ $p->title }}
+                                                </span>
+                                            @endif
+                                        </p>
 
-                            <p class="text-sm text-gray-500">{!! $p->description !!}</p>
+                                        <p class="text-sm text-gray-500">{!! $p->description !!}</p>
 
-                            <div class="flex items-center space-x-2 mt-2">
-                                @if($p->due_date)
-                                    <span class="bg-[#6B7280] text-white text-xs font-medium px-2 py-1 flex rounded-md items-center gap-1">
-                                        {{ \Carbon\Carbon::parse($p->due_date)->translatedFormat('d M') }}
+                                        <div class="flex items-center space-x-2 mt-2">
+                                            @if ($p->due_date)
+                                                <span
+                                                    class="bg-[#6B7280] text-white text-xs font-medium px-2 py-1 flex rounded-md items-center gap-1">
+                                                    {{ \Carbon\Carbon::parse($p->due_date)->translatedFormat('d M') }}
+                                                </span>
+                                            @endif
+                                            @if ($p->auto_due)
+                                                <span class="text-xs text-[#102a63]/60 font-medium">
+                                                    Selesai otomatis:
+                                                    {{ \Carbon\Carbon::parse($p->auto_due)->translatedFormat('d M Y') }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col space-y-6 items-center">
+                                    <span class="bg-[#102a63]/10 text-black text-xs px-2 py-1 rounded-md font-medium">
+                                        {{ \Carbon\Carbon::parse($p->created_at)->diffForHumans() }}
                                     </span>
-                                @endif
-                                @if($p->auto_due)
-                                    <span class="text-xs text-[#102a63]/60 font-medium">
-                                        Selesai otomatis: {{ \Carbon\Carbon::parse($p->auto_due)->translatedFormat('d M Y') }}
-                                    </span>
-                                @endif
+                                </div>
                             </div>
-                        </div>
-                    </div>
+                        @empty
+                            <div class="text-center text-gray-500 py-4">
+                                Tidak ada pengumuman
+                            </div>
+                        @endforelse
 
-                    <div class="flex flex-col space-y-6 items-center">
-                        <span class="bg-[#102a63]/10 text-black text-xs px-2 py-1 rounded-md font-medium">
-                            {{ \Carbon\Carbon::parse($p->created_at)->diffForHumans() }}
-                        </span>
                     </div>
                 </div>
-            @empty
-                <div class="text-center text-gray-500 py-4">
-                    Tidak ada pengumuman
-                </div>
-            @endforelse
-
-        </div>
-    </div>
-</div>
+            </div>
 
 
 
@@ -105,7 +105,8 @@
             <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-3xl">
                 <h2 class="text-xl font-bold mb-4 text-[#102a63] border-b pb-2">Buat Pengumuman</h2>
 
-                <form action="{{ route('pengumuman.store') }}" method="POST" class="space-y-5" id="pengumumanForm">
+                <form action="{{ route('pengumuman.store', ['id' => $workspace->id]) }}" method="POST" class="space-y-5"
+                    id="pengumumanForm">
                     @csrf
                     <!-- Judul -->
                     <div>
@@ -542,71 +543,89 @@
                         </script>
 
                         <!-- Penerima -->
-<div class="space-y-2">
-    <label class="block text-sm font-inter font-semibold text-black mb-1 mt-5 text-left">
-        Penerima Pengumuman <span class="text-red-500">*</span>
-    </label>
+                        <div x-data="pengumumanMembers()" class="space-y-2">
+                            <label class="block text-sm font-inter font-semibold text-black mb-1 mt-5 text-left">
+                                Penerima Pengumuman <span class="text-red-500">*</span>
+                            </label>
 
-    <div class="flex items-center">
-        <!-- Avatar list -->
-        <div class="flex -space-x-2" id="selectedMembersAvatars"></div>
+                            <div class="flex items-center">
+                                <!-- Avatar list -->
+                                <div class="flex -space-x-2" id="selectedMembersAvatars">
+                                    <template x-for="member in selectedMembers" :key="member.id">
+                                        <img :src="member.avatar" :title="member.name"
+                                            class="w-9 h-9 rounded-full border-2 border-white shadow-sm">
+                                    </template>
+                                </div>
 
-        <!-- Add button -->
-        <button type="button" id="btnPilihMember"
-            class="flex items-center justify-center w-9 h-9 rounded-full bg-blue-100 text-blue-600 text-lg font-semibold border border-blue-200 hover:bg-blue-200 hover:text-blue-700 transition active:scale-95">
-            +
-        </button>
+                                <!-- Add button -->
+                                <button type="button" @click="openMemberModal"
+                                    class="flex items-center justify-center w-9 h-9 rounded-full bg-blue-100 text-blue-600 text-lg font-semibold border border-blue-200 hover:bg-blue-200 hover:text-blue-700 transition active:scale-95">
+                                    +
+                                </button>
 
-        <span class="ml-2 text-sm text-gray-500">Tambah atau ubah penerima</span>
-    </div>
-</div>
+                                <span class="ml-2 text-sm text-gray-500">Tambah atau ubah penerima</span>
+                            </div>
+
+                            <!-- Hidden input untuk dikirim ke backend -->
+                            <input type="hidden" name="recipients[]" :value="selectedMembers.map(m => m.id)">
+
+                            <!-- Modal Pilih Member -->
+                            <div x-show="showManageMembersModal"
+                                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                                x-transition>
+                                <div class="bg-white rounded-xl shadow-lg w-full max-w-md flex flex-col" @click.stop>
+                                    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                                        <h2 class="text-lg font-semibold text-gray-900">Pilih Penerima</h2>
+                                        <button @click="closeModal"
+                                            class="text-gray-400 hover:text-gray-600 text-2xl leading-none">&times;</button>
+                                    </div>
+
+                                    <div class="p-4 border-b border-gray-200">
+                                        <input type="text" x-model="search" placeholder="Cari anggota..."
+                                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500">
+                                    </div>
+
+                                    <div class="flex-1 overflow-y-auto p-4 space-y-2 max-h-[60vh]">
+                                        <template x-for="member in filteredMembers" :key="member.id">
+                                            <label
+                                                class="flex items-center justify-between p-2 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                                <div class="flex items-center gap-3">
+                                                    <img :src="member.avatar || 'https://i.pravatar.cc/36'"
+                                                        class="w-8 h-8 rounded-full">
+                                                    <div>
+                                                        <p class="font-medium text-sm" x-text="member.name"></p>
+                                                        <p class="text-xs text-gray-500" x-text="member.email"></p>
+                                                    </div>
+                                                </div>
+                                                <input type="checkbox" :value="member.id"
+                                                    @change="toggleMember(member)" :checked="isSelected(member.id)"
+                                                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                            </label>
+                                        </template>
+
+                                        <div x-show="filteredMembers.length === 0"
+                                            class="text-center text-sm text-gray-500 py-6">
+                                            Tidak ada anggota ditemukan
+                                        </div>
+                                    </div>
+
+                                    <div
+                                        class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50 rounded-b-xl">
+                                        <button type="button" @click="closeModal"
+                                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                                            Batal
+                                        </button>
+                                        <button type="button" @click="applyMembers"
+                                            class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+                                            Terapkan
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
 
-
-                            <!-- Popup Pilih Member -->
-<div id="popupPilihMember"
-    class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50">
-    <div class="bg-white w-full max-w-md rounded-xl shadow-lg overflow-hidden">
-        <div class="flex justify-between items-center border-b px-5 py-3">
-            <h2 class="text-lg font-semibold text-[#102a63]">Pilih Penerima</h2>
-            <button id="btnCloseMember" class="text-gray-500 hover:text-gray-700 text-xl">&times;</button>
-        </div>
-
-        <!-- Search -->
-        <div class="p-4 relative">
-    <span class="absolute left-6 top-1/2 -translate-y-1/2 text-gray-400">
-        <!-- Heroicon: search -->
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
-            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round"
-                d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" />
-        </svg>
-    </span>
-
-    <input type="text" id="searchMember" placeholder="Cari anggota..."
-        class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
-</div>
-
-
-        <!-- Daftar anggota -->
-        <div class="max-h-64 overflow-y-auto px-5 space-y-2" id="memberList">
-            <!-- Akan diisi lewat JavaScript -->
-        </div>
-
-        <!-- Tombol -->
-        <div class="flex justify-end gap-3 border-t p-4">
-            <button type="button" id="btnBatalMember"
-                class="border border-gray-300 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-100">
-                Batal
-            </button>
-            <button type="button" id="btnSimpanMember"
-                class="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800">
-                Simpan
-            </button>
-        </div>
-    </div>
-</div>
-
+                        {{-- end pilih penerima --}}
 
 
                         <!-- Rahasia -->
@@ -695,100 +714,83 @@
         });
     </script>
 
-  <script>
-document.addEventListener("DOMContentLoaded", async () => {
-    const btnPilihMember = document.getElementById("btnPilihMember");
-    const popupMember = document.getElementById("popupPilihMember");
-    const btnCloseMember = document.getElementById("btnCloseMember");
-    const btnBatalMember = document.getElementById("btnBatalMember");
-    const btnSimpanMember = document.getElementById("btnSimpanMember");
-    const memberList = document.getElementById("memberList");
-    const selectedMembersAvatars = document.getElementById("selectedMembersAvatars");
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('pengumumanMembers', () => ({
+                showManageMembersModal: false,
+                members: [],
+                selectedMembers: [],
+                search: '',
 
-    let members = [];
-    let selectedMembers = [];
+                async init() {
+                    await this.loadMembers();
+                },
 
-    // 🔹 Ambil data anggota dari backend
-    try {
-        const res = await fetch("{{ route('pengumuman.anggota') }}");
-        members = await res.json();
-    } catch (e) {
-        console.error("Gagal memuat anggota:", e);
-    }
+                async loadMembers() {
+                    try {
+                        const urlPath = window.location.pathname;
+                        const workspaceId = urlPath.split('/')[
+                        2]; // Pastikan sesuai struktur URL kamu
 
-    // Tampilkan popup
-    btnPilihMember.addEventListener("click", () => {
-        popupMember.classList.remove("hidden");
-        popupMember.classList.add("flex");
-        renderMembers();
-    });
+                        const res = await fetch(`/pengumuman/anggota/${workspaceId}`);
+                        if (!res.ok) throw new Error('Gagal mengambil data anggota');
 
-    // Tutup popup
-    [btnCloseMember, btnBatalMember].forEach(btn => {
-        btn.addEventListener("click", () => {
-            popupMember.classList.add("hidden");
-            popupMember.classList.remove("flex");
+                        this.members = await res.json();
+                        console.log('Data anggota:', this.members);
+                    } catch (err) {
+                        console.error('Gagal memuat anggota:', err);
+                        this.members = [];
+                    }
+                },
+
+                openMemberModal() {
+                    this.showManageMembersModal = true;
+                },
+
+                closeModal() {
+                    this.showManageMembersModal = false;
+                },
+
+                toggleMember(member) {
+                    const idx = this.selectedMembers.findIndex(m => m.id === member.id);
+                    if (idx === -1) {
+                        this.selectedMembers.push(member);
+                    } else {
+                        this.selectedMembers.splice(idx, 1);
+                    }
+                },
+
+                isSelected(id) {
+                    return this.selectedMembers.some(m => m.id === id);
+                },
+
+                get filteredMembers() {
+                    if (!this.search) return this.members;
+                    const term = this.search.toLowerCase();
+                    return this.members.filter(m =>
+                        m.name.toLowerCase().includes(term) ||
+                        m.email.toLowerCase().includes(term)
+                    );
+                },
+
+                applyMembers() {
+                    this.closeModal();
+                }
+            }))
         });
-    });
 
-    // Render daftar anggota
-    function renderMembers() {
-        memberList.innerHTML = "";
-        members.forEach(m => {
-            const isChecked = selectedMembers.includes(m.id) ? "checked" : "";
-            const avatar = m.avatar ? `{{ asset('storage/') }}/${m.avatar}` : "https://i.pravatar.cc/36";
-            memberList.innerHTML += `
-                <label class="flex items-center justify-between p-2 border rounded-lg cursor-pointer hover:bg-gray-50">
-                    <div class="flex items-center gap-3">
-                        <img src="${avatar}" class="w-8 h-8 rounded-full">
-                        <div>
-                            <p class="font-medium text-sm">${m.name}</p>
-                            <p class="text-xs text-gray-500">${m.email}</p>
-                        </div>
-                    </div>
-                    <input type="checkbox" value="${m.id}" ${isChecked}
-                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                </label>
-            `;
-        });
-    }
-
-    // Simpan pilihan anggota
-    btnSimpanMember.addEventListener("click", () => {
-        const checkboxes = memberList.querySelectorAll("input[type='checkbox']");
-        selectedMembers = Array.from(checkboxes)
-            .filter(chk => chk.checked)
-            .map(chk => chk.value);
-
-        // Update tampilan avatar yang dipilih
-        selectedMembersAvatars.innerHTML = "";
-        selectedMembers.forEach(id => {
-            const member = members.find(m => m.id === id);
-            if (member) {
-                const avatar = member.avatar ? `{{ asset('storage/') }}/${member.avatar}` : "https://i.pravatar.cc/36";
-                selectedMembersAvatars.innerHTML += `
-                    <img src="${avatar}" title="${member.name}" class="w-9 h-9 rounded-full border-2 border-white shadow-sm">
-                `;
+        document.addEventListener('DOMContentLoaded', function() {
+            const pilihBtn = document.getElementById('btnPilihMember');
+            if (pilihBtn) {
+                pilihBtn.addEventListener('click', function() {
+                    const modal = document.querySelector('[x-show="showManageMembersModal"]');
+                    if (modal) modal.style.display = 'flex';
+                });
             }
         });
+    </script>
 
-        // Buat input hidden agar bisa dikirim ke backend
-        const form = document.getElementById("pengumumanForm");
-        let input = document.getElementById("selectedMemberIds");
-        if (!input) {
-            input = document.createElement("input");
-            input.type = "hidden";
-            input.name = "recipients[]"; // 🔹 nama yang dikenali backend
-            input.id = "selectedMemberIds";
-            form.appendChild(input);
-        }
-        input.value = selectedMembers.join(",");
 
-        popupMember.classList.add("hidden");
-        popupMember.classList.remove("flex");
-    });
-});
-</script>
 
 
     {{-- pop up penerima pengumuman --}}

@@ -15,6 +15,7 @@ class CommentController extends Controller
      */
     public function store(Request $request)
     {
+
         $request->validate([
             'content' => 'required|string',
             'commentable_id' => 'required|string', // UUID pengumuman

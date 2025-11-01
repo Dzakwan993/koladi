@@ -20,7 +20,7 @@
             </a>
 
             {{-- Card Pengumuman --}}
-            <a href="{{ url('/pengumuman') }}" @click="$store.workspace.selectedMenu = 'pengumuman'"
+            <a href="{{ route('workspace.pengumuman', $workspace->id) }}" @click="$store.workspace.selectedMenu = 'pengumuman'"
                 class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
                 <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
                     <img src="{{ asset('images/icons/workspace_pengumuman.svg') }}" alt="Pengumuman Icon"

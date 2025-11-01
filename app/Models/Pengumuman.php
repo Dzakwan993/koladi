@@ -33,11 +33,11 @@ class Pengumuman extends Model
     }
 
     /**
-     * 🔹 Relasi ke workspace
+     * 🔹 Relasi ke workspace - PERBAIKI INI
      */
     public function workspace()
     {
-        return $this->belongsTo(UserWorkspace::class, 'workspace_id');
+        return $this->belongsTo(Workspace::class, 'workspace_id'); // ✅ Workspace, bukan UserWorkspace
     }
 
     /**
@@ -74,11 +74,8 @@ class Pengumuman extends Model
         return $this->recipients()->where('users.id', $user->id)->exists();
     }
 
-    /**
-     * 🔹 Relasi ke komentar (fitur komentar di pengumuman)
-     */
     public function comments()
     {
-        return $this->morphMany(Comment::class, 'commentable');
+        return $this->morphMany(Comment::class, 'commentable')->latest();
     }
 }
