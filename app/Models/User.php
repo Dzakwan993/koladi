@@ -82,4 +82,14 @@ class User extends Authenticatable
         $userCompany = $this->userCompanies->where('company_id', $companyId)->first();
         return $userCompany && $userCompany->role ? $userCompany->role->name : null;
     }
+
+
+    // Di app/Models/User.php
+    public function workspaces()
+    {
+        return $this->belongsToMany(Workspace::class, 'user_workspaces', 'user_id', 'workspace_id')
+            ->withPivot('roles_id', 'status_active')
+            ->wherePivot('status_active', true)
+            ->withTimestamps();
+    }
 }

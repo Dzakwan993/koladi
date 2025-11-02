@@ -3,16 +3,17 @@
 @section('title', 'Kelola Workspace')
 
 <style>
-        [x-cloak] { 
-            display: none !important; 
-        }
-    </style>
+    [x-cloak] {
+        display: none !important;
+    }
+</style>
 
 @section('content')
     <div class="p-6" x-data="workspaceManager">
 
         <!-- Modal untuk Buat Workspace -->
-        <div x-show="showModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div x-show="showModal" x-cloak
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div class="bg-white rounded-xl shadow-lg w-full max-w-md" @click.outside="showModal = false">
                 <form id="createWorkspaceForm" @submit.prevent="createWorkspace">
                     <div class="p-6">
@@ -128,7 +129,8 @@
         </div>
 
         <!-- Modal Kelola Anggota -->
-        <div x-show="showManageMembersModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        <div x-show="showManageMembersModal" x-cloak
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             @click="showManageMembersModal = false; selectedMembers = []; searchMember = ''">
             <div class="bg-white rounded-xl shadow-lg w-full max-w-md max-h-[90vh] flex flex-col" @click.stop>
                 <!-- Header -->
@@ -198,7 +200,8 @@
         </div>
 
         <!-- Modal Edit Ruang Kerja -->
-        <div x-show="showEditWorkspaceModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        <div x-show="showEditWorkspaceModal" x-cloak
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             @click="showEditWorkspaceModal = false">
             <div class="bg-white rounded-xl shadow-lg w-full max-w-md" @click.stop>
                 <div class="p-6">
@@ -371,7 +374,8 @@
             <div x-show="timOpen" x-collapse>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     @forelse($workspaces['Tim'] ?? [] as $workspace)
-                        <a href="{{ url('/workspace') }}"
+                        <!-- ✅ PERBAIKAN: Link ke workspace spesifik -->
+                        <a href="{{ route('workspace.detail', $workspace->id) }}"
                             class="block bg-white rounded-xl border border-gray-200 p-4 relative group hover:shadow-md transition-shadow duration-200">
                             <div class="flex justify-between items-start">
                                 <h3 class="font-semibold text-gray-800">{{ $workspace->name }}</h3>
@@ -383,7 +387,7 @@
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 12v.01M12 12v.01M19 12v.01
-                                    M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                        M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                                     </svg>
                                 </button>
                             </div>
@@ -446,7 +450,8 @@
             <div x-show="proyekOpen" x-collapse>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     @forelse($workspaces['Proyek'] ?? [] as $workspace)
-                        <a href="{{ url('/workspace') }}"
+                        <!-- ✅ PERBAIKAN: Link ke workspace spesifik -->
+                        <a href="{{ route('workspace.detail', $workspace->id) }}"
                             class="block bg-white rounded-xl border border-gray-200 p-4 relative group hover:shadow-md transition-shadow duration-200">
                             <div class="flex justify-between items-start">
                                 <h3 class="font-semibold text-gray-800">{{ $workspace->name }}</h3>
@@ -491,11 +496,11 @@
                     @endforelse
                 </div>
             </div>
-
         </div>
 
         <!-- Modal Atur Hak Akses -->
-        <div x-show="showAccessRightsModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        <div x-show="showAccessRightsModal" x-cloak
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             @click="showAccessRightsModal = false">
             <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-hidden" @click.stop>
                 <!-- Header -->
@@ -628,7 +633,8 @@
 
 
         <!-- Modal Atur Role -->
-        <div x-show="showRoleModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        <div x-show="showRoleModal" x-cloak
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             @click="showRoleModal = false">
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl" @click.stop>
                 <!-- Header -->
@@ -972,7 +978,8 @@
                             user_ids: this.selectedMembers,
                             role_id: this.getDefaultRoleId()
                         };
-                        console.log('Saving members payload:', payload, 'workspaceId:', workspaceId);
+                        console.log('Saving members payload:', payload, 'workspaceId:',
+                            workspaceId);
 
                         const response = await fetch(`/workspace/${workspaceId}/members`, {
                             method: 'POST',
@@ -992,7 +999,8 @@
                             console.warn('Response is not JSON:', rawText);
                         }
 
-                        console.log('Response status:', response.status, 'parsed:', result, 'raw:', rawText);
+                        console.log('Response status:', response.status, 'parsed:', result, 'raw:',
+                            rawText);
 
                         if (response.ok) {
                             // sukses
@@ -1000,21 +1008,30 @@
                             this.selectedMembers = [];
                             this.searchMember = '';
                             location.reload();
-                            return { success: true, message: result?.message || 'Berhasil' };
+                            return {
+                                success: true,
+                                message: result?.message || 'Berhasil'
+                            };
                         } else {
                             // ambil pesan error yang paling bermakna
-                            const serverMsg = result?.message
-                                || (result?.errors ? JSON.stringify(result.errors) : null)
-                                || rawText
-                                || response.statusText;
+                            const serverMsg = result?.message ||
+                                (result?.errors ? JSON.stringify(result.errors) : null) ||
+                                rawText ||
+                                response.statusText;
                             console.error('Failed saving members:', response.status, serverMsg);
                             alert('Gagal menyimpan anggota: ' + serverMsg);
-                            return { success: false, message: serverMsg };
+                            return {
+                                success: false,
+                                message: serverMsg
+                            };
                         }
                     } catch (error) {
                         console.error('saveMembers exception:', error);
                         alert('Gagal menyimpan anggota: ' + (error.message || error));
-                        return { success: false, message: error.message || String(error) };
+                        return {
+                            success: false,
+                            message: error.message || String(error)
+                        };
                     } finally {
                         this.isSubmitting = false;
                     }
@@ -1059,7 +1076,7 @@
 
                 toggleMember(memberId) {
                     console.log('Toggling member:', memberId, 'Current selected:', this
-                    .selectedMembers);
+                        .selectedMembers);
                     const index = this.selectedMembers.indexOf(memberId);
                     if (index === -1) {
                         this.selectedMembers.push(memberId);

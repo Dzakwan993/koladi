@@ -17,30 +17,30 @@ class WorkspaceController extends Controller
 {
     // Menampilkan halaman kelola workspace
 
-public function index()
-{
-    $user = Auth::user();
-    $activeCompany = session('active_company_id')
-        ? Company::find(session('active_company_id'))
-        : $user->companies->first();
+    public function index()
+    {
+        $user = Auth::user();
+        $activeCompany = session('active_company_id')
+            ? Company::find(session('active_company_id'))
+            : $user->companies->first();
 
-    if (!$activeCompany) {
-        return redirect()->route('buat-perusahaan.create')
-            ->with('error', 'Silakan buat perusahaan terlebih dahulu.');
+        if (!$activeCompany) {
+            return redirect()->route('buat-perusahaan.create')
+                ->with('error', 'Silakan buat perusahaan terlebih dahulu.');
+        }
+
+        // Get workspaces grouped by type
+        $workspaces = Workspace::with(['creator', 'userWorkspaces.user'])
+            ->where('company_id', $activeCompany->id)
+            ->active()
+            ->get()
+            ->groupBy('type');
+
+        return view('kelola-workspace', [
+            'workspaces' => $workspaces,
+            'activeCompany' => $activeCompany
+        ]);
     }
-
-    // Get workspaces grouped by type
-    $workspaces = Workspace::with(['creator', 'userWorkspaces.user'])
-        ->where('company_id', $activeCompany->id)
-        ->active()
-        ->get()
-        ->groupBy('type');
-
-    return view('kelola-workspace', [
-        'workspaces' => $workspaces,
-        'activeCompany' => $activeCompany
-    ]);
-}
 
     // Menyimpan workspace baru
     public function store(Request $request)
@@ -68,29 +68,7 @@ public function index()
                 'created_by' => Auth::id()
             ]);
 
-            // Cari role SuperAdmin, jika tidak ada gunakan role pertama atau buat baru
-            $superAdminRole = Role::where('name', 'SuperAdmin')->first();
-
-            if (!$superAdminRole) {
-                // Jika SuperAdmin tidak ada, cari role apapun yang tersedia
-                $superAdminRole = Role::first();
-
-                // Jika masih tidak ada role, buat role default
-                if (!$superAdminRole) {
-                    $superAdminRole = Role::create([
-                        'id' => Str::uuid()->toString(),
-                        'name' => 'SuperAdmin'
-                    ]);
-                }
-            }
-
-            // Tambahkan creator sebagai anggota workspace
-            UserWorkspace::create([
-                'user_id' => Auth::id(),
-                'workspace_id' => $workspace->id,
-                'roles_id' => $superAdminRole->id,
-                'status_active' => true
-            ]);
+            // ✅ DEFAULT COLUMNS AKAN OTOMATIS TERBUAT dari event di model
 
             DB::commit();
 
@@ -101,10 +79,9 @@ public function index()
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Workspace creation error: ' . $e->getMessage()); // <- Ganti \Log menjadi Log
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat workspace: ' . $e->getMessage()
+                'message' => 'Gagal membuat workspace'
             ], 500);
         }
     }
@@ -211,31 +188,32 @@ public function index()
     }
 
     // Get anggota workspace
-// Get anggota workspace
-public function getMembers($workspaceId)
-{
-    $workspace = Workspace::with(['userWorkspaces.user', 'userWorkspaces.role'])->findOrFail($workspaceId);
+    // Get anggota workspace
+    public function getMembers($workspaceId)
+    {
+        $workspace = Workspace::with(['userWorkspaces.user', 'userWorkspaces.role'])->findOrFail($workspaceId);
 
-    // Cek apakah user memiliki akses ke workspace ini
-    if (!$this->checkWorkspaceAccess($workspace)) {
-        return response()->json(['error' => 'Anda tidak memiliki akses ke workspace ini'], 403);
+        // Cek apakah user memiliki akses ke workspace ini
+        if (!$this->checkWorkspaceAccess($workspace)) {
+            return response()->json(['error' => 'Anda tidak memiliki akses ke workspace ini'], 403);
+        }
+
+        $members = $workspace->userWorkspaces->map(function ($userWorkspace) {
+            return [
+                'id' => $userWorkspace->user->id,
+                'name' => $userWorkspace->user->full_name,
+                'email' => $userWorkspace->user->email,
+                'role' => $userWorkspace->role->name,
+                'avatar' => 'https://i.pravatar.cc/32?img=' . (rand(1, 70))
+            ];
+        });
+
+        return response()->json($members);
     }
 
-    $members = $workspace->userWorkspaces->map(function ($userWorkspace) {
-        return [
-            'id' => $userWorkspace->user->id,
-            'name' => $userWorkspace->user->full_name,
-            'email' => $userWorkspace->user->email,
-            'role' => $userWorkspace->role->name,
-            'avatar' => 'https://i.pravatar.cc/32?img=' . (rand(1, 70))
-        ];
-    });
-
-    return response()->json($members);
-}
-
     // Get users yang available untuk di-add ke workspace
     // Get users yang available untuk di-add ke workspace
+    // Di WorkspaceController - method getAvailableUsers()
 public function getAvailableUsers()
 {
     try {
@@ -246,9 +224,10 @@ public function getAvailableUsers()
             return response()->json(['error' => 'No active company'], 400);
         }
 
-        // Ambil users dari company yang aktif
+        // ✅ FILTER: Ambil users hanya dari company yang aktif
         $companyUsers = User::whereHas('userCompanies', function ($query) use ($activeCompanyId) {
-            $query->where('company_id', $activeCompanyId);
+            $query->where('company_id', $activeCompanyId)
+                  ->where('status_active', true); // hanya yang aktif
         })->get();
 
         $users = $companyUsers->map(function ($user) {
@@ -295,4 +274,30 @@ public function getAvailableUsers()
         $roleName = optional($userWorkspace->role)->name;
         return in_array($roleName, ['SuperAdmin', 'Admin']);
     }
+
+
+
+
+    // Di WorkspaceController.php
+public function show(Workspace $workspace)
+{
+    $user = Auth::user();
+    
+    // Validasi akses user ke workspace
+    $userWorkspace = UserWorkspace::where('user_id', $user->id)
+        ->where('workspace_id', $workspace->id)
+        ->first();
+
+    if (!$userWorkspace) {
+        abort(403, 'Anda tidak memiliki akses ke workspace ini');
+    }
+
+    // Simpan workspace yang dipilih di session
+    session([
+        'current_workspace_id' => $workspace->id,
+        'current_workspace_name' => $workspace->name
+    ]);
+
+    return view('workspace', compact('workspace'));
+}
 }
