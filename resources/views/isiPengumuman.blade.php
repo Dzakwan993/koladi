@@ -25,7 +25,7 @@
                     <div class="bg-[#e9effd] rounded-xl p-5 mb-6 shadow-md">
                         <div class="flex items-start justify-between mb-4">
                             <div class="flex items-start gap-3">
-                                <img src="{{ Auth::user()->avatar_url }}" alt="Avatar" class="rounded-full w-12 h-12">
+                                <img src="{{ Auth::user()->avatar_url }}" alt="Avatar" class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
                                 <div>
                                     <h1 class="text-xl font-semibold text-black mb-1">
                                         {{ $pengumuman->title }}
@@ -95,7 +95,7 @@
 
                         <!-- Input Komentar Utama (placeholder -> CKEditor) -->
                         <div class="flex items-start gap-3 mb-6">
-                            <img src="{{ Auth::user()->avatar_url }}" alt="Avatar" class="rounded-full w-10 h-10">
+                            <img src="{{ Auth::user()->avatar_url }}" alt="Avatar" class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
 
                             <!-- gunakan x-data lokal hanya untuk toggle active -->
                             <div class="flex-1" x-data="{ active: false }" x-cloak>
@@ -131,7 +131,7 @@
                                 <template x-for="comment in comments" :key="comment.id">
                                     <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                         <div class="flex items-start gap-3">
-                                            <img :src="comment.author.avatar" alt="" class="w-8 h-8 rounded-full">
+                                            <img :src="comment.author.avatar" alt="" class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
                                             <div class="flex-1">
                                                 <div class="flex justify-between items-center">
                                                     <p class="text-sm font-semibold text-gray-800"
@@ -187,7 +187,7 @@
                                                             <div class="bg-white rounded-lg p-3 border border-gray-200">
                                                                 <div class="flex items-start gap-2">
                                                                     <img :src="reply.author.avatar"
-                                                                        class="w-6 h-6 rounded-full">
+                                                                        class="rounded-full w-6 h-6 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
                                                                     <div>
                                                                         <div class="flex items-center gap-2">
                                                                             <p class="text-sm font-semibold text-gray-800"

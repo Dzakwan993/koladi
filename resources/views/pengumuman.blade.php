@@ -6,6 +6,7 @@
     <!-- Tambahkan font Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+
     <div class="bg-[#e9effd] min-h-screen font-[Inter,sans-serif] text-black relative">
         @include('components.workspace-nav')
 
@@ -14,7 +15,7 @@
             <div class="flex justify-start mb-1">
                 <button id="btnPopup"
                     class="bg-blue-700 text-white px-3 py-2 rounded-lg font-semibold hover:opacity-90 transition flex items-center gap-2">
-                    <img src="images/icons/plusWhite.svg" alt="Plus" class="w-7 h-7">
+                    <img src="/images/icons/plusWhite.svg" alt="Plus" class="w-7 h-7">
                     Buat Pengumuman
                 </button>
             </div>
@@ -22,6 +23,7 @@
             @php
                 \Carbon\Carbon::setLocale('id');
             @endphp
+
 
             <div class="max-w-5xl mx-auto mt-4">
                 <div class="bg-white rounded-2xl shadow-md p-6 h-[500px] overflow-hidden">
@@ -31,6 +33,20 @@
                             @php
                                 $canAccess = $p->isVisibleTo($user);
                             @endphp
+                            @php
+                                $creator = $p->creator;
+                                $avatarPath = $creator->avatar ? 'storage/' . $creator->avatar : null;
+                                $hasAvatarFile = $avatarPath && file_exists(public_path($avatarPath));
+
+                                // Tentukan URL akhir avatar
+                                $avatarUrl = $hasAvatarFile
+                                    ? asset($avatarPath)
+                                    : ($creator->full_name
+                                        ? 'https://ui-avatars.com/api/?name=' .
+                                            urlencode($creator->full_name) .
+                                            '&background=random&color=fff'
+                                        : asset('images/dk.jpg'));
+                            @endphp
 
                             <div
                                 @if ($canAccess) onclick="window.location='{{ route('pengumuman.show', $p->id) }}'"
@@ -39,9 +55,10 @@
                         class="bg-[#e9effd] rounded-xl shadow-sm p-4 flex justify-between items-start opacity-70"
                         title="Private - Anda tidak memiliki akses" @endif>
                                 <div class="flex items-start space-x-3">
-                                    <img src="https://i.pravatar.cc/36" alt="Avatar" class="rounded-full w-10 h-10">
+                                    <img src="{{ $avatarUrl }}" alt="Avatar"
+                                        class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
                                     <div>
-                                        <p class="font-semibold">{{ $p->creator->full_name ?? 'Unknown' }}</p>
+                                        <p class="font-semibold ">{{ $p->creator->full_name ?? 'Unknown' }}</p>
 
                                         <p class="font-medium flex items-center gap-1 text-[#000000]/80">
                                             @if ($p->is_private)
@@ -343,7 +360,7 @@
                                         Selesai otomatis
                                     </div>
                                     <button type="button" class="px-2 text-gray-500 hover:text-gray-700 dropdown-btn-1">
-                                        <img src="images/icons/down.svg" alt="down">
+                                        <img src="/images/icons/down.svg" alt="down">
                                     </button>
                                 </div>
 
@@ -358,7 +375,7 @@
                                         1 hari dari sekarang
                                     </div>
                                     <button type="button" class="px-2 text-gray-500 hover:text-gray-700 dropdown-btn-2">
-                                        <img src="images/icons/down.svg" alt="down">
+                                        <img src="/images/icons/down.svg" alt="down">
                                     </button>
                                 </div>
 
@@ -730,7 +747,7 @@
                     try {
                         const urlPath = window.location.pathname;
                         const workspaceId = urlPath.split('/')[
-                        2]; // Pastikan sesuai struktur URL kamu
+                            2]; // Pastikan sesuai struktur URL kamu
 
                         const res = await fetch(`/pengumuman/anggota/${workspaceId}`);
                         if (!res.ok) throw new Error('Gagal mengambil data anggota');
