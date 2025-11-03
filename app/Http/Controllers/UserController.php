@@ -13,6 +13,7 @@ class UserController extends Controller
 {
     public function hakAkses()
     {
+        \Log::info('hakAkses method dipanggil'); // ← Tambah ini
         $activeCompanyId = session('active_company_id');
         
         // Ambil company dengan relasi users dan role mereka
@@ -47,12 +48,7 @@ class UserController extends Controller
             $availableRoles = collect(); // kosong kalau bukan Super Admin/Admin
         }
 
-        dd([
-            'currentUserRole' => $currentUserRole,
-            'currentUserRoleObj' => $currentUserRoleObj,
-            'availableRoles' => $availableRoles,
-            'canManageRoles' => $canManageRoles
-        ]);
+       
 
         return view('components.atur-hak', compact('activeCompany', 'users', 'roles', 'canManageRoles', 'availableRoles', 'currentUserRole'));
     }
