@@ -1,6 +1,11 @@
 <!-- Modal Overlay - Atur Role -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+<script>
+    window.availableRolesForWorkspace = @json($roles);
+    window.currentUserRole = '{{ $currentUserRole ?? "Member" }}'; // ✅ Tambahkan ini
+</script>
+
 <div id="roleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] hidden font-[Inter,sans-serif]" onclick="closeRoleModalOverlay(event)">
     <!-- Modal Container -->
     <div class="bg-white rounded-xl sm:rounded-2xl shadow-2xl w-full max-w-[95%] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-4 relative max-h-[90vh] overflow-hidden flex flex-col" onclick="event.stopPropagation()">
@@ -26,8 +31,9 @@
         @if($canManageRoles ?? false)
             <!-- Scrollable Content Area with Blue Background -->
             <div class="px-4 sm:px-6 pb-4 sm:pb-6 flex-1 overflow-hidden flex">
-                <div class="bg-[#BBCFF9] rounded-lg sm:rounded-xl p-3 sm:p-4 flex-1 overflow-y-auto always-scrollbar space-y-2 sm:space-y-3">
-
+                <div class="bg-[#BBCFF9] rounded-lg sm:rounded-xl p-3 sm:p-4 flex-1 overflow-y-auto always-scrollbar space-y-2 sm:space-y-3 ">
+                    <div id="roleListContainer" class="space-y-2 sm:space-y-3"></div>
+                <div data-company-role-list class="space-y-2 sm:space-y-3">
                     @forelse($usersInCompany as $user)
                     @php
                         // Ambil nama role dari current_role yang sudah di-attach
@@ -46,7 +52,7 @@
                     @endphp
 
                         <!-- User Item -->
-                        <div class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 shadow-sm">
+                        <div class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 shadow-sm ">
                             <div class="flex items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
                                 <!-- Avatar -->
                                 <img src="https://ui-avatars.com/api/?name={{ urlencode($user->full_name) }}&background=random" 
@@ -83,7 +89,7 @@
                                     </button>
                                     
                                    <!-- Dropdown Menu -->
-                                    <div class="dropdown-menu fixed mt-2 w-36 sm:w-40 bg-white border border-gray-200 rounded-lg shadow-xl hidden z-[9999]">
+                                   <div class="dropdown-menu fixed mt-2 w-36 sm:w-40 bg-white border border-gray-200 rounded-lg shadow-xl hidden z-[9999]">
                                         @foreach($availableRoles as $index => $role)
                                             <button onclick="selectRole(this, '{{ $role->id }}')" 
                                                     class="block w-full text-left px-3 sm:px-4 py-2 text-sm sm:text-base hover:bg-blue-50 
@@ -104,6 +110,7 @@
                             Belum ada user di perusahaan ini
                         </div>
                     @endforelse
+                </div>
 
                 </div>
             </div>
@@ -145,9 +152,124 @@ function closeRoleModal() {
     document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
 }
 
-function openRoleModal() {
-    document.getElementById('roleModal').classList.remove('hidden');
+window.openRoleModal = function() {
+    const ctx = window.roleContext || { type: 'company' };
+    const modal = document.getElementById('roleModal');
+    modal.classList.remove('hidden');
+
+    const listContainer = document.getElementById('roleListContainer');
+    const companyLists = document.querySelectorAll('[data-company-role-list]');
+
+    // ✅ Log untuk debugging
+    console.log('Opening role modal with context:', ctx);
+
+    // ✅ Reset state - SELALU tampilkan company list dan kosongkan workspace list
+    companyLists.forEach(el => {
+        el.style.display = 'block';
+    });
+    
+    if (listContainer) {
+        listContainer.innerHTML = '';
+    }
+
+    // ✅ Jika context adalah company, stop di sini
+    if (ctx.type === 'company' || !ctx.workspaceId) {
+        console.log('Company mode - showing company list');
+        return;
+    }
+
+    // ✅ WORKSPACE MODE: Sembunyikan list company, fetch workspace members
+    console.log('Workspace mode - loading workspace members');
+    companyLists.forEach(el => {
+        el.style.display = 'none';
+    });
+
+    if (!listContainer) return;
+
+    // Fetch dan render workspace members
+    fetch(`/workspace/${ctx.workspaceId}/members`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(members => {
+        console.log('Workspace members loaded:', members);
+        listContainer.innerHTML = '';
+
+        // ✅ FILTER: Hanya Manager dan Member untuk workspace
+        const workspaceRoles = window.availableRolesForWorkspace?.filter(r => 
+            r.name === 'Manager' || r.name === 'Member'
+        ) || [];
+
+        members.forEach(m => {
+            const roleName = m.role || 'Member';
+            const colorMap = {
+                'SuperAdmin': '#102A63',
+                'Super Admin': '#102A63',
+                'Manager': '#0FA875',
+                'Admin': '#225AD6',
+                'Member': '#E4BA13'
+            };
+            const roleColor = colorMap[roleName] || '#E4BA13';
+            const isSuperAdmin = roleName === 'SuperAdmin' || roleName === 'Super Admin';
+
+            const item = document.createElement('div');
+            item.className = 'bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 shadow-sm';
+
+            item.innerHTML = `
+                <div class="flex items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
+                    <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=random"
+                         class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex-shrink-0">
+
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 min-w-0 flex-1">
+                        <span class="font-semibold text-base sm:text-lg text-[#0F172A] truncate">${m.name}</span>
+                        <span class="text-white text-xs font-semibold px-2 sm:px-3 py-0.5 rounded-bl-2xl rounded-tr-2xl whitespace-nowrap"
+                            style="background-color:${roleColor}">
+                            ${roleName}
+                        </span>
+                    </div>
+                </div>
+
+                ${
+                    isSuperAdmin
+                    ? `<div class="border-2 border-blue-600 text-blue-600 rounded-lg font-semibold w-full sm:w-36 md:w-40 h-10 sm:h-11 flex items-center justify-center text-sm sm:text-base">Super Admin</div>`
+                    : `<div class="relative w-full sm:w-36 md:w-40">
+                        <button onclick="toggleDropdown(this)"
+                                class="border-2 border-blue-600 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition w-full h-10 sm:h-11 flex items-center justify-center relative text-sm sm:text-base"
+                                data-user-id="${m.id}">
+
+                            <span class="role-text absolute left-1/2 -translate-x-1/2">${roleName}</span>
+                            <svg class="w-4 h-4 absolute right-3 sm:right-4 text-blue-600"
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+
+                        <div class="dropdown-menu fixed mt-2 w-36 sm:w-40 bg-white border border-gray-200 rounded-lg shadow-xl hidden z-[9999]">
+                            ${
+                                workspaceRoles.map((r, idx) => `
+                                <button onclick="selectRole(this, '${r.id}')"
+                                            class="block w-full text-left px-3 sm:px-4 py-2 text-sm sm:text-base hover:bg-blue-50 font-medium">
+                                        ${r.name}
+                                    </button>
+                                `).join('') || ''
+                            }
+                        </div>
+                    </div>`
+                }
+            `;
+
+            listContainer.appendChild(item);
+        });
+    })
+    .catch(err => {
+        console.error('Error loading workspace members:', err);
+    });
 }
+
+
+
+   
 
 function closeRoleModalOverlay(event) {
     if (event.target.id === 'roleModal') closeRoleModal();
@@ -186,38 +308,32 @@ function selectRole(option, roleId) {
 
 // Fungsi simpan perubahan ke database
 function saveRoleChanges() {
-    if (Object.keys(roleChanges).length === 0) {
-        alert('Tidak ada perubahan role');
-        closeRoleModal();
-        return;
-    }
+  if (Object.keys(roleChanges).length === 0) { alert('Tidak ada perubahan role'); closeRoleModal(); return; }
 
-    // Kirim data ke server via fetch
-    fetch('/update-user-roles', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({
-            changes: roleChanges,
-            company_id: '{{ $activeCompany->id ?? "" }}'
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Role berhasil diperbarui!');
-            roleChanges = {}; // Reset
-            location.reload(); // Reload halaman
-        } else {
-            alert('Gagal memperbarui role: ' + (data.message || 'Unknown error'));
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Terjadi kesalahan saat menyimpan');
-    });
+  const ctx = window.roleContext || { type: 'company' };
+  const payload = { changes: roleChanges };
+
+  let url = '/update-user-roles';
+  if (ctx.type === 'company') {
+    payload.company_id = '{{ $activeCompany->id ?? "" }}';
+  } else if (ctx.type === 'workspace' && ctx.workspaceId) {
+    url = `/workspace/${ctx.workspaceId}/update-user-roles`;
+  }
+
+  fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+    },
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) { alert('Role berhasil diperbarui!'); roleChanges = {}; location.reload(); }
+    else { alert('Gagal memperbarui role: ' + (data.message || 'Unknown error')); }
+  })
+  .catch(err => { console.error(err); alert('Terjadi kesalahan saat menyimpan'); });
 }
 
 // Event listeners
@@ -239,6 +355,34 @@ document.querySelector('.always-scrollbar')?.addEventListener('scroll', function
         }
     });
 });
+
+// ✅ Buat fungsi untuk set context
+window.setRoleContext = function(ctx) {
+    window.roleContext = ctx || { type: 'company' };
+    console.log('Role context set to:', window.roleContext);
+}
+
+function openAccessModal(ctx) {
+    // ✅ Set context sebelum membuka modal
+    window.setRoleContext(ctx);
+    
+    const modal = document.getElementById('accessModal');
+    modal.classList.remove('hidden');
+}
+
+function closeAccessModal() {
+    const modal = document.getElementById('accessModal');
+    modal.classList.add('hidden');
+}
+
+// Tambahkan event listener biar klik luar modal menutup
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('accessModal');
+    if (modal && !modal.classList.contains('hidden') && event.target === modal) {
+        closeAccessModal();
+    }
+});
+
 </script>
 
 <!-- STYLE -->

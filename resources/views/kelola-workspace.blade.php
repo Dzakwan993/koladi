@@ -89,7 +89,8 @@
                 </button>
 
                 <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                    @click="showAccessRightsModal = true; showWorkspaceMenu = false">
+                    @click="showWorkspaceMenu = false;
+                    window.openAccessModal({ type: 'workspace', workspaceId: activeWorkspace?.id });">
                     <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -645,107 +646,6 @@
 
                 <!-- User List -->
                 <div class="px-6 py-4 space-y-3 max-h-[50vh] overflow-y-auto bg-blue-50">
-                    <!-- User 1 - Super Admin (tanpa dropdown) -->
-                    <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <div
-                                class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-lg">
-                                <img src="https://i.pravatar.cc/150?img=5" alt="Member" class="w-12 h-12 rounded-full">
-
-                            </div>
-                            <div>
-                                <p class="font-semibold text-gray-900">Muhammad Dzakwan</p>
-                                <span
-                                    class="inline-block px-3 py-0.5 text-xs font-medium text-white bg-blue-600 rounded-md mt-1">Super
-                                    Admin</span>
-                            </div>
-                        </div>
-                        <button
-                            class="px-4 py-1.5 text-sm font-medium text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-blue-50">
-                            Super Admin
-                        </button>
-                    </div>
-
-                    <!-- User 2 - Manager (dengan dropdown) -->
-                    <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <img src="https://i.pravatar.cc/150?img=11" alt="Manager" class="w-12 h-12 rounded-full">
-                            <div>
-                                <p class="font-semibold text-gray-900">Sarah Johnson</p>
-                                <span
-                                    class="inline-block px-3 py-0.5 text-xs font-medium text-white bg-teal-500 rounded-md mt-1">Manager</span>
-                            </div>
-                        </div>
-                        <div class="relative">
-                            <select
-                                class="appearance-none bg-white border border-blue-600 text-blue-600 rounded-lg px-4 py-1.5 pr-10 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                <option value="admin" selected>Admin</option>
-                                <option value="manager">Manager</option>
-                                <option value="member">Member</option>
-                            </select>
-                            <div
-                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-600">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7"></path>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- User 3 - Admin (dengan dropdown) -->
-                    <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <img src="https://i.pravatar.cc/150?img=32" alt="Admin" class="w-12 h-12 rounded-full">
-                            <div>
-                                <p class="font-semibold text-gray-900">David Chen</p>
-                                <span
-                                    class="inline-block px-3 py-0.5 text-xs font-medium text-white bg-blue-500 rounded-md mt-1">Admin</span>
-                            </div>
-                        </div>
-                        <div class="relative">
-                            <select
-                                class="appearance-none bg-white border border-blue-600 text-blue-600 rounded-lg px-4 py-1.5 pr-10 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                <option value="admin">Admin</option>
-                                <option value="manager" selected>Manager</option>
-                                <option value="member">Member</option>
-                            </select>
-                            <div
-                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-600">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7"></path>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- User 4 - Member (dengan dropdown) -->
-                    <div class="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm">
-                        <div class="flex items-center gap-3">
-                            <img src="https://i.pravatar.cc/150?img=5" alt="Member" class="w-12 h-12 rounded-full">
-                            <div>
-                                <p class="font-semibold text-gray-900">Maria Garcia</p>
-                                <span
-                                    class="inline-block px-3 py-0.5 text-xs font-medium text-white bg-yellow-500 rounded-md mt-1">Member</span>
-                            </div>
-                        </div>
-                        <div class="relative">
-                            <select
-                                class="appearance-none bg-white border border-blue-600 text-blue-600 rounded-lg px-4 py-1.5 pr-10 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                <option value="admin">Admin</option>
-                                <option value="manager">Manager</option>
-                                <option value="member" selected>Member</option>
-                            </select>
-                            <div
-                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-600">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7"></path>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Footer -->

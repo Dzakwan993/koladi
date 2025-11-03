@@ -23,14 +23,14 @@
                         </div>
                     </div>
 
-                    <!-- Button Atur akses pengguna -->
-                    <button onclick="openRoleModal();" class="bg-[#225AD6] hover:bg-blue-600 text-white px-3 py-2 sm:py-2.5 text-xs sm:text-sm rounded-lg font-semibold transition flex items-center gap-1.5 sm:gap-2 shadow-lg mt-3 sm:mt-0 sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 w-full sm:w-auto justify-center">
-                        <img src="{{ asset('images/icons/Protect.svg') }}" alt="Plus" class="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
-                        Atur akses pengguna
-                    </button>
+                        <!-- Button Atur akses pengguna -->
+                        <button onclick="openRoleModal();" class="bg-[#225AD6] hover:bg-blue-600 text-white px-3 py-2 sm:py-2.5 text-xs sm:text-sm rounded-lg font-semibold transition flex items-center gap-1.5 sm:gap-2 shadow-lg mt-3 sm:mt-0 sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 w-full sm:w-auto justify-center">
+                            <img src="{{ asset('images/icons/Protect.svg') }}" alt="Plus" class="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
+                            Atur akses pengguna
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
 
         <div class="border-b mx-4 sm:mx-8 md:mx-12 border-[#102A63]"></div>
 
@@ -190,7 +190,8 @@
 </div>
 
 <script>
-function openAccessModal() {
+function openAccessModal(ctx) {
+    if(ctx) window.setRoleContext(ctx);
     const modal = document.getElementById('accessModal');
     modal.classList.remove('hidden');
 }

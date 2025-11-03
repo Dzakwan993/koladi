@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use App\Http\View\Composers\UserRoleComposer;
+use App\Models\Role;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -53,6 +54,10 @@ class AppServiceProvider extends ServiceProvider
                     'avatar' => $avatar, // <--- ini penting
                 ]);
             }
+        });
+
+        view()->composer(['layouts.app', 'components.atur-hak'], function ($view) {
+            $view->with('roles', Role::select('id','name')->get());
         });
     }
 }
