@@ -80,15 +80,33 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/workspace/{workspaceId}/members', [WorkspaceController::class, 'getMembers'])->name('workspace.get-members');
     Route::get('/workspace-available-users', [WorkspaceController::class, 'getAvailableUsers'])->name('workspace.available-users');
 
+    // ✅ Workspace Detail Route
+    Route::get('/workspace/{workspace}', function (Workspace $workspace) {
+        session(['current_workspace_id' => $workspace->id]);
+        session(['current_workspace_name' => $workspace->name]);
+        return view('workspace', compact('workspace'));
+    })->name('workspace.detail');
+
     // ✅ Task & Kanban Routes
     Route::get('/kanban-tugas/{workspace}', [TaskController::class, 'showKanban'])->name('kanban-tugas');
 
     // Task API Routes
     Route::prefix('tasks')->group(function () {
+        // Board Columns
         Route::get('/board-columns/{workspaceId}', [TaskController::class, 'getBoardColumns']);
         Route::post('/board-columns', [TaskController::class, 'createBoardColumn']);
         Route::delete('/board-columns/{columnId}', [TaskController::class, 'deleteBoardColumn']);
         Route::put('/board-columns/positions', [TaskController::class, 'updateColumnPosition']);
+        
+        // ✅ Task Assignment Routes
+        Route::get('/workspace/{workspaceId}/task-members', [TaskController::class, 'getWorkspaceMembers'])->name('workspace.task-members');
+        Route::get('/{taskId}/assignments', [TaskController::class, 'getTaskAssignments'])->name('task.assignments');
+        Route::post('/{taskId}/assignments', [TaskController::class, 'manageTaskAssignments'])->name('task.assignments.manage');
+        Route::post('/create-with-assignments', [TaskController::class, 'storeWithAssignments'])->name('tasks.create.with.assignments');
+        Route::get('/workspace/{workspaceId}/list', [TaskController::class, 'getWorkspaceTasks'])->name('tasks.workspace');
+        
+        // Debug Route
+        Route::get('/debug-columns/{workspaceId}', [TaskController::class, 'debugBoardColumns']);
     });
 
     // ✅ Calendar & Schedule Routes
@@ -183,16 +201,3 @@ Route::middleware(['auth'])->group(function () {
     // ✅ Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 });
-
-
-// Route untuk workspace detail
-Route::get('/workspace/{workspace}', function (Workspace $workspace) {
-    // Simpan workspace yang dipilih di session
-    session(['current_workspace_id' => $workspace->id]);
-    session(['current_workspace_name' => $workspace->name]);
-
-    return view('workspace', compact('workspace'));
-})->name('workspace.detail');
-
-
-Route::get('/debug-columns/{workspaceId}', [TaskController::class, 'debugBoardColumns']);

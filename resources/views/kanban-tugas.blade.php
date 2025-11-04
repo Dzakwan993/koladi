@@ -979,6 +979,7 @@
 
             function kanbanApp() {
                 return {
+
                     // --- Modal state ---
                     openModal: false,
                     openTaskModal: false,
@@ -1000,9 +1001,8 @@
                     // --- Task Form Data ---
                     taskForm: {
                         title: '',
-                        phase: '', // Sekarang string kosong, bukan null/undefined
-
-                        members: [],
+                        phase: '',
+                        members: [], // ✅ Pastikan ini array of objects dengan id
                         secret: false,
                         notes: '',
                         attachments: [],
@@ -1046,6 +1046,9 @@
                     // --- Members ---
                     searchMember: '',
                     selectAll: false,
+                    workspaceMembers: [], // Anggota workspace
+                    assignedMembers: [], // Anggota yang sudah ditugaskan
+                    selectedMemberIds: [], // ID anggota yang dipilih
                     members: [{
                             name: 'Naufal',
                             avatar: 'https://i.pravatar.cc/40?img=1',
@@ -1401,7 +1404,7 @@
 
                     // === METHODS ===
 
-                    // Open task detail modal
+                    // ✅ UPDATE: Open task detail - load assignments
                     openDetail(taskId) {
                         const task = this.tasks.find(t => t.id === taskId);
                         if (!task) return;
@@ -1409,6 +1412,9 @@
                         this.currentTask = JSON.parse(JSON.stringify(task));
                         this.isEditMode = false;
                         this.openTaskDetail = true;
+
+                        // Load task assignments
+                        this.loadTaskAssignments(taskId);
                     },
 
                     // Enable edit mode
@@ -2221,6 +2227,12 @@
 
                         // Juga load tasks jika diperlukan
                         this.loadTasks();
+
+                        this.loadWorkspaceMembers(); // ✅ Load workspace members
+
+                        this.ensureMembersData(); // ✅ Pastikan data konsisten
+
+
                     },
 
                     // ✅ NEW: Method untuk load tasks dari database
@@ -2229,7 +2241,8 @@
                             const workspaceId = this.getCurrentWorkspaceId();
                             if (!workspaceId) return;
 
-                            const response = await fetch(`/tasks/workspace/${workspaceId}`);
+                            // ✅ Gunakan endpoint yang baru
+                            const response = await fetch(`/tasks/workspace/${workspaceId}/list`);
                             const data = await response.json();
 
                             if (data.success) {
@@ -2239,6 +2252,291 @@
                             console.error('Error loading tasks:', error);
                         }
                     },
+
+
+
+                    async loadWorkspaceMembers() {
+                        try {
+                            const workspaceId = this.getCurrentWorkspaceId();
+                            if (!workspaceId) return;
+
+                            // ✅ Gunakan endpoint yang baru
+                            const response = await fetch(`/tasks/workspace/${workspaceId}/task-members`);
+                            const data = await response.json();
+
+                            if (data.success) {
+                                this.workspaceMembers = data.members.map(member => ({
+                                    ...member,
+                                    selected: false
+                                }));
+                            } else {
+                                console.error('Gagal memuat anggota workspace:', data.message);
+                            }
+                        } catch (error) {
+                            console.error('Error loading workspace members:', error);
+                        }
+                    },
+
+                    // ✅ PERBAIKI: Load task assignments dengan sync state yang benar
+async loadTaskAssignments(taskId) {
+    try {
+        const response = await fetch(`/tasks/${taskId}/assignments`);
+        const data = await response.json();
+
+        if (data.success) {
+            this.assignedMembers = data.assigned_members;
+            this.selectedMemberIds = data.assigned_members.map(member => member.id);
+
+            // Update selected state di workspaceMembers dengan benar
+            this.workspaceMembers.forEach(member => {
+                member.selected = this.selectedMemberIds.includes(member.id);
+            });
+            
+            // Update selectAll state
+            this.selectAll = this.selectedMemberIds.length === this.workspaceMembers.length;
+            
+            console.log('Loaded assignments:', this.assignedMembers);
+            console.log('Selected IDs:', this.selectedMemberIds);
+        }
+    } catch (error) {
+        console.error('Error loading task assignments:', error);
+    }
+},
+
+                    // ✅ CSRF Token Method - TEMPATKAN DI SINI
+                    getCsrfToken() {
+                        const metaTag = document.querySelector('meta[name="csrf-token"]');
+                        if (metaTag) {
+                            return metaTag.getAttribute('content');
+                        }
+
+                        const inputTag = document.querySelector('input[name="_token"]');
+                        if (inputTag) {
+                            return inputTag.value;
+                        }
+
+                        return document.querySelector('script[data-csrf]')?.dataset.csrf || '';
+                    },
+
+
+
+                    // ✅ NEW: Save selected members ke task
+async saveTaskAssignments(taskId) {
+    try {
+        const csrfToken = this.getCsrfToken();
+
+        // ✅ Gunakan endpoint yang baru
+        const response = await fetch(`/tasks/${taskId}/assignments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            },
+            body: JSON.stringify({
+                user_ids: this.selectedMemberIds
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // ✅ PERBAIKI: Update assignedMembers dengan data terbaru dari response
+            this.assignedMembers = data.assigned_members;
+            
+            // ✅ PERBAIKI: Juga update selectedMemberIds dengan data terbaru
+            this.selectedMemberIds = data.assigned_members.map(member => member.id);
+            
+            // ✅ PERBAIKI: Update UI state
+            this.workspaceMembers.forEach(member => {
+                member.selected = this.selectedMemberIds.includes(member.id);
+            });
+            
+            this.selectAll = this.selectedMemberIds.length === this.workspaceMembers.length;
+            
+            this.openAddMemberModal = false;
+            this.showNotification('Anggota tugas berhasil diupdate', 'success');
+
+            // ✅ PERBAIKI: Refresh task detail jika sedang dibuka
+            if (this.currentTask && this.currentTask.id === taskId) {
+                this.currentTask.members = data.assigned_members;
+                
+                // ✅ TAMBAHKAN: Juga update tasks array untuk konsistensi data
+                const taskIndex = this.tasks.findIndex(t => t.id === taskId);
+                if (taskIndex !== -1) {
+                    this.tasks[taskIndex].members = data.assigned_members;
+                }
+            }
+            
+            console.log('Updated assignments:', this.assignedMembers);
+            console.log('Updated selected IDs:', this.selectedMemberIds);
+        } else {
+            alert('Gagal menyimpan anggota: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error saving task assignments:', error);
+        alert('Terjadi kesalahan saat menyimpan anggota');
+    }
+},
+
+
+
+
+                    // ✅ NEW: Toggle member selection
+                  // ✅ PERBAIKI: Toggle member selection dengan update UI yang benar
+toggleMember(memberId) {
+    if (!memberId) {
+        console.error('Invalid member ID');
+        return;
+    }
+
+    const index = this.selectedMemberIds.indexOf(memberId);
+    if (index === -1) {
+        // Add member
+        this.selectedMemberIds.push(memberId);
+    } else {
+        // Remove member
+        this.selectedMemberIds.splice(index, 1);
+    }
+
+    // Update UI state immediately
+    const member = this.workspaceMembers.find(m => m.id === memberId);
+    if (member) {
+        member.selected = !member.selected;
+    }
+
+    // Update selectAll state
+    this.selectAll = this.selectedMemberIds.length === this.workspaceMembers.length;
+    
+    console.log('Toggled member:', memberId, 'Selected IDs:', this.selectedMemberIds);
+},
+
+
+
+                    // ✅ PERBAIKI: Toggle select all dengan sync yang benar
+toggleSelectAllMembers() {
+    if (this.selectAll) {
+        // Select all members
+        this.selectedMemberIds = this.workspaceMembers.map(member => member.id);
+        this.workspaceMembers.forEach(member => {
+            member.selected = true;
+        });
+    } else {
+        // Deselect all members
+        this.selectedMemberIds = [];
+        this.workspaceMembers.forEach(member => {
+            member.selected = false;
+        });
+    }
+    
+    console.log('Select All:', this.selectAll, 'Selected IDs:', this.selectedMemberIds);
+},
+
+
+
+                    // ✅ NEW: Filter members berdasarkan search
+                    get filteredWorkspaceMembers() {
+                        if (!this.searchMember) {
+                            return this.workspaceMembers;
+                        }
+                        const searchTerm = this.searchMember.toLowerCase();
+                        return this.workspaceMembers.filter(member =>
+                            member.name.toLowerCase().includes(searchTerm) ||
+                            member.email.toLowerCase().includes(searchTerm)
+                        );
+                    },
+
+
+
+                    
+
+
+                    // ✅ PERBAIKI: Method untuk apply members ke task
+applyMembersToTask() {
+    if (this.currentTask && this.currentTask.id) {
+        // Untuk task yang sudah ada - save ke database
+        this.saveTaskAssignments(this.currentTask.id);
+    } else {
+        // Untuk task baru - simpan di form data
+        const selectedMembers = this.workspaceMembers
+            .filter(member => this.selectedMemberIds.includes(member.id))
+            .map(member => ({
+                id: member.id,
+                name: member.name,
+                email: member.email,
+                avatar: member.avatar
+            }));
+
+        // ✅ PERBAIKI: Update taskForm.members dengan semua anggota yang dipilih
+        this.taskForm.members = selectedMembers;
+        
+        this.openAddMemberModal = false;
+        
+        // ✅ PERBAIKI: Reset selected state UI
+        this.selectedMemberIds = [];
+        this.workspaceMembers.forEach(member => {
+            member.selected = false;
+        });
+        this.selectAll = false;
+
+        console.log('Updated members for new task:', this.taskForm.members);
+    }
+},
+
+// ✅ PERBAIKI: Method untuk membuka modal tambah anggota
+openAddMemberModalForTask(task = null) {
+    this.openAddMemberModal = true;
+    this.searchMember = '';
+
+    if (task && task.id) {
+        // Untuk task yang sudah ada - load assignments
+        this.loadTaskAssignments(task.id);
+    } else {
+        // Untuk task baru - initialize dengan anggota yang sudah dipilih di form
+        this.selectedMemberIds = (this.taskForm.members || []).map(m => m.id);
+        
+        // Update selected state di workspaceMembers
+        this.workspaceMembers.forEach(member => {
+            member.selected = this.selectedMemberIds.includes(member.id);
+        });
+        
+        this.selectAll = this.selectedMemberIds.length === this.workspaceMembers.length;
+    }
+},
+
+
+                    // ✅ Method untuk remove assigned member
+                    removeAssignedMember(memberId) {
+                        if (this.currentTask && this.isEditMode) {
+                            // Remove dari current task
+                            this.currentTask.members = this.currentTask.members.filter(m => m.id !== memberId);
+                            // Juga update selectedMemberIds
+                            this.selectedMemberIds = this.selectedMemberIds.filter(id => id !== memberId);
+                        } else {
+                            // Remove dari task form (new task)
+                            this.taskForm.members = this.taskForm.members.filter(m => m.id !== memberId);
+                            this.selectedMemberIds = this.selectedMemberIds.filter(id => id !== memberId);
+                        }
+                    },
+
+
+                    // ✅ Method untuk memastikan data members konsisten
+                    ensureMembersData() {
+                        // Pastikan taskForm.members selalu array
+                        if (!Array.isArray(this.taskForm.members)) {
+                            this.taskForm.members = [];
+                        }
+
+                        // Pastikan setiap member punya id
+                        this.taskForm.members = this.taskForm.members.map((member, index) => ({
+                            id: member.id || `temp-${index}`, // Fallback ID
+                            name: member.name || 'Unknown',
+                            avatar: member.avatar || 'https://i.pravatar.cc/32?img=0',
+                            email: member.email || ''
+                        }));
+                    },
+
+
+
 
 
 
@@ -2558,7 +2856,8 @@
                             month: 'short',
                             year: 'numeric'
                         });
-                    }
+                    },
+
                 };
             }
         </script>
