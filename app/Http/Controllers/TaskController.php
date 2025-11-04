@@ -4,13 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log; 
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\BoardColumn;
 use App\Models\Workspace;
 use App\Models\UserWorkspace;
 use App\Models\Task;
 use App\Models\TaskAssignment;
+use App\Models\Label;
+use App\Models\Color;
 use App\Models\User;
 use Illuminate\Support\Str;
 
@@ -303,7 +305,7 @@ class TaskController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             // Validasi akses user ke workspace
             $userWorkspace = UserWorkspace::where('user_id', $user->id)
                 ->where('workspace_id', $workspaceId)
@@ -335,7 +337,6 @@ class TaskController extends Controller
                 'success' => true,
                 'members' => $members
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error getting workspace members: ' . $e->getMessage());
             return response()->json([
@@ -381,7 +382,6 @@ class TaskController extends Controller
                 'success' => true,
                 'assigned_members' => $assignedUsers
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error getting task assignments: ' . $e->getMessage());
             return response()->json([
@@ -392,90 +392,89 @@ class TaskController extends Controller
     }
 
     // ✅ NEW: Manage anggota tugas (assign/unassign)
-public function manageTaskAssignments(Request $request, $taskId)
-{
-    $request->validate([
-        'user_ids' => 'required|array',
-        'user_ids.*' => 'exists:users,id'
-    ]);
-
-    try {
-        $task = Task::findOrFail($taskId);
-        $user = Auth::user();
-
-        // Validasi akses user ke workspace task
-        $userWorkspace = UserWorkspace::where('user_id', $user->id)
-            ->where('workspace_id', $task->workspace_id)
-            ->first();
-
-        if (!$userWorkspace) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses ke task ini'
-            ], 403);
-        }
-
-        // Validasi bahwa semua user_ids adalah anggota workspace
-        $workspaceMemberIds = UserWorkspace::where('workspace_id', $task->workspace_id)
-            ->where('status_active', true)
-            ->pluck('user_id')
-            ->toArray();
-
-        $invalidUsers = array_diff($request->user_ids, $workspaceMemberIds);
-        if (!empty($invalidUsers)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Beberapa user bukan anggota workspace ini'
-            ], 400);
-        }
-
-        // Hapus assignment yang tidak dipilih
-        TaskAssignment::where('task_id', $taskId)
-            ->whereNotIn('user_id', $request->user_ids)
-            ->delete();
-
-        // Tambah assignment baru
-        foreach ($request->user_ids as $userId) {
-            TaskAssignment::updateOrCreate(
-                [
-                    'task_id' => $taskId,
-                    'user_id' => $userId
-                ],
-                [
-                    'assigned_at' => now()
-                ]
-            );
-        }
-
-        // ✅ PASTIKAN: Get updated assigned members dengan query yang sama
-        $assignedMembers = TaskAssignment::with('user')
-            ->where('task_id', $taskId)
-            ->get()
-            ->map(function ($assignment) {
-                return [
-                    'id' => $assignment->user->id,
-                    'name' => $assignment->user->full_name,
-                    'email' => $assignment->user->email,
-                    'avatar' => 'https://i.pravatar.cc/32?img=' . (rand(1, 70))
-                ];
-            });
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Anggota tugas berhasil diupdate',
-            'assigned_members' => $assignedMembers,
-            // ✅ TAMBAHKAN: Juga kembalikan user_ids untuk konsistensi
-            'user_ids' => $request->user_ids
+    public function manageTaskAssignments(Request $request, $taskId)
+    {
+        $request->validate([
+            'user_ids' => 'required|array',
+            'user_ids.*' => 'exists:users,id'
         ]);
 
-    } catch (\Exception $e) {
-        Log::error('Error managing task assignments: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengupdate anggota tugas: ' . $e->getMessage()
-        ], 500);
+        try {
+            $task = Task::findOrFail($taskId);
+            $user = Auth::user();
+
+            // Validasi akses user ke workspace task
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                ->where('workspace_id', $task->workspace_id)
+                ->first();
+
+            if (!$userWorkspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            // Validasi bahwa semua user_ids adalah anggota workspace
+            $workspaceMemberIds = UserWorkspace::where('workspace_id', $task->workspace_id)
+                ->where('status_active', true)
+                ->pluck('user_id')
+                ->toArray();
+
+            $invalidUsers = array_diff($request->user_ids, $workspaceMemberIds);
+            if (!empty($invalidUsers)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Beberapa user bukan anggota workspace ini'
+                ], 400);
+            }
+
+            // Hapus assignment yang tidak dipilih
+            TaskAssignment::where('task_id', $taskId)
+                ->whereNotIn('user_id', $request->user_ids)
+                ->delete();
+
+            // Tambah assignment baru
+            foreach ($request->user_ids as $userId) {
+                TaskAssignment::updateOrCreate(
+                    [
+                        'task_id' => $taskId,
+                        'user_id' => $userId
+                    ],
+                    [
+                        'assigned_at' => now()
+                    ]
+                );
+            }
+
+            // ✅ PASTIKAN: Get updated assigned members dengan query yang sama
+            $assignedMembers = TaskAssignment::with('user')
+                ->where('task_id', $taskId)
+                ->get()
+                ->map(function ($assignment) {
+                    return [
+                        'id' => $assignment->user->id,
+                        'name' => $assignment->user->full_name,
+                        'email' => $assignment->user->email,
+                        'avatar' => 'https://i.pravatar.cc/32?img=' . (rand(1, 70))
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Anggota tugas berhasil diupdate',
+                'assigned_members' => $assignedMembers,
+                // ✅ TAMBAHKAN: Juga kembalikan user_ids untuk konsistensi
+                'user_ids' => $request->user_ids
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error managing task assignments: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengupdate anggota tugas: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
 
     // ✅ NEW: Create task dengan assignments
     public function storeWithAssignments(Request $request)
@@ -485,7 +484,9 @@ public function manageTaskAssignments(Request $request, $taskId)
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'user_ids' => 'array',
-            'user_ids.*' => 'exists:users,id'
+            'user_ids.*' => 'exists:users,id',
+            'label_ids' => 'array', // ✅ NEW: label_ids
+            'label_ids.*' => 'exists:labels,id'
         ]);
 
         try {
@@ -512,7 +513,7 @@ public function manageTaskAssignments(Request $request, $taskId)
                 'created_by' => $user->id,
                 'title' => $request->title,
                 'description' => $request->description,
-                'board_column_id' => $request->board_column_id, // jika ada
+                'board_column_id' => $request->board_column_id,
                 'status' => 'todo',
                 'priority' => $request->priority ?? 'medium',
                 'is_secret' => $request->is_secret ?? false,
@@ -533,7 +534,15 @@ public function manageTaskAssignments(Request $request, $taskId)
                 }
             }
 
+            // ✅ NEW: Attach labels jika ada
+            if (!empty($request->label_ids)) {
+                $task->labels()->attach($request->label_ids);
+            }
+
             DB::commit();
+
+            // Load relations untuk response
+            $task->load(['assignees', 'labels.color']);
 
             return response()->json([
                 'success' => true,
@@ -550,5 +559,248 @@ public function manageTaskAssignments(Request $request, $taskId)
             ], 500);
         }
     }
+
+
+
+
+    // untuk label dan warna pada tugas
+    public function getLabels($workspaceId)
+    {
+        try {
+            $user = Auth::user();
+
+            // Validasi akses user ke workspace
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                ->where('workspace_id', $workspaceId)
+                ->first();
+
+            if (!$userWorkspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke workspace ini'
+                ], 403);
+            }
+
+            $labels = Label::with('color')->get();
+
+            return response()->json([
+                'success' => true,
+                'labels' => $labels
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting labels: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data label'
+            ], 500);
+        }
+    }
+
+
+    // ✅ NEW: Create new label
+    // Di TaskController - perbaiki method createLabel
+public function createLabel(Request $request)
+{
+    Log::info('Create Label Request:', $request->all());
+    
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'color_id' => 'required|exists:colors,id',
+        'workspace_id' => 'required|exists:workspaces,id'
+    ]);
+
+    try {
+        $user = Auth::user();
+
+        // Validasi akses user ke workspace
+        $userWorkspace = UserWorkspace::where('user_id', $user->id)
+            ->where('workspace_id', $request->workspace_id)
+            ->first();
+
+        if (!$userWorkspace) {
+            Log::error('User tidak memiliki akses ke workspace', [
+                'user_id' => $user->id,
+                'workspace_id' => $request->workspace_id
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke workspace ini'
+            ], 403);
+        }
+
+        // Cek apakah label dengan nama yang sama sudah ada
+        $existingLabel = Label::where('name', $request->name)->first();
+        if ($existingLabel) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Label dengan nama ini sudah ada'
+            ], 400);
+        }
+
+        $label = Label::create([
+            'id' => Str::uuid()->toString(),
+            'name' => $request->name,
+            'color_id' => $request->color_id
+        ]);
+
+        // Load relation color untuk response
+        $label->load('color');
+
+        Log::info('Label berhasil dibuat:', [
+            'label_id' => $label->id,
+            'name' => $label->name,
+            'color_id' => $label->color_id
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Label berhasil dibuat',
+            'label' => $label
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error creating label: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal membuat label: ' . $e->getMessage()
+        ], 500);
+    }
 }
 
+    // ✅ NEW: Get available colors
+    public function getColors()
+    {
+        try {
+            $colors = Color::all();
+
+            return response()->json([
+                'success' => true,
+                'colors' => $colors
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting colors: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data warna'
+            ], 500);
+        }
+    }
+
+    // ✅ NEW: Manage task labels
+    public function manageTaskLabels(Request $request, $taskId)
+    {
+        $request->validate([
+            'label_ids' => 'required|array',
+            'label_ids.*' => 'exists:labels,id'
+        ]);
+
+        try {
+            $task = Task::findOrFail($taskId);
+            $user = Auth::user();
+
+            // Validasi akses user ke workspace task
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                ->where('workspace_id', $task->workspace_id)
+                ->first();
+
+            if (!$userWorkspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            // Sync labels
+            $task->labels()->sync($request->label_ids);
+
+            // Get updated labels with colors
+            $updatedLabels = $task->labels()->with('color')->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Label tugas berhasil diupdate',
+                'labels' => $updatedLabels
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error managing task labels: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengupdate label tugas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ✅ NEW: Get task labels
+    public function getTaskLabels($taskId)
+    {
+        try {
+            $task = Task::findOrFail($taskId);
+            $user = Auth::user();
+
+            // Validasi akses user ke workspace task
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                ->where('workspace_id', $task->workspace_id)
+                ->first();
+
+            if (!$userWorkspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            $labels = $task->labels()->with('color')->get();
+
+            return response()->json([
+                'success' => true,
+                'labels' => $labels
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting task labels: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil label tugas'
+            ], 500);
+        }
+    }
+
+
+    // Tambahkan method ini ke TaskController
+public function getWorkspaceTasks($workspaceId)
+{
+    try {
+        $user = Auth::user();
+
+        // Validasi akses user ke workspace
+        $userWorkspace = UserWorkspace::where('user_id', $user->id)
+            ->where('workspace_id', $workspaceId)
+            ->first();
+
+        if (!$userWorkspace) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke workspace ini'
+            ], 403);
+        }
+
+        $tasks = Task::with(['assignees', 'labels.color', 'boardColumn'])
+            ->where('workspace_id', $workspaceId)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'tasks' => $tasks
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error getting workspace tasks: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil data tugas'
+        ], 500);
+    }
+}
+}

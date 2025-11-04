@@ -97,16 +97,24 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/board-columns', [TaskController::class, 'createBoardColumn']);
         Route::delete('/board-columns/{columnId}', [TaskController::class, 'deleteBoardColumn']);
         Route::put('/board-columns/positions', [TaskController::class, 'updateColumnPosition']);
-        
+
         // ✅ Task Assignment Routes
         Route::get('/workspace/{workspaceId}/task-members', [TaskController::class, 'getWorkspaceMembers'])->name('workspace.task-members');
         Route::get('/{taskId}/assignments', [TaskController::class, 'getTaskAssignments'])->name('task.assignments');
         Route::post('/{taskId}/assignments', [TaskController::class, 'manageTaskAssignments'])->name('task.assignments.manage');
         Route::post('/create-with-assignments', [TaskController::class, 'storeWithAssignments'])->name('tasks.create.with.assignments');
         Route::get('/workspace/{workspaceId}/list', [TaskController::class, 'getWorkspaceTasks'])->name('tasks.workspace');
-        
+
         // Debug Route
         Route::get('/debug-columns/{workspaceId}', [TaskController::class, 'debugBoardColumns']);
+
+
+        // ✅ NEW: Label Routes
+        Route::get('/workspace/{workspaceId}/labels', [TaskController::class, 'getLabels']);
+        Route::get('/colors', [TaskController::class, 'getColors']);
+        Route::post('/labels', [TaskController::class, 'createLabel']);
+        Route::post('/{taskId}/labels', [TaskController::class, 'manageTaskLabels']);
+        Route::get('/{taskId}/labels', [TaskController::class, 'getTaskLabels']);
     });
 
     // ✅ Calendar & Schedule Routes
@@ -201,3 +209,6 @@ Route::middleware(['auth'])->group(function () {
     // ✅ Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 });
+
+
+

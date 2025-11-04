@@ -1006,7 +1006,7 @@
                         secret: false,
                         notes: '',
                         attachments: [],
-                        labels: [],
+                        // labels: [],
                         checklist: [],
                         startDate: '',
                         startTime: '',
@@ -1041,6 +1041,16 @@
                         title: '',
                         description: '',
                         tasks: []
+                    },
+
+
+                    labelData: {
+                        labels: [],
+                        colors: [],
+                        selectedLabelIds: [],
+                        newLabelName: '',
+                        newLabelColor: null,
+                        searchLabel: ''
                     },
 
                     // --- Members ---
@@ -1082,7 +1092,7 @@
                     ],
 
                     // --- Labels ---
-                    searchLabel: '',
+                    // searchLabel: '',
                     labels: [{
                             name: 'Reels',
                             color: '#2563eb',
@@ -1109,8 +1119,8 @@
                             selected: false
                         },
                     ],
-                    newLabelName: '',
-                    newLabelColor: null,
+                    // newLabelName: '',
+                    // newLabelColor: null,
                     colorPalette: [
                         "#EF4444", "#F97316", "#F59E0B", "#EAB308", "#84CC16",
                         "#22C55E", "#10B981", "#14B8A6", "#06B6D4", "#0EA5E9",
@@ -1464,7 +1474,7 @@
                             secret: false,
                             notes: '',
                             attachments: [],
-                            labels: [],
+                            // labels: [],
                             checklist: [],
                             startDate: '',
                             startTime: '',
@@ -2233,6 +2243,14 @@
                         this.ensureMembersData(); // ✅ Pastikan data konsisten
 
 
+                        // ✅ NEW: Load labels dan colors
+                        this.loadLabels();
+                        this.loadColors();
+
+                        console.log('Aplikasi initialized');
+
+
+
                     },
 
                     // ✅ NEW: Method untuk load tasks dari database
@@ -2278,30 +2296,30 @@
                     },
 
                     // ✅ PERBAIKI: Load task assignments dengan sync state yang benar
-async loadTaskAssignments(taskId) {
-    try {
-        const response = await fetch(`/tasks/${taskId}/assignments`);
-        const data = await response.json();
+                    async loadTaskAssignments(taskId) {
+                        try {
+                            const response = await fetch(`/tasks/${taskId}/assignments`);
+                            const data = await response.json();
 
-        if (data.success) {
-            this.assignedMembers = data.assigned_members;
-            this.selectedMemberIds = data.assigned_members.map(member => member.id);
+                            if (data.success) {
+                                this.assignedMembers = data.assigned_members;
+                                this.selectedMemberIds = data.assigned_members.map(member => member.id);
 
-            // Update selected state di workspaceMembers dengan benar
-            this.workspaceMembers.forEach(member => {
-                member.selected = this.selectedMemberIds.includes(member.id);
-            });
-            
-            // Update selectAll state
-            this.selectAll = this.selectedMemberIds.length === this.workspaceMembers.length;
-            
-            console.log('Loaded assignments:', this.assignedMembers);
-            console.log('Selected IDs:', this.selectedMemberIds);
-        }
-    } catch (error) {
-        console.error('Error loading task assignments:', error);
-    }
-},
+                                // Update selected state di workspaceMembers dengan benar
+                                this.workspaceMembers.forEach(member => {
+                                    member.selected = this.selectedMemberIds.includes(member.id);
+                                });
+
+                                // Update selectAll state
+                                this.selectAll = this.selectedMemberIds.length === this.workspaceMembers.length;
+
+                                console.log('Loaded assignments:', this.assignedMembers);
+                                console.log('Selected IDs:', this.selectedMemberIds);
+                            }
+                        } catch (error) {
+                            console.error('Error loading task assignments:', error);
+                        }
+                    },
 
                     // ✅ CSRF Token Method - TEMPATKAN DI SINI
                     getCsrfToken() {
@@ -2321,115 +2339,115 @@ async loadTaskAssignments(taskId) {
 
 
                     // ✅ NEW: Save selected members ke task
-async saveTaskAssignments(taskId) {
-    try {
-        const csrfToken = this.getCsrfToken();
+                    async saveTaskAssignments(taskId) {
+                        try {
+                            const csrfToken = this.getCsrfToken();
 
-        // ✅ Gunakan endpoint yang baru
-        const response = await fetch(`/tasks/${taskId}/assignments`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken
-            },
-            body: JSON.stringify({
-                user_ids: this.selectedMemberIds
-            })
-        });
+                            // ✅ Gunakan endpoint yang baru
+                            const response = await fetch(`/tasks/${taskId}/assignments`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken
+                                },
+                                body: JSON.stringify({
+                                    user_ids: this.selectedMemberIds
+                                })
+                            });
 
-        const data = await response.json();
+                            const data = await response.json();
 
-        if (data.success) {
-            // ✅ PERBAIKI: Update assignedMembers dengan data terbaru dari response
-            this.assignedMembers = data.assigned_members;
-            
-            // ✅ PERBAIKI: Juga update selectedMemberIds dengan data terbaru
-            this.selectedMemberIds = data.assigned_members.map(member => member.id);
-            
-            // ✅ PERBAIKI: Update UI state
-            this.workspaceMembers.forEach(member => {
-                member.selected = this.selectedMemberIds.includes(member.id);
-            });
-            
-            this.selectAll = this.selectedMemberIds.length === this.workspaceMembers.length;
-            
-            this.openAddMemberModal = false;
-            this.showNotification('Anggota tugas berhasil diupdate', 'success');
+                            if (data.success) {
+                                // ✅ PERBAIKI: Update assignedMembers dengan data terbaru dari response
+                                this.assignedMembers = data.assigned_members;
 
-            // ✅ PERBAIKI: Refresh task detail jika sedang dibuka
-            if (this.currentTask && this.currentTask.id === taskId) {
-                this.currentTask.members = data.assigned_members;
-                
-                // ✅ TAMBAHKAN: Juga update tasks array untuk konsistensi data
-                const taskIndex = this.tasks.findIndex(t => t.id === taskId);
-                if (taskIndex !== -1) {
-                    this.tasks[taskIndex].members = data.assigned_members;
-                }
-            }
-            
-            console.log('Updated assignments:', this.assignedMembers);
-            console.log('Updated selected IDs:', this.selectedMemberIds);
-        } else {
-            alert('Gagal menyimpan anggota: ' + data.message);
-        }
-    } catch (error) {
-        console.error('Error saving task assignments:', error);
-        alert('Terjadi kesalahan saat menyimpan anggota');
-    }
-},
+                                // ✅ PERBAIKI: Juga update selectedMemberIds dengan data terbaru
+                                this.selectedMemberIds = data.assigned_members.map(member => member.id);
+
+                                // ✅ PERBAIKI: Update UI state
+                                this.workspaceMembers.forEach(member => {
+                                    member.selected = this.selectedMemberIds.includes(member.id);
+                                });
+
+                                this.selectAll = this.selectedMemberIds.length === this.workspaceMembers.length;
+
+                                this.openAddMemberModal = false;
+                                this.showNotification('Anggota tugas berhasil diupdate', 'success');
+
+                                // ✅ PERBAIKI: Refresh task detail jika sedang dibuka
+                                if (this.currentTask && this.currentTask.id === taskId) {
+                                    this.currentTask.members = data.assigned_members;
+
+                                    // ✅ TAMBAHKAN: Juga update tasks array untuk konsistensi data
+                                    const taskIndex = this.tasks.findIndex(t => t.id === taskId);
+                                    if (taskIndex !== -1) {
+                                        this.tasks[taskIndex].members = data.assigned_members;
+                                    }
+                                }
+
+                                console.log('Updated assignments:', this.assignedMembers);
+                                console.log('Updated selected IDs:', this.selectedMemberIds);
+                            } else {
+                                alert('Gagal menyimpan anggota: ' + data.message);
+                            }
+                        } catch (error) {
+                            console.error('Error saving task assignments:', error);
+                            alert('Terjadi kesalahan saat menyimpan anggota');
+                        }
+                    },
 
 
 
 
                     // ✅ NEW: Toggle member selection
-                  // ✅ PERBAIKI: Toggle member selection dengan update UI yang benar
-toggleMember(memberId) {
-    if (!memberId) {
-        console.error('Invalid member ID');
-        return;
-    }
+                    // ✅ PERBAIKI: Toggle member selection dengan update UI yang benar
+                    toggleMember(memberId) {
+                        if (!memberId) {
+                            console.error('Invalid member ID');
+                            return;
+                        }
 
-    const index = this.selectedMemberIds.indexOf(memberId);
-    if (index === -1) {
-        // Add member
-        this.selectedMemberIds.push(memberId);
-    } else {
-        // Remove member
-        this.selectedMemberIds.splice(index, 1);
-    }
+                        const index = this.selectedMemberIds.indexOf(memberId);
+                        if (index === -1) {
+                            // Add member
+                            this.selectedMemberIds.push(memberId);
+                        } else {
+                            // Remove member
+                            this.selectedMemberIds.splice(index, 1);
+                        }
 
-    // Update UI state immediately
-    const member = this.workspaceMembers.find(m => m.id === memberId);
-    if (member) {
-        member.selected = !member.selected;
-    }
+                        // Update UI state immediately
+                        const member = this.workspaceMembers.find(m => m.id === memberId);
+                        if (member) {
+                            member.selected = !member.selected;
+                        }
 
-    // Update selectAll state
-    this.selectAll = this.selectedMemberIds.length === this.workspaceMembers.length;
-    
-    console.log('Toggled member:', memberId, 'Selected IDs:', this.selectedMemberIds);
-},
+                        // Update selectAll state
+                        this.selectAll = this.selectedMemberIds.length === this.workspaceMembers.length;
+
+                        console.log('Toggled member:', memberId, 'Selected IDs:', this.selectedMemberIds);
+                    },
 
 
 
                     // ✅ PERBAIKI: Toggle select all dengan sync yang benar
-toggleSelectAllMembers() {
-    if (this.selectAll) {
-        // Select all members
-        this.selectedMemberIds = this.workspaceMembers.map(member => member.id);
-        this.workspaceMembers.forEach(member => {
-            member.selected = true;
-        });
-    } else {
-        // Deselect all members
-        this.selectedMemberIds = [];
-        this.workspaceMembers.forEach(member => {
-            member.selected = false;
-        });
-    }
-    
-    console.log('Select All:', this.selectAll, 'Selected IDs:', this.selectedMemberIds);
-},
+                    toggleSelectAllMembers() {
+                        if (this.selectAll) {
+                            // Select all members
+                            this.selectedMemberIds = this.workspaceMembers.map(member => member.id);
+                            this.workspaceMembers.forEach(member => {
+                                member.selected = true;
+                            });
+                        } else {
+                            // Deselect all members
+                            this.selectedMemberIds = [];
+                            this.workspaceMembers.forEach(member => {
+                                member.selected = false;
+                            });
+                        }
+
+                        console.log('Select All:', this.selectAll, 'Selected IDs:', this.selectedMemberIds);
+                    },
 
 
 
@@ -2447,61 +2465,61 @@ toggleSelectAllMembers() {
 
 
 
-                    
+
 
 
                     // ✅ PERBAIKI: Method untuk apply members ke task
-applyMembersToTask() {
-    if (this.currentTask && this.currentTask.id) {
-        // Untuk task yang sudah ada - save ke database
-        this.saveTaskAssignments(this.currentTask.id);
-    } else {
-        // Untuk task baru - simpan di form data
-        const selectedMembers = this.workspaceMembers
-            .filter(member => this.selectedMemberIds.includes(member.id))
-            .map(member => ({
-                id: member.id,
-                name: member.name,
-                email: member.email,
-                avatar: member.avatar
-            }));
+                    applyMembersToTask() {
+                        if (this.currentTask && this.currentTask.id) {
+                            // Untuk task yang sudah ada - save ke database
+                            this.saveTaskAssignments(this.currentTask.id);
+                        } else {
+                            // Untuk task baru - simpan di form data
+                            const selectedMembers = this.workspaceMembers
+                                .filter(member => this.selectedMemberIds.includes(member.id))
+                                .map(member => ({
+                                    id: member.id,
+                                    name: member.name,
+                                    email: member.email,
+                                    avatar: member.avatar
+                                }));
 
-        // ✅ PERBAIKI: Update taskForm.members dengan semua anggota yang dipilih
-        this.taskForm.members = selectedMembers;
-        
-        this.openAddMemberModal = false;
-        
-        // ✅ PERBAIKI: Reset selected state UI
-        this.selectedMemberIds = [];
-        this.workspaceMembers.forEach(member => {
-            member.selected = false;
-        });
-        this.selectAll = false;
+                            // ✅ PERBAIKI: Update taskForm.members dengan semua anggota yang dipilih
+                            this.taskForm.members = selectedMembers;
 
-        console.log('Updated members for new task:', this.taskForm.members);
-    }
-},
+                            this.openAddMemberModal = false;
 
-// ✅ PERBAIKI: Method untuk membuka modal tambah anggota
-openAddMemberModalForTask(task = null) {
-    this.openAddMemberModal = true;
-    this.searchMember = '';
+                            // ✅ PERBAIKI: Reset selected state UI
+                            this.selectedMemberIds = [];
+                            this.workspaceMembers.forEach(member => {
+                                member.selected = false;
+                            });
+                            this.selectAll = false;
 
-    if (task && task.id) {
-        // Untuk task yang sudah ada - load assignments
-        this.loadTaskAssignments(task.id);
-    } else {
-        // Untuk task baru - initialize dengan anggota yang sudah dipilih di form
-        this.selectedMemberIds = (this.taskForm.members || []).map(m => m.id);
-        
-        // Update selected state di workspaceMembers
-        this.workspaceMembers.forEach(member => {
-            member.selected = this.selectedMemberIds.includes(member.id);
-        });
-        
-        this.selectAll = this.selectedMemberIds.length === this.workspaceMembers.length;
-    }
-},
+                            console.log('Updated members for new task:', this.taskForm.members);
+                        }
+                    },
+
+                    // ✅ PERBAIKI: Method untuk membuka modal tambah anggota
+                    openAddMemberModalForTask(task = null) {
+                        this.openAddMemberModal = true;
+                        this.searchMember = '';
+
+                        if (task && task.id) {
+                            // Untuk task yang sudah ada - load assignments
+                            this.loadTaskAssignments(task.id);
+                        } else {
+                            // Untuk task baru - initialize dengan anggota yang sudah dipilih di form
+                            this.selectedMemberIds = (this.taskForm.members || []).map(m => m.id);
+
+                            // Update selected state di workspaceMembers
+                            this.workspaceMembers.forEach(member => {
+                                member.selected = this.selectedMemberIds.includes(member.id);
+                            });
+
+                            this.selectAll = this.selectedMemberIds.length === this.workspaceMembers.length;
+                        }
+                    },
 
 
                     // ✅ Method untuk remove assigned member
@@ -2535,6 +2553,260 @@ openAddMemberModalForTask(task = null) {
                         }));
                     },
 
+
+
+
+                    // untuk label dan color 
+
+                    // ✅ PERBAIKI: Method loadLabels dengan error handling
+                    async loadLabels() {
+                        try {
+                            const workspaceId = this.getCurrentWorkspaceId();
+                            if (!workspaceId) {
+                                console.error('Workspace ID tidak valid');
+                                return;
+                            }
+
+                            console.log('Loading labels untuk workspace:', workspaceId);
+
+                            const response = await fetch(`/tasks/workspace/${workspaceId}/labels`);
+
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+
+                            const data = await response.json();
+                            console.log('Response labels:', data);
+
+                            if (data.success) {
+                                this.labelData.labels = data.labels.map(label => ({
+                                    ...label,
+                                    selected: false
+                                }));
+                                console.log('Labels loaded:', this.labelData.labels.length);
+                            } else {
+                                console.error('Gagal memuat labels:', data.message);
+                            }
+                        } catch (error) {
+                            console.error('Error loading labels:', error);
+                            // Fallback ke data dummy jika API error
+                            this.labelData.labels = this.getFallbackLabels();
+                        }
+                    },
+
+                    // ✅ Fallback labels jika API error
+                    getFallbackLabels() {
+                        return [{
+                                id: 'fallback-1',
+                                name: 'Reels',
+                                color: {
+                                    rgb: '#2563eb'
+                                },
+                                selected: false
+                            },
+                            {
+                                id: 'fallback-2',
+                                name: 'Feeds',
+                                color: {
+                                    rgb: '#16a34a'
+                                },
+                                selected: false
+                            },
+                            {
+                                id: 'fallback-3',
+                                name: 'Story',
+                                color: {
+                                    rgb: '#f59e0b'
+                                },
+                                selected: false
+                            }
+                        ];
+                    },
+
+                    async loadColors() {
+                        try {
+                            const response = await fetch('/tasks/colors');
+                            const data = await response.json();
+
+                            if (data.success) {
+                                this.labelData.colors = data.colors;
+                            }
+                        } catch (error) {
+                            console.error('Error loading colors:', error);
+                        }
+                    },
+
+                    // ✅ PERBAIKI: Method createNewLabel dengan debugging
+async createNewLabel() {
+    if (!this.labelData.newLabelName.trim()) {
+        alert('Nama label harus diisi');
+        return null;
+    }
+
+    if (!this.labelData.newLabelColor) {
+        alert('Warna label harus dipilih');
+        return null;
+    }
+
+    try {
+        const workspaceId = this.getCurrentWorkspaceId();
+        if (!workspaceId) {
+            alert('Workspace tidak valid');
+            return null;
+        }
+
+        // Cari color object berdasarkan RGB
+        const color = this.labelData.colors.find(c => c.rgb === this.labelData.newLabelColor);
+        if (!color) {
+            alert('Warna tidak valid');
+            return null;
+        }
+
+        console.log('Creating label dengan data:', {
+            name: this.labelData.newLabelName.trim(),
+            color_id: color.id,
+            workspace_id: workspaceId
+        });
+
+        const response = await fetch('/tasks/labels', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': this.getCsrfToken()
+            },
+            body: JSON.stringify({
+                name: this.labelData.newLabelName.trim(),
+                color_id: color.id,
+                workspace_id: workspaceId
+            })
+        });
+
+        // Debug response
+        console.log('Response status:', response.status);
+        
+        const data = await response.json();
+        console.log('Response data:', data);
+
+        if (data.success) {
+            // Tambahkan label baru ke list
+            this.labelData.labels.push({
+                ...data.label,
+                selected: false
+            });
+
+            // Reset form
+            this.labelData.newLabelName = '';
+            this.labelData.newLabelColor = null;
+
+            this.showNotification('Label berhasil dibuat', 'success');
+            return data.label.id;
+        } else {
+            alert('Gagal membuat label: ' + (data.message || 'Unknown error'));
+            return null;
+        }
+    } catch (error) {
+        console.error('Error creating label:', error);
+        alert('Terjadi kesalahan saat membuat label: ' + error.message);
+        return null;
+    }
+},
+                    // ✅ PERBAIKI: Method saveTaskLabels dengan handling yang lebih baik
+                    async saveTaskLabels(taskId = null) {
+                        try {
+                            const selectedLabelIds = this.labelData.labels
+                                .filter(label => label.selected)
+                                .map(label => label.id);
+
+                            console.log('Menyimpan labels:', selectedLabelIds, 'untuk task:', taskId);
+
+                            // Jika taskId null (task baru), simpan di form data
+                            if (!taskId) {
+                                const selectedLabels = this.labelData.labels
+                                    .filter(label => label.selected)
+                                    .map(label => ({
+                                        id: label.id,
+                                        name: label.name,
+                                        color: label.color.rgb
+                                    }));
+
+                                this.taskForm.labels = selectedLabels;
+                                this.openLabelModal = false;
+                                this.showNotification('Label berhasil dipilih', 'success');
+                                return;
+                            }
+
+                            // Untuk task yang sudah ada, simpan ke database
+                            const response = await fetch(`/tasks/${taskId}/labels`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': this.getCsrfToken()
+                                },
+                                body: JSON.stringify({
+                                    label_ids: selectedLabelIds
+                                })
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                // Update current task labels
+                                if (this.currentTask) {
+                                    this.currentTask.labels = data.labels;
+                                }
+
+                                // Reset selection
+                                this.labelData.labels.forEach(label => label.selected = false);
+                                this.openLabelModal = false;
+
+                                this.showNotification('Label berhasil disimpan', 'success');
+                            } else {
+                                alert('Gagal menyimpan label: ' + data.message);
+                            }
+                        } catch (error) {
+                            console.error('Error saving task labels:', error);
+                            alert('Terjadi kesalahan saat menyimpan label');
+                        }
+                    },
+
+                    async loadTaskLabels(taskId) {
+                        try {
+                            const response = await fetch(`/tasks/${taskId}/labels`);
+                            const data = await response.json();
+
+                            if (data.success) {
+                                // Update selected state
+                                this.labelData.labels.forEach(label => {
+                                    label.selected = data.labels.some(taskLabel => taskLabel.id === label.id);
+                                });
+                            }
+                        } catch (error) {
+                            console.error('Error loading task labels:', error);
+                        }
+                    },
+
+                    // Filter labels untuk search
+                    filteredLabels() {
+                        if (!this.labelData.searchLabel) {
+                            return this.labelData.labels;
+                        }
+                        return this.labelData.labels.filter(label =>
+                            label.name.toLowerCase().includes(this.labelData.searchLabel.toLowerCase())
+                        );
+                    },
+
+                    // Open label modal
+                    openLabelModalForTask(task = null) {
+                        this.openLabelModal = true;
+                        this.labelData.searchLabel = '';
+
+                        if (task && task.id) {
+                            this.loadTaskLabels(task.id);
+                        } else {
+                            // Reset selection untuk task baru
+                            this.labelData.labels.forEach(label => label.selected = false);
+                        }
+                    },
 
 
 

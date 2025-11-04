@@ -20,7 +20,7 @@ class Label extends Model
         'color_id'
     ];
 
-    protected static function boot()
+     protected static function boot()
     {
         parent::boot();
 
@@ -40,4 +40,12 @@ class Label extends Model
     // {
     //     return $this->belongsToMany(Task::class, 'task_labels', 'label_id', 'task_id');
     // }
+
+
+    public function tasks()
+    {
+        return $this->belongsToMany(Task::class, 'task_labels', 'label_id', 'task_id')
+                    ->using(TaskLabel::class)
+                    ->withTimestamps();
+    }
 }

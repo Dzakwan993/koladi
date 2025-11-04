@@ -132,4 +132,11 @@ class Task extends Model
     {
         return $query->where('due_datetime', '<', now());
     }
+
+    public function labels()
+    {
+        return $this->belongsToMany(Label::class, 'task_labels', 'task_id', 'label_id')
+                    ->using(TaskLabel::class)
+                    ->withTimestamps();
+    }
 }
