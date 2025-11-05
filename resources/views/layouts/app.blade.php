@@ -52,7 +52,8 @@
 
     {{-- semua script tambahan dari fitur lain masuk di sini --}}
     @stack('scripts')
-
+    
+    <!-- Fungsi untuk menyimpan context di global scope -->
     <script> 
         window.roleContext = { type: 'company', workspaceId: null };
 

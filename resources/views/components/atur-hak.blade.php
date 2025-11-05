@@ -4,6 +4,7 @@
 <script>
     window.availableRolesForWorkspace = @json($roles);
     window.currentUserRole = '{{ $currentUserRole ?? "Member" }}'; // ✅ Tambahkan ini
+    
 </script>
 
 <div id="roleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] hidden font-[Inter,sans-serif]" onclick="closeRoleModalOverlay(event)">
@@ -356,24 +357,7 @@ document.querySelector('.always-scrollbar')?.addEventListener('scroll', function
     });
 });
 
-// ✅ Buat fungsi untuk set context
-window.setRoleContext = function(ctx) {
-    window.roleContext = ctx || { type: 'company' };
-    console.log('Role context set to:', window.roleContext);
-}
 
-function openAccessModal(ctx) {
-    // ✅ Set context sebelum membuka modal
-    window.setRoleContext(ctx);
-    
-    const modal = document.getElementById('accessModal');
-    modal.classList.remove('hidden');
-}
-
-function closeAccessModal() {
-    const modal = document.getElementById('accessModal');
-    modal.classList.add('hidden');
-}
 
 // Tambahkan event listener biar klik luar modal menutup
 document.addEventListener('click', function(event) {

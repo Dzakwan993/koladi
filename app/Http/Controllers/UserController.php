@@ -120,13 +120,15 @@ class UserController extends Controller
         return in_array($userRole->name, ['Super Admin', 'Admin']);
     }
 
-    public function workspaceMember($workspaceId) 
+    public function getWorkspaceUserRole($workspaceId)
     {
-        // $member = UserWorkspace::where('workspace_id', $workspaceId)
-        // ->with(['user', 'role'])
-        // ->get();
-
-       
-        // dd($member->first()->user->full_name);
+        $userWorkspace = auth()->user()->userWorkspaces()
+            ->where('workspace_id', $workspaceId)
+            ->with('role')
+            ->first();
+        
+        return response()->json([
+            'role' => $userWorkspace?->role?->name ?? 'Member'
+        ]);
     }
 }
