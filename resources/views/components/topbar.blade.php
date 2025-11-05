@@ -45,7 +45,8 @@
         <div class="h-6 w-px bg-gray-200"></div>
 
         <!-- Action Buttons -->
-        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Atur Akses" onclick="openAccessModal()">
+        <!-- memanggil fungsi openAccesModal() di components/hak-akses.blade  dengan context company -->
+        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Atur Akses" onclick="openAccessModal({ type: 'company' })">
             <img src="{{ asset('images/icons/akses.svg') }}" alt="Atur Akses" class="w-5 h-5">
         </button>
 

@@ -38,6 +38,7 @@ Route::post('/invite/send', [InvitationController::class, 'send'])->name('invite
 // Terima undangan (bisa di luar auth, karena penerima belum login)
 Route::get('/invite/accept/{token}', [InvitationController::class, 'accept'])->name('invite.accept');
 
+// Route::get('/{workspaceId}', [UserController::class, 'workspaceMember']);
 
 // ✅ UBAH: Pindahkan route hak-akses ke dalam middleware auth
 Route::middleware(['auth'])->group(function () {
@@ -210,5 +211,8 @@ Route::middleware(['auth'])->group(function () {
     // ✅ TAMBAHKAN: Route untuk hak akses (pindahkan ke dalam middleware)
     Route::get('/hak-akses', [UserController::class, 'hakAkses'])->name('hakAkses');
     Route::post('/update-user-roles', [UserController::class, 'updateUserRoles'])->name('user.updateRoles');
+    Route::post('/workspace/{workspaceId}/update-user-roles', [WorkspaceController::class, 'updateUserRoles'])->name('workspace.updateUserRoles');
+    Route::get('/workspace/{workspaceId}/user-role', [UserController::class, 'getWorkspaceUserRole']);
+    
 });
 
