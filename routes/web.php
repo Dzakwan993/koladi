@@ -1,13 +1,14 @@
 <?php
 
+use App\Models\Workspace;
 use Illuminate\Support\Facades\Auth;
-
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\CompanyController;
-use App\Http\Controllers\WorkspaceController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Auth\GoogleController;
 
@@ -67,11 +68,6 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/company/{id}/update', [CompanyController::class, 'update'])->name('company.update');
     Route::delete('/company/{id}/delete', [CompanyController::class, 'destroy'])->name('company.destroy');
 
-    // Halaman Tambah Anggota
-    Route::get('/tambah-anggota', function () {
-        return view('tambah-anggota');
-    })->name('tambah-anggota');
-
     Route::get('/tambah-anggota', [CompanyController::class, 'showMembers'])->name('tambah-anggota');
     // Hapus anggota perusahaan
     Route::delete('/members/{id}/delete', [CompanyController::class, 'deleteMember'])->name('member.delete');
@@ -83,10 +79,21 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
 
-    // Halaman Workspace
-    Route::get('/workspace', function () {
-        return view('workspace');
+    // --- Workspace ---
+    Route::get('/workspace/{workspace}', function (Workspace $workspace) {
+        return view('workspace', ['workspace' => $workspace]);
     })->name('workspace');
+
+    // Halaman Untuk Chat
+    Route::get('/workspace/{workspace}/chat', function (Workspace $workspace) {
+        return view('chat', ['workspace' => $workspace]);
+    })->name('chat');
+    Route::prefix('api')->name('api.')->group(function () {
+        Route::get('/workspace/{workspaceId}/chat', [ChatController::class, 'index'])->name('chat.index');
+        Route::get('/chat/{conversationId}/messages', [ChatController::class, 'showMessages'])->name('chat.messages');
+        Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
+        Route::post('/chat/create', [ChatController::class, 'createConversation'])->name('chat.create');
+    });
 
     // Halaman Jadwal
     Route::get('/jadwal', function () {
@@ -162,11 +169,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/workspace/{workspaceId}/members', [WorkspaceController::class, 'getMembers'])->name('workspace.get-members');
     Route::get('/workspace-available-users', [WorkspaceController::class, 'getAvailableUsers'])->name('workspace.available-users');
 
-    // Halaman Profile
-    Route::get('/profile', function () {
-        return view('profile');
-    })->name('profile');
-
     // Halaman Pengajuan Cuti Karyawan
     Route::get('/cutikaryawan', function () {
         return view('cutikaryawan');
@@ -177,10 +179,6 @@ Route::middleware(['auth'])->group(function () {
         return view('cutimanajer');
     })->name('cutimanajer');
 
-    // Halaman Chat
-    Route::get('/chat', function () {
-        return view('chat');
-    })->name('chat');
 
     // Halaman Insight
     Route::get('/insight', function () {
@@ -191,7 +189,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/isi-insight', function () {
         return view('isi-insight');
     })->name('isi-insight');
-
 
     // mindmap
     Route::get('/mindmap', function () {

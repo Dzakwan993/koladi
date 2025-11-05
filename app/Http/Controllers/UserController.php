@@ -13,7 +13,7 @@ class UserController extends Controller
     public function hakAkses()
     {
         $activeCompanyId = session('active_company_id');
-        
+
         // Ambil company dengan relasi users dan role mereka
         $activeCompany = Company::with(['users' => function($query) {
             $query->withPivot('roles_id');
@@ -24,7 +24,7 @@ class UserController extends Controller
         // ✅ TAMBAHKAN: Cek apakah user yang login punya akses
         $currentUser = auth()->user();
         $currentUserRole = $this->getCurrentUserRole($currentUser, $activeCompanyId);
-        
+
         // ✅ TAMBAHKAN: Cek apakah user punya akses untuk mengatur role
         if (!$this->canManageRoles($currentUserRole)) {
             abort(403, 'Anda tidak memiliki akses untuk mengatur role');
@@ -39,7 +39,7 @@ class UserController extends Controller
             $activeCompanyId = session('active_company_id');
             $currentUser = auth()->user();
             $currentUserRole = $this->getCurrentUserRole($currentUser, $activeCompanyId);
-            
+
             // ✅ TAMBAHKAN: Cek apakah user punya akses untuk mengatur role
             if (!$this->canManageRoles($currentUserRole)) {
                 return response()->json([

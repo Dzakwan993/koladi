@@ -5,7 +5,7 @@
 @section('content')
     <div x-data x-init="$store.workspace = { selectedMenu: '' }" class="bg-[#f3f6fc] min-h-screen">
         {{-- Workspace Nav --}}
-        @include('components.workspace-nav')
+        @include('components.workspace-nav', ['workspace' => $workspace, 'active' => ''])
 
         {{-- Grid Workspace --}}
         <div class="p-8 grid grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -39,7 +39,7 @@
             </a>
 
             {{-- Card Chat --}}
-            <a href="{{ url('/chat') }}" @click="$store.workspace.selectedMenu = 'chat'"
+            <a href="{{ route('chat', $workspace->id) }}" @click="$store.workspace.selectedMenu = 'chat'"
                 class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
                 <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
                     <img src="{{ asset('images/icons/workspace_chat.svg') }}" alt="Chat Icon" class="w-full h-full">
