@@ -1453,16 +1453,71 @@
                     },
 
                     // Create new task
-                    createTask() {
-                        const newTask = {
-                            id: Date.now(),
-                            ...this.taskForm,
-                            comments: []
-                        };
-                        this.tasks.push(newTask);
-                        this.resetTaskForm();
-                        this.openTaskModal = false;
-                        alert("Tugas berhasil dibuat!");
+                    async createTask() {
+                        // Validasi form
+                        if (!this.taskForm.title.trim()) {
+                            alert('Judul tugas harus diisi');
+                            return;
+                        }
+
+                        try {
+                            const workspaceId = this.getCurrentWorkspaceId();
+                            if (!workspaceId) {
+                                alert('Workspace tidak valid');
+                                return;
+                            }
+
+                            // Siapkan data untuk API
+                            const formData = {
+                                workspace_id: workspaceId,
+                                title: this.taskForm.title,
+                                description: this.taskForm.notes,
+                                phase: this.taskForm.phase,
+                                user_ids: this.taskForm.members.map(m => m.id),
+                                is_secret: this.taskForm.secret,
+                                label_ids: (this.taskForm.labels || []).map(l => l.id),
+                                checklists: this.taskForm.checklists.map(item => ({
+                                    title: item.title,
+                                    is_done: item.is_done
+                                })),
+                                start_datetime: this.taskForm.startDate && this.taskForm.startTime ?
+                                    `${this.taskForm.startDate} ${this.taskForm.startTime}:00` : null,
+                                due_datetime: this.taskForm.dueDate && this.taskForm.dueTime ?
+                                    `${this.taskForm.dueDate} ${this.taskForm.dueTime}:00` : null
+                            };
+
+                            // Hapus properties yang null/undefined
+                            Object.keys(formData).forEach(key => {
+                                if (formData[key] === null || formData[key] === undefined || formData[key] === '') {
+                                    delete formData[key];
+                                }
+                            });
+
+                            const response = await fetch('/tasks/create-with-assignments', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': this.getCsrfToken()
+                                },
+                                body: JSON.stringify(formData)
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                this.showNotification('Tugas berhasil dibuat!', 'success');
+                                this.resetTaskForm();
+                                this.openTaskModal = false;
+
+                                // Reload tasks jika perlu
+                                this.loadTasks();
+                            } else {
+                                alert('Gagal membuat tugas: ' + data.message);
+                            }
+                        } catch (error) {
+                            console.error('Error creating task:', error);
+                            alert('Terjadi kesalahan saat membuat tugas');
+                        }
                     },
 
                     // Reset form
@@ -1475,7 +1530,7 @@
                             notes: '',
                             attachments: [],
                             // labels: [],
-                            checklist: [],
+                            checklists: [],
                             startDate: '',
                             startTime: '',
                             dueDate: '',
@@ -2221,7 +2276,7 @@
                     },
 
                     // ✅ NEW: Helper untuk notification
-                    showNotification(message, type = 'info') {
+                     showNotification(message, type = 'info') {
                         // Implementasi notification system Anda
                         alert(message); // Sementara pakai alert, bisa diganti dengan toast notification
                     },
@@ -2247,8 +2302,12 @@
                         this.loadLabels();
                         this.loadColors();
 
-                        console.log('Aplikasi initialized');
+                        // ✅ INITIALIZE CHECKLISTS
+                        if (!this.taskForm.checklists) {
+                            this.taskForm.checklists = [];
+                        }
 
+                        console.log('Aplikasi initialized dengan checklist support');
 
 
                     },
@@ -2637,79 +2696,79 @@
                     },
 
                     // ✅ PERBAIKI: Method createNewLabel dengan debugging
-async createNewLabel() {
-    if (!this.labelData.newLabelName.trim()) {
-        alert('Nama label harus diisi');
-        return null;
-    }
+                    async createNewLabel() {
+                        if (!this.labelData.newLabelName.trim()) {
+                            alert('Nama label harus diisi');
+                            return null;
+                        }
 
-    if (!this.labelData.newLabelColor) {
-        alert('Warna label harus dipilih');
-        return null;
-    }
+                        if (!this.labelData.newLabelColor) {
+                            alert('Warna label harus dipilih');
+                            return null;
+                        }
 
-    try {
-        const workspaceId = this.getCurrentWorkspaceId();
-        if (!workspaceId) {
-            alert('Workspace tidak valid');
-            return null;
-        }
+                        try {
+                            const workspaceId = this.getCurrentWorkspaceId();
+                            if (!workspaceId) {
+                                alert('Workspace tidak valid');
+                                return null;
+                            }
 
-        // Cari color object berdasarkan RGB
-        const color = this.labelData.colors.find(c => c.rgb === this.labelData.newLabelColor);
-        if (!color) {
-            alert('Warna tidak valid');
-            return null;
-        }
+                            // Cari color object berdasarkan RGB
+                            const color = this.labelData.colors.find(c => c.rgb === this.labelData.newLabelColor);
+                            if (!color) {
+                                alert('Warna tidak valid');
+                                return null;
+                            }
 
-        console.log('Creating label dengan data:', {
-            name: this.labelData.newLabelName.trim(),
-            color_id: color.id,
-            workspace_id: workspaceId
-        });
+                            console.log('Creating label dengan data:', {
+                                name: this.labelData.newLabelName.trim(),
+                                color_id: color.id,
+                                workspace_id: workspaceId
+                            });
 
-        const response = await fetch('/tasks/labels', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': this.getCsrfToken()
-            },
-            body: JSON.stringify({
-                name: this.labelData.newLabelName.trim(),
-                color_id: color.id,
-                workspace_id: workspaceId
-            })
-        });
+                            const response = await fetch('/tasks/labels', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': this.getCsrfToken()
+                                },
+                                body: JSON.stringify({
+                                    name: this.labelData.newLabelName.trim(),
+                                    color_id: color.id,
+                                    workspace_id: workspaceId
+                                })
+                            });
 
-        // Debug response
-        console.log('Response status:', response.status);
-        
-        const data = await response.json();
-        console.log('Response data:', data);
+                            // Debug response
+                            console.log('Response status:', response.status);
 
-        if (data.success) {
-            // Tambahkan label baru ke list
-            this.labelData.labels.push({
-                ...data.label,
-                selected: false
-            });
+                            const data = await response.json();
+                            console.log('Response data:', data);
 
-            // Reset form
-            this.labelData.newLabelName = '';
-            this.labelData.newLabelColor = null;
+                            if (data.success) {
+                                // Tambahkan label baru ke list
+                                this.labelData.labels.push({
+                                    ...data.label,
+                                    selected: false
+                                });
 
-            this.showNotification('Label berhasil dibuat', 'success');
-            return data.label.id;
-        } else {
-            alert('Gagal membuat label: ' + (data.message || 'Unknown error'));
-            return null;
-        }
-    } catch (error) {
-        console.error('Error creating label:', error);
-        alert('Terjadi kesalahan saat membuat label: ' + error.message);
-        return null;
-    }
-},
+                                // Reset form
+                                this.labelData.newLabelName = '';
+                                this.labelData.newLabelColor = null;
+
+                                this.showNotification('Label berhasil dibuat', 'success');
+                                return data.label.id;
+                            } else {
+                                alert('Gagal membuat label: ' + (data.message || 'Unknown error'));
+                                return null;
+                            }
+                        } catch (error) {
+                            console.error('Error creating label:', error);
+                            alert('Terjadi kesalahan saat membuat label: ' + error.message);
+                            return null;
+                        }
+                    },
                     // ✅ PERBAIKI: Method saveTaskLabels dengan handling yang lebih baik
                     async saveTaskLabels(taskId = null) {
                         try {
@@ -2805,6 +2864,136 @@ async createNewLabel() {
                         } else {
                             // Reset selection untuk task baru
                             this.labelData.labels.forEach(label => label.selected = false);
+                        }
+                    },
+
+
+
+
+                    // ✅ NEW: Checklist Methods
+                    addChecklistItem() {
+                        const newItem = {
+                            id: 'temp-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+                            title: '',
+                            is_done: false,
+                            position: this.taskForm.checklists.length
+                        };
+
+                        this.taskForm.checklists.push(newItem);
+
+                        // Focus ke input baru
+                        this.$nextTick(() => {
+                            const inputs = document.querySelectorAll('#checklist-container input[type="text"]');
+                            if (inputs.length > 0) {
+                                inputs[inputs.length - 1].focus();
+                            }
+                        });
+                    },
+
+                    removeChecklistItem(index) {
+                        if (confirm('Hapus item checklist ini?')) {
+                            const item = this.taskForm.checklists[index];
+
+                            // Jika item sudah ada di database, hapus via API
+                            if (item.id && !item.id.startsWith('temp-')) {
+                                this.deleteChecklistFromAPI(item.id);
+                            }
+
+                            this.taskForm.checklists.splice(index, 1);
+                            this.updateChecklistPositions();
+                        }
+                    },
+
+                    async updateChecklistItem(item) {
+                        // Jika item sudah ada di database, update via API
+                        if (item.id && !item.id.startsWith('temp-')) {
+                            await this.updateChecklistInAPI(item);
+                        }
+                    },
+
+                    getChecklistProgress() {
+                        if (this.taskForm.checklists.length === 0) return 0;
+                        const completed = this.taskForm.checklists.filter(item => item.is_done).length;
+                        return Math.round((completed / this.taskForm.checklists.length) * 100);
+                    },
+
+                    getCompletedChecklists() {
+                        return this.taskForm.checklists.filter(item => item.is_done).length;
+                    },
+
+                    updateChecklistPositions() {
+                        this.taskForm.checklists.forEach((item, index) => {
+                            item.position = index;
+                        });
+                    },
+
+                    // ✅ NEW: API Methods untuk Checklist
+                    async createChecklistInAPI(taskId, checklistData) {
+                        try {
+                            const response = await fetch('/tasks/checklists', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': this.getCsrfToken()
+                                },
+                                body: JSON.stringify({
+                                    task_id: taskId,
+                                    title: checklistData.title
+                                })
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                // Update ID temporary ke ID real
+                                const index = this.taskForm.checklists.findIndex(item => item.id === checklistData.id);
+                                if (index !== -1) {
+                                    this.taskForm.checklists[index].id = data.checklist.id;
+                                }
+                                return data.checklist;
+                            }
+                        } catch (error) {
+                            console.error('Error creating checklist:', error);
+                        }
+                        return null;
+                    },
+
+                    async updateChecklistInAPI(checklistItem) {
+                        try {
+                            const response = await fetch(`/tasks/checklists/${checklistItem.id}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': this.getCsrfToken()
+                                },
+                                body: JSON.stringify({
+                                    title: checklistItem.title,
+                                    is_done: checklistItem.is_done
+                                })
+                            });
+
+                            const data = await response.json();
+                            return data.success;
+                        } catch (error) {
+                            console.error('Error updating checklist:', error);
+                            return false;
+                        }
+                    },
+
+                    async deleteChecklistFromAPI(checklistId) {
+                        try {
+                            const response = await fetch(`/tasks/checklists/${checklistId}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'X-CSRF-TOKEN': this.getCsrfToken()
+                                }
+                            });
+
+                            const data = await response.json();
+                            return data.success;
+                        } catch (error) {
+                            console.error('Error deleting checklist:', error);
+                            return false;
                         }
                     },
 

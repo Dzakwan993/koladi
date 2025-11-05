@@ -14,6 +14,7 @@ use App\Models\TaskAssignment;
 use App\Models\Label;
 use App\Models\Color;
 use App\Models\User;
+use App\Models\Checklist;
 use Illuminate\Support\Str;
 
 class TaskController extends Controller
@@ -477,6 +478,7 @@ class TaskController extends Controller
     }
 
     // ✅ NEW: Create task dengan assignments
+    // ✅ UPDATE: Create task dengan assignments dan checklists
     public function storeWithAssignments(Request $request)
     {
         $request->validate([
@@ -485,13 +487,16 @@ class TaskController extends Controller
             'description' => 'nullable|string',
             'user_ids' => 'array',
             'user_ids.*' => 'exists:users,id',
-            'label_ids' => 'array', // ✅ NEW: label_ids
-            'label_ids.*' => 'exists:labels,id'
+            'label_ids' => 'array',
+            'label_ids.*' => 'exists:labels,id',
+            'checklists' => 'array', // ✅ NEW: checklists array
+            'checklists.*.title' => 'required|string|max:255',
+            'checklists.*.is_done' => 'boolean'
         ]);
 
         try {
             $user = Auth::user();
-            
+
             // Validasi akses user ke workspace
             $userWorkspace = UserWorkspace::where('user_id', $user->id)
                 ->where('workspace_id', $request->workspace_id)
@@ -534,22 +539,34 @@ class TaskController extends Controller
                 }
             }
 
-            // ✅ NEW: Attach labels jika ada
+            // Attach labels jika ada
             if (!empty($request->label_ids)) {
                 $task->labels()->attach($request->label_ids);
+            }
+
+            // ✅ NEW: Create checklists jika ada
+            if (!empty($request->checklists)) {
+                foreach ($request->checklists as $index => $checklistData) {
+                    Checklist::create([
+                        'id' => Str::uuid()->toString(),
+                        'task_id' => $task->id,
+                        'title' => $checklistData['title'],
+                        'is_done' => $checklistData['is_done'] ?? false,
+                        'position' => $index
+                    ]);
+                }
             }
 
             DB::commit();
 
             // Load relations untuk response
-            $task->load(['assignees', 'labels.color']);
+            $task->load(['assignees', 'labels.color', 'checklists']);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Tugas berhasil dibuat',
                 'task' => $task
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error creating task with assignments: ' . $e->getMessage());
@@ -599,77 +616,76 @@ class TaskController extends Controller
 
     // ✅ NEW: Create new label
     // Di TaskController - perbaiki method createLabel
-public function createLabel(Request $request)
-{
-    Log::info('Create Label Request:', $request->all());
-    
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'color_id' => 'required|exists:colors,id',
-        'workspace_id' => 'required|exists:workspaces,id'
-    ]);
+    public function createLabel(Request $request)
+    {
+        Log::info('Create Label Request:', $request->all());
 
-    try {
-        $user = Auth::user();
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'color_id' => 'required|exists:colors,id',
+            'workspace_id' => 'required|exists:workspaces,id'
+        ]);
 
-        // Validasi akses user ke workspace
-        $userWorkspace = UserWorkspace::where('user_id', $user->id)
-            ->where('workspace_id', $request->workspace_id)
-            ->first();
+        try {
+            $user = Auth::user();
 
-        if (!$userWorkspace) {
-            Log::error('User tidak memiliki akses ke workspace', [
-                'user_id' => $user->id,
-                'workspace_id' => $request->workspace_id
+            // Validasi akses user ke workspace
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                ->where('workspace_id', $request->workspace_id)
+                ->first();
+
+            if (!$userWorkspace) {
+                Log::error('User tidak memiliki akses ke workspace', [
+                    'user_id' => $user->id,
+                    'workspace_id' => $request->workspace_id
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke workspace ini'
+                ], 403);
+            }
+
+            // Cek apakah label dengan nama yang sama sudah ada
+            $existingLabel = Label::where('name', $request->name)->first();
+            if ($existingLabel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Label dengan nama ini sudah ada'
+                ], 400);
+            }
+
+            $label = Label::create([
+                'id' => Str::uuid()->toString(),
+                'name' => $request->name,
+                'color_id' => $request->color_id
             ]);
-            
+
+            // Load relation color untuk response
+            $label->load('color');
+
+            Log::info('Label berhasil dibuat:', [
+                'label_id' => $label->id,
+                'name' => $label->name,
+                'color_id' => $label->color_id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Label berhasil dibuat',
+                'label' => $label
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error creating label: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki akses ke workspace ini'
-            ], 403);
+                'message' => 'Gagal membuat label: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Cek apakah label dengan nama yang sama sudah ada
-        $existingLabel = Label::where('name', $request->name)->first();
-        if ($existingLabel) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Label dengan nama ini sudah ada'
-            ], 400);
-        }
-
-        $label = Label::create([
-            'id' => Str::uuid()->toString(),
-            'name' => $request->name,
-            'color_id' => $request->color_id
-        ]);
-
-        // Load relation color untuk response
-        $label->load('color');
-
-        Log::info('Label berhasil dibuat:', [
-            'label_id' => $label->id,
-            'name' => $label->name,
-            'color_id' => $label->color_id
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Label berhasil dibuat',
-            'label' => $label
-        ]);
-        
-    } catch (\Exception $e) {
-        Log::error('Error creating label: ' . $e->getMessage(), [
-            'trace' => $e->getTraceAsString()
-        ]);
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal membuat label: ' . $e->getMessage()
-        ], 500);
     }
-}
 
     // ✅ NEW: Get available colors
     public function getColors()
@@ -770,37 +786,248 @@ public function createLabel(Request $request)
 
 
     // Tambahkan method ini ke TaskController
-public function getWorkspaceTasks($workspaceId)
-{
-    try {
-        $user = Auth::user();
+    public function getWorkspaceTasks($workspaceId)
+    {
+        try {
+            $user = Auth::user();
 
-        // Validasi akses user ke workspace
-        $userWorkspace = UserWorkspace::where('user_id', $user->id)
-            ->where('workspace_id', $workspaceId)
-            ->first();
+            // Validasi akses user ke workspace
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                ->where('workspace_id', $workspaceId)
+                ->first();
 
-        if (!$userWorkspace) {
+            if (!$userWorkspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke workspace ini'
+                ], 403);
+            }
+
+            $tasks = Task::with(['assignees', 'labels.color', 'boardColumn'])
+                ->where('workspace_id', $workspaceId)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'tasks' => $tasks
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting workspace tasks: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki akses ke workspace ini'
-            ], 403);
+                'message' => 'Gagal mengambil data tugas'
+            ], 500);
         }
-
-        $tasks = Task::with(['assignees', 'labels.color', 'boardColumn'])
-            ->where('workspace_id', $workspaceId)
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'tasks' => $tasks
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Error getting workspace tasks: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil data tugas'
-        ], 500);
     }
-}
+
+
+
+
+    // ✅ NEW: Get task checklists
+    public function getTaskChecklists($taskId)
+    {
+        try {
+            $task = Task::findOrFail($taskId);
+            $user = Auth::user();
+
+            // Validasi akses user ke workspace task
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                ->where('workspace_id', $task->workspace_id)
+                ->first();
+
+            if (!$userWorkspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            $checklists = Checklist::where('task_id', $taskId)
+                ->orderBy('position')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'checklists' => $checklists
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting task checklists: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data checklist'
+            ], 500);
+        }
+    }
+
+    // ✅ NEW: Create checklist item
+    public function createChecklist(Request $request)
+    {
+        $request->validate([
+            'task_id' => 'required|exists:tasks,id',
+            'title' => 'required|string|max:255'
+        ]);
+
+        try {
+            $task = Task::findOrFail($request->task_id);
+            $user = Auth::user();
+
+            // Validasi akses user ke workspace task
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                ->where('workspace_id', $task->workspace_id)
+                ->first();
+
+            if (!$userWorkspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            $checklist = Checklist::create([
+                'id' => Str::uuid()->toString(),
+                'task_id' => $request->task_id,
+                'title' => $request->title,
+                'is_done' => false,
+                'position' => Checklist::where('task_id', $request->task_id)->max('position') + 1
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Checklist berhasil ditambahkan',
+                'checklist' => $checklist
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error creating checklist: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambahkan checklist: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ✅ NEW: Update checklist item
+    public function updateChecklist(Request $request, $checklistId)
+    {
+        $request->validate([
+            'title' => 'sometimes|string|max:255',
+            'is_done' => 'sometimes|boolean'
+        ]);
+
+        try {
+            $checklist = Checklist::findOrFail($checklistId);
+            $task = Task::findOrFail($checklist->task_id);
+            $user = Auth::user();
+
+            // Validasi akses user ke workspace task
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                ->where('workspace_id', $task->workspace_id)
+                ->first();
+
+            if (!$userWorkspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            $checklist->update($request->only(['title', 'is_done']));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Checklist berhasil diupdate',
+                'checklist' => $checklist
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error updating checklist: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengupdate checklist: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ✅ NEW: Delete checklist item
+    public function deleteChecklist($checklistId)
+    {
+        try {
+            $checklist = Checklist::findOrFail($checklistId);
+            $task = Task::findOrFail($checklist->task_id);
+            $user = Auth::user();
+
+            // Validasi akses user ke workspace task
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                ->where('workspace_id', $task->workspace_id)
+                ->first();
+
+            if (!$userWorkspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            $checklist->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Checklist berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error deleting checklist: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus checklist: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ✅ NEW: Update checklist positions
+    public function updateChecklistPositions(Request $request)
+    {
+        $request->validate([
+            'checklists' => 'required|array',
+            'checklists.*.id' => 'required|exists:checklists,id',
+            'checklists.*.position' => 'required|integer'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($request->checklists as $checklistData) {
+                $checklist = Checklist::find($checklistData['id']);
+                if ($checklist) {
+                    $task = Task::findOrFail($checklist->task_id);
+                    $user = Auth::user();
+
+                    // Validasi akses user
+                    $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                        ->where('workspace_id', $task->workspace_id)
+                        ->first();
+
+                    if ($userWorkspace) {
+                        $checklist->update(['position' => $checklistData['position']]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Posisi checklist berhasil diupdate'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating checklist positions: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengupdate posisi checklist: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
+
+    
 }

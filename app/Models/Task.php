@@ -80,9 +80,10 @@ class Task extends Model
     }
 
     // Relasi ke Checklists
+    // Di dalam Task model, tambahkan relasi:
     public function checklists()
     {
-        return $this->hasMany(Checklist::class, 'task_id');
+        return $this->hasMany(Checklist::class, 'task_id')->orderBy('position');
     }
 
     // Relasi ke Attachments
@@ -136,7 +137,7 @@ class Task extends Model
     public function labels()
     {
         return $this->belongsToMany(Label::class, 'task_labels', 'task_id', 'label_id')
-                    ->using(TaskLabel::class)
-                    ->withTimestamps();
+            ->using(TaskLabel::class)
+            ->withTimestamps();
     }
 }

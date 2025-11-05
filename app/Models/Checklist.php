@@ -18,11 +18,13 @@ class Checklist extends Model
         'id',
         'task_id',
         'title',
-        'is_done'
+        'is_done',
+        'position'
     ];
 
     protected $casts = [
         'is_done' => 'boolean',
+        'position' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
@@ -33,6 +35,9 @@ class Checklist extends Model
 
         static::creating(function ($model) {
             $model->id = $model->id ?: Str::uuid()->toString();
+            if (!$model->position) {
+                $model->position = static::where('task_id', $model->task_id)->max('position') + 1;
+            }
         });
     }
 
@@ -52,5 +57,11 @@ class Checklist extends Model
     public function scopePending($query)
     {
         return $query->where('is_done', false);
+    }
+
+    // Scope untuk mengurutkan berdasarkan position
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('position');
     }
 }

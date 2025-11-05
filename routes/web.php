@@ -115,6 +115,17 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/labels', [TaskController::class, 'createLabel']);
         Route::post('/{taskId}/labels', [TaskController::class, 'manageTaskLabels']);
         Route::get('/{taskId}/labels', [TaskController::class, 'getTaskLabels']);
+
+
+        // Checklist Routes
+        Route::get('/{taskId}/checklists', [TaskController::class, 'getTaskChecklists']);
+        Route::post('/checklists', [TaskController::class, 'createChecklist']);
+        Route::put('/checklists/{checklistId}', [TaskController::class, 'updateChecklist']);
+        Route::delete('/checklists/{checklistId}', [TaskController::class, 'deleteChecklist']);
+        Route::put('/checklists/positions/update', [TaskController::class, 'updateChecklistPositions']);
+
+
+        
     });
 
     // ✅ Calendar & Schedule Routes
@@ -209,6 +220,3 @@ Route::middleware(['auth'])->group(function () {
     // ✅ Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 });
-
-
-
