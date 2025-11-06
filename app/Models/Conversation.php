@@ -46,4 +46,18 @@ class Conversation extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    // 🔥🔥🔥 PERBAIKAN DI BAWAH INI 🔥🔥🔥
+
+    /**
+     * Dapatkan satu pesan terakhir dari percakapan.
+     *
+     * Kita ganti 'latestOfMany()' dengan relasi 'hasOne' standar
+     * yang diurutkan berdasarkan 'created_at'. Ini jauh lebih
+     * handal untuk PostgreSQL dan UUID.
+     */
+    public function lastMessage()
+    {
+        return $this->hasOne(Message::class)->orderBy('created_at', 'DESC');
+    }
 }

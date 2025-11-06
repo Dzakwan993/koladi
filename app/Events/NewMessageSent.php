@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Events;
+namespace App\Events; // <-- 🔥 PERBAIKAN: Seharusnya App\Events, bukan App
 
 use App\Models\Message;
 use Illuminate\Broadcasting\Channel;
@@ -15,37 +15,25 @@ class NewMessageSent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    /**
-     * Instance pesan yang baru dibuat.
-     *
-     * Properti 'public' akan otomatis ikut terkirim
-     * sebagai payload ke frontend.
-     */
     public Message $message;
 
-    /**
-     * Buat instance event baru.
-     */
     public function __construct(Message $message)
     {
         $this->message = $message;
     }
 
-    /**
-     * Tentukan channel mana yang akan di-broadcast.
-     *
-     * Ini adalah bagian terpenting. Kita akan mengirim
-     * pesan ini ke channel privat yang namanya unik
-     * berdasarkan ID percakapan.
-     *
-     * @return array<int, \Illuminate\Broadcasting\Channel>
-     */
     public function broadcastOn(): array
     {
-        // Channel ini akan 'didengarkan' oleh frontend
-        // contoh: Echo.private('conversation.ID_PERCAKAPAN')
         return [
             new PrivateChannel('conversation.' . $this->message->conversation_id),
         ];
+    }
+
+    /**
+     * Tentukan nama event yang akan didengar oleh frontend.
+     */
+    public function broadcastAs(): string
+    {
+        return 'NewMessage'; // <-- Ini akan cocok dengan .listen('NewMessage', ...)
     }
 }

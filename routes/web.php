@@ -84,17 +84,35 @@ Route::middleware(['auth'])->group(function () {
         return view('workspace', ['workspace' => $workspace]);
     })->name('workspace');
 
-    // Halaman Untuk Chat
+    // 🔥🔥🔥 --- PERBAIKAN CHAT DIMULAI DI SINI --- 🔥🔥🔥
+
+    // LANGKAH 1: Rute untuk menampilkan HALAMAN (VIEW) chat
+    // Ini harus mengembalikan view('chat'), BUKAN controller
     Route::get('/workspace/{workspace}/chat', function (Workspace $workspace) {
         return view('chat', ['workspace' => $workspace]);
     })->name('chat');
-    Route::prefix('api')->name('api.')->group(function () {
-        Route::get('/workspace/{workspaceId}/chat', [ChatController::class, 'index'])->name('chat.index');
-        Route::get('/chat/{conversationId}/messages', [ChatController::class, 'showMessages'])->name('chat.messages');
-        Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
-        Route::post('/chat/create', [ChatController::class, 'createConversation'])->name('chat.create');
-    });
 
+    // LANGKAH 2: Grup semua rute API chat Anda di bawah prefix '/api'
+    // Ini akan cocok dengan panggilan 'fetch' di chat.js
+    Route::prefix('api')->name('api.')->group(function () {
+
+        // Rute untuk mengambil daftar chat & anggota (JSON)
+        Route::get('/workspace/{workspaceId}/chat', [ChatController::class, 'index'])->name('chat.index');
+
+        // Rute untuk mengambil pesan (JSON)
+        Route::get('/chat/{conversationId}/messages', [ChatController::class, 'showMessages'])->name('chat.messages');
+
+        // Rute untuk mengirim pesan (POST)
+        Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
+
+        // Rute untuk membuat percakapan baru (POST)
+        Route::post('/chat/create', [ChatController::class, 'createConversation'])->name('chat.create');
+
+        // Rute untuk menandai telah dibaca (POST)
+        Route::post('/chat/{conversationId}/mark-as-read', [ChatController::class, 'markAsRead'])->name('chat.markAsRead');
+    });
+    // 🔥🔥🔥 --- PERBAIKAN CHAT SELESAI --- 🔥🔥🔥
+    
     // Halaman Jadwal
     Route::get('/jadwal', function () {
         return view('jadwal');
@@ -208,4 +226,3 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/hak-akses', [UserController::class, 'hakAkses'])->name('hakAkses');
     Route::post('/update-user-roles', [UserController::class, 'updateUserRoles'])->name('user.updateRoles');
 });
-

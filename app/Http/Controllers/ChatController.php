@@ -6,9 +6,8 @@ use App\Models\Message;
 use App\Models\Workspace;
 use App\Models\Conversation;
 use Illuminate\Http\Request;
-use App\Events\NewMessageSent;
+use App\Events\NewMessageSent; // <-- 🔥 PERBAIKAN PENTING ADA DI SINI
 use Illuminate\Support\Facades\DB;
-// <-- TAMBAHAN: Import Event untuk real-time broadcast
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ConversationParticipant;
@@ -17,62 +16,72 @@ class ChatController extends Controller
 {
     /**
      * Ambil semua percakapan user di workspace tertentu.
+     * (Versi UPGRADE dengan unread count & last message)
      */
-    // Di dalam ChatController.php
-
     public function index(string $workspaceId)
     {
         $userId = Auth::id();
-
-        // 1. Ambil data workspace (kita butuh namanya)
         $workspace = Workspace::findOrFail($workspaceId);
 
-        // 2. Ambil atau Buat Grup Utama (misal: "Koladi")
-        // Ini adalah logika 'findOrCreate' sederhana
+        // --- 1. Ambil atau Buat Grup Utama ---
         $mainGroup = Conversation::firstOrCreate(
             [
                 'workspace_id' => $workspaceId,
                 'type' => 'group',
-                'name' => $workspace->name // "Koladi"
+                'name' => $workspace->name
             ],
-            [
-                // Anda bisa set 'created_by' jika perlu, misal oleh admin
-                'created_by' => $workspace->user_id // Asumsi owner workspace
-            ]
+            ['created_by' => $workspace->user_id]
         );
 
-        // 3. Pastikan user ini (dan semua anggota) adalah peserta grup utama
-        // Catatan: Idealnya, ini dilakukan saat user ditambahkan ke workspace
-        ConversationParticipant::firstOrCreate(
+        // Pastikan user adalah partisipan grup utama
+        // DAN tambahkan last_read_at jika ini pertama kalinya
+        $mainGroupParticipant = ConversationParticipant::firstOrCreate(
             [
                 'conversation_id' => $mainGroup->id,
                 'user_id' => $userId
-            ]
-            // 'is_admin' bisa ditambahkan di sini jika perlu
+            ],
+            ['last_read_at' => now()] // <-- Set last_read_at saat join
         );
 
-        // 4. Ambil SEMUA percakapan user (DM atau grup lain)
-        // KITA KECUALIKAN grup utama agar tidak duplikat
-        $otherConversations = Conversation::with(['participants.user', 'messages' => fn($q) => $q->latest()->limit(1), 'messages.sender'])
-            ->where('workspace_id', $workspaceId)
-            ->where('id', '!=', $mainGroup->id) // <-- Penting: Jangan ambil grup utama lagi
+        // --- 2. Ambil Percakapan Lain (DM & Grup Kustom) ---
+        $otherConversations = Conversation::where('workspace_id', $workspaceId)
+            ->where('id', '!=', $mainGroup->id)
             ->whereHas('participants', fn($q) => $q->where('user_id', $userId))
-            ->orderByRaw('CASE WHEN (SELECT count(*) FROM messages WHERE conversation_id = conversations.id) > 0 THEN (SELECT created_at FROM messages WHERE conversation_id = conversations.id ORDER BY created_at DESC LIMIT 1) ELSE conversations.created_at END DESC')
-            ->get();
+            ->with(['participants.user', 'lastMessage.sender']) // <-- Gunakan relasi lastMessage()
+            ->get(); // Ambil dulu, baru kita hitung unread
 
-        // 5. Ambil List Anggota Workspace (untuk memulai DM baru)
-        $members = $workspace->users() // <-- Gunakan relasi 'users()'
+        // --- 3. Hitung Unread Count (Bagian Penting) ---
+        // Kita gabungkan semua percakapan untuk dihitung
+        $allConversations = $otherConversations->push($mainGroup);
+
+        foreach ($allConversations as $conversation) {
+            // Ambil data 'last_read_at' dari pivot
+            $participantData = $conversation->participants->where('user_id', $userId)->first();
+            $lastReadAt = $participantData ? $participantData->last_read_at : null;
+
+            if ($lastReadAt) {
+                // Hitung pesan baru (dari orang lain) setelah tanggal 'last_read_at'
+                $conversation->unread_count = Message::where('conversation_id', $conversation->id)
+                    ->where('sender_id', '!=', $userId)
+                    ->where('created_at', '>', $lastReadAt)
+                    ->count();
+            } else {
+                // Jika user belum pernah membaca (null), hitung semua pesan
+                $conversation->unread_count = $conversation->messages()->where('sender_id', '!=', $userId)->count();
+            }
+        }
+
+        // --- 4. Ambil Anggota Tim ---
+        $members = $workspace->users()
             ->where('users.id', '!=', $userId)
             ->get();
 
-        // 6. Load relasi untuk mainGroup (agar formatnya sama)
-        $mainGroup->load(['participants.user', 'messages' => fn($q) => $q->latest()->limit(1), 'messages.sender']);
-
-        // 7. Gabungkan hasilnya dalam format JSON yang baru
+        // --- 5. Kembalikan Respon ---
+        // Pisahkan lagi grup utama dari percakapan lain
         return response()->json([
-            'main_group' => $mainGroup,           // Grup "Koladi"
-            'conversations' => $otherConversations, // DM / Grup lain
-            'members' => $members,                // List anggota
+            'main_group' => $allConversations->find($mainGroup->id),
+            'conversations' => $allConversations->where('id', '!=', $mainGroup->id)->values(),
+            'members' => $members,
         ]);
     }
 
@@ -83,22 +92,30 @@ class ChatController extends Controller
     {
         $userId = Auth::id();
 
-        // 1. Validasi dulu (Kode ini sudah Anda tambahkan, bagus!)
+        // Validasi partisipan
         $isParticipant = ConversationParticipant::where('conversation_id', $conversationId)
             ->where('user_id', $userId)
             ->exists();
 
         if (!$isParticipant) {
-            return response()->json(['error' => 'Akses ditolak'], 403); // 403 Forbidden
+            return response()->json(['error' => 'Akses ditolak'], 403);
         }
 
-        // 2. Jika aman, baru ambil pesan
+        // Ambil pesan
         $messages = Message::with('sender')
             ->where('conversation_id', $conversationId)
             ->orderBy('created_at', 'asc')
             ->get();
 
-        // TODO: Tandai pesan sebagai "dibaca" (is_read = true)
+        // 🔥 Tandai sudah dibaca SAAT user membuka pesan
+        // (Ini akan dieksekusi setelah 'markAsRead' dari frontend)
+        try {
+            ConversationParticipant::where('conversation_id', $conversationId)
+                ->where('user_id', $userId)
+                ->update(['last_read_at' => now()]);
+        } catch (\Exception $e) {
+            Log::error('Gagal update last_read_at di showMessages: ' . $e->getMessage());
+        }
 
         return response()->json($messages);
     }
@@ -115,8 +132,7 @@ class ChatController extends Controller
 
         $userId = Auth::id();
 
-        // <-- TAMBAHAN: Validasi Otorisasi
-        // Cek apakah user ini adalah peserta percakapan
+        // Validasi Otorisasi
         $isParticipant = ConversationParticipant::where('conversation_id', $request->conversation_id)
             ->where('user_id', $userId)
             ->exists();
@@ -124,7 +140,6 @@ class ChatController extends Controller
         if (!$isParticipant) {
             return response()->json(['error' => 'Akses ditolak'], 403);
         }
-        // --- Akhir Validasi Otorisasi ---
 
         $message = Message::create([
             'conversation_id' => $request->conversation_id,
@@ -135,16 +150,13 @@ class ChatController extends Controller
         // Load relasi sender agar bisa dikirim ke frontend
         $message->load('sender');
 
-        // // <-- TAMBAHAN: Broadcast pesan ke WebSocket (Real-time)
-        // // Pastikan Anda sudah membuat event: php artisan make:event NewMessageSent
-        // // Event ini akan diterima oleh user LAIN yang sedang membuka chat
-        // try {
-        //     broadcast(new NewMessageSent($message))->toOthers();
-        // } catch (\Exception $e) {
-        //     // Opsional: Log error jika broadcast gagal (misal: server Reverb/Pusher mati)
-        //     Log::error('Broadcast failed: ' . $e->getMessage());
-        // }
-        // // --- Akhir Broadcast ---
+        // 🔥 Broadcast pesan ke WebSocket (Real-time)
+        try {
+            broadcast(new NewMessageSent($message))->toOthers();
+        } catch (\Exception $e) {
+            // Opsional: Log error jika broadcast gagal
+            Log::error('Broadcast failed: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
@@ -160,41 +172,37 @@ class ChatController extends Controller
         $request->validate([
             'workspace_id' => 'required|uuid|exists:workspaces,id',
             'type' => 'required|in:group,private',
-            'name' => 'nullable|string|max:100', // Batasi panjang nama grup
+            'name' => 'nullable|string|max:100',
             'participants' => 'required|array|min:1',
-            'participants.*' => 'required|uuid|exists:users,id', // Validasi tiap ID
+            'participants.*' => 'required|uuid|exists:users,id',
         ]);
 
         $authId = Auth::id();
 
-        // <-- TAMBAHAN: Pencegahan Duplikasi DM (Chat Pribadi)
+        // Pencegahan Duplikasi DM (Chat Pribadi)
         if ($request->type == 'private' && count($request->participants) == 1) {
             $otherUserId = $request->participants[0];
 
-            // Tidak boleh chat dengan diri sendiri
             if ($otherUserId == $authId) {
                 return response()->json(['error' => 'Tidak dapat membuat percakapan dengan diri sendiri.'], 422);
             }
 
-            // Cari conversation 'private' di workspace ini
-            // yang anggotanya HANYA 2 orang ini
+            // Cari conversation 'private'
             $existing = Conversation::where('type', 'private')
                 ->where('workspace_id', $request->workspace_id)
                 ->whereHas('participants', fn($q) => $q->where('user_id', $authId))
                 ->whereHas('participants', fn($q) => $q->where('user_id', $otherUserId))
-                ->has('participants', '=', 2)
+                ->has('participants', '=', 2) // <-- Perbaikan untuk PostgreSQL
                 ->first();
 
             if ($existing) {
-                // JANGAN BUAT BARU. Kembalikan data conversation yang sudah ada.
                 return response()->json([
                     'success'      => true,
                     'conversation' => $existing->load('participants.user'),
-                    'existed'      => true // Flag untuk frontend
+                    'existed'      => true
                 ]);
             }
         }
-        // --- Akhir Pencegahan Duplikasi DM ---
 
         DB::beginTransaction();
 
@@ -202,20 +210,20 @@ class ChatController extends Controller
             $conversation = Conversation::create([
                 'workspace_id' => $request->workspace_id,
                 'type'         => $request->type,
-                'name'         => $request->type == 'group' ? $request->name : null, // Hanya grup yg punya nama
+                'name'         => $request->type == 'group' ? $request->name : null,
                 'created_by'   => $authId,
             ]);
 
             // Tambahkan peserta
             $participantIds = $request->participants;
             foreach ($participantIds as $participantId) {
-                // Hindari duplikasi jika user mengirim ID-nya sendiri di array
                 if ($participantId == $authId) continue;
 
                 ConversationParticipant::create([
                     'conversation_id' => $conversation->id,
                     'user_id'         => $participantId,
-                    'is_admin'        => false, // Default
+                    'is_admin'        => false,
+                    'last_read_at'    => null, // <-- User lain belum membaca
                 ]);
             }
 
@@ -224,15 +232,13 @@ class ChatController extends Controller
                 'conversation_id' => $conversation->id,
                 'user_id'         => $authId,
             ], [
-                'is_admin' => true // Pembuat grup otomatis jadi admin
+                'is_admin' => true,
+                'last_read_at' => now() // <-- Pembuat otomatis sudah "membaca"
             ]);
 
             DB::commit();
 
-            // <-- TAMBAHAN: Load relasi agar data yg dikembalikan lengkap
             $conversation->load('participants.user');
-
-            // TODO: Broadcast "NewConversation" agar muncul di list chat peserta lain
 
             return response()->json([
                 'success' => true,
@@ -240,11 +246,32 @@ class ChatController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-
+            Log::error('Gagal buat percakapan: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage(),
+                'error' => 'Gagal membuat percakapan.',
             ], 500);
+        }
+    }
+
+
+    /**
+     * 🔥 FUNGSI BARU UNTUK ME-RESET 'UNREAD COUNT' 🔥
+     * Ini dipanggil oleh JavaScript saat user mengklik chat di sidebar.
+     */
+    public function markAsRead(string $conversationId)
+    {
+        $userId = Auth::id();
+
+        try {
+            ConversationParticipant::where('conversation_id', $conversationId)
+                ->where('user_id', $userId)
+                ->update(['last_read_at' => now()]);
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            Log::error('Gagal markAsRead: ' . $e->getMessage());
+            return response()->json(['success' => false], 500);
         }
     }
 }
