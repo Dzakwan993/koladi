@@ -7,30 +7,50 @@
         <!-- Header -->
         <div class="relative flex flex-col sm:flex-row justify-between items-start p-4 sm:p-6 gap-4">
             <div class="flex-1 w-full">
-                <h2 class="text-lg sm:text-xl md:text-2xl text-[#0F172A] font-bold mb-3 sm:mb-4">Akses Anda di PT. Mencari Cinta Sejati</h2>
+                <h2 data-title class="text-lg sm:text-xl md:text-2xl text-[#0F172A] font-bold mb-3 sm:mb-4">Akses Anda di </h2>
+
+                @php
+                    // Ambil role user di company
+                    $activeCompanyId = session('active_company_id');
+                    $userCompany = auth()->user()->userCompanies()
+                        ->where('company_id', $activeCompanyId)
+                        ->with('role')
+                        ->first();
+                    
+                    $currentUserRole = $userCompany?->role?->name ?? 'Member';
+                    
+                    // Mapping warna
+                    $colorMapping = [
+                        'Super Admin' => '#102A63',
+                        'Admin' => '#225AD6',
+                        'Manager' => '#0FA875',
+                        'Member' => '#E4BA13',
+                    ];
+                    
+                    $roleColor = $colorMapping[$currentUserRole] ?? '#E4BA13';
+                @endphp
 
                 <div class="relative sm:pl-14 mt-2 w-full">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mt-1">
                         <!-- Avatar - di kiri di mobile, absolute di desktop -->
                         <img src="https://i.pravatar.cc/50?img=1" alt="Avatar"
                             class="w-10 h-10 sm:w-10 sm:h-10 rounded-full sm:absolute sm:left-0 sm:top-1/2 sm:-translate-y-1/2">
-
                         <div class="flex flex-col gap-1">
-                            <span class="text-base sm:text-lg md:text-xl text-[#0F172A] font-bold">Muhammad Sahroni</span>
-                            <span class="bg-[#102A63] text-white text-xs font-semibold px-2 sm:px-3 py-0.5 rounded-bl-2xl rounded-tr-2xl inline-block w-fit">
-                                Super Admin
+                            <span class="text-base sm:text-lg md:text-xl text-[#0F172A] font-bold">{{ $user->full_name ?? 'PT. Mencari Cinta Sejati' }}</span>
+                            <span class="text-white text-xs font-semibold px-2 sm:px-3 py-0.5 rounded-bl-2xl rounded-tr-2xl inline-block w-fit" id="accessModalUserRole">
+                                {{ $currentUserRole }}
                             </span>
                         </div>
                     </div>
 
-                    <!-- Button Atur akses pengguna -->
-                    <button onclick="openRoleModal();" class="bg-[#225AD6] hover:bg-blue-600 text-white px-3 py-2 sm:py-2.5 text-xs sm:text-sm rounded-lg font-semibold transition flex items-center gap-1.5 sm:gap-2 shadow-lg mt-3 sm:mt-0 sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 w-full sm:w-auto justify-center">
-                        <img src="{{ asset('images/icons/Protect.svg') }}" alt="Plus" class="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
-                        Atur akses pengguna
-                    </button>
+                        <!-- Button Atur akses pengguna -->
+                        <button onclick="openRoleModal();" class="bg-[#225AD6] hover:bg-blue-600 text-white px-3 py-2 sm:py-2.5 text-xs sm:text-sm rounded-lg font-semibold transition flex items-center gap-1.5 sm:gap-2 shadow-lg mt-3 sm:mt-0 sm:absolute sm:right-0 sm:top-1/2 sm:-translate-y-1/2 w-full sm:w-auto justify-center">
+                            <img src="{{ asset('images/icons/Protect.svg') }}" alt="Plus" class="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7" />
+                            Atur akses pengguna
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
 
         <div class="border-b mx-4 sm:mx-8 md:mx-12 border-[#102A63]"></div>
 
@@ -190,9 +210,77 @@
 </div>
 
 <script>
-function openAccessModal() {
-    const modal = document.getElementById('accessModal');
-    modal.classList.remove('hidden');
+ window.currentCompanyUserRole = '{{ $currentUserRole }}';
+ window.currentCompanyRoleColor = '{{ $roleColor }}';
+// Fungsi untuk set ctx secara global dan membuka modal akses dengan context yang diberikan
+function openAccessModal(ctx) {
+    if(ctx) {
+        window.setRoleContext(ctx);
+        console.log('Setting workspace context:', ctx.workspaceName);
+
+        const modal = document.getElementById('accessModal');
+        const titleElement = document.querySelector('[data-title]');
+        const userRoleElement = document.getElementById('accessModalUserRole');
+
+        // Tampilkan title berdasarkan konteks 
+        if(titleElement) {
+            // ✅ PERBAIKAN: Cek type context
+            if(ctx.type === 'workspace' && ctx.workspaceName) {
+                // Context workspace: tampilkan nama workspace
+                titleElement.textContent = `Akses Anda di Workspace ${ctx.workspaceName}`;
+            } else {
+                // Context company: tampilkan nama company dari Blade
+                titleElement.textContent = `Akses Anda di {{ $activeCompany->name ?? 'PT. Mencari Cinta Sejati' }}`;
+            }
+        }
+
+        // ✅ Jika workspace, fetch role dari server
+        if(ctx.type === 'workspace' && ctx.workspaceId) {
+            fetch(`/workspace/${ctx.workspaceId}/user-role`, {
+                headers: { 
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                
+                if(userRoleElement) {
+                    userRoleElement.textContent = data.role;
+                    
+                    const colorMap = {
+                        'Super Admin': '#102A63',
+                        'Admin': '#225AD6',
+                        'Manager': '#0FA875',
+                        'Member': '#E4BA13'
+                    };
+                    userRoleElement.style.backgroundColor = colorMap[data.role] || '#E4BA13';
+                }
+
+                // ✅ BUKA MODAL SETELAH DATA READY
+                modal.classList.remove('hidden');
+            })
+            .catch(err => console.error('Error fetching role:', err));
+        } else {
+            // ✅ Company context - pakai dari window atau ctx
+            if(userRoleElement) {
+                const role = ctx.userRole || window.currentCompanyUserRole || '{{ $currentUserRole }}';
+                const colorMap = {
+                    'Super Admin': '#102A63',
+                    'Admin': '#225AD6',
+                    'Manager': '#0FA875',
+                    'Member': '#E4BA13'
+                };
+                
+                userRoleElement.textContent = role;
+                userRoleElement.style.backgroundColor = colorMap[role] || window.currentCompanyRoleColor || '{{ $roleColor }}';
+                modal.classList.remove('hidden');
+            }
+}
+    }
+
+    
+   
 }
 
 function closeAccessModal() {

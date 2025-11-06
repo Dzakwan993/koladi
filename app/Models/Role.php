@@ -13,8 +13,18 @@ class Role extends Model
     protected $keyType = 'uuid';
     protected $fillable = ['name'];
 
+    // relasi ke userCompanies
     public function userCompanies()
     {
         return $this->hasMany(UserCompany::class, 'roles_id');
     }
+
+    // relasi ke userWorkspaces
+    public function userWorkspaces()
+    {
+        return $this->hasMany(UserWorkspace::class, 'roles_id');
+    }
+
+  
+
 }

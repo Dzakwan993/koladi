@@ -18,29 +18,35 @@ class WorkspaceController extends Controller
     // Menampilkan halaman kelola workspace
 
     public function index()
-    {
-        $user = Auth::user();
-        $activeCompany = session('active_company_id')
-            ? Company::find(session('active_company_id'))
-            : $user->companies->first();
+{
+    $user = Auth::user();
+    $activeCompany = session('active_company_id')
+        ? Company::find(session('active_company_id'))
+        : $user->companies->first();
 
-        if (!$activeCompany) {
-            return redirect()->route('buat-perusahaan.create')
-                ->with('error', 'Silakan buat perusahaan terlebih dahulu.');
-        }
-
-        // Get workspaces grouped by type
-        $workspaces = Workspace::with(['creator', 'userWorkspaces.user'])
-            ->where('company_id', $activeCompany->id)
-            ->active()
-            ->get()
-            ->groupBy('type');
-
-        return view('kelola-workspace', [
-            'workspaces' => $workspaces,
-            'activeCompany' => $activeCompany
-        ]);
+    if (!$activeCompany) {
+        return redirect()->route('buat-perusahaan.create')
+            ->with('error', 'Silakan buat perusahaan terlebih dahulu.');
     }
+
+    
+
+
+    // Get workspaces grouped by type
+    $workspaces = Workspace::with(['creator', 'userWorkspaces.user', 'userWorkspaces.role'])
+        ->where('company_id', $activeCompany->id)
+        ->active()
+        ->get()
+        ->groupBy('type');
+
+    $roles = Role::select('id','name')->get();
+
+    return view('kelola-workspace', [
+        'workspaces' => $workspaces,
+        'activeCompany' => $activeCompany,
+        'roles' => $roles
+    ]);
+}
 
     // Menyimpan workspace baru
     public function store(Request $request)
@@ -113,6 +119,33 @@ class WorkspaceController extends Controller
             'message' => 'Workspace berhasil diperbarui!',
             'workspace' => $workspace
         ]);
+    }
+
+    public function updateUserRoles(Request $request, $workspaceId)
+    {
+        $workspace = Workspace::findOrFail($workspaceId);
+        if (!$this->checkWorkspaceAccess($workspace)) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak memiliki akses ke workspace ini'], 403);
+        }
+
+        $request->validate([
+            'changes' => 'required|array'
+        ]);
+
+        try {
+            DB::beginTransaction();
+            foreach ($request->input('changes') as $userId => $roleId) {
+                UserWorkspace::where('workspace_id', $workspaceId)
+                    ->where('user_id', $userId)
+                    ->update(['roles_id' => $roleId, 'updated_at' => now()]);
+            }
+            DB::commit();
+
+            return response()->json(['success' => true, 'message' => 'Role workspace berhasil diperbarui']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 
     // Hapus workspace

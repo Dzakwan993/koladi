@@ -7,11 +7,13 @@ use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Company;
 use App\Models\Role;
+use App\Models\UserWorkspace;
 
 class UserController extends Controller
 {
     public function hakAkses()
     {
+        \Log::info('hakAkses method dipanggil'); // ← Tambah ini
         $activeCompanyId = session('active_company_id');
         
         // Ambil company dengan relasi users dan role mereka
@@ -30,7 +32,25 @@ class UserController extends Controller
             abort(403, 'Anda tidak memiliki akses untuk mengatur role');
         }
 
-        return view('components.atur-hak', compact('activeCompany', 'users'));
+        $roles = Role::select('id','name')->get();
+        
+        // ✅ PERBAIKI: Ambil role dari relasi yang sudah ada
+        $currentUserRoleObj = $this->getCurrentUserRole($currentUser, $activeCompanyId);
+        $currentUserRole = $currentUserRoleObj ? $currentUserRoleObj->name : 'Member';
+        $canManageRoles = in_array($currentUserRole, ['Super Admin', 'Admin']);
+
+        // Filter available roles based on current user role
+        if ($currentUserRole === 'Super Admin') {
+            $availableRoles = Role::whereIn('name', ['Admin', 'Manager', 'Member'])->get();
+        } else if ($currentUserRole === 'Admin') {
+            $availableRoles = Role::whereIn('name', ['Manager', 'Member'])->get();
+        } else {
+            $availableRoles = collect(); // kosong kalau bukan Super Admin/Admin
+        }
+
+       
+
+        return view('components.atur-hak', compact('activeCompany', 'users', 'roles', 'canManageRoles', 'availableRoles', 'currentUserRole'));
     }
 
     public function updateUserRoles(Request $request)
@@ -98,5 +118,17 @@ class UserController extends Controller
 
         // Hanya Super Admin dan Admin yang bisa mengatur role
         return in_array($userRole->name, ['Super Admin', 'Admin']);
+    }
+
+    public function getWorkspaceUserRole($workspaceId)
+    {
+        $userWorkspace = auth()->user()->userWorkspaces()
+            ->where('workspace_id', $workspaceId)
+            ->with('role')
+            ->first();
+        
+        return response()->json([
+            'role' => $userWorkspace?->role?->name ?? 'Member'
+        ]);
     }
 }

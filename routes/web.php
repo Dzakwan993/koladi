@@ -35,7 +35,9 @@ Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallba
 Route::post('/invite/send', [InvitationController::class, 'send'])->name('invite.send');
 Route::get('/invite/accept/{token}', [InvitationController::class, 'accept'])->name('invite.accept');
 
-// ✅ Protected Routes (Require Authentication)
+// Route::get('/{workspaceId}', [UserController::class, 'workspaceMember']);
+
+// ✅ UBAH: Pindahkan route hak-akses ke dalam middleware auth
 Route::middleware(['auth'])->group(function () {
 
     // ✅ Dashboard & Company Routes
@@ -208,10 +210,12 @@ Route::middleware(['auth'])->group(function () {
         return view('pembayaran');
     })->name('pembayaran');
 
-    // ✅ Role Management Routes
+        // ✅ Role Management Routes
     Route::get('/hak-akses', [UserController::class, 'hakAkses'])->name('hakAkses');
     Route::post('/update-user-roles', [UserController::class, 'updateUserRoles'])->name('user.updateRoles');
-
+    Route::post('/workspace/{workspaceId}/update-user-roles', [WorkspaceController::class, 'updateUserRoles'])->name('workspace.updateUserRoles');
+    Route::get('/workspace/{workspaceId}/user-role', [UserController::class, 'getWorkspaceUserRole']);
+    
     // ✅ Events API
     Route::get('/events', function () {
         return response()->json([]);
@@ -220,3 +224,4 @@ Route::middleware(['auth'])->group(function () {
     // ✅ Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 });
+

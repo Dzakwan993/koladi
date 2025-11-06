@@ -76,6 +76,11 @@ class User extends Authenticatable
         return $this->hasMany(UserCompany::class, 'user_id');
     }
 
+    // relasi ke userWorkspaces
+    public function userWorkspaces()
+    {
+        return $this->hasMany(UserWorkspace::class, 'user_id');
+    }
 
     public function getRoleName($companyId)
     {
@@ -83,13 +88,47 @@ class User extends Authenticatable
         return $userCompany && $userCompany->role ? $userCompany->role->name : null;
     }
 
+    // /**
+    //  * Ambil role user dalam company (id)
+    //  */
+    // public function getRoleId($companyId)
+    // {
+    //     return $this->userCompanies()
+    //         ->where('company_id', $companyId)
+    //         ->value('roles_id');
+    // }
 
-    // Di app/Models/User.php
-    public function workspaces()
+
+    /**
+     * Cek apakah user punya role tertentu
+     */
+    public function hasCompanyRole($companyId, $roles = [])
     {
-        return $this->belongsToMany(Workspace::class, 'user_workspaces', 'user_id', 'workspace_id')
-            ->withPivot('roles_id', 'status_active')
-            ->wherePivot('status_active', true)
-            ->withTimestamps();
+        $roleName = $this->getRoleName($companyId);
+        return in_array($roleName, (array) $roles);
     }
+
+    // App\Models\User.php
+    public function hasRoleInCompany(array $roleNames, $companyId)
+    {
+        return $this->userCompanies()
+            ->where('company_id', $companyId)
+            ->whereHas('role', function($q) use ($roleNames) {
+                $q->whereIn('name', $roleNames);
+            })
+            ->exists();
+    }
+
+    /**
+     * Cek apakah user boleh manage workspace roles
+     * -> hanya Super Admin & Admin
+     */
+    public function canManageWorkspaceRoles($companyId)
+    {
+        $allowed = ['Super Admin', 'SuperAdmin', 'Admin'];
+
+        return $this->hasCompanyRole($companyId, $allowed);
+    }
+
+
 }
