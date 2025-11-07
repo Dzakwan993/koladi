@@ -208,15 +208,67 @@ class UserController extends Controller
         return in_array($userRole->name, ['SuperAdmin', 'Administrator', 'AdminSistem']);
     }
 
-    public function getWorkspaceUserRole($workspaceId)
-    {
-        $userWorkspace = auth()->user()->userWorkspaces()
-            ->where('workspace_id', $workspaceId)
-            ->with('role')
-            ->first();
+    // Di UserController.php - modifikasi method yang sudah ada
+public function getWorkspaceUserRole($workspaceId)
+{
+    $user = auth()->user();
+    $activeCompanyId = session('active_company_id');
 
+    // ✅ 1. CEK ROLE DI COMPANY TERLEBIH DAHULU
+    $userCompany = $user->userCompanies()
+        ->where('company_id', $activeCompanyId)
+        ->with('role')
+        ->first();
+
+    $companyRole = $userCompany?->role?->name ?? 'Member';
+
+    // ✅ 2. JIKA SUPERADMIN/ADMIN DI COMPANY, GUNAKAN ROLE COMPANY
+    if (in_array($companyRole, ['SuperAdmin', 'Admin', 'Super Admin', 'Administrator'])) {
         return response()->json([
-            'role' => $userWorkspace?->role?->name ?? 'Member'
+            'role' => $companyRole,
+            'source' => 'company',
+            'is_company_admin' => true
         ]);
     }
+
+    // ✅ 3. JIKA BUKAN, CEK ROLE DI WORKSPACE (LOGICA EXISTING)
+    $userWorkspace = $user->userWorkspaces()
+        ->where('workspace_id', $workspaceId)
+        ->with('role')
+        ->first();
+
+    return response()->json([
+        'role' => $userWorkspace?->role?->name ?? 'Member',
+        'source' => 'workspace', 
+        'is_company_admin' => false
+    ]);
+}
+
+
+// Di UserController.php - tambahkan method ini
+private function canCreateWorkspace($userRole)
+{
+    if (!$userRole) {
+        return false;
+    }
+
+    // ✅ Hanya SuperAdmin, Admin, dan Manager yang boleh buat workspace
+    return in_array($userRole->name, ['SuperAdmin', 'Administrator', 'Admin', 'Manager']);
+}
+
+// Method untuk mendapatkan current user role (jika belum ada)
+private function getCurrentUserCompanyRole()
+{
+    $activeCompanyId = session('active_company_id');
+    $user = auth()->user();
+    
+    $userCompany = $user->userCompanies()
+        ->where('company_id', $activeCompanyId)
+        ->with('role')
+        ->first();
+
+    return $userCompany?->role;
+}
+
+
 }

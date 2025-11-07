@@ -226,7 +226,6 @@
                             Ditolak</h3>
                         <p class="text-xs sm:text-sm md:text-base text-red-600 font-medium">Hanya Super Admin dan Admin
                             yang dapat mengakses fitur ini.</p>
-                        <p class="text-xs text-red-500 mt-2">Role Anda: {{ $currentUserRole }}</p>
                     </div>
                 </div>
             </div>
@@ -503,7 +502,7 @@
         z-index: 9999 !important;
     }
 
-    /* Pastikan container yang membungkus tidak memotong isi dropdown */
+    Pastikan container yang membungkus tidak memotong isi dropdown
     .always-scrollbar {
         overflow: visible !important;
     }
