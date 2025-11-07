@@ -13,44 +13,131 @@ class UserController extends Controller
 {
     public function hakAkses()
     {
-        \Log::info('hakAkses method dipanggil'); // ← Tambah ini
+        \Log::info('=== HAK AKSES METHOD START ===');
         $activeCompanyId = session('active_company_id');
-        
-        // Ambil company dengan relasi users dan role mereka
-        $activeCompany = Company::with(['users' => function($query) {
-            $query->withPivot('roles_id');
+
+        if (!$activeCompanyId) {
+            abort(400, 'Tidak ada perusahaan yang aktif');
+        }
+
+        // ✅ DEBUG: Cek session dan auth
+        \Log::info('Session and Auth check:', [
+            'active_company_id' => $activeCompanyId,
+            'user_id' => auth()->id(),
+            'user_name' => auth()->user()->name
+        ]);
+
+        // ✅ DEBUG: Cek semua roles yang ada di database dengan cara berbeda
+        $allRoles = Role::all();
+        \Log::info('ALL ROLES IN DATABASE:', $allRoles->pluck('name', 'id')->toArray());
+
+        // ✅ PERBAIKAN: Ambil company dengan relasi users dan role mereka
+        $activeCompany = Company::with(['users' => function ($query) use ($activeCompanyId) {
+            $query->with(['userCompanies' => function ($q) use ($activeCompanyId) {
+                $q->where('company_id', $activeCompanyId)->with('role');
+            }]);
         }])->find($activeCompanyId);
 
-        $users = $activeCompany ? $activeCompany->users : collect([]);
+        \Log::info('Active Company:', [
+            'company_id' => $activeCompanyId,
+            'company_name' => $activeCompany->name ?? 'Not found',
+            'users_count' => $activeCompany ? $activeCompany->users->count() : 0
+        ]);
 
-        // ✅ TAMBAHKAN: Cek apakah user yang login punya akses
+        // ✅ PERBAIKAN: Ambil users dengan role mereka
+        $usersInCompany = $activeCompany ? $activeCompany->users->map(function ($user) use ($activeCompanyId) {
+            $userCompany = $user->userCompanies->where('company_id', $activeCompanyId)->first();
+            $user->current_role = $userCompany->role ?? null;
+            return $user;
+        }) : collect([]);
+
+        // ✅ PERBAIKAN: Cek akses dengan benar
         $currentUser = auth()->user();
-        $currentUserRole = $this->getCurrentUserRole($currentUser, $activeCompanyId);
-        
-        // ✅ TAMBAHKAN: Cek apakah user punya akses untuk mengatur role
-        if (!$this->canManageRoles($currentUserRole)) {
+        $currentUserRoleObj = $this->getCurrentUserRole($currentUser, $activeCompanyId);
+
+        \Log::info('Current user role object:', [
+            'role_obj' => $currentUserRoleObj,
+            'role_name' => $currentUserRoleObj ? $currentUserRoleObj->name : 'null'
+        ]);
+
+        if (!$currentUserRoleObj || !$this->canManageRoles($currentUserRoleObj)) {
+            \Log::warning('User tidak memiliki akses untuk mengatur role', [
+                'user_id' => $currentUser->id,
+                'role' => $currentUserRoleObj ? $currentUserRoleObj->name : 'null'
+            ]);
             abort(403, 'Anda tidak memiliki akses untuk mengatur role');
         }
 
-        $roles = Role::select('id','name')->get();
-        
-        // ✅ PERBAIKI: Ambil role dari relasi yang sudah ada
-        $currentUserRoleObj = $this->getCurrentUserRole($currentUser, $activeCompanyId);
-        $currentUserRole = $currentUserRoleObj ? $currentUserRoleObj->name : 'Member';
-        $canManageRoles = in_array($currentUserRole, ['Super Admin', 'Admin']);
+        $currentUserRole = $currentUserRoleObj->name;
 
-        // Filter available roles based on current user role
-        if ($currentUserRole === 'Super Admin') {
-            $availableRoles = Role::whereIn('name', ['Admin', 'Manager', 'Member'])->get();
-        } else if ($currentUserRole === 'Admin') {
-            $availableRoles = Role::whereIn('name', ['Manager', 'Member'])->get();
+        // ✅ PERBAIKAN KUNCI: Sesuaikan available roles berdasarkan hierarki
+        \Log::info('Current user role for filtering:', ['role' => $currentUserRole]);
+
+        // ✅ PERBAIKAN: Atur available roles berdasarkan hierarki role
+        if (in_array($currentUserRole, ['SuperAdmin', 'Administrator'])) {
+            \Log::info('Using roles for SuperAdmin/Administrator');
+            
+            // ✅ PERUBAHAN: Hanya Manager dan Member, TANPA AdminSistem
+            $availableRoles = Role::whereIn('id', [
+                'a688ef38-3030-45cb-9a4d-0407605bc322', // Manager
+                'ed81bd39-9041-43b8-a504-bf743b5c2919'  // Member
+            ])->get();
+            
+            \Log::info('Available roles for SuperAdmin/Administrator:', [
+                'count' => $availableRoles->count(),
+                'roles' => $availableRoles->pluck('name')->toArray()
+            ]);
+            
+            // Method 2: Jika masih kosong, buat manual collection TANPA AdminSistem
+            if ($availableRoles->count() === 0) {
+                \Log::warning('Query roles failed, creating manual collection');
+                $availableRoles = collect([
+                    (object)[
+                        'id' => 'a688ef38-3030-45cb-9a4d-0407605bc322', 
+                        'name' => 'Manager'
+                    ],
+                    (object)[
+                        'id' => 'ed81bd39-9041-43b8-a504-bf743b5c2919', 
+                        'name' => 'Member'
+                    ]
+                ]);
+                \Log::info('Manual collection created:', $availableRoles->pluck('name')->toArray());
+            }
+            
+        } else if ($currentUserRole === 'AdminSistem') {
+            \Log::info('Using roles for AdminSistem');
+            
+            // AdminSistem hanya bisa atur Manager & Member
+            $availableRoles = Role::whereIn('id', [
+                'a688ef38-3030-45cb-9a4d-0407605bc322', // Manager
+                'ed81bd39-9041-43b8-a504-bf743b5c2919'  // Member
+            ])->get();
+            
+            \Log::info('Available roles for AdminSistem:', [
+                'count' => $availableRoles->count(),
+                'roles' => $availableRoles->pluck('name')->toArray()
+            ]);
+            
         } else {
-            $availableRoles = collect(); // kosong kalau bukan Super Admin/Admin
+            // Manager & Member tidak bisa ubah role
+            $availableRoles = collect();
+            \Log::info('Other role path - no available roles');
         }
 
-       
+        \Log::info('FINAL AVAILABLE ROLES:', [
+            'count' => $availableRoles->count(),
+            'roles' => $availableRoles->pluck('name')->toArray(),
+            'currentUserRole' => $currentUserRole
+        ]);
 
-        return view('components.atur-hak', compact('activeCompany', 'users', 'roles', 'canManageRoles', 'availableRoles', 'currentUserRole'));
+        \Log::info('=== HAK AKSES METHOD END ===');
+
+        return view('components.atur-hak', compact(
+            'activeCompany',
+            'usersInCompany',
+            'availableRoles',
+            'currentUserRole'
+        ));
     }
 
     public function updateUserRoles(Request $request)
@@ -59,7 +146,7 @@ class UserController extends Controller
             $activeCompanyId = session('active_company_id');
             $currentUser = auth()->user();
             $currentUserRole = $this->getCurrentUserRole($currentUser, $activeCompanyId);
-            
+
             // ✅ TAMBAHKAN: Cek apakah user punya akses untuk mengatur role
             if (!$this->canManageRoles($currentUserRole)) {
                 return response()->json([
@@ -85,7 +172,6 @@ class UserController extends Controller
                 'success' => true,
                 'message' => 'Role berhasil diperbarui'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -94,7 +180,7 @@ class UserController extends Controller
         }
     }
 
-    // ✅ TAMBAHKAN: Method untuk mendapatkan role user saat ini
+    // ✅ PERBAIKAN: Method untuk mendapatkan role user saat ini
     private function getCurrentUserRole($user, $companyId)
     {
         $userCompany = DB::table('user_companies')
@@ -102,22 +188,24 @@ class UserController extends Controller
             ->where('company_id', $companyId)
             ->first();
 
-        if (!$userCompany) {
+        if (!$userCompany || !$userCompany->roles_id) {
+            \Log::warning('User company record not found or no role_id');
             return null;
         }
 
-        return Role::find($userCompany->roles_id);
+        $role = Role::find($userCompany->roles_id);
+        return $role;
     }
 
-    // ✅ TAMBAHKAN: Method untuk cek apakah user bisa mengatur role
+    // ✅ PERBAIKAN: Method untuk cek apakah user bisa mengatur role
     private function canManageRoles($userRole)
     {
         if (!$userRole) {
             return false;
         }
 
-        // Hanya Super Admin dan Admin yang bisa mengatur role
-        return in_array($userRole->name, ['Super Admin', 'Admin']);
+        // ✅ PERBAIKAN: Sesuaikan dengan nama role yang sebenarnya di database
+        return in_array($userRole->name, ['SuperAdmin', 'Administrator', 'AdminSistem']);
     }
 
     public function getWorkspaceUserRole($workspaceId)
@@ -126,7 +214,7 @@ class UserController extends Controller
             ->where('workspace_id', $workspaceId)
             ->with('role')
             ->first();
-        
+
         return response()->json([
             'role' => $userWorkspace?->role?->name ?? 'Member'
         ]);
