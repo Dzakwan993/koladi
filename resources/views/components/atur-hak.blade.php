@@ -496,31 +496,21 @@
 
 <!-- STYLE -->
 <style>
-    /* Pastikan dropdown tampil di atas kontainer lain */
+    /* ✅ Pastikan dropdown tampil di atas semua elemen */
     .dropdown-menu {
-        position: absolute;
+        position: fixed !important;
         z-index: 9999 !important;
     }
 
-    Pastikan container yang membungkus tidak memotong isi dropdown
+    /* ✅ Kontainer utama bisa discroll */
     .always-scrollbar {
-        overflow: visible !important;
-    }
-
-    /* Untuk parent flex-nya juga, agar tidak memotong */
-    .flex-1.overflow-hidden {
-        overflow: visible !important;
-    }
-
-    /* Scrollbar selalu terlihat */
-    .always-scrollbar {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
         scrollbar-width: thin;
         scrollbar-color: rgba(100, 100, 100, 0.4) rgba(200, 200, 200, 0.2);
-        overflow-y: auto;
-        overflow-x: visible !important;
-        overflow: visible !important;
     }
 
+    /* ✅ Scrollbar untuk browser berbasis WebKit (Chrome, Edge, Safari) */
     .always-scrollbar::-webkit-scrollbar {
         width: 8px;
         display: block;
@@ -535,8 +525,10 @@
         background: rgba(200, 200, 200, 0.2);
     }
 
-    /* Tambahan biar aman dari Tailwind override */
-    .flex-1 {
-        overflow: visible !important;
+    /* ✅ Hindari flex container mematikan scroll di dalam */
+    .flex-1.overflow-hidden {
+        overflow: hidden !important;
     }
+
+
 </style>
