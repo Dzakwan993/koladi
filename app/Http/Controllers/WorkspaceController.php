@@ -396,23 +396,63 @@ private function checkWorkspaceAccess($workspace)
 
     // Di WorkspaceController.php
     // Di WorkspaceController.php - update method show()
-    public function show(Workspace $workspace)
-    {
-        $user = Auth::user();
+    // Di WorkspaceController.php - update method show()
+public function show(Workspace $workspace)
+{
+    $user = Auth::user();
+    $activeCompanyId = session('active_company_id');
 
-        // ✅ GUNAKAN METHOD checkWorkspaceAccess YANG SUDAH DIPERBAIKI
-        if (!$this->checkWorkspaceAccess($workspace)) {
-            abort(403, 'Anda tidak memiliki akses ke workspace ini');
-        }
-
-        // Simpan workspace yang dipilih di session
-        session([
-            'current_workspace_id' => $workspace->id,
-            'current_workspace_name' => $workspace->name
-        ]);
-
-        return view('workspace', compact('workspace'));
+    // ✅ CEK APAKAH USER BOLEH AKSES WORKSPACE INI
+    if (!$this->canAccessWorkspace($workspace)) {
+        abort(403, 'Anda tidak memiliki akses ke workspace ini');
     }
+
+    // Simpan workspace yang dipilih di session
+    session([
+        'current_workspace_id' => $workspace->id,
+        'current_workspace_name' => $workspace->name
+    ]);
+
+    return view('workspace', compact('workspace'));
+}
+
+// ✅ TAMBAHKAN METHOD UNTUK CEK AKSES WORKSPACE
+private function canAccessWorkspace($workspace)
+{
+    $user = Auth::user();
+    $activeCompanyId = session('active_company_id');
+
+    // Jika user adalah pembuat workspace => selalu boleh
+    if ($workspace->created_by === $user->id) {
+        return true;
+    }
+
+    // Jika ada active company dalam session dan workspace bukan milik company aktif => tolak
+    if ($activeCompanyId && $workspace->company_id !== $activeCompanyId) {
+        return false;
+    }
+
+    // ✅ CEK APAKAH USER ADALAH SUPERADMIN/ADMIN/MANAGER DI COMPANY
+    $userCompany = $user->userCompanies()
+        ->where('company_id', $activeCompanyId)
+        ->with('role')
+        ->first();
+
+    $userRole = $userCompany?->role?->name ?? 'Member';
+    
+    // ✅ JIKA SUPERADMIN/ADMIN/MANAGER, BOLEH AKSES SEMUA WORKSPACE DI COMPANY
+    if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
+        return true;
+    }
+
+    // ✅ JIKA BUKAN, CEK APAKAH USER ADALAH ANGGOTA WORKSPACE
+    $userWorkspace = UserWorkspace::where('user_id', $user->id)
+        ->where('workspace_id', $workspace->id)
+        ->where('status_active', true)
+        ->first();
+
+    return !is_null($userWorkspace);
+}
 
 
     // Di WorkspaceController.php - tambahkan method ini

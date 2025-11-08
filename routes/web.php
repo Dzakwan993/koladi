@@ -83,11 +83,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/workspace-available-users', [WorkspaceController::class, 'getAvailableUsers'])->name('workspace.available-users');
 
     // ✅ Workspace Detail Route
-    Route::get('/workspace/{workspace}', function (Workspace $workspace) {
-        session(['current_workspace_id' => $workspace->id]);
-        session(['current_workspace_name' => $workspace->name]);
-        return view('workspace', compact('workspace'));
-    })->name('workspace.detail');
+Route::get('/workspace/{workspace}', [WorkspaceController::class, 'show'])
+    ->name('workspace.detail');
 
     // ✅ Task & Kanban Routes
     Route::get('/kanban-tugas/{workspace}', [TaskController::class, 'showKanban'])->name('kanban-tugas');
