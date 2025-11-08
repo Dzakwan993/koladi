@@ -152,7 +152,7 @@ class ChatController extends Controller
 
         // 🔥 Broadcast pesan ke WebSocket (Real-time)
         try {
-            broadcast(new NewMessageSent($message))->toOthers();
+            event(new NewMessageSent($message));
         } catch (\Exception $e) {
             // Opsional: Log error jika broadcast gagal
             Log::error('Broadcast failed: ' . $e->getMessage());

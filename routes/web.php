@@ -6,11 +6,16 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Auth\GoogleController;
+
+
+// 🔥🔥🔥 TAMBAHKAN INI DI SINI (sebelum route lainnya) 🔥🔥🔥
+Broadcast::routes(['middleware' => ['web', 'auth']]);
 
 // ✅ TAMBAHKAN INI - Route Landing Page
 Route::get('/', function () {
@@ -112,7 +117,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/chat/{conversationId}/mark-as-read', [ChatController::class, 'markAsRead'])->name('chat.markAsRead');
     });
     // 🔥🔥🔥 --- PERBAIKAN CHAT SELESAI --- 🔥🔥🔥
-    
+
     // Halaman Jadwal
     Route::get('/jadwal', function () {
         return view('jadwal');

@@ -453,44 +453,76 @@ function appendMessage(message) {
 // -----------------------------------------------------------------
 
 /** BARU: Setup listener Laravel Echo */
+/** BARU: Setup listener Laravel Echo dengan debugging lengkap */
 function setupEchoListeners() {
     if (typeof Echo === 'undefined') {
         console.error('Laravel Echo not configured (Echo is undefined).');
         return;
     }
 
-    // Hentikan listener lama jika ada (saat memulai chat baru)
+    console.log('🚀 Setting up Echo listeners...');
+    console.log('📋 All conversations:', window.allConversations);
+
+    // Hentikan listener lama jika ada
     window.allConversations.forEach(conversation => {
         Echo.leave(`conversation.${conversation.id}`);
     });
 
     // Dengarkan di setiap channel percakapan
     window.allConversations.forEach(conversation => {
-        Echo.private(`conversation.${conversation.id}`)
-            .listen('NewMessage', (e) => {
-                console.log('Pesan baru diterima via Echo:', e);
+        const channelName = `conversation.${conversation.id}`;
+
+        console.log(`🔔 Listening to: private-${channelName}`);
+
+        const channel = Echo.private(channelName);
+
+        // Tambahkan subscription success handler
+        channel.subscribed(() => {
+            console.log(`✅ Successfully subscribed to: private-${channelName}`);
+        });
+
+        // 🔥 PERBAIKAN: Tambahkan titik sebelum nama event
+        channel.listen('.NewMessage', (e) => {
+            console.log('📨 RAW EVENT dari Pusher:', e);
+            console.log('📨 Message object:', e.message);
+
+            if (e.message) {
                 handleNewMessage(e.message);
-            });
+            } else {
+                console.error('❌ Event tidak punya property "message":', e);
+            }
+        });
     });
 
-    console.log('Echo listeners setup for all conversations.');
+    console.log('✅ Echo listeners setup complete!');
+    console.log('📡 Active channels:', Object.keys(window.Echo.connector.channels));
 }
 
-/** BARU: Menangani pesan baru yang masuk dari Echo */
 function handleNewMessage(message) {
+    // 🔥 PERBAIKAN: Cek apakah pesan ini dari diri sendiri
+    const isOwnMessage = message.sender_id === AUTH_USER_ID;
+
     // Cek 1: Apakah kita sedang membuka percakapan ini?
     if (message.conversation_id === currentConversationId) {
-        // Ya, langsung tampilkan pesan
-        appendMessage(message);
-        // Dan langsung tandai sudah dibaca
-        markConversationAsRead(message.conversation_id);
+        // 🔥 HANYA tampilkan jika BUKAN pesan sendiri
+        // (Karena pesan sendiri sudah ditampilkan via Optimistic UI)
+        if (!isOwnMessage) {
+            appendMessage(message);
+            // Tandai sudah dibaca
+            markConversationAsRead(message.conversation_id);
+        }
         // Update sidebar (hanya preview, tanpa increment)
         updateSidebarOnNewMessage(message, false);
     }
     // Cek 2: Jika tidak sedang dibuka
     else {
-        // Update sidebar (preview DAN increment unread count)
-        updateSidebarOnNewMessage(message, true);
+        // 🔥 HANYA increment unread jika BUKAN pesan sendiri
+        if (!isOwnMessage) {
+            updateSidebarOnNewMessage(message, true);
+        } else {
+            // Jika pesan sendiri, update preview saja tanpa increment
+            updateSidebarOnNewMessage(message, false);
+        }
     }
 }
 
