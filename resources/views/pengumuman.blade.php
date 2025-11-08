@@ -2,9 +2,14 @@
 
 @section('title', 'Workspace')
 
+
+
 @section('content')
+    @include('components.sweet-alert')
     <!-- Tambahkan font Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 
     <div class="bg-[#e9effd] min-h-screen font-[Inter,sans-serif] text-black relative">
         @include('components.workspace-nav')
@@ -42,17 +47,15 @@
                                     ? asset($avatarPath)
                                     : ($creator->full_name
                                         ? 'https://ui-avatars.com/api/?name=' .
-                                            urlencode($creator->full_name) .
-                                            '&background=random&color=fff'
+                                        urlencode($creator->full_name) .
+                                        '&background=random&color=fff'
                                         : asset('images/dk.jpg'));
                             @endphp
 
-                            <div
-                                @if ($canAccess) onclick="window.location='{{ route('pengumuman.show', $p->id) }}'"
-                        class="cursor-pointer bg-[#e9effd] hover:bg-[#dce6fc] transition-colors rounded-xl shadow-sm p-4 flex justify-between items-start"
-                    @else
-                        class="bg-[#e9effd] rounded-xl shadow-sm p-4 flex justify-between items-start opacity-70"
-                        title="Private - Anda tidak memiliki akses" @endif>
+                            <div @if ($canAccess) onclick="window.location='{{ route('pengumuman.show', $p->id) }}'"
+                                class="cursor-pointer bg-[#e9effd] hover:bg-[#dce6fc] transition-colors rounded-xl shadow-sm p-4 flex justify-between items-start"
+                            @else class="bg-[#e9effd] rounded-xl shadow-sm p-4 flex justify-between items-start opacity-70"
+                                title="Private - Anda tidak memiliki akses" @endif>
                                 <div class="flex items-start space-x-3">
                                     <img src="{{ $avatarUrl }}" alt="Avatar"
                                         class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
@@ -61,8 +64,7 @@
 
                                         <p class="font-medium flex items-center gap-1 text-[#000000]/80">
                                             @if ($p->is_private)
-                                                <img src="{{ asset('images/icons/Lock.svg') }}" alt="Lock"
-                                                    class="w-5 h-5">
+                                                <img src="{{ asset('images/icons/Lock.svg') }}" alt="Lock" class="w-5 h-5">
                                             @endif
 
                                             @if ($canAccess)
@@ -77,6 +79,7 @@
                                         </p>
 
                                         <p class="text-sm text-gray-500">{!! $p->description !!}</p>
+                                        <p>Jumlah komentar: {{ $p->comments_count }}</p>
 
                                         <div class="flex items-center space-x-2 mt-2">
                                             @if ($p->due_date)
@@ -134,7 +137,8 @@
                             class="w-full border border-[#6B7280] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600 font-[Inter] text-[14px] placeholder:text-[#6B7280] pl-5" />
 
                         <!-- Catatan -->
-                        <div class="flex flex-col" x-data x-init="createEditorFor('catatan-editor', { placeholder: 'Masukkan catatan anda disini...' })">
+                        <div class="flex flex-col" x-data
+                            x-init="createEditorFor('catatan-editor', { placeholder: 'Masukkan catatan anda disini...' })">
                             <label class="block text-sm font-inter font-semibold text-black mb-1 mt-5">
                                 Deskripsi <span class="text-red-500">*</span>
                             </label>
@@ -170,22 +174,22 @@
                                         },
                                         heading: {
                                             options: [{
-                                                    model: 'paragraph',
-                                                    title: 'Paragraf',
-                                                    class: 'ck-heading_paragraph'
-                                                },
-                                                {
-                                                    model: 'heading1',
-                                                    view: 'h1',
-                                                    title: 'Heading 1',
-                                                    class: 'ck-heading_heading1'
-                                                },
-                                                {
-                                                    model: 'heading2',
-                                                    view: 'h2',
-                                                    title: 'Heading 2',
-                                                    class: 'ck-heading_heading2'
-                                                }
+                                                model: 'paragraph',
+                                                title: 'Paragraf',
+                                                class: 'ck-heading_paragraph'
+                                            },
+                                            {
+                                                model: 'heading1',
+                                                view: 'h1',
+                                                title: 'Heading 1',
+                                                class: 'ck-heading_heading1'
+                                            },
+                                            {
+                                                model: 'heading2',
+                                                view: 'h2',
+                                                title: 'Heading 2',
+                                                class: 'ck-heading_heading2'
+                                            }
                                             ]
                                         },
                                         fontFamily: {
@@ -199,21 +203,21 @@
                                         fontColor: {
                                             columns: 5,
                                             colors: [{
-                                                    color: '#000000',
-                                                    label: 'Black'
-                                                },
-                                                {
-                                                    color: '#102a63',
-                                                    label: 'Dark Blue'
-                                                },
-                                                {
-                                                    color: '#6B7280',
-                                                    label: 'Gray'
-                                                },
-                                                {
-                                                    color: '#FFFFFF',
-                                                    label: 'White'
-                                                }
+                                                color: '#000000',
+                                                label: 'Black'
+                                            },
+                                            {
+                                                color: '#102a63',
+                                                label: 'Dark Blue'
+                                            },
+                                            {
+                                                color: '#6B7280',
+                                                label: 'Gray'
+                                            },
+                                            {
+                                                color: '#FFFFFF',
+                                                label: 'White'
+                                            }
                                             ]
                                         },
                                         simpleUpload: {
@@ -331,10 +335,10 @@
                             // Ikon SVG untuk tombol Upload File
                             function fileIconSVG() {
                                 return `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="18" height="18">
-            <path fill="currentColor" d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8.83a2 2 0 0 0-.59-1.41l-3.83-3.83A2 2 0 0 0 10.17 3H6zm4 2 4 4H10V4z"/>
-        </svg>
-    `;
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="18" height="18">
+                <path fill="currentColor" d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8.83a2 2 0 0 0-.59-1.41l-3.83-3.83A2 2 0 0 0 10.17 3H6zm4 2 4 4H10V4z"/>
+            </svg>
+        `;
                             }
                         </script>
 
@@ -428,19 +432,19 @@
                                 dropdown1.className =
                                     "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 dropdown-menu-1";
                                 dropdown1.innerHTML = `
-            <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-t-lg text-black font-[Inter]" data-value="Selesai otomatis">Selesai otomatis</div>
-            <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-b-lg text-black font-[Inter]" data-value="Atur tenggat waktu sendiri">Atur tenggat waktu sendiri</div>
-        `;
+                <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-t-lg text-black font-[Inter]" data-value="Selesai otomatis">Selesai otomatis</div>
+                <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-b-lg text-black font-[Inter]" data-value="Atur tenggat waktu sendiri">Atur tenggat waktu sendiri</div>
+            `;
 
                                 // Dropdown 2
                                 const dropdown2 = document.createElement("div");
                                 dropdown2.className =
                                     "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 dropdown-menu-2";
                                 dropdown2.innerHTML = `
-            <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-t-lg text-black font-[Inter]" data-value="1 hari dari sekarang">1 hari dari sekarang</div>
-            <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer text-black font-[Inter]" data-value="3 hari dari sekarang">3 hari dari sekarang</div>
-            <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-b-lg text-black font-[Inter]" data-value="7 hari dari sekarang">7 hari dari sekarang</div>
-        `;
+                <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-t-lg text-black font-[Inter]" data-value="1 hari dari sekarang">1 hari dari sekarang</div>
+                <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer text-black font-[Inter]" data-value="3 hari dari sekarang">3 hari dari sekarang</div>
+                <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-b-lg text-black font-[Inter]" data-value="7 hari dari sekarang">7 hari dari sekarang</div>
+            `;
 
                                 document.body.appendChild(dropdown1);
                                 document.body.appendChild(dropdown2);
@@ -610,8 +614,8 @@
                                                         <p class="text-xs text-gray-500" x-text="member.email"></p>
                                                     </div>
                                                 </div>
-                                                <input type="checkbox" :value="member.id"
-                                                    @change="toggleMember(member)" :checked="isSelected(member.id)"
+                                                <input type="checkbox" :value="member.id" @change="toggleMember(member)"
+                                                    :checked="isSelected(member.id)"
                                                     class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                             </label>
                                         </template>
@@ -650,8 +654,7 @@
 
                             <label class="inline-flex items-center cursor-pointer">
                                 <!-- Switch -->
-                                <input type="checkbox" name="is_private" id="switchRahasia" class="sr-only"
-                                    value="1">
+                                <input type="checkbox" name="is_private" id="switchRahasia" class="sr-only" value="1">
                                 <div id="switchBg"
                                     class="relative w-11 h-6 bg-gray-300 rounded-full transition-colors duration-300">
                                     <span id="switchCircle"
@@ -667,7 +670,7 @@
                             const switchCircle = document.getElementById('switchCircle');
 
                             // Event listener untuk label (karena kita klik labelnya)
-                            switchBg.parentElement.addEventListener('click', function(e) {
+                            switchBg.parentElement.addEventListener('click', function (e) {
                                 e.preventDefault();
 
                                 // Toggle checkbox
@@ -718,7 +721,7 @@
         });
 
         // Tangkap data dari CKEditor saat form dikirim
-        document.getElementById('pengumumanForm').addEventListener('submit', function(e) {
+        document.getElementById('pengumumanForm').addEventListener('submit', function (e) {
             const title = document.querySelector('input[name="title"]').value.trim();
             const editorData = window['catatan-editor_editor'].getData().trim();
             const autoDueValue = document.getElementById('autoDue').value.trim();
@@ -817,10 +820,10 @@
             }))
         });
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const pilihBtn = document.getElementById('btnPilihMember');
             if (pilihBtn) {
-                pilihBtn.addEventListener('click', function() {
+                pilihBtn.addEventListener('click', function () {
                     const modal = document.querySelector('[x-show="showManageMembersModal"]');
                     if (modal) modal.style.display = 'flex';
                 });

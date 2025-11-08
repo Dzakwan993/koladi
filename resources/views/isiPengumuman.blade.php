@@ -3,6 +3,7 @@
 @section('title', 'Isi Pengumuman')
 
 @section('content')
+    @include('components.sweet-alert')
     @php
         \Carbon\Carbon::setLocale('id');
     @endphp
@@ -25,7 +26,8 @@
                     <div class="bg-[#e9effd] rounded-xl p-5 mb-6 shadow-md">
                         <div class="flex items-start justify-between mb-4">
                             <div class="flex items-start gap-3">
-                                <img src="{{ Auth::user()->avatar_url }}" alt="Avatar" class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
+                                <img src="{{ Auth::user()->avatar_url }}" alt="Avatar"
+                                    class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
                                 <div>
                                     <h1 class="text-xl font-semibold text-black mb-1">
                                         {{ $pengumuman->title }}
@@ -34,6 +36,9 @@
                                         <p class="text-sm text-black font-medium">
                                             {{ $pengumuman->creator->full_name ?? 'Tidak diketahui' }}
                                         </p>
+                                        <h3 class="text-base font-semibold text-black mb-4">
+                                            Komentar ({{ $commentCount }}) {{-- hanya komentar utama --}}
+                                        </h3>
                                         <span class="text-sm text-gray-600">
                                             •
                                             {{ \Carbon\Carbon::parse($pengumuman->created_at)->translatedFormat('d M Y - H:i') }}
@@ -95,7 +100,8 @@
 
                         <!-- Input Komentar Utama (placeholder -> CKEditor) -->
                         <div class="flex items-start gap-3 mb-6">
-                            <img src="{{ Auth::user()->avatar_url }}" alt="Avatar" class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
+                            <img src="{{ Auth::user()->avatar_url }}" alt="Avatar"
+                                class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
 
                             <!-- gunakan x-data lokal hanya untuk toggle active -->
                             <div class="flex-1" x-data="{ active: false }" x-cloak>
@@ -115,8 +121,9 @@
                                                 Batal
                                             </button>
 
-                              <!-- panggil Alpine method submitMain yg ada di component -->
-                                            <button @click="submitMain(); active = false;" class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                                            <!-- panggil Alpine method submitMain yg ada di component -->
+                                            <button @click="submitMain(); active = false;"
+                                                class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
                                                 Kirim
                                             </button>
                                         </div>
@@ -131,7 +138,8 @@
                                 <template x-for="comment in comments" :key="comment.id">
                                     <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                         <div class="flex items-start gap-3">
-                                            <img :src="comment.author.avatar" alt="" class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
+                                            <img :src="comment.author.avatar" alt=""
+                                                class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
                                             <div class="flex-1">
                                                 <div class="flex justify-between items-center">
                                                     <p class="text-sm font-semibold text-gray-800"
@@ -162,7 +170,8 @@
                                                     <div class="mt-4 pl-6 border-l-2 border-gray-200">
                                                         <div class="bg-white rounded-lg p-4 border border-gray-200">
                                                             <h4 class="text-sm font-semibold text-gray-800 mb-2">Membalas
-                                                                <span x-text="comment.author.name"></span></h4>
+                                                                <span x-text="comment.author.name"></span>
+                                                            </h4>
 
                                                             <div
                                                                 class="border border-gray-300 rounded-lg overflow-hidden mb-3">
@@ -264,7 +273,7 @@
         function destroyMainEditor(id = 'main-editor') {
             const inst = editors[id];
             if (inst) {
-                inst.destroy().catch(() => {});
+                inst.destroy().catch(() => { });
             }
             delete editors[id];
             const ta = document.getElementById(id + '-fallback');
@@ -287,7 +296,7 @@
             const key = `reply-${commentId}`;
             const inst = editors[key];
             if (inst) {
-                inst.destroy().catch(() => {});
+                inst.destroy().catch(() => { });
             }
             delete editors[key];
             const ta = document.getElementById(`reply-editor-${commentId}-fallback`);
@@ -343,8 +352,8 @@
                 async submitMain() {
                     // read data either from CKEditor instance or fallback textarea
                     const content = (editors['main-editor'] ? (editors['main-editor'].getData?.() ||
-                            '') : (document.getElementById('main-editor-fallback')?.value ||
-                        '')).trim();
+                        '') : (document.getElementById('main-editor-fallback')?.value ||
+                            '')).trim();
                     if (!content) {
                         alert('Komentar tidak boleh kosong!');
                         return;
@@ -372,7 +381,7 @@
                             const text = await res.text();
                             console.error('Server error status', res.status, text);
                             alert(
-                            'Gagal mengirim komentar. Silakan refresh halaman dan coba lagi.');
+                                'Gagal mengirim komentar. Silakan refresh halaman dan coba lagi.');
                             return;
                         }
 
@@ -397,7 +406,7 @@
                     const parent = this.replyView.parentComment;
                     const key = `reply-${parent.id}`;
                     const content = (editors[key] ? (editors[key].getData?.() || '') : (document
-                            .getElementById(`reply-editor-${parent.id}-fallback`)?.value || ''))
+                        .getElementById(`reply-editor-${parent.id}-fallback`)?.value || ''))
                         .trim();
                     if (!content) {
                         alert('Balasan tidak boleh kosong!');
@@ -493,7 +502,7 @@
             Object.keys(editors).forEach(k => {
                 try {
                     editors[k]?.destroy?.();
-                } catch (e) {}
+                } catch (e) { }
                 delete editors[k];
             });
         });

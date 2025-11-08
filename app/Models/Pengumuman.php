@@ -78,4 +78,7 @@ class Pengumuman extends Model
     {
         return $this->morphMany(Comment::class, 'commentable')->latest();
     }
+
+    
 }
+

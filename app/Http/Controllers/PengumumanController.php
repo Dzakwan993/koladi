@@ -21,6 +21,7 @@ class PengumumanController extends Controller
         $workspace = Workspace::findOrFail($id);
 
         $pengumumans = Pengumuman::where('workspace_id', $workspace->id)
+            ->withCount('comments')
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -43,7 +44,16 @@ class PengumumanController extends Controller
             }
         }
 
-        return view('isipengumuman', compact('pengumuman'));
+        $pengumuman = Pengumuman::with('creator')->findOrFail($id);
+
+        // hitung komentar utama saja
+        $commentCount = $pengumuman->comments()->whereNull('parent_comment_id')->count();
+
+        // hitung semua komentar termasuk balasan
+        $allCommentCount = $pengumuman->comments()->count();
+
+        return view('isiPengumuman', compact('pengumuman', 'commentCount', 'allCommentCount'));
+
     }
 
 
@@ -112,11 +122,12 @@ class PengumumanController extends Controller
             }
 
             DB::commit();
-            return back()->with('alert', [
-                'icon' => 'success', // success, error, warning, info
-                'title' => 'Berahasil!',
+            return redirect()->route('pengumuman.show', $pengumuman->id)->with('alert', [
+                'icon' => 'success',
+                'title' => 'Berhasil!',
                 'text' => 'Berhasil membuat pengumuman.'
             ]);
+
 
             // return redirect()->back()->with('success', 'Pengumuman berhasil dibuat!');
         } catch (\Throwable $th) {
