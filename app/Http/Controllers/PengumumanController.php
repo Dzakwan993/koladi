@@ -28,23 +28,23 @@ class PengumumanController extends Controller
     }
 
     public function show($id)
-{
-    $pengumuman = Pengumuman::with(['recipients', 'creator'])->findOrFail($id);
-    $user = Auth::user();
+    {
+        $pengumuman = Pengumuman::with(['recipients', 'creator'])->findOrFail($id);
+        $user = Auth::user();
 
-    // Kalau private, cek apakah dia pembuat atau penerima
-    if ($pengumuman->is_private) {
-        $recipientIds = $pengumuman->recipients->pluck('user_id')->toArray();
+        // Kalau private, cek apakah dia pembuat atau penerima
+        if ($pengumuman->is_private) {
+            $recipientIds = $pengumuman->recipients->pluck('user_id')->toArray();
 
-        // Jika bukan pembuat dan bukan penerima → tetap private, tapi bisa lihat
-        if ($pengumuman->creator->id !== $user->id && !in_array($user->id, $recipientIds)) {
-            // Masih private, tapi kita izinkan lihat
-            // Kalau mau bisa kasih flag untuk blade: $bolehLihat = false misal
+            // Jika bukan pembuat dan bukan penerima → tetap private, tapi bisa lihat
+            if ($pengumuman->creator->id !== $user->id && !in_array($user->id, $recipientIds)) {
+                // Masih private, tapi kita izinkan lihat
+                // Kalau mau bisa kasih flag untuk blade: $bolehLihat = false misal
+            }
         }
-    }
 
-    return view('isipengumuman', compact('pengumuman'));
-}
+        return view('isipengumuman', compact('pengumuman'));
+    }
 
 
 
@@ -112,7 +112,13 @@ class PengumumanController extends Controller
             }
 
             DB::commit();
-            return redirect()->back()->with('success', 'Pengumuman berhasil dibuat!');
+            return back()->with('alert', [
+                'icon' => 'success', // success, error, warning, info
+                'title' => 'Berahasil!',
+                'text' => 'Berhasil membuat pengumuman.'
+            ]);
+
+            // return redirect()->back()->with('success', 'Pengumuman berhasil dibuat!');
         } catch (\Throwable $th) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $th->getMessage());

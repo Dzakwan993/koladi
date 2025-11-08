@@ -6,7 +6,6 @@
     <!-- Tambahkan font Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-
     <div class="bg-[#e9effd] min-h-screen font-[Inter,sans-serif] text-black relative">
         @include('components.workspace-nav')
 
@@ -67,7 +66,7 @@
                                             @endif
 
                                             @if ($canAccess)
-                                                <span class="hover:underline text-black font-semibold font-inter">
+                                                <span class="hover:underline text-black font-bold font-inter">
                                                     {{ $p->title }}
                                                 </span>
                                             @else
@@ -88,7 +87,7 @@
                                             @endif
                                             @if ($p->auto_due)
                                                 <span class="text-xs text-[#102a63]/60 font-medium">
-                                                    Selesai otomatis:
+                                                    Selesai:
                                                     {{ \Carbon\Carbon::parse($p->auto_due)->translatedFormat('d M Y') }}
                                                 </span>
                                             @endif
@@ -165,7 +164,7 @@
                                                 'bold', 'italic', 'underline', 'strikethrough', '|',
                                                 'link', 'blockQuote', '|',
                                                 'bulletedList', 'numberedList', '|',
-                                                'insertTable', 'imageUpload', 'mediaEmbed'
+                                                'insertTable', 'imageUpload', 'fileUpload', '|',
                                             ],
                                             shouldNotGroupWhenFull: true
                                         },
@@ -253,11 +252,8 @@
                                     btn.type = 'button';
                                     btn.className = 'ck ck-button';
                                     btn.title = 'Upload File';
-                                    btn.innerHTML = `
-            <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
-                ${fileIconSVG()}
-            </span>
-        `;
+                                    btn.innerHTML =
+                                        ` <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">${fileIconSVG()}</span>`;
                                     btn.style.marginLeft = '6px';
                                     btn.style.padding = '4px 8px';
                                     btn.style.borderRadius = '6px';
@@ -268,7 +264,7 @@
                                     btn.addEventListener('click', () => {
                                         const input = document.createElement('input');
                                         input.type = 'file';
-                                        input.accept = '*/*';
+                                        input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.sql,.txt,.zip,.rar,.ppt,.pptx";
                                         input.click();
 
                                         input.addEventListener('change', async (e) => {
@@ -388,7 +384,7 @@
                                         <button type="button"
                                             class="px-2 bg-white absolute right-0 h-full flex items-center justify-center pointer-events-auto"
                                             id="calendarBtn" style="z-index: 5;">
-                                            <img src="images/icons/calendarAbu.svg" alt="calendar" class="w-5 h-5">
+                                            <img src="/images/icons/calendarAbu.svg" alt="calendar" class="w-5 h-5">
                                         </button>
                                     </div>
                                 </div>
@@ -584,7 +580,7 @@
                             </div>
 
                             <!-- Hidden input untuk dikirim ke backend -->
-                            <input type="hidden" name="recipients[]" :value="selectedMembers.map(m => m.id)">
+                            <input type="hidden" name="recipients[]" x-model="selectedMembers.map(m => m.id)">
 
                             <!-- Modal Pilih Member -->
                             <div x-show="showManageMembersModal"
@@ -722,10 +718,35 @@
         });
 
         // Tangkap data dari CKEditor saat form dikirim
-        document.getElementById('popupForm').querySelector('form').addEventListener('submit', (e) => {
-            const editor = window['catatan-editor_editor']; // CKEditor instance
-            const editorData = editor.getData(); // Ambil isi editor
+        document.getElementById('pengumumanForm').addEventListener('submit', function(e) {
+            const title = document.querySelector('input[name="title"]').value.trim();
+            const editorData = window['catatan-editor_editor'].getData().trim();
+            const autoDueValue = document.getElementById('autoDue').value.trim();
+            const selectedMembers = Alpine.store?.selectedMembers || [];
 
+            // → CEK JUDUL
+            if (!title) {
+                e.preventDefault();
+                return Swal.fire("Kolom Belum Diisi", "Judul pengumuman wajib diisi.", "warning");
+            }
+
+            // → CEK DESKRIPSI
+            if (!editorData || editorData === "<p><br></p>") {
+                e.preventDefault();
+                return Swal.fire("Kolom Belum Diisi", "Deskripsi pengumuman wajib diisi.", "warning");
+            }
+
+            // → CEK PENERIMA
+            if (document.querySelector('input[name="recipients[]"]').value.length === 0) {
+                e.preventDefault();
+                return Swal.fire("Penerima Kosong", "Pilih minimal 1 penerima pengumuman.", "warning");
+            }
+
+            // → CEK TANGGAL / AUTO DUE
+            if (!autoDueValue && !document.getElementById('customDeadline').value) {
+                e.preventDefault();
+                return Swal.fire("Tenggat Belum Dipilih", "Pilih tenggat selesai pengumuman.", "warning");
+            }
             // Masukkan ke input hidden agar terkirim ke backend
             document.getElementById('catatanInput').value = editorData;
         });
