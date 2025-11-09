@@ -112,6 +112,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Rute untuk membuat percakapan baru (POST)
         Route::post('/chat/create', [ChatController::class, 'createConversation'])->name('chat.create');
+        Route::delete('/chat/message/{message}', [ChatController::class, 'deleteMessage']);
 
         // Rute untuk menandai telah dibaca (POST)
         Route::post('/chat/{conversationId}/mark-as-read', [ChatController::class, 'markAsRead'])->name('chat.markAsRead');

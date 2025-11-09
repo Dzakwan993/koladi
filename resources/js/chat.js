@@ -7,14 +7,22 @@ let WORKSPACE_ID, AUTH_USER_ID, API_URL, CSRF_TOKEN;
 let currentConversationId = null;
 window.allConversations = [];
 
+// 🔥 TAMBAHAN: Variable untuk file upload
+let selectedFiles = [];
+
+// 🔥🔥🔥 TAMBAHAN: Variable untuk cek status pengiriman
+let isSending = false;
+
 // -----------------------------------------------------------------
 // LANGKAH 2: Ambil Elemen DOM
 // -----------------------------------------------------------------
-let chatContainer, messageList, chatListContainer, chatHeaderTitle,
+let container, chatContainer, messageList, chatListContainer, chatHeaderTitle,
     chatInputBar, sendMessageForm, messageInput, scrollToBottomBtn,
-    micButton, sendButton;
+    micButton, sendButton,
+    uploadButton, fileInput, filePreviewContainer, filePreviewList, dropZone;
 
 function cacheDOMElements() {
+    container = document.getElementById('chat-page-container');
     chatContainer = document.getElementById('chatContainer');
     messageList = document.getElementById('messageList');
     chatListContainer = document.getElementById('chatListContainer');
@@ -23,9 +31,16 @@ function cacheDOMElements() {
     sendMessageForm = document.getElementById('sendMessageForm');
     messageInput = document.getElementById('messageInput');
     scrollToBottomBtn = document.getElementById('scrollToBottom');
-    micButton = document.getElementById('micButton');
+    // HAPUS: micButton
     sendButton = document.getElementById('sendButton');
+    uploadButton = document.getElementById('uploadButton');
+    fileInput = document.getElementById('fileInput');
+    filePreviewContainer = document.getElementById('filePreviewContainer');
+    filePreviewList = document.getElementById('filePreviewList');
+    dropZone = document.getElementById('dropZone');
 }
+
+
 
 // -----------------------------------------------------------------
 // LANGKAH 3: Fungsi Helper (Render HTML)
@@ -37,6 +52,140 @@ function getInitials(name) {
     const names = name.split(' ');
     if (names.length === 1) return name.substring(0, 2).toUpperCase();
     return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+}
+
+/** Fungsi untuk menghapus pesan */
+/** 🔥 Fungsi untuk menghapus pesan dengan SweetAlert & bubble replacement */
+window.deleteMessage = async function (messageId) {
+    // SweetAlert confirmation
+    const { value: willDelete } = await Swal.fire({
+        title: 'Hapus Pesan?',
+        text: "Pesan yang sudah dihapus tidak dapat dikembalikan",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal',
+        reverseButtons: true
+    });
+
+    if (!willDelete) return;
+
+    try {
+        const response = await fetch(`${API_URL}/api/chat/message/${messageId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) throw new Error('Gagal menghapus pesan');
+
+        // SweetAlert success
+        await Swal.fire({
+            title: 'Terhapus!',
+            text: 'Pesan berhasil dihapus',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+        });
+
+        // 🔥 GANTI BUBBLE DENGAN PESAN "TELAH DIHAPUS" (WhatsApp Style)
+        replaceMessageWithDeletedText(messageId);
+
+    } catch (error) {
+        console.error('Error deleting message:', error);
+
+        // SweetAlert error
+        await Swal.fire({
+            title: 'Gagal!',
+            text: 'Gagal menghapus pesan',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+    }
+}
+
+/** 🔥 Ganti bubble chat dengan teks "pesan telah dihapus" */
+/** 🔥 Ganti bubble chat dengan teks "pesan telah dihapus" */
+function replaceMessageWithDeletedText(messageId, isOwnMessage = true) {
+    const messageElement = document.getElementById(messageId);
+    if (!messageElement) return;
+
+    const deletedText = isOwnMessage ? 'Kamu telah menghapus pesan ini' : 'Pesan ini telah dihapus';
+    const time = messageElement.querySelector('.text-xs.text-gray-500')?.textContent || '';
+
+    // Cari nama pengirim asli (untuk pesan orang lain)
+    let senderName = 'User';
+    if (!isOwnMessage) {
+        const nameElement = messageElement.querySelector('.font-semibold.text-gray-700');
+        if (nameElement) {
+            senderName = nameElement.textContent;
+        }
+    }
+
+    const initials = getInitials(isOwnMessage ? 'Anda' : senderName);
+
+    // Buat HTML bubble replacement
+    const replacementHTML = isOwnMessage ? `
+        <div id="${messageId}" class="flex items-start justify-end">
+            <div class="flex flex-col items-end max-w-[70%]">
+                <div class="flex items-center justify-end gap-2 mb-1">
+                    <span class="text-xs text-gray-500">${time}</span>
+                    <span class="font-semibold text-gray-700 text-sm">Anda</span>
+                </div>
+                <div class="bg-gray-300 text-gray-600 rounded-2xl rounded-br-md px-4 py-3 shadow-sm italic">
+                    <p class="text-sm">${deletedText}</p>
+                </div>
+            </div>
+            <div class="flex-shrink-0 ml-3">
+                <div class="w-8 h-8 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center font-bold text-xs">
+                    ${initials}
+                </div>
+            </div>
+        </div>
+    ` : `
+        <div id="${messageId}" class="flex items-start justify-start">
+            <div class="flex-shrink-0 mr-3">
+                <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-800 flex items-center justify-center font-bold text-xs">
+                    ${initials}
+                </div>
+            </div>
+            <div class="flex flex-col items-start max-w-[70%]">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="font-semibold text-gray-700 text-sm">${senderName}</span>
+                    <span class="text-xs text-gray-500">${time}</span>
+                </div>
+                <div class="bg-gray-300 text-gray-600 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm italic">
+                    <p class="text-sm">${deletedText}</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Animasi fade out dan replace
+    messageElement.style.opacity = '0';
+    messageElement.style.transform = 'scale(0.9)';
+
+    setTimeout(() => {
+        messageElement.outerHTML = replacementHTML;
+
+        // Animasi fade in
+        const newElement = document.getElementById(messageId);
+        if (newElement) {
+            newElement.style.opacity = '0';
+            newElement.style.transform = 'scale(0.9)';
+
+            setTimeout(() => {
+                newElement.style.opacity = '1';
+                newElement.style.transform = 'scale(1)';
+                newElement.style.transition = 'all 0.3s ease';
+            }, 50);
+        }
+    }, 300);
 }
 
 /** Mengubah format tanggal "2023-10-30T09:23:00..." menjadi "09:23" */
@@ -69,12 +218,54 @@ function createConversationHTML(conversation) {
         }
     }
 
-    // MODIFIKASI: Gunakan 'last_message' & 'unread_count' dari API
+    // 🔥 PERBAIKAN: Handle preview BERBEDA untuk group vs private
     const lastMessage = conversation.last_message;
-    const lastMessageText = lastMessage ?
-        (lastMessage.sender_id === AUTH_USER_ID ? 'Anda: ' : '') + lastMessage.content :
-        'Belum ada pesan';
-    const unreadCount = conversation.unread_count || 0; // Ambil dari API
+    let lastMessageText = 'Belum ada pesan';
+
+    if (lastMessage) {
+        // UNTUK GROUP: Tampilkan "Nama: [pesan]"
+        if (conversation.type === 'group') {
+            let senderName = 'Anda';
+            if (lastMessage.sender_id !== AUTH_USER_ID) {
+                if (lastMessage.sender && lastMessage.sender.full_name) {
+                    // Ambil nama depan saja
+                    senderName = lastMessage.sender.full_name.split(' ')[0];
+                } else {
+                    senderName = 'User';
+                }
+            }
+
+            if (lastMessage.attachments && lastMessage.attachments.length > 0) {
+                if (lastMessage.content && lastMessage.content.trim() !== '') {
+                    lastMessageText = `${senderName}: ${lastMessage.content}`;
+                } else {
+                    const fileCount = lastMessage.attachments.length;
+                    const fileWord = fileCount > 1 ? 'file' : 'file';
+                    lastMessageText = `${senderName}: Mengirim ${fileCount} ${fileWord}`;
+                }
+            } else {
+                lastMessageText = `${senderName}: ${lastMessage.content}`;
+            }
+        }
+        // UNTUK PRIVATE CHAT: Hanya tampilkan isi pesan (tanpa nama)
+        else {
+            const senderPrefix = lastMessage.sender_id === AUTH_USER_ID ? 'Anda: ' : '';
+
+            if (lastMessage.attachments && lastMessage.attachments.length > 0) {
+                if (lastMessage.content && lastMessage.content.trim() !== '') {
+                    lastMessageText = senderPrefix + lastMessage.content;
+                } else {
+                    const fileCount = lastMessage.attachments.length;
+                    const fileWord = fileCount > 1 ? 'file' : 'file';
+                    lastMessageText = senderPrefix + `Mengirim ${fileCount} ${fileWord}`;
+                }
+            } else {
+                lastMessageText = senderPrefix + lastMessage.content;
+            }
+        }
+    }
+
+    const unreadCount = conversation.unread_count || 0;
 
     return `
 <div class="px-6 py-3 hover:bg-gray-50 cursor-pointer ${currentConversationId === conversation.id ? 'bg-[#E9EFFD] text-blue-600 font-semibold' : 'text-gray-800'}"
@@ -118,24 +309,141 @@ function createMemberHTML(member) {
 `;
 }
 
-/** Membuat HTML untuk satu gelembung pesan */
+/** 🔥 Helper untuk status baca - 2 centang biru jika sudah dibaca */
+function getReadStatusHTML(message) {
+    const isRead = message.is_read;
+
+    if (isRead) {
+        // SUDAH DIBACA - 2 CENTANG BIRU (WhatsApp style)
+        return `
+            <div class="flex items-center">
+                <svg class="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <svg class="w-3.5 h-3.5 text-blue-500 -ml-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+        `;
+    } else {
+        // BELUM DIBACA - 2 CENTANG ABU
+        return `
+            <div class="flex items-center">
+                <svg class="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                <svg class="w-3.5 h-3.5 text-gray-400 -ml-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+        `;
+    }
+}
+
+/** Helper function untuk memperbaiki URL file */
+function fixFileUrl(fileUrl) {
+    if (!fileUrl) return '';
+
+    // Jika URL menggunakan localhost tanpa port, ganti ke 127.0.0.1:8000
+    if (fileUrl.includes('http://localhost/storage/')) {
+        return fileUrl.replace('http://localhost/storage/', 'http://127.0.0.1:8000/storage/');
+    }
+
+    // Jika URL relatif, tambahkan base URL
+    if (fileUrl.startsWith('chat_files/')) {
+        return `${API_URL}/storage/${fileUrl}`;
+    }
+
+    // Jika URL tanpa domain (hanya /storage/...)
+    if (fileUrl.startsWith('/storage/')) {
+        return `${API_URL}${fileUrl}`;
+    }
+
+    // Jika sudah URL lengkap, return as-is
+    return fileUrl;
+}
+
+/** Membuat HTML untuk satu gelembung pesan (urutan: Delete - Time - Centang - Nama) */
 function createMessageHTML(message) {
-    const isSender = message.sender_id === AUTH_USER_ID; // <-- Perbandingan String vs String
+    const isSender = message.sender_id === AUTH_USER_ID;
     const senderName = isSender ? 'Anda' : (message.sender ? message.sender.full_name : 'User');
     const initials = getInitials(senderName);
     const time = formatTime(message.created_at);
 
+    // Render attachments
+    let attachmentsHTML = '';
+    if (message.attachments && message.attachments.length > 0) {
+        attachmentsHTML = '<div class="mt-2 space-y-2">';
+        message.attachments.forEach(att => {
+            const isImage = att.file_type && att.file_type.startsWith('image/');
+            const fileUrl = fixFileUrl(att.file_url);
+
+            // Dalam createMessageHTML, bagian render attachments:
+            if (att.uploading && att.preview_url && att.file_type.startsWith('image/')) {
+                // Preview gambar yang sedang diupload
+                attachmentsHTML += `
+        <div class="relative">
+            <img src="${att.preview_url}" alt="${att.file_name}"
+                 class="max-w-xs rounded-xl shadow-md opacity-70">
+            <div class="absolute inset-0 bg-black bg-opacity-30 rounded-xl flex items-center justify-center">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+            </div>
+            <p class="text-xs text-gray-300 mt-1">Mengunggah...</p>
+        </div>
+    `;
+            } else if (att.uploading) {
+                // File non-gambar yang sedang diupload
+                attachmentsHTML += `
+        <div class="flex items-center gap-2 bg-white bg-opacity-20 rounded-lg p-3">
+            <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            <span class="text-sm">Mengunggah ${att.file_name}...</span>
+        </div>
+    `;
+            } else if (isImage) {
+                // Gambar yang sudah terupload
+                const imageUrl = fixFileUrl(att.file_url);
+                attachmentsHTML += `
+        <a href="${imageUrl}" target="_blank" class="block">
+            <img src="${imageUrl}" alt="${att.file_name}"
+                 class="max-w-xs rounded-xl shadow-md hover:opacity-90 transition">
+        </a>
+    `;
+            }
+        });
+        attachmentsHTML += '</div>';
+    }
+
     if (isSender) {
-        // Pesan "Anda" (Kanan)
         return `
-      <div id="${message.id}" class="flex items-start justify-end">
-          <div class="flex flex-col items-end">
-              <div class="flex items-baseline mb-1">
-                  <span class="text-xs text-gray-500 mr-2">${time}</span>
-                  <span class="font-semibold text-gray-700 text-sm">Anda</span>
-              </div>
-              <div class="bg-blue-500 text-white rounded-lg rounded-br-none px-4 py-2 max-w-xl shadow-sm">
-                  <p class="text-sm" style="word-break: break-word;">${message.content}</p>
+      <div id="${message.id}" class="flex items-start justify-end group">
+          <div class="flex flex-col items-end max-w-[70%]">
+              <!-- 🔥 HEADER DENGAN URUTAN: DELETE - TIME - CENTANG - NAMA -->
+              <div class="flex items-center justify-end gap-2 mb-1">
+    <!-- Tombol Delete -->
+    <button class="delete-message-btn opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 p-1 rounded"
+            title="Hapus pesan"
+            onclick="deleteMessage('${message.id}')">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+    </button>
+
+    <!-- Waktu -->
+    <span class="text-xs text-gray-500">${time}</span>
+
+    <!-- Status Baca -->
+    <div class="flex items-center read-status">
+        ${getReadStatusHTML(message)} <!-- 🔥 PASS THE WHOLE MESSAGE -->
+    </div>
+
+    <!-- Nama "Anda" -->
+    <span class="font-semibold text-gray-700 text-sm">Anda</span>
+</div>
+
+              <!-- Bubble Chat -->
+              <div class="bg-blue-500 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm">
+                  ${message.content ? `<p class="text-sm" style="word-break: break-word;">${message.content}</p>` : ''}
+                  ${attachmentsHTML}
               </div>
           </div>
           <div class="flex-shrink-0 ml-3">
@@ -146,7 +454,6 @@ function createMessageHTML(message) {
       </div>
       `;
     } else {
-        // Pesan Orang Lain (Kiri)
         return `
       <div id="${message.id}" class="flex items-start justify-start">
           <div class="flex-shrink-0 mr-3">
@@ -154,19 +461,102 @@ function createMessageHTML(message) {
                   ${initials}
               </div>
           </div>
-          <div class="flex flex-col items-start">
-              <div class="flex items-baseline mb-1">
+          <div class="flex flex-col items-start max-w-[70%]">
+              <!-- Header untuk pesan orang lain -->
+              <div class="flex items-center gap-2 mb-1">
                   <span class="font-semibold text-gray-700 text-sm">${senderName}</span>
-                  <span class="text-xs text-gray-500 ml-2">${time}</span>
+                  <span class="text-xs text-gray-500">${time}</span>
               </div>
-              <div class="bg-white border border-gray-200 text-gray-800 rounded-lg rounded-tl-none px-4 py-2 max-w-xl shadow-sm">
-                  <p class="text-sm" style="word-break: break-word;">${message.content}</p>
+
+              <!-- Bubble Chat -->
+              <div class="bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+                  ${message.content ? `<p class="text-sm" style="word-break: break-word;">${message.content}</p>` : ''}
+                  ${attachmentsHTML}
               </div>
           </div>
       </div>
       `;
     }
 }
+
+/** 🔥 Update status baca pesan real-time */
+function updateMessageReadStatus(conversationId) {
+    // Update semua pesan di conversation yang belum dibaca
+    const messageElements = document.querySelectorAll(`[id^="message-"]`);
+    messageElements.forEach(element => {
+        const messageId = element.id.replace('message-', '');
+        const statusElement = element.querySelector('.read-status');
+
+        // Hanya update pesan sendiri yang belum dibaca
+        if (statusElement && !statusElement.classList.contains('read')) {
+            statusElement.innerHTML = getReadStatusHTML({ is_read: true });
+            statusElement.classList.add('read');
+        }
+    });
+}
+
+function handleNewMessage(message) {
+    console.log('📨 Received message:', message.id, 'from:', message.sender_id);
+
+    const isOwnMessage = message.sender_id === AUTH_USER_ID;
+
+    // Skip pesan sendiri yang baru dikirim (sudah ditampilkan via optimistic UI)
+    if (isOwnMessage && message.id.includes('temp-')) {
+        console.log('✅ Skip own temp message');
+        return;
+    }
+
+    if (message.conversation_id === currentConversationId) {
+        if (!isOwnMessage) {
+            // Pesan dari orang lain - TAMPILKAN
+            appendMessage(message);
+            markConversationAsRead(message.conversation_id);
+            updateAllOwnMessagesToRead();
+        } else {
+            // Pesan sendiri dari real-time (bukan yang baru dikirim)
+            appendMessage(message);
+        }
+        updateSidebarOnNewMessage(message, false);
+    } else {
+        if (!isOwnMessage) {
+            updateSidebarOnNewMessage(message, true);
+        } else {
+            updateSidebarOnNewMessage(message, false);
+        }
+    }
+}
+
+/** 🔥 Update semua pesan sendiri jadi status dibaca */
+function updateAllOwnMessagesToRead() {
+    const ownMessageElements = document.querySelectorAll('.flex.items-start.justify-end');
+
+    ownMessageElements.forEach(element => {
+        const statusElement = element.querySelector('.read-status');
+        if (statusElement) {
+            // Ganti dengan 2 centang biru
+            statusElement.innerHTML = `
+                <div class="flex items-center">
+                    <svg class="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <svg class="w-3.5 h-3.5 text-blue-500 -ml-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+            `;
+        }
+    });
+}
+
+// Di updateSendButton(), hapus logika mic
+function updateSendButton() {
+    const hasText = messageInput.value.trim().length > 0;
+    const hasFiles = selectedFiles.length > 0;
+
+    // Tampilkan tombol send jika ada text atau file
+    sendButton.style.display = (hasText || hasFiles) ? 'flex' : 'none';
+}
+
 
 /** Membuat HTML untuk pemisah tanggal */
 function createDateSeparatorHTML(dateLabel) {
@@ -177,6 +567,118 @@ function createDateSeparatorHTML(dateLabel) {
        </span>
    </div>
    `;
+}
+
+// -----------------------------------------------------------------
+// FUNGSI HELPER UNTUK FILE UPLOAD
+// -----------------------------------------------------------------
+
+/** Format ukuran file (bytes ke KB/MB) */
+function formatFileSize(bytes) {
+    if (bytes >= 1073741824) {
+        return (bytes / 1073741824).toFixed(2) + ' GB';
+    } else if (bytes >= 1048576) {
+        return (bytes / 1048576).toFixed(2) + ' MB';
+    } else if (bytes >= 1024) {
+        return (bytes / 1024).toFixed(2) + ' KB';
+    }
+    return bytes + ' B';
+}
+
+/** Dapatkan icon berdasarkan tipe file */
+function getFileIcon(fileType) {
+    if (fileType.startsWith('image/')) {
+        return `<svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>`;
+    } else if (fileType.startsWith('video/')) {
+        return `<svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+        </svg>`;
+    } else if (fileType === 'application/pdf') {
+        return `<svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+        </svg>`;
+    } else if (fileType.includes('word') || fileType.includes('document')) {
+        return `<svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>`;
+    } else if (fileType.includes('excel') || fileType.includes('spreadsheet')) {
+        return `<svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+        </svg>`;
+    } else {
+        return `<svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>`;
+    }
+}
+
+/** Render preview file yang dipilih */
+function renderFilePreview() {
+    if (selectedFiles.length === 0) {
+        filePreviewContainer.style.display = 'none';
+        return;
+    }
+
+    filePreviewContainer.style.display = 'block';
+    filePreviewList.innerHTML = '';
+
+    selectedFiles.forEach((file, index) => {
+        const isImage = file.type.startsWith('image/');
+        let previewHTML = '';
+
+        if (isImage) {
+            // Preview untuk gambar
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = document.getElementById(`file-preview-${index}`);
+                if (preview) {
+                    preview.querySelector('img').src = e.target.result;
+                }
+            };
+            reader.readAsDataURL(file);
+
+            previewHTML = `
+                <div id="file-preview-${index}" class="relative bg-white rounded-lg border border-gray-200 p-2 w-24 h-24">
+                    <img src="" alt="${file.name}" class="w-full h-16 object-cover rounded">
+                    <button type="button" onclick="removeFile(${index})"
+                        class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600">
+                        ×
+                    </button>
+                    <p class="text-xs text-gray-600 mt-1 truncate">${file.name}</p>
+                </div>
+            `;
+        } else {
+            // Preview untuk file non-gambar
+            previewHTML = `
+                <div id="file-preview-${index}" class="relative bg-white rounded-lg border border-gray-200 p-3 flex items-center gap-2 max-w-xs">
+                    <div class="flex-shrink-0">
+                        ${getFileIcon(file.type)}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-800 truncate">${file.name}</p>
+                        <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
+                    </div>
+                    <button type="button" onclick="removeFile(${index})"
+                        class="flex-shrink-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600">
+                        ×
+                    </button>
+                </div>
+            `;
+        }
+
+        filePreviewList.insertAdjacentHTML('beforeend', previewHTML);
+    });
+
+    // Toggle tombol send
+    updateSendButton();
+}
+
+/** Hapus file dari preview */
+window.removeFile = function (index) {
+    selectedFiles.splice(index, 1);
+    renderFilePreview();
 }
 
 // -----------------------------------------------------------------
@@ -365,58 +867,177 @@ async function markConversationAsRead(conversationId) {
     }
 }
 
-/** Kirim pesan baru */
+
 async function handleSendMessage(e) {
     e.preventDefault();
-    const content = messageInput.value.trim();
-    if (!content || !currentConversationId) return;
 
-    // Optimistic UI: Tampilkan pesan sementara
-    const tempMessage = {
-        id: 'temp-' + Date.now(),
+    if (isSending) {
+        console.log('⚠️ Masih proses kirim sebelumnya, skip...');
+        return;
+    }
+
+    const content = messageInput.value.trim();
+
+    // Validasi: harus ada text atau file
+    if (!content && selectedFiles.length === 0) {
+        console.log('❌ Tidak ada konten atau file');
+        return;
+    }
+
+    if (!currentConversationId) {
+        console.log('❌ Tidak ada conversation yang dipilih');
+        return;
+    }
+
+    console.log('📤 Preparing to send:', {
         content: content,
+        files: selectedFiles.length,
+        conversationId: currentConversationId
+    });
+
+    isSending = true;
+    sendButton.disabled = true;
+
+    // Buat FormData untuk kirim text + files
+    const formData = new FormData();
+    formData.append('conversation_id', currentConversationId);
+    formData.append('content', content);
+
+    // Tambahkan file ke FormData
+    selectedFiles.forEach((file, index) => {
+        formData.append('files[]', file);
+        console.log(`📎 File ${index}:`, file.name, file.size, file.type);
+    });
+
+    // Optimistic UI: Tampilkan pesan sementara dengan preview file
+    const tempMessageId = 'temp-' + Date.now();
+
+    // Buat attachments untuk optimistic UI
+    const tempAttachments = selectedFiles.map(file => {
+        const isImage = file.type.startsWith('image/');
+
+        return {
+            file_name: file.name,
+            file_size: file.size,
+            file_type: file.type,
+            uploading: true,
+            // 🔥 TAMBAHKAN PREVIEW UNTUK GAMBAR
+            preview_url: isImage ? URL.createObjectURL(file) : null
+        };
+    });
+
+    const tempMessage = {
+        id: tempMessageId,
+        content: content || `📎 Mengirim ${selectedFiles.length} file...`,
         sender_id: AUTH_USER_ID,
-        sender: {
-            full_name: 'Anda'
-        },
-        created_at: new Date().toISOString()
+        sender: { full_name: 'Anda' },
+        created_at: new Date().toISOString(),
+        message_type: selectedFiles.length > 0 ? 'file' : 'text',
+        is_read: false,
+        attachments: tempAttachments
     };
+
     appendMessage(tempMessage);
+
+    // Reset input
     messageInput.value = '';
-    messageInput.dispatchEvent(new Event('input')); // Toggle tombol mic/send
+    selectedFiles = [];
+    renderFilePreview();
+    updateSendButton();
 
     try {
         const response = await fetch(`${API_URL}/api/chat/send`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': CSRF_TOKEN,
                 'Accept': 'application/json'
             },
-            body: JSON.stringify({
-                conversation_id: currentConversationId,
-                content: content
-            })
+            body: formData
         });
-        if (!response.ok) throw new Error('Gagal mengirim pesan');
 
-        const result = await response.json();
-
-        // Ganti pesan sementara dengan data asli dari server
-        const tempMsgElement = document.getElementById(tempMessage.id);
-        if (tempMsgElement) {
-            tempMsgElement.outerHTML = createMessageHTML(result.data);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Server error:', errorText);
+            throw new Error(`Gagal mengirim pesan: ${response.status}`);
         }
 
+        const result = await response.json();
+        console.log('✅ Message sent successfully:', result.data.id);
+
+        // Hapus pesan sementara
+        const tempMsgElement = document.getElementById(tempMessageId);
+        if (tempMsgElement) {
+            tempMsgElement.remove();
+        }
+
+        // Update sidebar
         updateSidebarOnNewMessage(result.data, false);
 
     } catch (error) {
-        console.error(error);
-        const tempMsgElement = document.getElementById(tempMessage.id);
+        console.error('❌ Error sending message:', error);
+        const tempMsgElement = document.getElementById(tempMessageId);
         if (tempMsgElement) {
             tempMsgElement.querySelector('p').textContent += ' (Gagal terkirim)';
             tempMsgElement.classList.add('opacity-50');
         }
+    } finally {
+        // 🔥 PASTIKAN SELALU RESET STATUS PENGIRIMAN
+        isSending = false;
+        sendButton.disabled = false;
+        console.log('🔄 Reset isSending to false');
+    }
+}
+
+// -----------------------------------------------------------------
+// DRAG & DROP HANDLERS
+// -----------------------------------------------------------------
+
+let dragCounter = 0;
+
+function handleDragEnter(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter++;
+    if (dragCounter === 1) {
+        dropZone.style.display = 'flex';
+    }
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter--;
+    if (dragCounter === 0) {
+        dropZone.style.display = 'none';
+    }
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter = 0;
+    dropZone.style.display = 'none';
+
+    const files = Array.from(e.dataTransfer.files);
+
+    // Filter file yang valid (max 10MB per file)
+    const validFiles = files.filter(file => {
+        if (file.size > 10 * 1024 * 1024) {
+            alert(`File "${file.name}" terlalu besar. Maksimal 10MB per file.`);
+            return false;
+        }
+        return true;
+    });
+
+    if (validFiles.length > 0) {
+        selectedFiles = [...selectedFiles, ...validFiles];
+        renderFilePreview();
+        messageInput.focus();
     }
 }
 
@@ -452,7 +1073,6 @@ function appendMessage(message) {
 // LANGKAH 5: Real-time (Laravel Echo)
 // -----------------------------------------------------------------
 
-/** BARU: Setup listener Laravel Echo */
 /** BARU: Setup listener Laravel Echo dengan debugging lengkap */
 function setupEchoListeners() {
     if (typeof Echo === 'undefined') {
@@ -492,38 +1112,15 @@ function setupEchoListeners() {
                 console.error('❌ Event tidak punya property "message":', e);
             }
         });
+
+        channel.listen('.MessageDeleted', (e) => {
+            console.log('🗑️ Message deleted event:', e);
+            replaceMessageWithDeletedText(e.message_id, false); // false = bukan pesan sendiri
+        });
     });
 
     console.log('✅ Echo listeners setup complete!');
     console.log('📡 Active channels:', Object.keys(window.Echo.connector.channels));
-}
-
-function handleNewMessage(message) {
-    // 🔥 PERBAIKAN: Cek apakah pesan ini dari diri sendiri
-    const isOwnMessage = message.sender_id === AUTH_USER_ID;
-
-    // Cek 1: Apakah kita sedang membuka percakapan ini?
-    if (message.conversation_id === currentConversationId) {
-        // 🔥 HANYA tampilkan jika BUKAN pesan sendiri
-        // (Karena pesan sendiri sudah ditampilkan via Optimistic UI)
-        if (!isOwnMessage) {
-            appendMessage(message);
-            // Tandai sudah dibaca
-            markConversationAsRead(message.conversation_id);
-        }
-        // Update sidebar (hanya preview, tanpa increment)
-        updateSidebarOnNewMessage(message, false);
-    }
-    // Cek 2: Jika tidak sedang dibuka
-    else {
-        // 🔥 HANYA increment unread jika BUKAN pesan sendiri
-        if (!isOwnMessage) {
-            updateSidebarOnNewMessage(message, true);
-        } else {
-            // Jika pesan sendiri, update preview saja tanpa increment
-            updateSidebarOnNewMessage(message, false);
-        }
-    }
 }
 
 /** BARU: Meng-update sidebar (preview & unread) saat ada pesan baru */
@@ -533,8 +1130,53 @@ function updateSidebarOnNewMessage(message, incrementUnread) {
     // 1. Update Teks Preview
     const previewText = document.getElementById(`preview-${conversationId}`);
     if (previewText) {
-        const senderPrefix = message.sender_id === AUTH_USER_ID ? 'Anda: ' : '';
-        previewText.textContent = senderPrefix + message.content;
+        let previewContent = '';
+
+        // Cari data conversation untuk tahu type-nya
+        const conversation = window.allConversations.find(c => c.id === conversationId);
+        const isGroup = conversation && conversation.type === 'group';
+
+        // UNTUK GROUP: Tampilkan "Nama: [pesan]"
+        if (isGroup) {
+            let senderName = 'Anda';
+            if (message.sender_id !== AUTH_USER_ID) {
+                if (message.sender && message.sender.full_name) {
+                    senderName = message.sender.full_name.split(' ')[0];
+                } else {
+                    senderName = 'User';
+                }
+            }
+
+            if (message.attachments && message.attachments.length > 0) {
+                if (message.content && message.content.trim() !== '') {
+                    previewContent = `${senderName}: ${message.content}`;
+                } else {
+                    const fileCount = message.attachments.length;
+                    const fileWord = fileCount > 1 ? 'file' : 'file';
+                    previewContent = `${senderName}: Mengirim ${fileCount} ${fileWord}`;
+                }
+            } else {
+                previewContent = `${senderName}: ${message.content}`;
+            }
+        }
+        // UNTUK PRIVATE CHAT: Hanya tampilkan isi pesan (tanpa nama)
+        else {
+            const senderPrefix = message.sender_id === AUTH_USER_ID ? 'Anda: ' : '';
+
+            if (message.attachments && message.attachments.length > 0) {
+                if (message.content && message.content.trim() !== '') {
+                    previewContent = senderPrefix + message.content;
+                } else {
+                    const fileCount = message.attachments.length;
+                    const fileWord = fileCount > 1 ? 'file' : 'file';
+                    previewContent = senderPrefix + `Mengirim ${fileCount} ${fileWord}`;
+                }
+            } else {
+                previewContent = senderPrefix + message.content;
+            }
+        }
+
+        previewText.textContent = previewContent;
     }
 
     // 2. Update (Increment) "Buletan" Unread
@@ -549,28 +1191,23 @@ function updateSidebarOnNewMessage(message, incrementUnread) {
         }
     }
 
-    // 3. Pindahkan item ke atas (INI ADALAH LOGIKA YANG DIPERBAIKI)
+    // 3. Pindahkan item ke atas
     const sidebarItem = document.querySelector(`#chatListContainer div[data-conversation-id="${conversationId}"]`);
     if (sidebarItem) {
-        // Cari header grup (misal "Percakapan" atau "Ruang Kerja")
         let currentElement = sidebarItem;
         let header = null;
 
-        // Loop ke atas mencari elemen 'header' sebelumnya
         while (currentElement.previousElementSibling) {
             currentElement = currentElement.previousElementSibling;
-            // Asumsi header Anda memiliki kelas ini (sesuai dari loadConversations)
             if (currentElement.classList.contains('px-6', 'pt-4', 'pb-2')) {
                 header = currentElement;
                 break;
             }
         }
 
-        // Jika header ditemukan, letakkan item chat tepat di bawahnya
         if (header) {
             header.after(sidebarItem);
         } else {
-            // Jika tidak ada header (fallback), pindahkan ke paling atas
             sidebarItem.parentElement.prepend(sidebarItem);
         }
     }
@@ -582,15 +1219,9 @@ function updateSidebarOnNewMessage(message, incrementUnread) {
 // -----------------------------------------------------------------
 
 function setupInputListeners() {
-    messageInput.addEventListener('input', function () {
-        const hasText = this.value.trim().length > 0;
-        micButton.style.display = hasText ? 'none' : 'flex';
-        sendButton.style.display = hasText ? 'flex' : 'none';
-    });
-
+    messageInput.addEventListener('input', updateSendButton);
     sendMessageForm.addEventListener('submit', handleSendMessage);
     scrollToBottomBtn.addEventListener('click', scrollToBottom);
-
     chatContainer.addEventListener('scroll', function () {
         const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 100;
         scrollToBottomBtn.style.display = isAtBottom ? 'none' : 'block';
@@ -602,6 +1233,47 @@ function setupInputListeners() {
             sendMessageForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
         }
     });
+
+    // HAPUS: event listener untuk micButton
+    uploadButton.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files);
+        const validFiles = files.filter(file => {
+            if (file.size > 10 * 1024 * 1024) {
+                alert(`File "${file.name}" terlalu besar. Maksimal 10MB per file.`);
+                return false;
+            }
+            return true;
+        });
+
+        if (validFiles.length > 0) {
+            selectedFiles = [...selectedFiles, ...validFiles];
+            renderFilePreview();
+        }
+        fileInput.value = '';
+    });
+
+    // Drag & drop listeners tetap
+    chatInputBar.addEventListener('dragenter', handleDragEnter);
+    chatInputBar.addEventListener('dragover', handleDragOver);
+    chatInputBar.addEventListener('dragleave', handleDragLeave);
+    dropZone.addEventListener('drop', handleDrop);
+    dropZone.addEventListener('dragenter', handleDragEnter);
+    dropZone.addEventListener('dragover', handleDragOver);
+}
+
+/** Tambahkan event listener untuk delete di setiap pesan */
+function addDeleteListener(messageElement, messageId, senderId) {
+    // Hanya tambahkan delete untuk pesan sendiri
+    if (senderId === AUTH_USER_ID) {
+        const deleteBtn = messageElement.querySelector('.delete-message-btn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => deleteMessage(messageId));
+        }
+    }
 }
 
 function scrollToBottom() {
@@ -648,3 +1320,4 @@ document.addEventListener('DOMContentLoaded', async function () {
     // 6. Scroll ke bawah
     scrollToBottom();
 });
+

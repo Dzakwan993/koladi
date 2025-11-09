@@ -50,23 +50,29 @@ class NewMessageSent implements ShouldBroadcast
 
     public function broadcastWith(): array
     {
-        // 🔥 Data yang dikirim ke frontend
-        $data = [
+        return [
             'message' => [
                 'id' => $this->message->id,
                 'conversation_id' => $this->message->conversation_id,
                 'sender_id' => $this->message->sender_id,
                 'content' => $this->message->content,
+                'message_type' => $this->message->message_type,
                 'created_at' => $this->message->created_at->toISOString(),
                 'sender' => [
                     'id' => $this->message->sender->id,
                     'full_name' => $this->message->sender->full_name,
-                ]
+                ],
+                'attachments' => $this->message->attachments->map(function ($att) {
+                    return [
+                        'id' => $att->id,
+                        'file_name' => $att->file_name,
+                        'file_size' => $att->file_size,
+                        'file_type' => $att->file_type,
+                        'url' => url('storage/' . $att->file_url), // 🔥 PERBAIKAN DI SINI
+                        'formatted_size' => $att->formatted_size,
+                    ];
+                })
             ]
         ];
-
-        Log::info('Broadcast data', $data);
-
-        return $data;
     }
 }

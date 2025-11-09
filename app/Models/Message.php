@@ -47,4 +47,10 @@ class Message extends Model
     {
         return $this->belongsTo(Message::class, 'reply_to_message_id');
     }
+
+    // 🔥 RELASI KE ATTACHMENTS (Polymorphic)
+    public function attachments()
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
+    }
 }

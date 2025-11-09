@@ -3,6 +3,10 @@
 @section('title', 'Chat')
 
 @section('content')
+@push('scripts')
+    @vite('resources/js/chat.js')
+@endpush
+
     {{-- Menjadi seperti ini (tambahkan id dan data- attributes) --}}
     <div id="chat-page-container"class="h-full bg-[#E9EFFD] flex flex-col" data-workspace-id="{{ $workspace->id }}"
         data-auth-user-id="{{ Auth::id() }}" data-api-url="{{ url('/') }}" data-csrf-token="{{ csrf_token() }}">
@@ -43,11 +47,18 @@
                     {{-- Chat Input Bar --}}
                     <div id="chatInputBar" class="border-t border-gray-200 px-6 py-4 bg-white" style="display: none;">
 
-                        {{-- 1. Ganti 'rounded-xl' kembali ke 'rounded-full' untuk style bubble --}}
+                        {{-- Preview File yang Dipilih --}}
+                        <div id="filePreviewContainer" class="mb-3" style="display: none;">
+                            <div id="filePreviewList" class="flex flex-wrap gap-2"></div>
+                        </div>
+
                         <form id="sendMessageForm" class="flex items-center bg-[#E9EFFD] rounded-full px-5 py-3">
 
-                            {{-- Tombol Plus --}}
-                            <button type="button"
+                            {{-- Input File Hidden --}}
+                            <input type="file" id="fileInput" multiple accept="*/*" style="display: none;">
+
+                            {{-- Tombol Plus untuk Upload File --}}
+                            <button type="button" id="uploadButton"
                                 class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500 text-white mr-3 hover:bg-blue-600 transition">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                                     stroke="currentColor" class="w-5 h-5">
@@ -60,23 +71,10 @@
                                 class="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 placeholder-gray-500 text-sm text-gray-800"
                                 autocomplete="off" />
 
-                            {{-- 2. TAMBAHKAN KEMBALI Tombol Mic --}}
-                            <button type="button" id="micButton"
-                                class="flex items-center justify-center w-8 h-8 text-gray-500 hover:text-gray-700 transition"
-                                style="display: flex;"> {{-- Tampil di awal --}}
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M12 18.75a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-1.5a.375.375 0 0 0-.375.375v1.5a.375.375 0 0 0 .375.375h1.5ZM8.25 18.75a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-1.5a.375.375 0 0 0-.375.375v1.5a.375.375 0 0 0 .375.375h1.5ZM15.75 18.75a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-1.5a.375.375 0 0 0-.375.375v1.5a.375.375 0 0 0 .375.375h1.5Z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                        d="M8.25 15V6.75A.75.75 0 0 1 9 6h6a.75.75 0 0 1 .75.75v8.25m.75 3.75-3-3m0 0-3 3m3-3v3m-3.75 0H7.5a2.25 2.25 0 0 0-2.25 2.25v.75a2.25 2.25 0 0 0 2.25 2.25h9a2.25 2.25 0 0 0 2.25-2.25v-.75a2.25 2.25 0 0 0-2.25-2.25h-.75" />
-                                </svg>
-                            </button>
-
-                            {{-- 3. Tombol Send --}}
+                            {{-- Tombol Send --}}
                             <button type="submit" id="sendButton"
                                 class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500 text-white ml-2 hover:bg-blue-600 transition"
-                                style="display: none;"> {{-- Sembunyi di awal --}}
+                                style="display: none;">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
                                     stroke="currentColor" class="w-4 h-4 -rotate-45">
                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -84,6 +82,22 @@
                                 </svg>
                             </button>
                         </form>
+
+                        {{-- Drop Zone Overlay (untuk drag & drop) --}}
+                        <div id="dropZone"
+                            class="absolute inset-0 bg-blue-50 bg-opacity-90 border-4 border-dashed border-blue-400 rounded-xl flex items-center justify-center"
+                            style="display: none; z-index: 1000;">
+                            <div class="text-center">
+                                <svg class="w-16 h-16 mx-auto text-blue-500 mb-4" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                                    </path>
+                                </svg>
+                                <p class="text-xl font-semibold text-blue-700">Drop file di sini</p>
+                                <p class="text-sm text-gray-600 mt-2">Atau klik tombol + untuk memilih file</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -144,6 +158,4 @@
     </style>
 @endsection
 
-@push('scripts')
-    @vite('resources/js/chat.js')
-@endpush
+

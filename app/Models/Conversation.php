@@ -47,17 +47,26 @@ class Conversation extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // 🔥🔥🔥 PERBAIKAN DI BAWAH INI 🔥🔥🔥
+    // 🔥🔥🔥 PERBAIKAN DI SINI 🔥🔥🔥
 
     /**
-     * Dapatkan satu pesan terakhir dari percakapan.
-     *
-     * Kita ganti 'latestOfMany()' dengan relasi 'hasOne' standar
-     * yang diurutkan berdasarkan 'created_at'. Ini jauh lebih
-     * handal untuk PostgreSQL dan UUID.
+     * Relasi untuk mendapatkan pesan terakhir dengan eager loading
      */
     public function lastMessage()
     {
-        return $this->hasOne(Message::class)->orderBy('created_at', 'DESC');
+        return $this->hasOne(Message::class, 'conversation_id')
+            ->latest() // Ini akan otomatis order by created_at DESC
+            ->with('sender', 'attachments'); // Include sender & attachments
+    }
+
+    /**
+     * 🔥 ALTERNATIF: Jika masih bermasalah, pakai accessor
+     */
+    public function getLastMessageAttribute()
+    {
+        return $this->messages()
+            ->with('sender', 'attachments')
+            ->orderBy('created_at', 'DESC')
+            ->first();
     }
 }
