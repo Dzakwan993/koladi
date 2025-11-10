@@ -127,11 +127,11 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/checklists/positions/update', [TaskController::class, 'updateChecklistPositions']);
 
 
-        // Attachment Routes
-        Route::post('/attachments/upload', [TaskController::class, 'uploadAttachment']);
-        Route::get('/{taskId}/attachments', [TaskController::class, 'getTaskAttachments']);
-        Route::delete('/attachments/{attachmentId}', [TaskController::class, 'deleteAttachment']);
-        Route::get('/attachments/{attachmentId}/download', [TaskController::class, 'downloadAttachment']);
+        // Routes untuk attachments
+    Route::post('/attachments/upload', [TaskController::class, 'uploadAttachment'])->name('tasks.attachments.upload');
+    Route::get('/{taskId}/attachments', [TaskController::class, 'getTaskAttachments'])->name('tasks.attachments.get');
+    Route::delete('/attachments/{attachmentId}', [TaskController::class, 'deleteAttachment'])->name('tasks.attachments.delete');
+    Route::get('/attachments/{attachmentId}/download', [TaskController::class, 'downloadAttachment'])->name('tasks.attachments.download');
     });
 
     // ✅ Calendar & Schedule Routes

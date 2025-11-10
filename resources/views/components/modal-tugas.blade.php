@@ -438,19 +438,137 @@
 
 
 
-             <!-- Lampiran -->
-             <div>
-                 <label class="text-sm font-medium text-gray-700 mb-2 block">Lampiran</label>
-                 <label
-                     class="border border-gray-300 rounded-md px-4 py-2.5 flex items-center justify-between hover:border-gray-400 cursor-pointer bg-white">
-                     <span class="text-sm text-gray-500">Unggah File</span>
-                     <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                             d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                     </svg>
-                     <input type="file" class="hidden" />
-                 </label>
-             </div>
+             <!-- Di dalam modal tambah tugas, setelah section Checklist -->
+<!-- Lampiran Section -->
+<div class="mb-4">
+    <label class="text-sm font-medium text-gray-700 mb-2 block">Lampiran</label>
+    
+    <!-- Upload Area -->
+    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center mb-3 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+         @click="$refs.fileInput.click()"
+         x-data="{ isDragging: false }"
+         @drop.prevent="isDragging = false; handleFileDrop($event)"
+         @dragover.prevent="isDragging = true"
+         @dragleave.prevent="isDragging = false"
+         :class="{ 'border-blue-500 bg-blue-50': isDragging }">
+        
+        <input type="file" 
+               x-ref="fileInput" 
+               class="hidden" 
+               multiple 
+               @change="handleFileSelect($event)"
+               accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt">
+        
+        <div class="flex flex-col items-center justify-center py-4">
+            <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+            </svg>
+            <p class="text-sm text-gray-600 mb-1">
+                <span class="text-blue-600 font-medium">Klik untuk upload</span> atau drag & drop
+            </p>
+            <p class="text-xs text-gray-500">File maksimal 10MB. Format: JPG, PNG, PDF, DOC, XLS, PPT</p>
+        </div>
+    </div>
+
+    <!-- Upload Progress -->
+    <div x-show="uploading" class="mb-3">
+        <div class="flex items-center justify-between text-xs text-gray-600 mb-1">
+            <span>Mengupload...</span>
+            <span x-text="uploadProgress + '%'"></span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="h-2 rounded-full bg-blue-500 transition-all duration-300" 
+                 :style="`width: ${uploadProgress}%`"></div>
+        </div>
+    </div>
+
+    <!-- List File yang akan diupload -->
+    <div class="space-y-2 max-h-40 overflow-y-auto" x-show="taskForm.attachments.length > 0">
+        <template x-for="(file, index) in taskForm.attachments" :key="file.id || file.name">
+            <div class="flex items-center justify-between border border-gray-200 rounded-lg p-3 bg-white">
+                <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <!-- File Icon -->
+                    <div class="flex-shrink-0">
+                        <template x-if="file.type === 'pdf'">
+                            <svg class="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                            </svg>
+                        </template>
+                        <template x-if="file.type === 'image'">
+                            <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </template>
+                        <template x-if="!file.type || file.type === 'other'">
+                            <svg class="w-6 h-6 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                            </svg>
+                        </template>
+                    </div>
+                    
+                    <!-- File Info -->
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-700 truncate" x-text="file.name"></p>
+                        <p class="text-xs text-gray-500" x-text="formatFileSize(file.size)"></p>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <!-- Preview Button untuk gambar -->
+                    <button x-show="file.type === 'image'" 
+                            type="button" 
+                            @click="previewFile(file)"
+                            class="text-blue-600 hover:text-blue-800 p-1"
+                            title="Pratinjau">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- Remove Button -->
+                    <button type="button" 
+                            @click="removeAttachment(index)"
+                            class="text-red-600 hover:text-red-800 p-1"
+                            title="Hapus">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <!-- Empty State -->
+    <div x-show="taskForm.attachments.length === 0 && !uploading" 
+         class="text-center py-4 text-gray-500 text-sm border border-dashed border-gray-300 rounded-lg">
+        <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+        </svg>
+        Belum ada file yang dipilih
+    </div>
+</div>
+
+<!-- Modal Preview Gambar -->
+<div x-show="previewModal.open" x-cloak class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-75 z-50 p-4">
+    <div class="bg-white rounded-lg max-w-4xl max-h-full overflow-auto">
+        <div class="flex justify-between items-center p-4 border-b">
+            <h3 class="text-lg font-semibold" x-text="previewModal.file?.name"></h3>
+            <button @click="previewModal.open = false" class="text-gray-500 hover:text-gray-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="p-4">
+            <img :src="previewModal.url" :alt="previewModal.file?.name" class="max-w-full h-auto mx-auto">
+        </div>
+    </div>
+</div>
 
 
 

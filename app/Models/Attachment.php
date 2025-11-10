@@ -13,13 +13,18 @@ class Attachment extends Model
     protected $table = 'attachments';
     public $incrementing = false;
     protected $keyType = 'string';
+    
+    // ✅ NONAKTIFKAN TIMESTAMPS
+    public $timestamps = false;
 
     protected $fillable = [
         'id',
         'attachable_type',
         'attachable_id',
         'file_url',
-        'uploaded_by'
+        'uploaded_by',
+        'uploaded_at'
+        // ✅ HAPUS file_name, file_size, mime_type karena tidak ada di tabel
     ];
 
     protected $casts = [
@@ -32,6 +37,11 @@ class Attachment extends Model
 
         static::creating(function ($model) {
             $model->id = $model->id ?: Str::uuid()->toString();
+            
+            // Set uploaded_at jika belum diset
+            if (empty($model->uploaded_at)) {
+                $model->uploaded_at = now();
+            }
         });
     }
 
@@ -45,5 +55,23 @@ class Attachment extends Model
     public function uploader()
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    // ✅ ACCESSOR untuk file_name (dari file_url)
+    public function getFileNameAttribute()
+    {
+        return basename($this->file_url);
+    }
+
+    // ✅ ACCESSOR untuk file_size (default null)
+    public function getFileSizeAttribute()
+    {
+        return null;
+    }
+
+    // ✅ ACCESSOR untuk mime_type (default null)
+    public function getMimeTypeAttribute()
+    {
+        return null;
     }
 }
