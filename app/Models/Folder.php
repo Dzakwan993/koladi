@@ -9,6 +9,9 @@ class Folder extends Model
 {
     use HasFactory;
 
+    public $incrementing = false;      // ← TAMBAHKAN INI
+    protected $keyType = 'string';     // ← TAMBAHKAN INI
+
     protected $fillable = [
         'workspace_id',
         'name',
@@ -24,5 +27,10 @@ class Folder extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function files()
+    {
+        return $this->hasMany(File::class);
     }
 }

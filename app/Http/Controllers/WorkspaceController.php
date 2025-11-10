@@ -391,11 +391,6 @@ private function checkWorkspaceAccess($workspace)
     return !is_null($userWorkspace);
 }
 
-
-
-
-    // Di WorkspaceController.php
-    // Di WorkspaceController.php - update method show()
     // Di WorkspaceController.php - update method show()
 public function show(Workspace $workspace)
 {

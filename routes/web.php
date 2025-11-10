@@ -11,6 +11,7 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\TaskController;
 use App\Models\Workspace;
+use App\Http\Controllers\DokumenController; 
 
 // ✅ Route Landing Page
 Route::get('/', function () {
@@ -178,9 +179,7 @@ Route::middleware(['auth'])->group(function () {
     })->name('statistikRuangKerja');
 
     // ✅ Documents & Files
-    Route::get('/dokumen-dan-file', function () {
-        return view('dokumen-dan-file');
-    })->name('dokumen-dan-file');
+    Route::get('/dokumen-dan-file/{workspace}', [DokumenController::class, 'index'])->name('dokumen-dan-file');
 
     // ✅ Leave Management
     Route::get('/cutikaryawan', function () {
