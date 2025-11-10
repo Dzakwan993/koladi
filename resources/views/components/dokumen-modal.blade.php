@@ -1,5 +1,5 @@
 {{-- Modal Buat Folder --}}
-        <div x-show="showCreateFolderModal"
+        <div x-show="showCreateFolderModal" x-cloak 
             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div class="bg-white rounded-lg w-full max-w-md" @click.outside="showCreateFolderModal = false">
                 {{-- Header Modal --}}
@@ -61,7 +61,7 @@
 
 
         {{-- Modal Pindah Berkas --}}
-        <div x-show="showMoveDocumentsModal"
+        <div x-show="showMoveDocumentsModal" x-cloak 
             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div class="bg-white rounded-lg w-full max-w-md" @click.outside="showMoveDocumentsModal = false">
                 {{-- Header Modal --}}

@@ -2,11 +2,35 @@
 
 @section('title', 'Kelola Workspace')
 
+<style>
+    [x-cloak] {
+        display: none !important;
+    }
+</style>
+
 @section('content')
     <div class="p-6" x-data="workspaceManager">
+        @php
+            // ✅ CEK ROLE USER UNTUK TOMBOL CREATE
+            $activeCompanyId = session('active_company_id');
+            $user = auth()->user();
+            $userCompany = $user->userCompanies()->where('company_id', $activeCompanyId)->with('role')->first();
+            $userRole = $userCompany?->role?->name ?? 'Member';
+            $canCreateWorkspace = in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager']);
+
+            // ✅ CEK JIKA USER ADALAH SUPERADMIN/ADMIN
+            $isCompanyAdmin = in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin']);
+
+            // ✅ CEK JIKA USER ADALAH MANAGER DI COMPANY
+            $isCompanyManager = $userRole === 'Manager';
+
+            // ✅ CEK JIKA USER BOLEH EDIT/HAPUS WORKSPACE
+            $canEditDeleteWorkspace = in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager']);
+        @endphp
 
         <!-- Modal untuk Buat Workspace -->
-        <div x-show="showModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div x-show="showModal" x-cloak
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div class="bg-white rounded-xl shadow-lg w-full max-w-md" @click.outside="showModal = false">
                 <form id="createWorkspaceForm" @submit.prevent="createWorkspace">
                     <div class="p-6">
@@ -75,18 +99,24 @@
             </div>
         </div>
 
-        <!-- Modal Menu Workspace (titik tiga) -->
-        <div x-show="showWorkspaceMenu" class="fixed inset-0 z-50" @click="showWorkspaceMenu = false">
+        <!-- Modal Menu Workspace -->
+        <div x-show="showWorkspaceMenu" x-cloak class="fixed inset-0 z-50" @click="showWorkspaceMenu = false">
             <div class="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-2 w-64"
                 :style="`top: ${workspaceMenuPosition.y}px; left: ${workspaceMenuPosition.x}px`" @click.stop>
-                <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                    @click="openManageMembers(activeWorkspace)">
-                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                    </svg>
-                    Kelola Anggota
-                </button>
+
+                <!-- ✅ SEMBUNYIKAN "Kelola Anggota" JIKA TIDAK BOLEH -->
+                <template x-if="canManageMembers(activeWorkspace)">
+                    <button
+                        class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                        @click="openManageMembers(activeWorkspace)">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                        </svg>
+                        Kelola Anggota
+                    </button>
+                </template>
+
                 <!-- memanggil fungsi openAccesModal() di components/hak-akses.blade  dengan context workspace -->
                 <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                     @click="showWorkspaceMenu = false;
@@ -104,30 +134,37 @@
                     Atur Hak Akses
                 </button>
 
-                <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
-                    @click="openEditWorkspace(activeWorkspace)">
-                    <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Edit Ruang Kerja
-                </button>
+                <!-- ✅ SEMBUNYIKAN "Edit Ruang Kerja" JIKA TIDAK BOLEH -->
+                <template x-if="canEditDeleteWorkspace">
+                    <button
+                        class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                        @click="openEditWorkspace(activeWorkspace)">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit Ruang Kerja
+                    </button>
+                </template>
 
                 <div class="border-t border-gray-200 my-1"></div>
 
-                <button class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
-                    @click="deleteWorkspace(activeWorkspace.id)">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Hapus Ruang Kerja
-                </button>
+                <!-- ✅ SEMBUNYIKAN "Hapus Ruang Kerja" JIKA TIDAK BOLEH -->
+                <template x-if="canEditDeleteWorkspace">
+                    <button class="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-3"
+                        @click="deleteWorkspace(activeWorkspace.id)">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Hapus Ruang Kerja
+                    </button>
+                </template>
             </div>
         </div>
 
         <!-- Modal Kelola Anggota -->
-        <div x-show="showManageMembersModal"
+        <div x-show="showManageMembersModal" x-cloak
             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             @click="showManageMembersModal = false; selectedMembers = []; searchMember = ''">
             <div class="bg-white rounded-xl shadow-lg w-full max-w-md max-h-[90vh] flex flex-col" @click.stop>
@@ -198,7 +235,7 @@
         </div>
 
         <!-- Modal Edit Ruang Kerja -->
-        <div x-show="showEditWorkspaceModal"
+        <div x-show="showEditWorkspaceModal" x-cloak
             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             @click="showEditWorkspaceModal = false">
             <div class="bg-white rounded-xl shadow-lg w-full max-w-md" @click.stop>
@@ -360,19 +397,34 @@
                     </svg>
                     <span class="font-medium">Tim</span>
                 </button>
-                <button
-                    class="w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition shadow-lg"
-                    @click="showModal = true; workspaceData.type = 'Tim'">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                </button>
+                @if ($canCreateWorkspace)
+                    <!-- ✅ TAMPILKAN TOMBOL JIKA BOLEH CREATE -->
+                    <button
+                        class="w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition shadow-lg"
+                        @click="showModal = true; workspaceData.type = 'Tim'">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
+                            </path>
+                        </svg>
+                    </button>
+                @else
+                    <!-- ✅ SEMBUNYIKAN TOMBOL JIKA TIDAK BOLEH CREATE -->
+                    <button
+                        class="w-10 h-10 bg-gray-400 cursor-not-allowed rounded-full flex items-center justify-center transition shadow-lg"
+                        title="Hanya SuperAdmin, Admin, dan Manager yang dapat membuat workspace">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
+                            </path>
+                        </svg>
+                    </button>
+                @endif
             </div>
 
             <div x-show="timOpen" x-collapse>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     @forelse($workspaces['Tim'] ?? [] as $workspace)
-                        <a href="{{ url('/workspace') }}"
+                        <!-- ✅ PERBAIKAN: Link ke workspace spesifik -->
+                        <a href="{{ route('workspace.detail', $workspace->id) }}"
                             class="block bg-white rounded-xl border border-gray-200 p-4 relative group hover:shadow-md transition-shadow duration-200">
                             <div class="flex justify-between items-start">
                                 <h3 class="font-semibold text-gray-800">{{ $workspace->name }}</h3>
@@ -384,7 +436,7 @@
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 12v.01M12 12v.01M19 12v.01
-                                    M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                                    M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                                     </svg>
                                 </button>
                             </div>
@@ -412,7 +464,11 @@
                         </a>
                     @empty
                         <div class="col-span-4 text-center py-8 text-gray-500">
-                            Belum ada workspace Tim
+                            @if ($isCompanyAdmin)
+                                Belum ada workspace Tim di perusahaan ini
+                            @else
+                                Anda belum tergabung dalam workspace Tim manapun
+                            @endif
                         </div>
                     @endforelse
                 </div>
@@ -435,19 +491,35 @@
                     </svg>
                     <span class="font-medium">Proyek</span>
                 </button>
-                <button
-                    class="w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition shadow-lg"
-                    @click="showModal = true; workspaceData.type = 'Proyek'">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                </button>
+
+                @if ($canCreateWorkspace)
+                    <!-- ✅ TAMPILKAN TOMBOL JIKA BOLEH CREATE -->
+                    <button
+                        class="w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition shadow-lg"
+                        @click="showModal = true; workspaceData.type = 'Proyek'">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
+                            </path>
+                        </svg>
+                    </button>
+                @else
+                    <!-- ✅ SEMBUNYIKAN TOMBOL JIKA TIDAK BOLEH CREATE -->
+                    <button
+                        class="w-10 h-10 bg-gray-400 cursor-not-allowed rounded-full flex items-center justify-center transition shadow-lg"
+                        title="Hanya SuperAdmin, Admin, dan Manager yang dapat membuat workspace">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
+                            </path>
+                        </svg>
+                    </button>
+                @endif
             </div>
 
             <div x-show="proyekOpen" x-collapse>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     @forelse($workspaces['Proyek'] ?? [] as $workspace)
-                        <a href="{{ url('/workspace') }}"
+                        <!-- ✅ PERBAIKAN: Link ke workspace spesifik -->
+                        <a href="{{ route('workspace.detail', $workspace->id) }}"
                             class="block bg-white rounded-xl border border-gray-200 p-4 relative group hover:shadow-md transition-shadow duration-200">
                             <div class="flex justify-between items-start">
                                 <h3 class="font-semibold text-gray-800">{{ $workspace->name }}</h3>
@@ -459,7 +531,7 @@
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 12v.01M12 12v.01M19 12v.01
-                                        M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                                    M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                                     </svg>
                                 </button>
                             </div>
@@ -487,16 +559,20 @@
                         </a>
                     @empty
                         <div class="col-span-4 text-center py-8 text-gray-500">
-                            Belum ada workspace Proyek
+                            @if ($isCompanyAdmin)
+                                Belum ada workspace Proyek di perusahaan ini
+                            @else
+                                Anda belum tergabung dalam workspace Proyek manapun
+                            @endif
                         </div>
                     @endforelse
                 </div>
             </div>
-
         </div>
 
+
         <!-- Modal Atur Hak Akses -->
-        <div x-show="showAccessRightsModal"
+        <div x-show="showAccessRightsModal" x-cloak
             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             @click="showAccessRightsModal = false">
             <div class="bg-white rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] overflow-hidden" @click.stop>
@@ -630,7 +706,8 @@
 
 
         <!-- Modal Atur Role -->
-        <div x-show="showRoleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        <div x-show="showRoleModal" x-cloak
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
             @click="showRoleModal = false">
             <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl" @click.stop>
                 <!-- Header -->
@@ -713,6 +790,31 @@
                     await this.loadAvailableMembers();
                 },
 
+                canEditDeleteWorkspace: {{ $canEditDeleteWorkspace ? 'true' : 'false' }},
+
+
+                canManageMembers(workspace) {
+                    if (!workspace) return false;
+
+
+
+                    // ✅ CEK ROLE USER DI COMPANY (dari PHP)
+                    const userCompanyRole = '{{ $userRole }}';
+                    const isCompanyAdmin = ['SuperAdmin', 'Administrator', 'Admin'].includes(
+                        userCompanyRole);
+                    const isCompanyManager = userCompanyRole === 'Manager';
+
+                    // ✅ JIKA SUPERADMIN/ADMIN/MANAGER DI COMPANY, BOLEH KELOLA ANGGOTA
+                    if (isCompanyAdmin || isCompanyManager) {
+                        return true;
+                    }
+
+                    // ✅ JIKA BUKAN, CEK APAKAH USER ADALAH MANAGER DI WORKSPACE
+                    // Ini akan di-check di backend saat membuka modal, tapi kita bisa kasih indikator di frontend
+                    // Untuk sekarang, return true dan biarkan backend yang validasi
+                    return true;
+                },
+
                 // Methods untuk workspace
                 openWorkspaceMenu(event, workspace) {
                     this.activeWorkspace = workspace;
@@ -723,6 +825,7 @@
                     this.showWorkspaceMenu = true;
                 },
 
+                // Di bagian JavaScript Alpine.js - modifikasi method createWorkspace()
                 async createWorkspace() {
                     this.isSubmitting = true;
 
@@ -750,7 +853,12 @@
                             };
                             location.reload();
                         } else {
-                            alert('Gagal membuat workspace: ' + result.message);
+                            // ✅ TAMPILKAN ERROR MESSAGE YANG DETAIL
+                            if (response.status === 403) {
+                                alert('Akses Ditolak: ' + result.message);
+                            } else {
+                                alert('Gagal membuat workspace: ' + result.message);
+                            }
                         }
                     } catch (error) {
                         console.error('Error:', error);
@@ -759,7 +867,6 @@
                         this.isSubmitting = false;
                     }
                 },
-
                 async updateWorkspace() {
                     try {
                         const csrfToken = this.getCsrfToken();
@@ -789,35 +896,46 @@
                 },
 
                 async deleteWorkspace(workspaceId) {
-                    if (!confirm('Apakah Anda yakin ingin menghapus workspace ini?')) {
-                        return;
+            try {
+                // ✅ CEK PERMISSION SEBELUM MENGHAPUS
+                if (!this.canEditDeleteWorkspace) {
+                    alert('Anda tidak memiliki izin untuk menghapus workspace. Hanya SuperAdmin, Admin, dan Manager yang dapat menghapus workspace.');
+                    this.showWorkspaceMenu = false;
+                    return;
+                }
+
+                if (!confirm('Apakah Anda yakin ingin menghapus workspace ini?')) {
+                    return;
+                }
+
+                const csrfToken = this.getCsrfToken();
+
+                const response = await fetch(`/workspace/${workspaceId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
+                });
 
-                    try {
-                        const csrfToken = this.getCsrfToken();
+                const result = await response.json();
 
-                        const response = await fetch(`/workspace/${workspaceId}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'X-CSRF-TOKEN': csrfToken,
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        });
-
-                        const result = await response.json();
-
-                        if (result.success) {
-                            this.showWorkspaceMenu = false;
-                            location.reload();
-                        } else {
-                            alert('Gagal menghapus workspace: ' + result.message);
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        alert('Terjadi kesalahan saat menghapus workspace');
+                if (result.success) {
+                    this.showWorkspaceMenu = false;
+                    location.reload();
+                } else {
+                    // ✅ TAMPILKAN ERROR MESSAGE YANG DETAIL
+                    if (response.status === 403) {
+                        alert('Akses Ditolak: ' + result.message);
+                    } else {
+                        alert('Gagal menghapus workspace: ' + result.message);
                     }
-                },
-
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan saat menghapus workspace');
+            }
+        },
                 // Methods untuk members
                 async loadAvailableMembers() {
                     try {
@@ -873,7 +991,8 @@
                             user_ids: this.selectedMembers,
                             role_id: this.getDefaultRoleId()
                         };
-                        console.log('Saving members payload:', payload, 'workspaceId:', workspaceId);
+                        console.log('Saving members payload:', payload, 'workspaceId:',
+                            workspaceId);
 
                         const response = await fetch(`/workspace/${workspaceId}/members`, {
                             method: 'POST',
@@ -893,7 +1012,8 @@
                             console.warn('Response is not JSON:', rawText);
                         }
 
-                        console.log('Response status:', response.status, 'parsed:', result, 'raw:', rawText);
+                        console.log('Response status:', response.status, 'parsed:', result, 'raw:',
+                            rawText);
 
                         if (response.ok) {
                             // sukses
@@ -901,56 +1021,129 @@
                             this.selectedMembers = [];
                             this.searchMember = '';
                             location.reload();
-                            return { success: true, message: result?.message || 'Berhasil' };
+                            return {
+                                success: true,
+                                message: result?.message || 'Berhasil'
+                            };
                         } else {
                             // ambil pesan error yang paling bermakna
-                            const serverMsg = result?.message
-                                || (result?.errors ? JSON.stringify(result.errors) : null)
-                                || rawText
-                                || response.statusText;
+                            const serverMsg = result?.message ||
+                                (result?.errors ? JSON.stringify(result.errors) : null) ||
+                                rawText ||
+                                response.statusText;
                             console.error('Failed saving members:', response.status, serverMsg);
                             alert('Gagal menyimpan anggota: ' + serverMsg);
-                            return { success: false, message: serverMsg };
+                            return {
+                                success: false,
+                                message: serverMsg
+                            };
                         }
                     } catch (error) {
                         console.error('saveMembers exception:', error);
                         alert('Gagal menyimpan anggota: ' + (error.message || error));
-                        return { success: false, message: error.message || String(error) };
+                        return {
+                            success: false,
+                            message: error.message || String(error)
+                        };
                     } finally {
                         this.isSubmitting = false;
                     }
                 },
 
                 // Helper methods
-                openEditWorkspace(workspace) {
-                    this.editWorkspaceData = {
-                        id: workspace.id,
-                        name: workspace.name,
-                        description: workspace.description || '',
-                        type: workspace.type
-                    };
-                    this.showEditWorkspaceModal = true;
+                async openEditWorkspace(workspace) {
+            try {
+                // ✅ CEK PERMISSION SEBELUM MEMBUKA MODAL EDIT
+                if (!this.canEditDeleteWorkspace) {
+                    alert('Anda tidak memiliki izin untuk mengedit workspace. Hanya SuperAdmin, Admin, dan Manager yang dapat mengedit workspace.');
                     this.showWorkspaceMenu = false;
-                },
+                    return;
+                }
 
-                openManageMembers(workspace) {
+                this.editWorkspaceData = {
+                    id: workspace.id,
+                    name: workspace.name,
+                    description: workspace.description || '',
+                    type: workspace.type
+                };
+                this.showEditWorkspaceModal = true;
+                this.showWorkspaceMenu = false;
+            } catch (error) {
+                console.error('Error opening edit workspace:', error);
+                alert('Terjadi kesalahan saat membuka form edit');
+                this.showWorkspaceMenu = false;
+            }
+        },
+
+                async openManageMembers(workspace) {
                     this.activeWorkspace = workspace;
-                    this.showManageMembersModal = true;
-                    this.showWorkspaceMenu = false;
 
-                    // Reset selected members terlebih dahulu
-                    this.selectedMembers = [];
-                    this.searchMember = '';
+                    try {
+                        // ✅ CEK PERMISSION SEBELUM MEMBUKA MODAL
+                        const response = await fetch(`/workspace/${workspace.id}/members`, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
 
-                    // Load members workspace saat modal dibuka
-                    setTimeout(() => {
-                        this.loadWorkspaceMembers(workspace.id);
-                    }, 100);
+                        if (response.ok) {
+                            this.showManageMembersModal = true;
+                            this.showWorkspaceMenu = false;
+                            this.selectedMembers = [];
+                            this.searchMember = '';
+
+                            // Load members workspace saat modal dibuka
+                            setTimeout(() => {
+                                this.loadWorkspaceMembers(workspace.id);
+                            }, 100);
+                        } else if (response.status === 403) {
+                            const result = await response.json();
+                            alert('Akses Ditolak: ' + result.error);
+                            this.showWorkspaceMenu = false;
+                        } else {
+                            alert('Gagal memuat data anggota');
+                            this.showWorkspaceMenu = false;
+                        }
+                    } catch (error) {
+                        console.error('Error checking permission:', error);
+                        alert('Terjadi kesalahan saat memeriksa akses');
+                        this.showWorkspaceMenu = false;
+                    }
                 },
 
-                saveWorkspaceChanges() {
-                    this.updateWorkspace();
-                },
+                async saveWorkspaceChanges() {
+            try {
+                const csrfToken = this.getCsrfToken();
+
+                const response = await fetch(`/workspace/${this.editWorkspaceData.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(this.editWorkspaceData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    this.showEditWorkspaceModal = false;
+                    location.reload();
+                } else {
+                    // ✅ TAMPILKAN ERROR MESSAGE YANG DETAIL
+                    if (response.status === 403) {
+                        alert('Akses Ditolak: ' + result.message);
+                    } else {
+                        alert('Gagal mengupdate workspace: ' + result.message);
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan saat mengupdate workspace');
+            }
+        },
+
 
                 applyMembers() {
                     if (this.activeWorkspace) {
@@ -960,7 +1153,7 @@
 
                 toggleMember(memberId) {
                     console.log('Toggling member:', memberId, 'Current selected:', this
-                    .selectedMembers);
+                        .selectedMembers);
                     const index = this.selectedMembers.indexOf(memberId);
                     if (index === -1) {
                         this.selectedMembers.push(memberId);
