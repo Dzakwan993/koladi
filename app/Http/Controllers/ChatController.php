@@ -13,20 +13,15 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ConversationParticipant;
 use Illuminate\Support\Facades\Storage;
-use App\Events\NewMessageSent; // <-- 🔥 PERBAIKAN PENTING ADA DI SINI
+use App\Events\NewMessageSent;
 
 class ChatController extends Controller
 {
-    /**
-     * Ambil semua percakapan user di workspace tertentu.
-     * (Versi UPGRADE dengan unread count & last message)
-     */
     public function index(string $workspaceId)
     {
         $userId = Auth::id();
         $workspace = Workspace::findOrFail($workspaceId);
 
-        // --- 1. Ambil atau Buat Grup Utama ---
         $mainGroup = Conversation::firstOrCreate(
             [
                 'workspace_id' => $workspaceId,
@@ -36,7 +31,6 @@ class ChatController extends Controller
             ['created_by' => $workspace->user_id]
         );
 
-        // Pastikan user adalah partisipan grup utama
         $mainGroupParticipant = ConversationParticipant::firstOrCreate(
             [
                 'conversation_id' => $mainGroup->id,
@@ -45,18 +39,12 @@ class ChatController extends Controller
             ['last_read_at' => now()]
         );
 
-        // --- 2. Ambil Percakapan Lain (DM & Grup Kustom) ---
         $otherConversations = Conversation::where('workspace_id', $workspaceId)
             ->where('id', '!=', $mainGroup->id)
             ->whereHas('participants', fn($q) => $q->where('user_id', $userId))
-            ->with([
-                'participants.user',
-                // 'lastMessage.sender', // 🔥 COMMENT DULU jika pakai accessor
-                // 'lastMessage.attachments'
-            ])
+            ->with(['participants.user'])
             ->get();
 
-        // --- 3. Hitung Unread Count & Manual Load Last Message ---
         $allConversations = $otherConversations->push($mainGroup);
 
         foreach ($allConversations as $conversation) {
@@ -74,19 +62,16 @@ class ChatController extends Controller
                     ->count();
             }
 
-            // 🔥 MANUAL: Load last message dengan sender & attachments
             $conversation->last_message = $conversation->messages()
                 ->with('sender', 'attachments')
                 ->orderBy('created_at', 'DESC')
                 ->first();
         }
 
-        // --- 4. Ambil Anggota Tim ---
         $members = $workspace->users()
             ->where('users.id', '!=', $userId)
             ->get();
 
-        // --- 5. Kembalikan Respon ---
         return response()->json([
             'main_group' => $allConversations->find($mainGroup->id),
             'conversations' => $allConversations->where('id', '!=', $mainGroup->id)->values(),
@@ -94,14 +79,10 @@ class ChatController extends Controller
         ]);
     }
 
-    /**
-     * Ambil pesan berdasarkan conversation.
-     */
     public function showMessages(string $conversationId)
     {
         $userId = Auth::id();
 
-        // Validasi partisipan
         $isParticipant = ConversationParticipant::where('conversation_id', $conversationId)
             ->where('user_id', $userId)
             ->exists();
@@ -110,19 +91,16 @@ class ChatController extends Controller
             return response()->json(['error' => 'Akses ditolak'], 403);
         }
 
-        // Ambil pesan dengan attachments
         $messages = Message::with(['sender', 'attachments'])
             ->where('conversation_id', $conversationId)
             ->orderBy('created_at', 'asc')
             ->get();
 
-        // 🔥 Tandai pesan sebagai sudah dibaca
         try {
             ConversationParticipant::where('conversation_id', $conversationId)
                 ->where('user_id', $userId)
                 ->update(['last_read_at' => now()]);
 
-            // Update is_read untuk pesan orang lain
             Message::where('conversation_id', $conversationId)
                 ->where('sender_id', '!=', $userId)
                 ->where('is_read', false)
@@ -147,7 +125,6 @@ class ChatController extends Controller
 
         $userId = Auth::id();
 
-        // Validasi Otorisasi
         $isParticipant = ConversationParticipant::where('conversation_id', $request->conversation_id)
             ->where('user_id', $userId)
             ->exists();
@@ -159,36 +136,31 @@ class ChatController extends Controller
         DB::beginTransaction();
 
         try {
+            // 🔥 PERBAIKAN: Tentukan message_type dengan benar
             $messageType = 'text';
+            if ($request->hasFile('files')) {
+                $messageType = 'file'; // Pastikan 'file' bukan 'deleted'
+            }
 
-            // Buat pesan
             $message = Message::create([
                 'conversation_id' => $request->conversation_id,
                 'sender_id'       => $userId,
                 'content'         => $request->input('content') ?? '',
-                'message_type'    => $messageType,
+                'message_type'    => $messageType, // 🔥 INI YANG PERLU DIPERBAIKI
+                'deleted_at'      => null, // 🔥 PASTIKAN null
             ]);
 
-            // Upload files (jika ada)
+            // Upload files
             if ($request->hasFile('files')) {
-                $messageType = 'file';
-                $message->update(['message_type' => 'file']);
-
                 foreach ($request->file('files') as $file) {
-                    // Generate unique filename
                     $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-
-                    // Simpan ke storage
                     $path = $file->storeAs('chat_files', $filename, 'public');
-
-                    // 🔥 PERBAIKAN: PASTIKAN URL LENGKAP
                     $fileUrl = url(Storage::url('chat_files/' . $filename));
 
-                    // Simpan ke database
                     Attachment::create([
                         'attachable_type' => Message::class,
                         'attachable_id'   => $message->id,
-                        'file_url'        => $fileUrl,  // 🔥 SEKARANG SELALU URL LENGKAP
+                        'file_url'        => $fileUrl,
                         'file_name'       => $file->getClientOriginalName(),
                         'file_size'       => $file->getSize(),
                         'file_type'       => $file->getMimeType(),
@@ -197,13 +169,22 @@ class ChatController extends Controller
                 }
             }
 
-            // Load relasi
+            // 🔥 Load relasi dengan benar
             $message->load(['sender', 'attachments']);
+
+            // 🔥 DEBUG: Log message data
+            Log::info('New message created:', [
+                'id' => $message->id,
+                'type' => $message->message_type,
+                'content' => $message->content,
+                'deleted_at' => $message->deleted_at,
+                'attachments_count' => $message->attachments->count()
+            ]);
+
+            DB::commit();
 
             // Broadcast event
             event(new NewMessageSent($message));
-
-            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -218,53 +199,106 @@ class ChatController extends Controller
             ], 500);
         }
     }
+    private function updateConversationLastMessage($conversationId)
+    {
+        // Cari pesan terbaru yang belum dihapus
+        $lastMessage = Message::where('conversation_id', $conversationId)
+            ->whereNull('deleted_at')
+            ->with(['sender', 'attachments'])
+            ->orderBy('created_at', 'DESC')
+            ->first();
 
-    /**
-     * Hapus pesan
-     */
-/**
- * Hapus pesan (soft delete) dan broadcast ke semua participant
- */
-public function deleteMessage(Message $message)
-{
-    $userId = Auth::id();
+        // Jika tidak ada pesan, set last_message menjadi null
+        if (!$lastMessage) {
+            Conversation::where('id', $conversationId)
+                ->update(['last_message_id' => null]);
+            return;
+        }
 
-    // Validasi: hanya sender yang bisa hapus pesannya sendiri
-    if ($message->sender_id !== $userId) {
-        return response()->json(['error' => 'Unauthorized'], 403);
+        // Update last_message_id di conversation
+        Conversation::where('id', $conversationId)
+            ->update(['last_message_id' => $lastMessage->id]);
     }
 
-    try {
-        DB::beginTransaction();
+    public function deleteMessage(Message $message)
+    {
+        $userId = Auth::id();
 
-        // 🔥 SOFT DELETE - hanya update deleted_at
-        $message->update([
-            'deleted_at' => now(),
-            'content' => null // Kosongkan content
-        ]);
+        if ($message->sender_id !== $userId) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
 
-        // Hapus attachments jika ada
-        Attachment::where('attachable_type', Message::class)
-                 ->where('attachable_id', $message->id)
-                 ->delete();
+        try {
+            DB::beginTransaction();
 
-        DB::commit();
+            $conversationId = $message->conversation_id;
+            $messageId = $message->id;
 
-        // 🔥 BROADCAST EVENT DELETE KE SEMUA PARTICIPANT
-        event(new MessageDeleted($message));
+            // 🔥 Hapus file dari storage terlebih dahulu
+            $attachments = Attachment::where('attachable_type', Message::class)
+                ->where('attachable_id', $messageId)
+                ->get();
 
-        return response()->json(['success' => true]);
+            foreach ($attachments as $attachment) {
+                if ($attachment->file_url) {
+                    // Extract relative path dari URL
+                    $urlParts = parse_url($attachment->file_url);
+                    $path = isset($urlParts['path']) ? ltrim($urlParts['path'], '/') : '';
 
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Gagal hapus pesan: ' . $e->getMessage());
-        return response()->json(['error' => 'Gagal menghapus pesan'], 500);
+                    // Hapus prefix /storage/ untuk mendapatkan path sebenarnya
+                    $path = str_replace('storage/', '', $path);
+
+                    if (Storage::disk('public')->exists($path)) {
+                        Storage::disk('public')->delete($path);
+                        Log::info("Deleted file: {$path}");
+                    }
+                }
+            }
+
+            // Hapus records attachments
+            Attachment::where('attachable_type', Message::class)
+                ->where('attachable_id', $messageId)
+                ->delete();
+
+            // 🔥 Update message dengan DB::table untuk menghindari mass assignment issue
+            DB::table('messages')
+                ->where('id', $messageId)
+                ->update([
+                    'deleted_at' => now(),
+                    'content' => null,
+                    'message_type' => 'deleted',
+                    'updated_at' => now()
+                ]);
+
+            // Update last_message di conversation
+            $this->updateConversationLastMessage($conversationId);
+
+            DB::commit();
+
+            // 🔥 Reload message untuk broadcast
+            $message->refresh();
+            $message->load(['sender']);
+
+            // Broadcast dengan data yang benar
+            event(new MessageDeleted($message));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pesan berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deleting message: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Gagal menghapus pesan',
+                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
+        }
     }
-}
 
-    /**
-     * Buat percakapan baru (grup atau DM).
-     */
     public function createConversation(Request $request)
     {
         $request->validate([
@@ -277,7 +311,6 @@ public function deleteMessage(Message $message)
 
         $authId = Auth::id();
 
-        // Pencegahan Duplikasi DM (Chat Pribadi)
         if ($request->type == 'private' && count($request->participants) == 1) {
             $otherUserId = $request->participants[0];
 
@@ -285,12 +318,11 @@ public function deleteMessage(Message $message)
                 return response()->json(['error' => 'Tidak dapat membuat percakapan dengan diri sendiri.'], 422);
             }
 
-            // Cari conversation 'private'
             $existing = Conversation::where('type', 'private')
                 ->where('workspace_id', $request->workspace_id)
                 ->whereHas('participants', fn($q) => $q->where('user_id', $authId))
                 ->whereHas('participants', fn($q) => $q->where('user_id', $otherUserId))
-                ->has('participants', '=', 2) // <-- Perbaikan untuk PostgreSQL
+                ->has('participants', '=', 2)
                 ->first();
 
             if ($existing) {
@@ -312,7 +344,6 @@ public function deleteMessage(Message $message)
                 'created_by'   => $authId,
             ]);
 
-            // Tambahkan peserta
             $participantIds = $request->participants;
             foreach ($participantIds as $participantId) {
                 if ($participantId == $authId) continue;
@@ -321,17 +352,16 @@ public function deleteMessage(Message $message)
                     'conversation_id' => $conversation->id,
                     'user_id'         => $participantId,
                     'is_admin'        => false,
-                    'last_read_at'    => null, // <-- User lain belum membaca
+                    'last_read_at'    => null,
                 ]);
             }
 
-            // Tambahkan si pembuat percakapan (creator)
             ConversationParticipant::firstOrCreate([
                 'conversation_id' => $conversation->id,
                 'user_id'         => $authId,
             ], [
                 'is_admin' => true,
-                'last_read_at' => now() // <-- Pembuat otomatis sudah "membaca"
+                'last_read_at' => now()
             ]);
 
             DB::commit();
@@ -352,11 +382,6 @@ public function deleteMessage(Message $message)
         }
     }
 
-
-    /**
-     * 🔥 FUNGSI BARU UNTUK ME-RESET 'UNREAD COUNT' 🔥
-     * Ini dipanggil oleh JavaScript saat user mengklik chat di sidebar.
-     */
     /**
      * Tandai pesan sebagai sudah dibaca
      */
@@ -365,15 +390,13 @@ public function deleteMessage(Message $message)
         $userId = Auth::id();
 
         try {
-            // Update last_read_at participant
             ConversationParticipant::where('conversation_id', $conversationId)
                 ->where('user_id', $userId)
                 ->update(['last_read_at' => now()]);
 
-            // 🔥 UPDATE STATUS BACA PESAN MENGGUNAKAN is_read & read_at
             Message::where('conversation_id', $conversationId)
-                ->where('sender_id', '!=', $userId) // Hanya pesan dari orang lain
-                ->where('is_read', false) // Yang belum dibaca
+                ->where('sender_id', '!=', $userId)
+                ->where('is_read', false)
                 ->update([
                     'is_read' => true,
                     'read_at' => now()

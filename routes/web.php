@@ -112,6 +112,8 @@ Route::middleware(['auth'])->group(function () {
 
         // Rute untuk membuat percakapan baru (POST)
         Route::post('/chat/create', [ChatController::class, 'createConversation'])->name('chat.create');
+        // routes/api.php
+        // PASTIKAN ada route DELETE
         Route::delete('/chat/message/{message}', [ChatController::class, 'deleteMessage']);
 
         // Rute untuk menandai telah dibaca (POST)

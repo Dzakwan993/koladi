@@ -5,7 +5,6 @@ namespace App\Events;
 use App\Models\Message;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -18,23 +17,29 @@ class NewMessageSent implements ShouldBroadcast
 
     public $message;
 
+    /**
+     * Create a new event instance.
+     */
     public function __construct(Message $message)
     {
-        $this->message = $message->load('sender');
+        $this->message = $message;
 
-        // 🔥 LOG untuk debugging
-        Log::info('NewMessageSent Event Created', [
-            'message_id' => $this->message->id,
-            'conversation_id' => $this->message->conversation_id,
-            'sender_id' => $this->message->sender_id
+        // 🔥 DEBUG: Log event creation
+        Log::info('NewMessageSent event created', [
+            'message_id' => $message->id,
+            'conversation_id' => $message->conversation_id,
+            'sender_id' => $message->sender_id
         ]);
     }
 
+    /**
+     * Get the channels the event should broadcast on.
+     */
     public function broadcastOn(): array
     {
         $channel = new PrivateChannel('conversation.' . $this->message->conversation_id);
 
-        // 🔥 LOG channel
+        // 🔥 DEBUG: Log channel info
         Log::info('Broadcasting on channel', [
             'channel' => 'conversation.' . $this->message->conversation_id
         ]);
@@ -42,37 +47,44 @@ class NewMessageSent implements ShouldBroadcast
         return [$channel];
     }
 
+    /**
+     * 🔥 PENTING: Nama event yang akan di-broadcast
+     * Harus match dengan listener di JavaScript: .NewMessageSent
+     */
     public function broadcastAs(): string
     {
-        // 🔥 PENTING: Ini nama event yang akan didengar frontend
-        return 'NewMessage';
+        return 'NewMessageSent';
     }
 
+    /**
+     * 🔥 Data yang dikirim ke client
+     * PENTING: Kirim seluruh object message dengan relasi
+     */
     public function broadcastWith(): array
     {
-        return [
-            'message' => [
-                'id' => $this->message->id,
-                'conversation_id' => $this->message->conversation_id,
-                'sender_id' => $this->message->sender_id,
-                'content' => $this->message->content,
-                'message_type' => $this->message->message_type,
-                'created_at' => $this->message->created_at->toISOString(),
-                'sender' => [
-                    'id' => $this->message->sender->id,
-                    'full_name' => $this->message->sender->full_name,
-                ],
-                'attachments' => $this->message->attachments->map(function ($att) {
-                    return [
-                        'id' => $att->id,
-                        'file_name' => $att->file_name,
-                        'file_size' => $att->file_size,
-                        'file_type' => $att->file_type,
-                        'url' => url('storage/' . $att->file_url), // 🔥 PERBAIKAN DI SINI
-                        'formatted_size' => $att->formatted_size,
-                    ];
-                })
-            ]
+        // Pastikan relasi sudah di-load
+        $this->message->load(['sender', 'attachments']);
+
+        $data = [
+            'message' => $this->message->toArray()
         ];
+
+        // 🔥 DEBUG: Log data yang akan di-broadcast
+        Log::info('Broadcasting data', [
+            'message_id' => $this->message->id,
+            'has_sender' => isset($data['message']['sender']),
+            'has_attachments' => isset($data['message']['attachments']),
+            'attachments_count' => count($data['message']['attachments'] ?? [])
+        ]);
+
+        return $data;
+    }
+
+    /**
+     * 🔥 CRITICAL: Broadcast harus SETELAH database commit
+     */
+    public function broadcastAfterCommit(): bool
+    {
+        return true;
     }
 }

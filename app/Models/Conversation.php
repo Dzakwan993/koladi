@@ -47,21 +47,14 @@ class Conversation extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // 🔥🔥🔥 PERBAIKAN DI SINI 🔥🔥🔥
-
-    /**
-     * Relasi untuk mendapatkan pesan terakhir dengan eager loading
-     */
+    // PERUBAHAN PENTING: Tambahan relasi lastMessage
     public function lastMessage()
     {
         return $this->hasOne(Message::class, 'conversation_id')
-            ->latest() // Ini akan otomatis order by created_at DESC
-            ->with('sender', 'attachments'); // Include sender & attachments
+            ->latest()
+            ->with('sender', 'attachments');
     }
 
-    /**
-     * 🔥 ALTERNATIF: Jika masih bermasalah, pakai accessor
-     */
     public function getLastMessageAttribute()
     {
         return $this->messages()

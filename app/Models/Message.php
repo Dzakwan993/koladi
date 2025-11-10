@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 class Message extends Model
 {
     use HasFactory;
+
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -23,7 +24,18 @@ class Message extends Model
         'is_read',
         'edited_at',
         'read_at',
-        'deleted_at'
+        'deleted_at'  // ✅ Ini aman karena ada di fillable
+    ];
+
+    // 🔥 PENTING: Tambahkan cast untuk semua datetime fields
+    protected $casts = [
+        'is_edited' => 'boolean',
+        'is_read' => 'boolean',
+        'edited_at' => 'datetime',
+        'read_at' => 'datetime',
+        'deleted_at' => 'datetime',  // 🔥 INI YANG KURANG!
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     protected static function booted()
