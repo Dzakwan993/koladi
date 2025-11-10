@@ -15,6 +15,8 @@ use App\Models\Label;
 use App\Models\Color;
 use App\Models\User;
 use App\Models\Checklist;
+use app\Models\Attachment;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class TaskController extends Controller
@@ -479,8 +481,14 @@ class TaskController extends Controller
 
     // ✅ NEW: Create task dengan assignments
     // ✅ UPDATE: Create task dengan assignments dan checklists
+    // ✅ UPDATE: Create task dengan assignments, checklists, dan secret flag
+    // ✅ UPDATE: Create task dengan attachments support
     public function storeWithAssignments(Request $request)
     {
+        // Debug data yang diterima
+        \Log::info('Data tugas diterima:', $request->all());
+        \Log::info('Description length:', ['length' => strlen($request->description)]);
+
         $request->validate([
             'workspace_id' => 'required|exists:workspaces,id',
             'title' => 'required|string|max:255',
@@ -489,9 +497,12 @@ class TaskController extends Controller
             'user_ids.*' => 'exists:users,id',
             'label_ids' => 'array',
             'label_ids.*' => 'exists:labels,id',
-            'checklists' => 'array', // ✅ NEW: checklists array
+            'checklists' => 'array',
             'checklists.*.title' => 'required|string|max:255',
-            'checklists.*.is_done' => 'boolean'
+            'checklists.*.is_done' => 'boolean',
+            'is_secret' => 'boolean',
+            'attachment_ids' => 'array', // ✅ TAMBAHKAN UNTUK ATTACHMENTS
+            'attachment_ids.*' => 'exists:attachments,id'
         ]);
 
         try {
@@ -511,7 +522,7 @@ class TaskController extends Controller
 
             DB::beginTransaction();
 
-            // Buat task
+            // Buat task dengan is_secret
             $task = Task::create([
                 'id' => Str::uuid()->toString(),
                 'workspace_id' => $request->workspace_id,
@@ -544,7 +555,7 @@ class TaskController extends Controller
                 $task->labels()->attach($request->label_ids);
             }
 
-            // ✅ NEW: Create checklists jika ada
+            // Create checklists jika ada
             if (!empty($request->checklists)) {
                 foreach ($request->checklists as $index => $checklistData) {
                     Checklist::create([
@@ -557,15 +568,25 @@ class TaskController extends Controller
                 }
             }
 
+            // ✅ ATTACH FILES JIKA ADA
+            if (!empty($request->attachment_ids)) {
+                Attachment::whereIn('id', $request->attachment_ids)
+                    ->where('attachable_type', 'App\\Models\\Task') // Pastikan hanya attachment task
+                    ->update([
+                        'attachable_id' => $task->id
+                    ]);
+            }
+
             DB::commit();
 
-            // Load relations untuk response
-            $task->load(['assignees', 'labels.color', 'checklists']);
+            // Load relations untuk response (termasuk attachments)
+            $task->load(['assignees', 'labels.color', 'checklists', 'attachments.uploader']);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Tugas berhasil dibuat',
-                'task' => $task
+                'task' => $task,
+                'is_secret' => $task->is_secret
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1027,7 +1048,240 @@ class TaskController extends Controller
     }
 
 
+    // ✅ NEW: Get tasks dengan filter berdasarkan hak akses (secret/non-secret)
+    public function getWorkspaceTasksWithAccess($workspaceId)
+    {
+        try {
+            $user = Auth::user();
+
+            // Validasi akses user ke workspace
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                ->where('workspace_id', $workspaceId)
+                ->first();
+
+            if (!$userWorkspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke workspace ini'
+                ], 403);
+            }
+
+            // Ambil semua tugas di workspace
+            $query = Task::with(['assignees', 'labels.color', 'boardColumn', 'taskAssignments'])
+                ->where('workspace_id', $workspaceId);
+
+            // Jika user bukan SuperAdmin/Administrator, filter tugas rahasia
+            $userCompany = $user->userCompanies()
+                ->where('company_id', session('active_company_id'))
+                ->with('role')
+                ->first();
+
+            $userRole = $userCompany?->role?->name ?? 'Member';
+
+            if (!in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin'])) {
+                // Tampilkan:
+                // 1. Semua tugas non-rahasia (is_secret = false)
+                // 2. Tugas rahasia hanya jika user adalah assigned member
+                $query->where(function ($q) use ($user) {
+                    $q->where('is_secret', false)
+                        ->orWhereHas('taskAssignments', function ($assignmentQuery) use ($user) {
+                            $assignmentQuery->where('user_id', $user->id);
+                        });
+                });
+            }
+
+            $tasks = $query->get();
+
+            return response()->json([
+                'success' => true,
+                'tasks' => $tasks,
+                'user_role' => $userRole,
+                'debug_info' => [
+                    'total_tasks' => $tasks->count(),
+                    'secret_tasks' => $tasks->where('is_secret', true)->count(),
+                    'user_id' => $user->id
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting workspace tasks with access: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data tugas'
+            ], 500);
+        }
+    }
 
 
-    
+
+    // ============================================================
+    // === ATTACHMENT METHODS
+    // ============================================================
+
+    /**
+     * Upload attachment untuk task
+     */
+    public function uploadAttachment(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|max:10240', // 10MB max
+            'task_id' => 'nullable|exists:tasks,id',
+            'attachable_type' => 'required|string',
+            'attachable_id' => 'required'
+        ]);
+
+        try {
+            $user = Auth::user();
+            $file = $request->file('file');
+
+            // Generate unique filename
+            $fileName = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('attachments', $fileName, 'public');
+
+            $attachment = Attachment::create([
+                'id' => Str::uuid()->toString(),
+                'attachable_type' => $request->attachable_type,
+                'attachable_id' => $request->attachable_id,
+                'file_url' => $path,
+                'file_name' => $file->getClientOriginalName(),
+                'file_size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'uploaded_by' => $user->id
+            ]);
+
+            // Load uploader info
+            $attachment->load('uploader');
+
+            return response()->json([
+                'success' => true,
+                'attachment' => $attachment,
+                'message' => 'File berhasil diupload'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error uploading attachment: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal upload file: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get attachments untuk task
+     */
+    public function getTaskAttachments($taskId)
+    {
+        try {
+            $task = Task::findOrFail($taskId);
+            $user = Auth::user();
+
+            // Validasi akses user ke workspace task
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                ->where('workspace_id', $task->workspace_id)
+                ->first();
+
+            if (!$userWorkspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            $attachments = $task->attachments()
+                ->with('uploader')
+                ->orderBy('uploaded_at', 'desc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'attachments' => $attachments
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting task attachments: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil lampiran'
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete attachment
+     */
+    public function deleteAttachment($attachmentId)
+    {
+        try {
+            $user = Auth::user();
+            $attachment = Attachment::findOrFail($attachmentId);
+
+            // Validasi: hanya uploader atau admin yang bisa hapus
+            if ($attachment->uploaded_by !== $user->id) {
+                // Cek jika user adalah admin di workspace
+                $attachable = $attachment->attachable;
+                if ($attachable instanceof Task) {
+                    $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                        ->where('workspace_id', $attachable->workspace_id)
+                        ->with('role')
+                        ->first();
+
+                    $userRole = $userWorkspace?->role?->name ?? 'Member';
+                    if (!in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin'])) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Anda tidak memiliki izin untuk menghapus lampiran ini'
+                        ], 403);
+                    }
+                }
+            }
+
+            // Hapus file dari storage
+            if (Storage::disk('public')->exists($attachment->file_url)) {
+                Storage::disk('public')->delete($attachment->file_url);
+            }
+
+            $attachment->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Lampiran berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error deleting attachment: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus lampiran'
+            ], 500);
+        }
+    }
+
+    /**
+     * Download attachment
+     */
+    public function downloadAttachment($attachmentId)
+    {
+        try {
+            $attachment = Attachment::findOrFail($attachmentId);
+            $user = Auth::user();
+
+            // Validasi akses user
+            $attachable = $attachment->attachable;
+            if ($attachable instanceof Task) {
+                $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                    ->where('workspace_id', $attachable->workspace_id)
+                    ->first();
+
+                if (!$userWorkspace) {
+                    abort(403, 'Anda tidak memiliki akses ke file ini');
+                }
+            }
+
+            if (!Storage::disk('public')->exists($attachment->file_url)) {
+                abort(404, 'File tidak ditemukan');
+            }
+
+            return Storage::disk('public')->download($attachment->file_url, $attachment->file_name);
+        } catch (\Exception $e) {
+            Log::error('Error downloading attachment: ' . $e->getMessage());
+            abort(404, 'File tidak ditemukan');
+        }
+    }
 }

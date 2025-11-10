@@ -55,25 +55,51 @@
                             <template x-for="task in getFilteredTasksByColumn(column.id)" :key="task.id">
                                 <div @click="openDetail(task.id)"
                                     data-task-id="task.id"
-                                    class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm">
-                                    {{-- Task card content --}}
-                                    <div class="flex items-center justify-between mb-1 xs:mb-2 flex-wrap gap-1">
-                                        <div class="flex flex-wrap gap-1">
+                                    class="bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm"
+                                    :class="{ 'task-card-secret border-l-4 border-purple-500 bg-purple-50': task.is_secret }">
+                                    
+                                    {{-- ✅ HEADER DENGAN BADGE RAHASIA --}}
+                                    <div class="flex justify-between items-start mb-1 xs:mb-2">
+                                        <div class="flex flex-wrap gap-1 flex-1">
                                             <template x-for="label in task.labels" :key="label.name">
                                                 <span class="font-semibold px-1.5 py-0.5 rounded text-xs xs:text-sm"
                                                     :style="`background: ${label.color}20; color: ${label.color}`"
                                                     x-text="label.name"></span>
                                             </template>
                                         </div>
-                                        <span x-show="task.dueDate"
-                                            class="font-semibold px-1.5 py-0.5 bg-yellow-100 text-gray-700 rounded text-xs xs:text-sm"
-                                            x-text="formatDate(task.dueDate)"></span>
+                                        
+                                        {{-- ✅ BADGE TUGAS RAHASIA --}}
+                                        <span x-show="task.is_secret" 
+                                              class="secret-task-badge ml-2 flex-shrink-0 inline-flex items-center gap-1 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                                            </svg>
+                                            Rahasia
+                                        </span>
                                     </div>
 
+                                    {{-- Task Title --}}
                                     <p class="font-medium text-gray-800 mb-1 xs:mb-2 line-clamp-2 text-xs xs:text-sm"
                                         x-text="task.title"></p>
 
-                                    {{-- Progress + Avatars --}}
+                                    {{-- Due Date --}}
+                                    <div class="flex items-center justify-between mb-1 xs:mb-2">
+                                        <span x-show="task.dueDate"
+                                            class="font-semibold px-1.5 py-0.5 bg-yellow-100 text-gray-700 rounded text-xs xs:text-sm"
+                                            x-text="formatDate(task.dueDate)"></span>
+                                        
+                                        {{-- Anggota yang ditugaskan --}}
+                                        <div class="flex items-center gap-1" x-show="task.assignees && task.assignees.length > 0">
+                                            <template x-for="member in task.assignees" :key="member.id">
+                                                <img :src="member.avatar || 'https://ui-avatars.com/api/?name=' + member.name + '&background=random'" 
+                                                     class="w-5 h-5 rounded-full border border-gray-300" 
+                                                     :alt="member.name" 
+                                                     :title="member.name">
+                                            </template>
+                                        </div>
+                                    </div>
+
+                                    {{-- Progress Bar --}}
                                     <div class="mt-1 xs:mt-2">
                                         <div class="flex items-center justify-between mb-1">
                                             <div class="w-full bg-gray-200 h-1 xs:h-1.5 rounded-full mr-2">
@@ -83,6 +109,18 @@
                                             <span class="font-medium text-gray-700 text-xs xs:text-sm"
                                                 x-text="`${calculateProgress(task)}%`"></span>
                                         </div>
+                                    </div>
+
+                                    {{-- Priority Badge --}}
+                                    <div x-show="task.priority" class="mt-1">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
+                                              :class="{
+                                                  'bg-red-100 text-red-800': task.priority === 'high',
+                                                  'bg-yellow-100 text-yellow-800': task.priority === 'medium', 
+                                                  'bg-green-100 text-green-800': task.priority === 'low'
+                                              }"
+                                              x-text="task.priority === 'high' ? 'Tinggi' : (task.priority === 'medium' ? 'Sedang' : 'Rendah')">
+                                        </span>
                                     </div>
                                 </div>
                             </template>

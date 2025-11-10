@@ -83,8 +83,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/workspace-available-users', [WorkspaceController::class, 'getAvailableUsers'])->name('workspace.available-users');
 
     // ✅ Workspace Detail Route
-Route::get('/workspace/{workspace}', [WorkspaceController::class, 'show'])
-    ->name('workspace.detail');
+    Route::get('/workspace/{workspace}', [WorkspaceController::class, 'show'])
+        ->name('workspace.detail');
 
     // ✅ Task & Kanban Routes
     Route::get('/kanban-tugas/{workspace}', [TaskController::class, 'showKanban'])->name('kanban-tugas');
@@ -103,6 +103,9 @@ Route::get('/workspace/{workspace}', [WorkspaceController::class, 'show'])
         Route::post('/{taskId}/assignments', [TaskController::class, 'manageTaskAssignments'])->name('task.assignments.manage');
         Route::post('/create-with-assignments', [TaskController::class, 'storeWithAssignments'])->name('tasks.create.with.assignments');
         Route::get('/workspace/{workspaceId}/list', [TaskController::class, 'getWorkspaceTasks'])->name('tasks.workspace');
+
+
+        Route::get('/workspace/{workspaceId}/tasks-with-access', [TaskController::class, 'getWorkspaceTasksWithAccess'])->name('tasks.workspace.with-access');
 
         // Debug Route
         Route::get('/debug-columns/{workspaceId}', [TaskController::class, 'debugBoardColumns']);
@@ -124,7 +127,11 @@ Route::get('/workspace/{workspace}', [WorkspaceController::class, 'show'])
         Route::put('/checklists/positions/update', [TaskController::class, 'updateChecklistPositions']);
 
 
-        
+        // Attachment Routes
+        Route::post('/attachments/upload', [TaskController::class, 'uploadAttachment']);
+        Route::get('/{taskId}/attachments', [TaskController::class, 'getTaskAttachments']);
+        Route::delete('/attachments/{attachmentId}', [TaskController::class, 'deleteAttachment']);
+        Route::get('/attachments/{attachmentId}/download', [TaskController::class, 'downloadAttachment']);
     });
 
     // ✅ Calendar & Schedule Routes
@@ -207,12 +214,12 @@ Route::get('/workspace/{workspace}', [WorkspaceController::class, 'show'])
         return view('pembayaran');
     })->name('pembayaran');
 
-        // ✅ Role Management Routes
+    // ✅ Role Management Routes
     Route::get('/hak-akses', [UserController::class, 'hakAkses'])->name('hakAkses');
     Route::post('/update-user-roles', [UserController::class, 'updateUserRoles'])->name('user.updateRoles');
     Route::post('/workspace/{workspaceId}/update-user-roles', [WorkspaceController::class, 'updateUserRoles'])->name('workspace.updateUserRoles');
     Route::get('/workspace/{workspaceId}/user-role', [UserController::class, 'getWorkspaceUserRole']);
-    
+
     // ✅ Events API
     Route::get('/events', function () {
         return response()->json([]);
@@ -221,4 +228,3 @@ Route::get('/workspace/{workspace}', [WorkspaceController::class, 'show'])
     // ✅ Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 });
-

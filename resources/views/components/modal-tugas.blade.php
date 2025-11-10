@@ -230,7 +230,8 @@
              </div>
 
              <!-- Anggota & Tugas Rahasia -->
-             <div>
+             <!-- Di dalam modal tambah tugas, setelah section Anggota -->
+             <div class="mb-4">
                  <label class="text-sm font-medium text-gray-700 mb-2 block">Anggota <span
                          class="text-red-500">*</span></label>
                  <div class="flex items-center justify-between">
@@ -252,15 +253,39 @@
                              <span class="text-xl font-light">+</span>
                          </button>
                      </div>
-                     <div class="flex items-center gap-3">
-                         <span class="text-xs text-gray-600">Rahasia hanya untuk yang terlibat?</span>
+
+                     <!-- ✅ SWITCH BUTTON TUGAS RAHASIA -->
+                     <div class="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+                         <span class="text-xs text-blue-700 font-medium">Tugas Rahasia?</span>
                          <label class="relative inline-flex items-center cursor-pointer">
-                             <input type="checkbox" x-model="taskForm.secret" class="sr-only peer">
+                             <input type="checkbox" x-model="taskForm.is_secret" class="sr-only peer">
                              <div
-                                 class="w-12 h-6 bg-gray-300 rounded-full peer peer-checked:after:translate-x-6 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500">
+                                 class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
                              </div>
                          </label>
-                         <span class="text-sm font-medium text-gray-700">Tugas Rahasia</span>
+                         <span class="text-sm font-medium"
+                             :class="taskForm.is_secret ? 'text-blue-700' : 'text-gray-500'"
+                             x-text="taskForm.is_secret ? 'Ya' : 'Tidak'">
+                         </span>
+                     </div>
+                 </div>
+
+                 <!-- ✅ INFO TEXT UNTUK TUGAS RAHASIA -->
+                 <div x-show="taskForm.is_secret" class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                     <div class="flex items-start gap-2">
+                         <svg class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor"
+                             viewBox="0 0 24 24">
+                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                         </svg>
+                         <div>
+                             <p class="text-xs text-blue-800 font-medium">Tugas ini hanya akan terlihat oleh:</p>
+                             <ul class="text-xs text-blue-700 mt-1 list-disc list-inside">
+                                 <li>Anggota yang ditugaskan</li>
+                                 <li>Super Admin & Administrator</li>
+                                 <li>Pembuat tugas</li>
+                             </ul>
+                         </div>
                      </div>
                  </div>
              </div>
@@ -278,9 +303,11 @@
                  </div>
              </div>
 
-             <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
              <script>
                  document.addEventListener("DOMContentLoaded", () => {
+                     // Inisialisasi CKEditor untuk catatan
+                     let catatanEditor = null;
+
                      ClassicEditor
                          .create(document.querySelector('#editor-catatan'), {
                              toolbar: {
@@ -288,7 +315,7 @@
                                      'undo', 'redo', '|',
                                      'heading', '|',
                                      'bold', 'italic', 'underline', 'strikethrough', '|',
-                                     'fontColor', 'fontBackgroundColor', '|', // 🎨 warna teks & background
+                                     'fontColor', 'fontBackgroundColor', '|',
                                      'link', 'blockQuote', 'code', '|',
                                      'bulletedList', 'numberedList', 'outdent', 'indent', '|',
                                      'insertTable', 'imageUpload', 'mediaEmbed'
@@ -382,18 +409,30 @@
                              },
                              mediaEmbed: {
                                  previewsInData: true
-                             }
+                             },
+                             placeholder: 'Tulis catatan tugas di sini...'
                          })
                          .then(editor => {
-                             console.log('CKEditor siap dipakai:', editor);
+                             catatanEditor = editor;
+                             console.log('CKEditor catatan siap dipakai:', editor);
 
-                             // Simpan value ke textarea saat submit form
-                             const form = document.querySelector("form");
-                             form?.addEventListener("submit", () => {
-                                 document.querySelector("#editor-catatan").value = editor.getData();
-                             });
+                             // Simpan instance editor ke global variable
+                             if (typeof taskEditors === 'undefined') {
+                                 window.taskEditors = {};
+                             }
+                             taskEditors['editor-catatan'] = editor;
                          })
-                         .catch(error => console.error(error));
+                         .catch(error => {
+                             console.error('Error initializing CKEditor:', error);
+                             // Fallback: tampilkan textarea biasa
+                             const textarea = document.querySelector('#editor-catatan');
+                             if (textarea) {
+                                 textarea.style.display = 'block';
+                                 textarea.style.minHeight = '120px';
+                                 textarea.style.padding = '12px';
+                                 textarea.placeholder = 'Tulis catatan tugas di sini...';
+                             }
+                         });
                  });
              </script>
 
@@ -428,174 +467,182 @@
              </div>
 
              <!-- Modal Pilih Label -->
-<div x-show="openLabelModal" x-cloak
-    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4">Pilih Label</h2>
+             <div x-show="openLabelModal" x-cloak
+                 class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+                 <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                     <h2 class="text-lg font-semibold text-gray-800 mb-4">Pilih Label</h2>
 
-        <!-- Search -->
-        <input type="text" x-model="labelData.searchLabel" placeholder="Cari label..."
-            class="w-full border rounded-lg p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                     <!-- Search -->
+                     <input type="text" x-model="labelData.searchLabel" placeholder="Cari label..."
+                         class="w-full border rounded-lg p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
 
-        <!-- Tombol Tambah Label -->
-        <button type="button" @click="openAddLabelModal = true; openLabelModal = false"
-            class="text-blue-600 text-sm hover:underline font-medium mb-3">
-            + Tambah Label Baru
-        </button>
+                     <!-- Tombol Tambah Label -->
+                     <button type="button" @click="openAddLabelModal = true; openLabelModal = false"
+                         class="text-blue-600 text-sm hover:underline font-medium mb-3">
+                         + Tambah Label Baru
+                     </button>
 
-        <!-- List Label -->
-        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
-            <template x-for="label in filteredLabels()" :key="label.id">
-                <label
-                    class="flex items-center cursor-pointer border rounded-lg px-3 py-2 hover:bg-gray-50 transition">
-                    <input type="checkbox" x-model="label.selected"
-                        class="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                    <div class="flex-1">
-                        <span
-                            class="inline-block px-3 py-1 rounded-md text-white text-sm font-medium shadow-sm"
-                            :style="`background:${label.color.rgb}`" x-text="label.name">
-                        </span>
-                    </div>
-                </label>
-            </template>
+                     <!-- List Label -->
+                     <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                         <template x-for="label in filteredLabels()" :key="label.id">
+                             <label
+                                 class="flex items-center cursor-pointer border rounded-lg px-3 py-2 hover:bg-gray-50 transition">
+                                 <input type="checkbox" x-model="label.selected"
+                                     class="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                 <div class="flex-1">
+                                     <span
+                                         class="inline-block px-3 py-1 rounded-md text-white text-sm font-medium shadow-sm"
+                                         :style="`background:${label.color.rgb}`" x-text="label.name">
+                                     </span>
+                                 </div>
+                             </label>
+                         </template>
 
-            <!-- Empty State -->
-            <div x-show="filteredLabels().length === 0" class="text-center py-4 text-gray-500 text-sm">
-                <template x-if="labelData.searchLabel">
-                    Tidak ada label yang cocok
-                </template>
-                <template x-if="!labelData.searchLabel">
-                    Tidak ada label tersedia
-                </template>
-            </div>
-        </div>
+                         <!-- Empty State -->
+                         <div x-show="filteredLabels().length === 0" class="text-center py-4 text-gray-500 text-sm">
+                             <template x-if="labelData.searchLabel">
+                                 Tidak ada label yang cocok
+                             </template>
+                             <template x-if="!labelData.searchLabel">
+                                 Tidak ada label tersedia
+                             </template>
+                         </div>
+                     </div>
 
-        <!-- Footer -->
-        <div class="flex justify-end items-center mt-6 space-x-2">
-            <button type="button"
-                @click="openLabelModal = false; labelData.labels.forEach(l => l.selected = false)"
-                class="px-4 py-2 rounded-lg border text-sm hover:bg-gray-50">Batal</button>
-            <button type="button" @click="saveTaskLabels(currentTask ? currentTask.id : null)"
-                class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">
-                Simpan (<span x-text="labelData.labels.filter(l => l.selected).length"></span>)
-            </button>
-        </div>
-    </div>
-</div>
+                     <!-- Footer -->
+                     <div class="flex justify-end items-center mt-6 space-x-2">
+                         <button type="button"
+                             @click="openLabelModal = false; labelData.labels.forEach(l => l.selected = false)"
+                             class="px-4 py-2 rounded-lg border text-sm hover:bg-gray-50">Batal</button>
+                         <button type="button" @click="saveTaskLabels(currentTask ? currentTask.id : null)"
+                             class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">
+                             Simpan (<span x-text="labelData.labels.filter(l => l.selected).length"></span>)
+                         </button>
+                     </div>
+                 </div>
+             </div>
 
              <!-- Modal Tambah Label Baru -->
-<div x-show="openAddLabelModal" x-cloak
-    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-        <h2 class="text-lg font-semibold text-gray-800 mb-4">Tambah Label Baru</h2>
+             <div x-show="openAddLabelModal" x-cloak
+                 class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+                 <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                     <h2 class="text-lg font-semibold text-gray-800 mb-4">Tambah Label Baru</h2>
 
-        <!-- Input nama -->
-        <input type="text" x-model="labelData.newLabelName" placeholder="Nama Label"
-            class="w-full border rounded-lg p-2 text-sm mb-4 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+                     <!-- Input nama -->
+                     <input type="text" x-model="labelData.newLabelName" placeholder="Nama Label"
+                         class="w-full border rounded-lg p-2 text-sm mb-4 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
 
-        <!-- Pilihan Warna -->
-        <div class="grid grid-cols-6 gap-2 mb-4 max-h-40 overflow-y-auto pr-1">
-            <template x-for="color in labelData.colors" :key="color.id">
-                <div class="w-8 h-8 rounded-lg cursor-pointer border shadow-sm"
-                    :style="`background:${color.rgb}`" 
-                    @click="labelData.newLabelColor = color.rgb"
-                    :class="{ 'ring-2 ring-offset-2 ring-blue-600': labelData.newLabelColor === color.rgb }">
-                </div>
-            </template>
-        </div>
+                     <!-- Pilihan Warna -->
+                     <div class="grid grid-cols-6 gap-2 mb-4 max-h-40 overflow-y-auto pr-1">
+                         <template x-for="color in labelData.colors" :key="color.id">
+                             <div class="w-8 h-8 rounded-lg cursor-pointer border shadow-sm"
+                                 :style="`background:${color.rgb}`" @click="labelData.newLabelColor = color.rgb"
+                                 :class="{ 'ring-2 ring-offset-2 ring-blue-600': labelData.newLabelColor === color.rgb }">
+                             </div>
+                         </template>
+                     </div>
 
-        <!-- Debug Info -->
-        <div class="text-xs text-gray-500 mb-2" x-show="labelData.newLabelColor">
-            Warna terpilih: <span x-text="labelData.newLabelColor"></span>
-        </div>
+                     <!-- Debug Info -->
+                     <div class="text-xs text-gray-500 mb-2" x-show="labelData.newLabelColor">
+                         Warna terpilih: <span x-text="labelData.newLabelColor"></span>
+                     </div>
 
-        <!-- Footer -->
-        <div class="flex justify-end space-x-2 mt-4">
-            <button type="button" @click="openAddLabelModal = false; openLabelModal = true"
-                class="px-4 py-2 rounded-lg border text-sm hover:bg-gray-50">Batal</button>
-            <button type="button" 
-                @click="createNewLabel().then(id => { 
+                     <!-- Footer -->
+                     <div class="flex justify-end space-x-2 mt-4">
+                         <button type="button" @click="openAddLabelModal = false; openLabelModal = true"
+                             class="px-4 py-2 rounded-lg border text-sm hover:bg-gray-50">Batal</button>
+                         <button type="button"
+                             @click="createNewLabel().then(id => { 
                     if(id) { 
                         openAddLabelModal = false; 
                         openLabelModal = true; 
                     } 
                 })"
-                :disabled="!labelData.newLabelName.trim() || !labelData.newLabelColor"
-                class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                Simpan
-            </button>
-        </div>
-    </div>
-</div>
+                             :disabled="!labelData.newLabelName.trim() || !labelData.newLabelColor"
+                             class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                             Simpan
+                         </button>
+                     </div>
+                 </div>
+             </div>
 
 
-        <!-- Checklist Section - FIXED -->
-<div>
-    <label class="text-sm font-medium text-gray-700 mb-2 block">Checklist</label>
-    
-    <!-- Checklist Items -->
-    <div class="space-y-2 mb-3 max-h-40 overflow-y-auto" id="checklist-container">
-        <template x-for="(item, index) in taskForm.checklists" :key="item.id">
-            <div class="flex items-center gap-2 p-2 border rounded-lg bg-white hover:bg-gray-50 transition-colors">
-                <input type="checkbox" x-model="item.is_done" 
-                    class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
-                
-                <input type="text" x-model="item.title"
-                    @blur="updateChecklistItem(item)"
-                    @keydown.enter="$event.target.blur()"
-                    @keydown.escape="$event.target.blur()"
-                    class="flex-1 border-0 focus:ring-0 p-1 text-sm bg-transparent outline-none"
-                    :class="{ 'line-through text-gray-500': item.is_done }"
-                    placeholder="Ketik item checklist..."
-                    x-ref="'checklist-input-' + index">
-                
-                <button type="button" @click="removeChecklistItem(index)"
-                    class="text-red-500 hover:text-red-700 p-1 transition-colors"
-                    title="Hapus item">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                </button>
-            </div>
-        </template>
-        
-        <!-- Empty State -->
-        <div x-show="!taskForm.checklists || taskForm.checklists.length === 0" 
-            class="text-center py-4 text-gray-500 text-sm border-2 border-dashed border-gray-300 rounded-lg">
-            <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            Belum ada checklist
-        </div>
-    </div>
+             <!-- Checklist Section - FIXED -->
+             <div>
+                 <label class="text-sm font-medium text-gray-700 mb-2 block">Checklist</label>
 
-    <!-- Add Checklist Button -->
-    <button type="button" @click="addChecklistItem()"
-        class="w-full border border-dashed border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-500 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-700 flex items-center justify-center gap-2 bg-white transition-all duration-200">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Tambah Item Checklist
-    </button>
+                 <!-- Checklist Items -->
+                 <div class="space-y-2 mb-3 max-h-40 overflow-y-auto" id="checklist-container">
+                     <template x-for="(item, index) in taskForm.checklists" :key="item.id">
+                         <div
+                             class="flex items-center gap-2 p-2 border rounded-lg bg-white hover:bg-gray-50 transition-colors">
+                             <input type="checkbox" x-model="item.is_done"
+                                 class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
 
-    <!-- Progress Bar -->
-    <div x-show="taskForm.checklists && taskForm.checklists.length > 0" class="mt-3 p-3 bg-gray-50 rounded-lg">
-        <div class="flex justify-between items-center text-xs text-gray-600 mb-1">
-            <span class="font-medium">Progress Checklist</span>
-            <span x-text="`${getChecklistProgress()}%`" 
-                  :class="{ 'text-green-600': getChecklistProgress() === 100, 'text-blue-600': getChecklistProgress() < 100 }">
-            </span>
-        </div>
-        <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
-            <div class="h-2 rounded-full transition-all duration-300" 
-                 :class="{ 'bg-green-500': getChecklistProgress() === 100, 'bg-blue-500': getChecklistProgress() < 100 }"
-                 :style="`width: ${getChecklistProgress()}%`"></div>
-        </div>
-        <div class="text-xs text-gray-500 text-center" 
-             x-text="`${getCompletedChecklists()} dari ${taskForm.checklists.length} selesai`">
-        </div>
-    </div>
-</div>
+                             <input type="text" x-model="item.title" @blur="updateChecklistItem(item)"
+                                 @keydown.enter="$event.target.blur()" @keydown.escape="$event.target.blur()"
+                                 class="flex-1 border-0 focus:ring-0 p-1 text-sm bg-transparent outline-none"
+                                 :class="{ 'line-through text-gray-500': item.is_done }"
+                                 placeholder="Ketik item checklist..." x-ref="'checklist-input-' + index">
+
+                             <button type="button" @click="removeChecklistItem(index)"
+                                 class="text-red-500 hover:text-red-700 p-1 transition-colors" title="Hapus item">
+                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                 </svg>
+                             </button>
+                         </div>
+                     </template>
+
+                     <!-- Empty State -->
+                     <div x-show="!taskForm.checklists || taskForm.checklists.length === 0"
+                         class="text-center py-4 text-gray-500 text-sm border-2 border-dashed border-gray-300 rounded-lg">
+                         <svg class="w-8 h-8 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor"
+                             viewBox="0 0 24 24">
+                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                 d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                         </svg>
+                         Belum ada checklist
+                     </div>
+                 </div>
+
+                 <!-- Add Checklist Button -->
+                 <button type="button" @click="addChecklistItem()"
+                     class="w-full border border-dashed border-gray-300 rounded-lg px-4 py-3 text-sm text-gray-500 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-700 flex items-center justify-center gap-2 bg-white transition-all duration-200">
+                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                     </svg>
+                     Tambah Item Checklist
+                 </button>
+
+                 <!-- Progress Bar -->
+                 <div x-show="taskForm.checklists && taskForm.checklists.length > 0"
+                     class="mt-3 p-3 bg-gray-50 rounded-lg">
+                     <div class="flex justify-between items-center text-xs text-gray-600 mb-1">
+                         <span class="font-medium">Progress Checklist</span>
+                         <span x-text="`${getChecklistProgress()}%`"
+                             :class="{
+                                 'text-green-600': getChecklistProgress() ===
+                                     100,
+                                 'text-blue-600': getChecklistProgress() < 100
+                             }">
+                         </span>
+                     </div>
+                     <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
+                         <div class="h-2 rounded-full transition-all duration-300"
+                             :class="{
+                                 'bg-green-500': getChecklistProgress() === 100,
+                                 'bg-blue-500': getChecklistProgress() <
+                                     100
+                             }"
+                             :style="`width: ${getChecklistProgress()}%`"></div>
+                     </div>
+                     <div class="text-xs text-gray-500 text-center"
+                         x-text="`${getCompletedChecklists()} dari ${taskForm.checklists.length} selesai`">
+                     </div>
+                 </div>
+             </div>
 
              {{-- <!-- Modal Tambah Ceklis -->
              <div x-show="openCeklisModal" x-cloak
@@ -831,9 +878,7 @@
                  <label class="text-sm font-medium text-gray-700 mb-2 block">Anggota <span
                          class="text-red-500">*</span></label>
                  <div class="flex items-center justify-between">
-                     <!-- Di modal detail - PERBAIKI: Gunakan assignedMembers -->
                      <div class="flex items-center gap-2">
-                         <!-- Tampilkan avatar anggota yang ditugaskan -->
                          <template x-for="member in assignedMembers" :key="member.id">
                              <div class="relative">
                                  <img :src="member.avatar" class="w-9 h-9 rounded-full border-2 border-gray-300"
@@ -845,26 +890,48 @@
                              </div>
                          </template>
 
-                         <!-- Tombol tambah anggota -->
                          <button type="button" @click="openAddMemberModalForTask(currentTask)"
                              class="w-9 h-9 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:border-gray-400 transition">
                              <span class="text-xl font-light">+</span>
                          </button>
                      </div>
-                     <div class="flex items-center gap-3">
-                         <span class="text-xs text-gray-600">Rahasia hanya untuk yang terlibat?</span>
+
+                     <!-- ✅ SWITCH BUTTON TUGAS RAHASIA (DETAIL) -->
+                     <div class="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
+                         <span class="text-xs text-blue-700 font-medium">Tugas Rahasia?</span>
                          <label class="relative inline-flex items-center cursor-pointer">
-                             <input type="checkbox" x-model="currentTask.secret" class="sr-only peer"
+                             <input type="checkbox" x-model="currentTask.is_secret" class="sr-only peer"
                                  :disabled="!isEditMode">
                              <div
-                                 class="w-12 h-6 bg-gray-300 rounded-full peer peer-checked:after:translate-x-6 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500">
+                                 class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600">
                              </div>
                          </label>
-                         <span class="text-sm font-medium text-gray-700">Tugas Rahasia</span>
+                         <span class="text-sm font-medium"
+                             :class="currentTask.is_secret ? 'text-blue-700' : 'text-gray-500'"
+                             x-text="currentTask.is_secret ? 'Ya' : 'Tidak'">
+                         </span>
+                     </div>
+                 </div>
+
+                 <!-- ✅ INFO TEXT UNTUK TUGAS RAHASIA (DETAIL) -->
+                 <div x-show="currentTask.is_secret" class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                     <div class="flex items-start gap-2">
+                         <svg class="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor"
+                             viewBox="0 0 24 24">
+                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                         </svg>
+                         <div>
+                             <p class="text-xs text-blue-800 font-medium">Tugas ini hanya terlihat oleh:</p>
+                             <ul class="text-xs text-blue-700 mt-1 list-disc list-inside">
+                                 <li>Anggota yang ditugaskan</li>
+                                 <li>Super Admin & Administrator</li>
+                                 <li>Pembuat tugas</li>
+                             </ul>
+                         </div>
                      </div>
                  </div>
              </div>
-
              <!-- Modal Tambah Peserta -->
              <div x-show="openAddMemberModal" x-cloak
                  class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4" x-transition>

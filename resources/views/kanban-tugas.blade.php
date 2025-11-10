@@ -961,6 +961,25 @@
             #task-main-comment-editor+.ck-editor .ck-content li {
                 margin-left: 0 !important;
             }
+
+
+            .secret-task-badge {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 2px 8px;
+                border-radius: 12px;
+                font-size: 0.7rem;
+                font-weight: 600;
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+            }
+
+            /* Style untuk task card secret */
+            .task-card-secret {
+                border-left: 4px solid #764ba2;
+                background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+            }
         </style>
 
         <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -999,15 +1018,15 @@
                     newListName: '',
 
                     // --- Task Form Data ---
+                    // Di dalam kanbanApp() - update taskForm
                     taskForm: {
                         title: '',
                         phase: '',
-                        members: [], // ✅ Pastikan ini array of objects dengan id
-                        secret: false,
+                        members: [],
+                        is_secret: false, // ✅ TAMBAHKAN INI - default false
                         notes: '',
                         attachments: [],
-                        // labels: [],
-                        checklist: [],
+                        checklists: [],
                         startDate: '',
                         startTime: '',
                         dueDate: '',
@@ -1452,11 +1471,39 @@
                         this.isEditMode = false;
                     },
 
+                    // ✅ NEW: Load tasks dengan filter hak akses
+                    async loadTasksWithAccess() {
+                        try {
+                            const workspaceId = this.getCurrentWorkspaceId();
+                            if (!workspaceId) return;
+
+                            const response = await fetch(`/tasks/workspace/${workspaceId}/tasks-with-access`);
+                            const data = await response.json();
+
+                            if (data.success) {
+                                this.tasks = data.tasks;
+                                console.log('Tasks loaded with access filter:', {
+                                    total: data.tasks.length,
+                                    secret: data.tasks.filter(t => t.is_secret).length,
+                                    user_role: data.user_role
+                                });
+                            }
+                        } catch (error) {
+                            console.error('Error loading tasks with access:', error);
+                        }
+                    },
+
                     // Create new task
                     async createTask() {
                         // Validasi form
                         if (!this.taskForm.title.trim()) {
                             alert('Judul tugas harus diisi');
+                            return;
+                        }
+
+                        // Validasi: Jika tugas rahasia, harus ada minimal 1 anggota
+                        if (this.taskForm.is_secret && this.taskForm.members.length === 0) {
+                            alert('Tugas rahasia harus memiliki minimal 1 anggota yang ditugaskan');
                             return;
                         }
 
@@ -1467,14 +1514,17 @@
                                 return;
                             }
 
+                            // ✅ AMBIL DATA DARI CKEDITOR
+                            const catatanContent = this.getCKEditorContent('editor-catatan');
+
                             // Siapkan data untuk API
                             const formData = {
                                 workspace_id: workspaceId,
                                 title: this.taskForm.title,
-                                description: this.taskForm.notes,
+                                description: catatanContent, // ✅ GUNAKAN DATA DARI CKEDITOR
                                 phase: this.taskForm.phase,
                                 user_ids: this.taskForm.members.map(m => m.id),
-                                is_secret: this.taskForm.secret,
+                                is_secret: this.taskForm.is_secret,
                                 label_ids: (this.taskForm.labels || []).map(l => l.id),
                                 checklists: this.taskForm.checklists.map(item => ({
                                     title: item.title,
@@ -1493,6 +1543,8 @@
                                 }
                             });
 
+                            console.log('Data yang dikirim:', formData); // Debug
+
                             const response = await fetch('/tasks/create-with-assignments', {
                                 method: 'POST',
                                 headers: {
@@ -1505,12 +1557,15 @@
                             const data = await response.json();
 
                             if (data.success) {
-                                this.showNotification('Tugas berhasil dibuat!', 'success');
+                                this.showNotification(
+                                    `Tugas berhasil dibuat! ${data.is_secret ? '(Tugas Rahasia)' : ''}`,
+                                    'success'
+                                );
                                 this.resetTaskForm();
                                 this.openTaskModal = false;
 
-                                // Reload tasks jika perlu
-                                this.loadTasks();
+                                // Reload tasks dengan filter hak akses
+                                this.loadTasksWithAccess();
                             } else {
                                 alert('Gagal membuat tugas: ' + data.message);
                             }
@@ -1520,23 +1575,70 @@
                         }
                     },
 
-                    // Reset form
-                    resetTaskForm() {
-                        this.taskForm = {
-                            title: '',
-                            phase: '',
-                            members: [],
-                            secret: false,
-                            notes: '',
-                            attachments: [],
-                            // labels: [],
-                            checklists: [],
-                            startDate: '',
-                            startTime: '',
-                            dueDate: '',
-                            dueTime: ''
-                        };
-                    },
+
+                    // ✅ NEW: Method untuk mendapatkan content CKEditor
+getCKEditorContent(editorId) {
+    // Coba ambil dari instance CKEditor
+    const editor = taskEditors[editorId];
+    if (editor) {
+        return editor.getData();
+    }
+    
+    // Fallback: coba ambil dari textarea fallback
+    const fallbackTextarea = document.getElementById(editorId + '-fallback');
+    if (fallbackTextarea) {
+        return fallbackTextarea.value;
+    }
+    
+    // Fallback: coba ambil dari textarea biasa
+    const textarea = document.querySelector(`#${editorId}`);
+    if (textarea) {
+        return textarea.value;
+    }
+    
+    return '';
+},
+
+// ✅ NEW: Method untuk reset CKEditor
+resetCKEditor(editorId) {
+    const editor = taskEditors[editorId];
+    if (editor) {
+        editor.setData('');
+    }
+    
+    const fallbackTextarea = document.getElementById(editorId + '-fallback');
+    if (fallbackTextarea) {
+        fallbackTextarea.value = '';
+    }
+    
+    const textarea = document.querySelector(`#${editorId}`);
+    if (textarea) {
+        textarea.value = '';
+    }
+},
+
+
+
+
+                    // Update method resetTaskForm
+resetTaskForm() {
+    // Reset CKEditor terlebih dahulu
+    this.resetCKEditor('editor-catatan');
+    
+    this.taskForm = {
+        title: '',
+        phase: '',
+        members: [],
+        is_secret: false,
+        notes: '',
+        attachments: [],
+        checklists: [],
+        startDate: '',
+        startTime: '',
+        dueDate: '',
+        dueTime: ''
+    };
+},
 
                     // Members
                     filteredMembers() {
@@ -2276,7 +2378,7 @@
                     },
 
                     // ✅ NEW: Helper untuk notification
-                     showNotification(message, type = 'info') {
+                    showNotification(message, type = 'info') {
                         // Implementasi notification system Anda
                         alert(message); // Sementara pakai alert, bisa diganti dengan toast notification
                     },
@@ -2289,27 +2391,17 @@
                     // ✅ Initialize ketika component mounted
                     init() {
                         this.loadBoardColumns();
-
-                        // Juga load tasks jika diperlukan
-                        this.loadTasks();
-
-                        this.loadWorkspaceMembers(); // ✅ Load workspace members
-
-                        this.ensureMembersData(); // ✅ Pastikan data konsisten
-
-
-                        // ✅ NEW: Load labels dan colors
+                        this.loadTasksWithAccess(); // ✅ GANTI DENGAN METHOD BARU
+                        this.loadWorkspaceMembers();
+                        this.ensureMembersData();
                         this.loadLabels();
                         this.loadColors();
 
-                        // ✅ INITIALIZE CHECKLISTS
                         if (!this.taskForm.checklists) {
                             this.taskForm.checklists = [];
                         }
 
-                        console.log('Aplikasi initialized dengan checklist support');
-
-
+                        console.log('Aplikasi initialized dengan secret task support');
                     },
 
                     // ✅ NEW: Method untuk load tasks dari database
