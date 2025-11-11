@@ -1532,11 +1532,23 @@
                             // Create new task
                             // Di dalam kanbanApp() - perbaiki method createTask
                            async createTask() {
+
+                             try {
+        const catatanContent = this.getCKEditorContent('editor-catatan');
+        this.taskForm.description = catatanContent;
+        
+        console.log('CKEditor content:', catatanContent); // Debug
+    } catch (error) {
+        console.error('Error getting CKEditor content:', error);
+        this.taskForm.description = ''; // Fallback
+    }
+
     // Validasi
     if (!this.taskForm.title?.trim()) {
         this.showNotification('Judul tugas harus diisi', 'error');
         return;
     }
+   
 
     if (!this.taskForm.phase?.trim()) {
         this.showNotification('Phase harus diisi', 'error');
@@ -1680,27 +1692,35 @@
 
 
                             // ✅ NEW: Method untuk mendapatkan content CKEditor
-                            getCKEditorContent(editorId) {
-                                // Coba ambil dari instance CKEditor
-                                const editor = taskEditors[editorId];
-                                if (editor) {
-                                    return editor.getData();
-                                }
+                           // ✅ PERBAIKI: Method untuk mendapatkan content CKEditor
+getCKEditorContent(editorId) {
+    console.log('Getting content for editor:', editorId);
+    
+    // Coba ambil dari instance CKEditor
+    const editor = taskEditors[editorId];
+    if (editor) {
+        const content = editor.getData();
+        console.log('Got content from CKEditor instance:', content);
+        return content;
+    }
 
-                                // Fallback: coba ambil dari textarea fallback
-                                const fallbackTextarea = document.getElementById(editorId + '-fallback');
-                                if (fallbackTextarea) {
-                                    return fallbackTextarea.value;
-                                }
+    // Fallback: coba ambil dari textarea fallback
+    const fallbackTextarea = document.getElementById(editorId + '-fallback');
+    if (fallbackTextarea) {
+        console.log('Got content from fallback textarea:', fallbackTextarea.value);
+        return fallbackTextarea.value;
+    }
 
-                                // Fallback: coba ambil dari textarea biasa
-                                const textarea = document.querySelector(`#${editorId}`);
-                                if (textarea) {
-                                    return textarea.value;
-                                }
+    // Fallback: coba ambil dari textarea biasa
+    const textarea = document.querySelector(`#${editorId}`);
+    if (textarea) {
+        console.log('Got content from textarea:', textarea.value);
+        return textarea.value;
+    }
 
-                                return '';
-                            },
+    console.warn('No editor or textarea found for:', editorId);
+    return '';
+},
 
                             // ✅ NEW: Method untuk reset CKEditor
                             resetCKEditor(editorId) {
@@ -1726,23 +1746,23 @@
                             // Update method resetTaskForm
                             // ✅ Update method resetTaskForm
                             resetTaskForm() {
-                                // Reset CKEditor terlebih dahulu
-                                this.resetCKEditor('editor-catatan');
+    // Reset CKEditor terlebih dahulu
+    this.resetCKEditor('editor-catatan');
 
-                                this.taskForm = {
-                                    title: '',
-                                    phase: '',
-                                    members: [],
-                                    is_secret: false,
-                                    notes: '',
-                                    attachments: [],
-                                    checklists: [],
-                                    labels: [], // ✅ RESET LABELS JUGA
-                                    startDate: '',
-                                    startTime: '',
-                                    dueDate: '',
-                                    dueTime: ''
-                                };
+    this.taskForm = {
+        title: '',
+        phase: '',
+        members: [],
+        is_secret: false,
+        description: '', // ✅ PASTIKAN INI ADA
+        attachments: [],
+        checklists: [],
+        labels: [],
+        startDate: '',
+        startTime: '',
+        dueDate: '',
+        dueTime: ''
+    };
 
                                 // Reset selected state di labelData
                                 this.labelData.labels.forEach(label => {

@@ -294,12 +294,12 @@
 
 
              <!-- Catatan -->
-             <div class="mb-4">
-                 <label class="text-sm font-medium text-gray-700 mb-2 block">Catatan</label>
-                 <div class="border rounded-lg overflow-hidden">
-                     <textarea id="editor-catatan" name="catatan"></textarea>
-                 </div>
-             </div>
+<div class="mb-4">
+    <label class="text-sm font-medium text-gray-700 mb-2 block">Catatan</label>
+    <div class="border rounded-lg overflow-hidden">
+        <textarea id="editor-catatan" x-model="taskForm.description"></textarea>
+    </div>
+</div>
 
              <script>
                  document.addEventListener("DOMContentLoaded", () => {
