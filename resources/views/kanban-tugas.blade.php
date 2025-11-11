@@ -1046,20 +1046,20 @@
 
                             // --- Task Form Data ---
                             // Di dalam kanbanApp() - update taskForm
-                            taskForm: {
-                                title: '',
-                                phase: '', // Pastikan phase ada dan string kosong
-                                members: [],
-                                is_secret: false,
-                                notes: '',
-                                attachments: [],
-                                checklists: [],
-                                labels: [],
-                                startDate: '',
-                                startTime: '',
-                                dueDate: '',
-                                dueTime: ''
-                            },
+                           taskForm: {
+    title: '',
+    phase: '',
+    members: [], // Array of {id, name, avatar}
+    user_ids: [], // Array of user IDs untuk backend
+    is_secret: false,
+    description: '',
+    attachments: [],
+    checklists: [],
+    labels: [], // Array of label objects
+    label_ids: [], // Array of label IDs untuk backend
+    start_datetime: '', // Format: Y-m-d H:i:s
+    due_datetime: ''    // Format: Y-m-d H:i:s
+},
 
                             // --- Current Task (for detail/edit) ---
                             currentTask: null,
@@ -1097,7 +1097,7 @@
                                 selectedLabelIds: [],
                                 newLabelName: '',
                                 newLabelColor: null,
-                                searchLabel: '' // Tambahkan ini
+                                searchLabel: ''
                             },
 
                             uploading: false,
@@ -1531,106 +1531,91 @@
 
                             // Create new task
                             // Di dalam kanbanApp() - perbaiki method createTask
-                            async createTask() {
-                                // Validasi dasar
-                                if (!this.taskForm.title?.trim()) {
-                                    this.showNotification('Judul tugas harus diisi', 'error');
-                                    return;
-                                }
+                           async createTask() {
+    // Validasi
+    if (!this.taskForm.title?.trim()) {
+        this.showNotification('Judul tugas harus diisi', 'error');
+        return;
+    }
 
-                                if (!this.taskForm.phase?.trim()) {
-                                    this.showNotification('Phase harus diisi', 'error');
-                                    return;
-                                }
+    if (!this.taskForm.phase?.trim()) {
+        this.showNotification('Phase harus diisi', 'error');
+        return;
+    }
 
-                                // Validasi format datetime
-                                if (this.taskForm.startDate && !this.taskForm.startTime) {
-                                    this.showNotification('Jam mulai harus diisi jika tanggal mulai diisi', 'error');
-                                    return;
-                                }
+    try {
+        const workspaceId = this.getCurrentWorkspaceId();
+        if (!workspaceId) {
+            this.showNotification('Workspace tidak valid', 'error');
+            return;
+        }
 
-                                if (this.taskForm.dueDate && !this.taskForm.dueTime) {
-                                    this.showNotification('Jam tenggat harus diisi jika tanggal tenggat diisi', 'error');
-                                    return;
-                                }
+        // Siapkan data untuk backend
+        const formData = {
+            workspace_id: workspaceId,
+            title: this.taskForm.title,
+            description: this.taskForm.description, // Langsung dari form
+            phase: this.taskForm.phase,
+            user_ids: this.taskForm.members.map(m => m.id),
+            is_secret: this.taskForm.is_secret,
+            label_ids: this.taskForm.labels.map(l => l.id),
+            checklists: this.taskForm.checklists.map(item => ({
+                title: item.title,
+                is_done: item.is_done || false
+            })),
+            attachment_ids: this.taskForm.attachments.map(att => att.id)
+        };
 
-                                try {
-                                    const workspaceId = this.getCurrentWorkspaceId();
-                                    if (!workspaceId) {
-                                        this.showNotification('Workspace tidak valid', 'error');
-                                        return;
-                                    }
+        // Tambahkan datetime jika ada
+        if (this.taskForm.startDate && this.taskForm.startTime) {
+            formData.start_datetime = `${this.taskForm.startDate} ${this.taskForm.startTime}:00`;
+        }
+        if (this.taskForm.dueDate && this.taskForm.dueTime) {
+            formData.due_datetime = `${this.taskForm.dueDate} ${this.taskForm.dueTime}:00`;
+        }
 
-                                    // Siapkan data
-                                    const formData = {
-                                        workspace_id: workspaceId,
-                                        title: this.taskForm.title,
-                                        description: this.getCKEditorContent('editor-catatan'),
-                                        phase: this.taskForm.phase,
-                                        user_ids: this.taskForm.members.map(m => m.id),
-                                        is_secret: this.taskForm.is_secret,
-                                        label_ids: (this.taskForm.labels || []).map(l => l.id),
-                                        checklists: (this.taskForm.checklists || []).map(item => ({
-                                            title: item.title,
-                                            is_done: item.is_done || false
-                                        })),
-                                        attachment_ids: (this.taskForm.attachments || []).map(att => att.id),
-                                        start_datetime: this.taskForm.startDate && this.taskForm.startTime ?
-                                            `${this.taskForm.startDate} ${this.taskForm.startTime}:00` : null,
-                                        due_datetime: this.taskForm.dueDate && this.taskForm.dueTime ?
-                                            `${this.taskForm.dueDate} ${this.taskForm.dueTime}:00` : null
-                                    };
+        // Hapus null values
+        Object.keys(formData).forEach(key => {
+            if (formData[key] === null || formData[key] === undefined || formData[key] === '') {
+                delete formData[key];
+            }
+        });
 
-                                    // Hapus null values
-                                    Object.keys(formData).forEach(key => {
-                                        if (formData[key] === null || formData[key] === undefined || formData[key] === '') {
-                                            delete formData[key];
-                                        }
-                                    });
+        console.log('Sending task data:', formData);
 
-                                    console.log('Sending data:', formData);
+        const response = await fetch('/tasks/create-with-assignments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': this.getCsrfToken(),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
 
-                                    const response = await fetch('/tasks/create-with-assignments', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'X-CSRF-TOKEN': this.getCsrfToken(),
-                                            'Accept': 'application/json'
-                                        },
-                                        body: JSON.stringify(formData)
-                                    });
+        const data = await response.json();
 
-                                    // Handle non-JSON responses
-                                    const contentType = response.headers.get('content-type');
-                                    if (!contentType || !contentType.includes('application/json')) {
-                                        const text = await response.text();
-                                        console.error('Non-JSON response:', text.substring(0, 500));
-                                        throw new Error('Server returned non-JSON response');
-                                    }
+        if (!response.ok) {
+            throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        }
 
-                                    const data = await response.json();
+        if (data.success) {
+            this.showNotification('Tugas berhasil dibuat!', 'success');
+            this.resetTaskForm();
+            this.openTaskModal = false;
+            
+            // Reload data
+            await this.loadTasksWithAccess();
+            await this.loadBoardColumns();
+        } else {
+            throw new Error(data.message || 'Gagal membuat tugas');
+        }
 
-                                    if (!response.ok) {
-                                        throw new Error(data.message || `HTTP error! status: ${response.status}`);
-                                    }
-
-                                    if (data.success) {
-                                        this.showNotification('Tugas berhasil dibuat!', 'success');
-                                        this.resetTaskForm();
-                                        this.openTaskModal = false;
-
-                                        // Reload data
-                                        await this.loadTasksWithAccess();
-                                        await this.loadBoardColumns();
-                                    } else {
-                                        throw new Error(data.message || 'Gagal membuat tugas');
-                                    }
-
-                                } catch (error) {
-                                    console.error('Error creating task:', error);
-                                    this.showNotification(`Gagal membuat tugas: ${error.message}`, 'error');
-                                }
-                            },
+    } catch (error) {
+        console.error('Error creating task:', error);
+        this.showNotification(`Gagal membuat tugas: ${error.message}`, 'error');
+    }
+},
 
 
 
@@ -1661,6 +1646,15 @@
                                 // Untuk implementasi yang lebih baik, gunakan:
                                 // this.showToastNotification(message, type);
                             },
+
+                            filteredLabels() {
+    if (!this.labelData.searchLabel) {
+        return this.labelData.labels;
+    }
+    return this.labelData.labels.filter(label =>
+        label.name.toLowerCase().includes(this.labelData.searchLabel.toLowerCase())
+    );
+},
 
 
                             // Tambahkan method untuk handle error response
@@ -2509,50 +2503,54 @@
 
                             // ✅ Initialize ketika component mounted
                             init() {
-                                // Inisialisasi semua state dengan nilai default
-                                this.currentTask = {
-                                    is_secret: false,
-                                    labels: [],
-                                    startDate: '',
-                                    startTime: '',
-                                    dueDate: '',
-                                    dueTime: '',
-                                    members: []
-                                };
+    try {
+        // Inisialisasi state dengan nilai default
+        this.currentTask = {
+            is_secret: false,
+            labels: [],
+            startDate: '',
+            startTime: '',
+            dueDate: '',
+            dueTime: '',
+            members: []
+        };
 
-                                this.taskForm = {
-                                    title: '',
-                                    phase: '',
-                                    members: [],
-                                    is_secret: false,
-                                    notes: '',
-                                    attachments: [],
-                                    checklists: [],
-                                    labels: [],
-                                    startDate: '',
-                                    startTime: '',
-                                    dueDate: '',
-                                    dueTime: ''
-                                };
+        this.taskForm = {
+            title: '',
+            phase: '',
+            members: [],
+            is_secret: false,
+            notes: '',
+            attachments: [],
+            checklists: [],
+            labels: [],
+            startDate: '',
+            startTime: '',
+            dueDate: '',
+            dueTime: ''
+        };
 
-                                this.labelData = {
-                                    labels: [],
-                                    colors: [],
-                                    selectedLabelIds: [],
-                                    newLabelName: '',
-                                    newLabelColor: null,
-                                    searchLabel: ''
-                                };
+        this.labelData = {
+            labels: [],
+            colors: [],
+            selectedLabelIds: [],
+            newLabelName: '',
+            newLabelColor: null,
+            searchLabel: ''
+        };
 
-                                // Load data
-                                this.loadBoardColumns();
-                                this.loadTasksWithAccess();
-                                this.loadWorkspaceMembers();
-                                this.loadLabels();
-                                this.loadColors();
+        // Load data
+        this.loadBoardColumns();
+        this.loadTasksWithAccess();
+        this.loadWorkspaceMembers();
+        this.loadLabels();
+        this.loadColors();
 
-                                console.log('Aplikasi initialized dengan semua state');
-                            },
+        console.log('✅ Aplikasi initialized dengan semua state');
+    } catch (error) {
+        console.error('❌ Error initializing app:', error);
+    }
+},
 
 
                             // ✅ NEW: Method untuk load tasks dari database
