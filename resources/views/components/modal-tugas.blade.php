@@ -584,6 +584,32 @@
                  </button>
              </div>
 
+             <!-- Di dalam modal tambah tugas, setelah section "Tombol Pilih Label" -->
+<!-- Tampilkan Label yang Sudah Dipilih -->
+<div x-show="taskForm.labels && taskForm.labels.length > 0" class="mb-4">
+    <label class="text-sm font-medium text-gray-700 mb-2 block">Label Terpilih</label>
+    <div class="flex flex-wrap gap-2">
+        <template x-for="label in taskForm.labels" :key="label.id">
+            <div class="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1">
+                <span class="inline-block w-3 h-3 rounded-full" 
+                      :style="`background:${label.color}`"></span>
+                <span class="text-sm font-medium text-gray-700" x-text="label.name"></span>
+                <button type="button" 
+                        @click="removeSelectedLabel(label.id)"
+                        class="text-gray-500 hover:text-red-500 text-xs">
+                    ×
+                </button>
+            </div>
+        </template>
+    </div>
+</div>
+
+<!-- Empty State untuk Label -->
+<div x-show="!taskForm.labels || taskForm.labels.length === 0" 
+     class="mb-4 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+    <p class="text-sm text-gray-500 text-center">Belum ada label yang dipilih</p>
+</div>
+
              <!-- Modal Pilih Label -->
              <div x-show="openLabelModal" x-cloak
                  class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">

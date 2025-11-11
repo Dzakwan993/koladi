@@ -1050,14 +1050,15 @@
                             title: '',
                             phase: '',
                             members: [],
-                            is_secret: false, // ✅ TAMBAHKAN INI - default false
+                            is_secret: false,
                             notes: '',
                             attachments: [],
                             checklists: [],
                             startDate: '',
                             startTime: '',
                             dueDate: '',
-                            dueTime: ''
+                            dueTime: '',
+                            labels: [] // ✅ TAMBAHKAN INI untuk menyimpan label yang dipilih
                         },
 
                         // --- Current Task (for detail/edit) ---
@@ -1554,24 +1555,24 @@
 
                                 // Siapkan data untuk API
                                 const formData = {
-        workspace_id: workspaceId,
-        title: this.taskForm.title,
-        description: catatanContent,
-        phase: this.taskForm.phase,
-        user_ids: this.taskForm.members.map(m => m.id),
-        is_secret: this.taskForm.is_secret,
-        label_ids: (this.taskForm.labels || []).map(l => l.id),
-        checklists: this.taskForm.checklists.map(item => ({
-            title: item.title,
-            is_done: item.is_done
-        })),
-        // ✅ KIRIM ARRAY ATTACHMENT IDs YANG SUDAH DIUPLOAD
-        attachment_ids: this.taskForm.attachments.map(att => att.id),
-        start_datetime: this.taskForm.startDate && this.taskForm.startTime ?
-            `${this.taskForm.startDate} ${this.taskForm.startTime}:00` : null,
-        due_datetime: this.taskForm.dueDate && this.taskForm.dueTime ?
-            `${this.taskForm.dueDate} ${this.taskForm.dueTime}:00` : null
-    };
+                                    workspace_id: workspaceId,
+                                    title: this.taskForm.title,
+                                    description: catatanContent,
+                                    phase: this.taskForm.phase,
+                                    user_ids: this.taskForm.members.map(m => m.id),
+                                    is_secret: this.taskForm.is_secret,
+                                    label_ids: (this.taskForm.labels || []).map(l => l.id),
+                                    checklists: this.taskForm.checklists.map(item => ({
+                                        title: item.title,
+                                        is_done: item.is_done
+                                    })),
+                                    // ✅ KIRIM ARRAY ATTACHMENT IDs YANG SUDAH DIUPLOAD
+                                    attachment_ids: this.taskForm.attachments.map(att => att.id),
+                                    start_datetime: this.taskForm.startDate && this.taskForm.startTime ?
+                                        `${this.taskForm.startDate} ${this.taskForm.startTime}:00` : null,
+                                    due_datetime: this.taskForm.dueDate && this.taskForm.dueTime ?
+                                        `${this.taskForm.dueDate} ${this.taskForm.dueTime}:00` : null
+                                };
 
                                 // Hapus properties yang null/undefined
                                 Object.keys(formData).forEach(key => {
@@ -1658,27 +1659,34 @@
 
 
                         // Update method resetTaskForm
-                        resetTaskForm() {
-                            // Reset CKEditor terlebih dahulu
-                            this.resetCKEditor('editor-catatan');
+                        // ✅ Update method resetTaskForm
+resetTaskForm() {
+    // Reset CKEditor terlebih dahulu
+    this.resetCKEditor('editor-catatan');
 
-                            this.taskForm = {
-                                title: '',
-                                phase: '',
-                                members: [],
-                                is_secret: false,
-                                notes: '',
-                                attachments: [], // ✅ RESET ATTACHMENTS
-                                checklists: [],
-                                startDate: '',
-                                startTime: '',
-                                dueDate: '',
-                                dueTime: ''
-                            };
+    this.taskForm = {
+        title: '',
+        phase: '',
+        members: [],
+        is_secret: false,
+        notes: '',
+        attachments: [],
+        checklists: [],
+        labels: [], // ✅ RESET LABELS JUGA
+        startDate: '',
+        startTime: '',
+        dueDate: '',
+        dueTime: ''
+    };
 
-                            this.uploading = false;
-                            this.uploadProgress = 0;
-                        },
+    // Reset selected state di labelData
+    this.labelData.labels.forEach(label => {
+        label.selected = false;
+    });
+
+    this.uploading = false;
+    this.uploadProgress = 0;
+},
 
                         // Members
                         filteredMembers() {
@@ -2902,6 +2910,7 @@
                             }
                         },
                         // ✅ PERBAIKI: Method saveTaskLabels dengan handling yang lebih baik
+                        // ✅ PERBAIKI: Method saveTaskLabels dengan handling yang lebih baik
                         async saveTaskLabels(taskId = null) {
                             try {
                                 const selectedLabelIds = this.labelData.labels
@@ -2917,12 +2926,17 @@
                                         .map(label => ({
                                             id: label.id,
                                             name: label.name,
-                                            color: label.color.rgb
+                                            color: label.color.rgb,
+                                            color_name: label.color.name // tambahkan jika perlu
                                         }));
 
+                                    // ✅ UPDATE: Simpan label yang dipilih ke taskForm
                                     this.taskForm.labels = selectedLabels;
                                     this.openLabelModal = false;
                                     this.showNotification('Label berhasil dipilih', 'success');
+
+                                    // Debug info
+                                    console.log('Labels dipilih untuk task baru:', this.taskForm.labels);
                                     return;
                                 }
 
@@ -2976,6 +2990,21 @@
                             }
                         },
 
+
+
+                        // ✅ NEW: Method untuk menghapus label yang sudah dipilih
+removeSelectedLabel(labelId) {
+    this.taskForm.labels = this.taskForm.labels.filter(label => label.id !== labelId);
+    
+    // Juga update selected state di labelData
+    const label = this.labelData.labels.find(l => l.id === labelId);
+    if (label) {
+        label.selected = false;
+    }
+    
+    console.log('Label dihapus:', labelId, 'Labels tersisa:', this.taskForm.labels);
+},
+
                         // Filter labels untuk search
                         filteredLabels() {
                             if (!this.labelData.searchLabel) {
@@ -2987,17 +3016,25 @@
                         },
 
                         // Open label modal
-                        openLabelModalForTask(task = null) {
-                            this.openLabelModal = true;
-                            this.labelData.searchLabel = '';
+                        // ✅ PERBAIKI: Method untuk membuka modal label
+openLabelModalForTask(task = null) {
+    this.openLabelModal = true;
+    this.labelData.searchLabel = '';
 
-                            if (task && task.id) {
-                                this.loadTaskLabels(task.id);
-                            } else {
-                                // Reset selection untuk task baru
-                                this.labelData.labels.forEach(label => label.selected = false);
-                            }
-                        },
+    if (task && task.id) {
+        // Untuk task yang sudah ada - load labels dari database
+        this.loadTaskLabels(task.id);
+    } else {
+        // Untuk task baru - sync selected state dengan taskForm.labels
+        this.labelData.labels.forEach(label => {
+            // Cek apakah label ini sudah ada di taskForm.labels
+            const isSelected = this.taskForm.labels.some(selectedLabel => 
+                selectedLabel.id === label.id
+            );
+            label.selected = isSelected;
+        });
+    }
+},
 
 
 
@@ -3175,60 +3212,60 @@
                         },
 
                         // Di dalam kanbanApp() - perbaiki method uploadFile
-    // Di dalam kanbanApp() - perbaiki method uploadFile
-   async uploadFile(file) {
-    this.uploading = true;
-    this.uploadProgress = 0;
+                        // Di dalam kanbanApp() - perbaiki method uploadFile
+                        async uploadFile(file) {
+                            this.uploading = true;
+                            this.uploadProgress = 0;
 
-    try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('attachable_type', 'App\\Models\\Task');
-        // TIDAK PERLU attachable_id karena belum ada task
+                            try {
+                                const formData = new FormData();
+                                formData.append('file', file);
+                                formData.append('attachable_type', 'App\\Models\\Task');
+                                // TIDAK PERLU attachable_id karena belum ada task
 
-        const response = await fetch('/tasks/attachments/upload', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': this.getCsrfToken()
-            },
-            body: formData
-        });
+                                const response = await fetch('/tasks/attachments/upload', {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': this.getCsrfToken()
+                                    },
+                                    body: formData
+                                });
 
-        if (!response.ok) {
-            throw new Error(`Upload gagal: ${response.status} ${response.statusText}`);
-        }
+                                if (!response.ok) {
+                                    throw new Error(`Upload gagal: ${response.status} ${response.statusText}`);
+                                }
 
-        const data = await response.json();
+                                const data = await response.json();
 
-        if (data.success) {
-            this.taskForm.attachments.push({
-                id: data.attachment.id,
-                name: file.name,
-                size: file.size,
-                type: this.getFileType(file.type),
-                url: '/storage/' + data.attachment.file_url,
-                serverId: data.attachment.id
-            });
+                                if (data.success) {
+                                    this.taskForm.attachments.push({
+                                        id: data.attachment.id,
+                                        name: file.name,
+                                        size: file.size,
+                                        type: this.getFileType(file.type),
+                                        url: '/storage/' + data.attachment.file_url,
+                                        serverId: data.attachment.id
+                                    });
 
-            this.showNotification(`File ${file.name} berhasil diupload`, 'success');
-            return data.attachment.id;
-        } else {
-            throw new Error(data.message || 'Upload gagal');
-        }
-    } catch (error) {
-        console.error('Error uploading file:', error);
-        alert(`Gagal upload file ${file.name}: ${error.message}`);
-        return null;
-    } finally {
-        this.uploading = false;
-        this.uploadProgress = 0;
-    }
-},
+                                    this.showNotification(`File ${file.name} berhasil diupload`, 'success');
+                                    return data.attachment.id;
+                                } else {
+                                    throw new Error(data.message || 'Upload gagal');
+                                }
+                            } catch (error) {
+                                console.error('Error uploading file:', error);
+                                alert(`Gagal upload file ${file.name}: ${error.message}`);
+                                return null;
+                            } finally {
+                                this.uploading = false;
+                                this.uploadProgress = 0;
+                            }
+                        },
 
-    // ✅ TAMBAHKAN: Helper untuk extract nama file dari URL
-    getFileNameFromUrl(fileUrl) {
-        return fileUrl.split('/').pop() || 'unknown';
-    },
+                        // ✅ TAMBAHKAN: Helper untuk extract nama file dari URL
+                        getFileNameFromUrl(fileUrl) {
+                            return fileUrl.split('/').pop() || 'unknown';
+                        },
                         getFileType(mimeType) {
                             if (mimeType.startsWith('image/')) return 'image';
                             if (mimeType === 'application/pdf') return 'pdf';
