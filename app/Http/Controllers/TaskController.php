@@ -620,75 +620,81 @@ class TaskController extends Controller
     // ✅ NEW: Create new label
     // Di TaskController - perbaiki method createLabel
     public function createLabel(Request $request)
-    {
-        Log::info('Create Label Request:', $request->all());
+{
+    Log::info('Create Label Request:', $request->all());
 
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'color_id' => 'required|exists:colors,id',
-            'workspace_id' => 'required|exists:workspaces,id'
-        ]);
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'color_id' => 'required|exists:colors,id',
+        'workspace_id' => 'required|exists:workspaces,id'
+    ]);
 
-        try {
-            $user = Auth::user();
+    try {
+        $user = Auth::user();
+        $activeCompanyId = session('active_company_id');
 
-            // Validasi akses user ke workspace
-            $userWorkspace = UserWorkspace::where('user_id', $user->id)
-                ->where('workspace_id', $request->workspace_id)
-                ->first();
-
-            if (!$userWorkspace) {
-                Log::error('User tidak memiliki akses ke workspace', [
-                    'user_id' => $user->id,
-                    'workspace_id' => $request->workspace_id
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke workspace ini'
-                ], 403);
-            }
-
-            // Cek apakah label dengan nama yang sama sudah ada
-            $existingLabel = Label::where('name', $request->name)->first();
-            if ($existingLabel) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Label dengan nama ini sudah ada'
-                ], 400);
-            }
-
-            $label = Label::create([
-                'id' => Str::uuid()->toString(),
-                'name' => $request->name,
-                'color_id' => $request->color_id
-            ]);
-
-            // Load relation color untuk response
-            $label->load('color');
-
-            Log::info('Label berhasil dibuat:', [
-                'label_id' => $label->id,
-                'name' => $label->name,
-                'color_id' => $label->color_id
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Label berhasil dibuat',
-                'label' => $label
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error creating label: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+        // ✅ GUNAKAN METHOD HELPER YANG SAMA SEPERTI METHOD LAIN
+        if (!$this->canAccessWorkspace($request->workspace_id)) {
+            Log::error('User tidak memiliki akses ke workspace', [
+                'user_id' => $user->id,
+                'workspace_id' => $request->workspace_id
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat label: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Anda tidak memiliki akses ke workspace ini'
+            ], 403);
         }
+
+        // Validasi workspace dalam company aktif
+        $workspace = Workspace::find($request->workspace_id);
+        if ($workspace->company_id !== $activeCompanyId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Workspace tidak termasuk dalam perusahaan yang aktif'
+            ], 403);
+        }
+
+        // Cek apakah label dengan nama yang sama sudah ada
+        $existingLabel = Label::where('name', $request->name)->first();
+        if ($existingLabel) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Label dengan nama ini sudah ada'
+            ], 400);
+        }
+
+        $label = Label::create([
+            'id' => Str::uuid()->toString(),
+            'name' => $request->name,
+            'color_id' => $request->color_id
+        ]);
+
+        // Load relation color untuk response
+        $label->load('color');
+
+        Log::info('Label berhasil dibuat:', [
+            'label_id' => $label->id,
+            'name' => $label->name,
+            'color_id' => $label->color_id
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Label berhasil dibuat',
+            'label' => $label
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error creating label: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal membuat label: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     // ✅ NEW: Get available colors
     public function getColors()
