@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Workspace;
+use App\Models\Conversation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
@@ -118,6 +119,11 @@ Route::middleware(['auth'])->group(function () {
 
         // Rute untuk menandai telah dibaca (POST)
         Route::post('/chat/{conversationId}/mark-as-read', [ChatController::class, 'markAsRead'])->name('chat.markAsRead');
+
+        // Di Controller Chat, pastikan include avatar
+        $conversations = Conversation::with(['participants.user' => function ($query) {
+            $query->select('id', 'full_name', 'avatar'); // 🔥 INCLUDE AVATAR
+        }])->get();
     });
     // 🔥🔥🔥 --- PERBAIKAN CHAT SELESAI --- 🔥🔥🔥
 

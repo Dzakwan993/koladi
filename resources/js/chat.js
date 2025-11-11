@@ -10,6 +10,14 @@ let selectedFiles = [];
 let isSending = false;
 
 // -----------------------------------------------------------------
+// LANGKAH 1.5: Typing Variables (TAMBAHKAN SETELAH VARIABLE GLOBAL)
+// -----------------------------------------------------------------
+
+let typingTimeout;
+let isTyping = false;
+let currentlyTypingUsers = new Set();
+
+// -----------------------------------------------------------------
 // LANGKAH 2: Ambil Elemen DOM
 // -----------------------------------------------------------------
 let container, chatContainer, messageList, chatListContainer, chatHeaderTitle,
@@ -45,17 +53,25 @@ function getInitials(name) {
     return (names[0][0] + names[names.length - 1][0]).toUpperCase();
 }
 
-
-
 /** 🔥 PERBAIKAN: Fungsi untuk menghapus pesan dengan SweetAlert */
 window.deleteMessage = async function (messageId) {
     console.log('🗑️ Attempting to delete message:', messageId);
 
-    // Validasi messageId
     if (!messageId || messageId.startsWith('temp-')) {
         console.error('Invalid message ID:', messageId);
         return;
     }
+
+    // 🔥 FIX: Prevent layout shift
+    const body = document.body;
+    const scrollY = window.scrollY;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    body.style.overflow = 'hidden';
+    body.style.paddingRight = scrollbarWidth + 'px';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.width = '100%';
 
     const { value: willDelete } = await Swal.fire({
         title: 'Hapus Pesan?',
@@ -66,8 +82,19 @@ window.deleteMessage = async function (messageId) {
         cancelButtonColor: '#3085d6',
         confirmButtonText: 'Ya, Hapus!',
         cancelButtonText: 'Batal',
-        reverseButtons: true
+        reverseButtons: true,
+        customClass: {
+            container: 'swal-no-shift'
+        }
     });
+
+    // 🔥 RESTORE: Reset body styles
+    body.style.overflow = '';
+    body.style.paddingRight = '';
+    body.style.position = '';
+    body.style.top = '';
+    body.style.width = '';
+    window.scrollTo(0, scrollY);
 
     if (!willDelete) {
         console.log('User cancelled deletion');
@@ -274,7 +301,6 @@ function replaceMessageWithDeletedText(messageId, isOwnMessage = true) {
     }, 300);
 }
 
-
 function formatTime(dateTimeString) {
     if (!dateTimeString) return '';
     const date = new Date(dateTimeString);
@@ -285,8 +311,31 @@ function formatTime(dateTimeString) {
     });
 }
 
+function getAvatarUrl(user) {
+    if (!user) return null;
+
+    console.log('🔍 User data for avatar:', user); // Debug
+
+    // Jika user punya avatar, generate URL yang benar
+    if (user.avatar) {
+        // Cek apakah avatar sudah full URL atau relative path
+        if (user.avatar.startsWith('http')) {
+            return user.avatar;
+        } else {
+            // Handle path storage Laravel
+            if (user.avatar.startsWith('avatars/')) {
+                return `${API_URL}/storage/${user.avatar}`;
+            } else {
+                return `${API_URL}/storage/avatars/${user.avatar}`;
+            }
+        }
+    }
+    return null;
+}
+
 function createConversationHTML(conversation) {
     let chatName = conversation.name;
+    let chatAvatar = null;
     let chatAvatarInitials = getInitials(conversation.name);
     let avatarBgClass = 'bg-blue-200 text-blue-800';
 
@@ -295,13 +344,22 @@ function createConversationHTML(conversation) {
         if (otherParticipant) {
             chatName = otherParticipant.user.full_name;
             chatAvatarInitials = getInitials(otherParticipant.user.full_name);
+
+            // 🔥 PERBAIKAN: Ambil avatar URL
+            chatAvatar = getAvatarUrl(otherParticipant.user);
+            console.log('💬 Conversation avatar:', {
+                name: chatName,
+                avatar: chatAvatar,
+                user: otherParticipant.user
+            });
             avatarBgClass = 'bg-indigo-100 text-indigo-800';
-        } else {
-            chatName = 'Percakapan Dihapus';
-            chatAvatarInitials = 'X';
-            avatarBgClass = 'bg-gray-200 text-gray-600';
         }
     }
+
+    // 🔥 PERBAIKAN: Tampilkan avatar image jika ada
+    const avatarHTML = chatAvatar
+        ? `<img src="${chatAvatar}" alt="${chatName}" class="w-10 h-10 rounded-full object-cover border border-gray-200">`
+        : `<div class="w-10 h-10 rounded-full ${avatarBgClass} flex items-center justify-center font-bold text-sm">${chatAvatarInitials}</div>`;
 
     const lastMessage = conversation.last_message;
     let lastMessageText = 'Belum ada pesan';
@@ -386,7 +444,7 @@ function createConversationHTML(conversation) {
    onclick="selectConversation('${conversation.id}')">
    <div class="flex items-center">
      <div class="relative flex-shrink-0">
-       <div class="w-10 h-10 rounded-full ${avatarBgClass} flex items-center justify-center font-bold text-sm">${chatAvatarInitials}</div>
+       ${avatarHTML}
      </div>
      <div class="ml-3 flex-1 min-w-0">
        <h4 class="text-sm truncate">${chatName}</h4>
@@ -398,26 +456,38 @@ function createConversationHTML(conversation) {
            </div>
      </div>
    </div>
-</div>
-`;
+</div>`;
 }
+
 
 function createMemberHTML(member) {
     const initials = getInitials(member.full_name);
+
+    // 🔥 PERBAIKAN: Ambil avatar untuk anggota tim
+    const memberAvatar = getAvatarUrl(member);
+    console.log('👥 Member avatar:', {
+        name: member.full_name,
+        avatar: memberAvatar,
+        member: member
+    });
+
+    const avatarHTML = memberAvatar
+        ? `<img src="${memberAvatar}" alt="${member.full_name}" class="w-10 h-10 rounded-full object-cover border border-gray-200">`
+        : `<div class="w-10 h-10 rounded-full bg-gray-200 text-gray-800 flex items-center justify-center font-bold text-sm">${initials}</div>`;
+
     return `
 <div class="px-6 py-3 hover:bg-gray-50 cursor-pointer text-gray-800"
      onclick="startChatWithUser('${member.id}', '${member.full_name}')">
    <div class="flex items-center">
      <div class="relative flex-shrink-0">
-       <div class="w-10 h-10 rounded-full bg-gray-200 text-gray-800 flex items-center justify-center font-bold text-sm">${initials}</div>
+       ${avatarHTML}
      </div>
      <div class="ml-3 flex-1 min-w-0">
        <h4 class="text-sm font-semibold truncate">${member.full_name}</h4>
        <p class="text-xs text-gray-500 truncate">Mulai percakapan</p>
      </div>
    </div>
-</div>
-`;
+</div>`;
 }
 
 function getReadStatusHTML(message) {
@@ -465,6 +535,15 @@ function createMessageHTML(message) {
     const isSender = message.sender_id === AUTH_USER_ID;
     const senderName = isSender ? 'Anda' : (message.sender ? message.sender.full_name : 'User');
     const initials = getInitials(senderName);
+
+    // 🔥 PERBAIKAN: Ambil avatar sender
+    const senderAvatar = message.sender ? getAvatarUrl(message.sender) : null;
+
+    // Avatar HTML - pakai image jika ada
+    const avatarHTML = senderAvatar
+        ? `<img src="${senderAvatar}" alt="${senderName}" class="w-8 h-8 rounded-full object-cover border border-gray-200">`
+        : `<div class="w-8 h-8 rounded-full ${isSender ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-800'} flex items-center justify-center font-bold text-xs">${initials}</div>`;
+
     const time = formatTime(message.created_at);
 
     // 🔥 PERBAIKAN: Cek apakah pesan benar-benar dihapus
@@ -565,9 +644,7 @@ function createMessageHTML(message) {
                         </div>
                     </div>
                     <div class="flex-shrink-0 ml-3">
-                        <div class="w-8 h-8 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center font-bold text-xs">
-                            ${initials}
-                        </div>
+                        ${avatarHTML}
                     </div>
                 </div>
             `;
@@ -575,9 +652,7 @@ function createMessageHTML(message) {
             return `
                 <div id="${message.id}" class="flex items-start justify-start">
                     <div class="flex-shrink-0 mr-3">
-                        <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-800 flex items-center justify-center font-bold text-xs">
-                            ${initials}
-                        </div>
+                        ${avatarHTML}
                     </div>
                     <div class="flex flex-col items-start max-w-[70%]">
                         <div class="flex items-center gap-2 mb-1">
@@ -593,10 +668,38 @@ function createMessageHTML(message) {
         }
     }
 
+    // 🔥 FUNGSI BARU: Deteksi dan ubah URL menjadi link
+    function detectAndCreateLinks(text) {
+        if (!text) return '';
+
+        // Regex untuk mendeteksi URL
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+        return text.replace(urlRegex, function (url) {
+            // Bersihkan URL dari karakter yang tidak diinginkan di akhir
+            let cleanUrl = url;
+            if (url.endsWith('.') || url.endsWith(',') || url.endsWith('!') || url.endsWith('?')) {
+                cleanUrl = url.slice(0, -1);
+            }
+
+            // Tampilkan domain sebagai teks link
+            let displayText = cleanUrl;
+            try {
+                const domain = new URL(cleanUrl).hostname;
+                displayText = domain.replace('www.', '');
+            } catch (e) {
+                // Jika URL tidak valid, tetap gunakan URL asli
+            }
+
+            return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-600 hover:underline break-all">${displayText}</a>`;
+        });
+    }
+
     // 🔥 PERBAIKAN: Untuk file message tanpa content, tampilkan default text
     let contentHTML = '';
     if (message.content && message.content.trim() !== '') {
-        contentHTML = `<p class="text-sm" style="word-break: break-word;">${message.content}</p>`;
+        const processedContent = detectAndCreateLinks(message.content);
+        contentHTML = `<p class="text-sm" style="word-break: break-word;">${processedContent}</p>`;
     } else if (isFileMessage) {
         // Tampilkan text default untuk file message tanpa content
         const fileCount = message.attachments ? message.attachments.length : 0;
@@ -635,15 +738,13 @@ function createMessageHTML(message) {
                         </div>
                         <span class="font-semibold text-gray-700 text-sm">Anda</span>
                     </div>
-                    <div class="bg-blue-500 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm">
+                    <div class="bg-blue-100  rounded-2xl rounded-br-md px-4 py-3 shadow-sm">
                         ${contentHTML}
                         ${attachmentsHTML}
                     </div>
                 </div>
                 <div class="flex-shrink-0 ml-3">
-                    <div class="w-8 h-8 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center font-bold text-xs">
-                        ${initials}
-                    </div>
+                    ${avatarHTML}
                 </div>
             </div>
         `;
@@ -651,9 +752,7 @@ function createMessageHTML(message) {
         return `
             <div id="${message.id}" class="flex items-start justify-start">
                 <div class="flex-shrink-0 mr-3">
-                    <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-800 flex items-center justify-center font-bold text-xs">
-                        ${initials}
-                    </div>
+                    ${avatarHTML}
                 </div>
                 <div class="flex flex-col items-start max-w-[70%]">
                     <div class="flex items-center gap-2 mb-1">
@@ -704,6 +803,175 @@ function createDateSeparatorHTML(dateLabel) {
    </div>
    `;
 }
+
+// -----------------------------------------------------------------
+// LANGKAH 3.5: Debounce Helper
+// -----------------------------------------------------------------
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// -----------------------------------------------------------------
+// LANGKAH 3.6: Typing Functions (TAMBAHKAN SETELAH FUNGSI HELPER)
+// -----------------------------------------------------------------
+
+function showTypingIndicator(userId, userName) {
+    // Hapus indicator lama jika ada
+    hideTypingIndicator();
+
+    const indicatorHTML = `
+        <div id="typing-indicator" class="flex items-center gap-2 text-gray-500 text-sm italic mb-4">
+            <div class="flex gap-1">
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+            </div>
+            <span>${userName} sedang mengetik...</span>
+        </div>
+    `;
+
+    messageList.insertAdjacentHTML('beforeend', indicatorHTML);
+    scrollToBottom();
+}
+
+function hideTypingIndicator() {
+    const indicator = document.getElementById('typing-indicator');
+    if (indicator) indicator.remove();
+}
+
+function handleUserTyping(data) {
+    if (data.user_id === AUTH_USER_ID) return; // Jangan tampilkan untuk diri sendiri
+
+    currentlyTypingUsers.add(data.user_id);
+    showTypingIndicator(data.user_id, data.user_name);
+
+    // Auto hide setelah 3 detik
+    setTimeout(() => {
+        currentlyTypingUsers.delete(data.user_id);
+        if (currentlyTypingUsers.size === 0) {
+            hideTypingIndicator();
+        }
+    }, 3000);
+}
+
+function handleUserStopTyping(data) {
+    currentlyTypingUsers.delete(data.user_id);
+    if (currentlyTypingUsers.size === 0) {
+        hideTypingIndicator();
+    }
+}
+
+function renderSidebarContent(data, sortedConversations) {
+    let html = '';
+
+    // 1. RUANG KERJA (Group utama)
+    if (data.main_group) {
+        html += `<div class="px-6 pt-4 pb-2"><span class="text-xs font-semibold text-gray-500 uppercase">Ruang Kerja</span></div>`;
+        html += createConversationHTML(data.main_group);
+    }
+
+    // 2. PERCAKAPAN (Chat yang sudah ada)
+    if (sortedConversations.length > 0) {
+        html += `<div class="px-6 pt-4 pb-2 mt-2"><span class="text-xs font-semibold text-gray-500 uppercase">Percakapan</span></div>`;
+        html += sortedConversations.map(createConversationHTML).join('');
+    }
+
+    // 3. ANGGOTA TIM (User yang bisa diajak chat)
+    const existingPrivateChatUserIds = data.conversations
+        .filter(c => c.type === 'private')
+        .flatMap(c => c.participants)
+        .map(p => p.user_id)
+        .filter(id => id !== AUTH_USER_ID);
+    const existingUserSet = new Set(existingPrivateChatUserIds);
+    const availableMembers = data.members.filter(member => {
+        return !existingUserSet.has(member.id) && member.id !== AUTH_USER_ID;
+    });
+
+    if (availableMembers.length > 0) {
+        html += `<div class="px-6 pt-4 pb-2 mt-2"><span class="text-xs font-semibold text-gray-500 uppercase">Anggota Tim</span></div>`;
+        availableMembers.forEach(member => {
+            html += createMemberHTML(member);
+        });
+    }
+
+    if (html === '') {
+        chatListContainer.innerHTML = '<div class="p-6 text-center text-gray-500">Belum ada data.</div>';
+        return;
+    }
+
+    chatListContainer.innerHTML = html;
+}
+
+// Search function
+async function searchUsers(searchTerm) {
+    if (!searchTerm.trim()) {
+        await loadConversations(); // Load semua kembali
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/workspace/${WORKSPACE_ID}/search-users?q=${encodeURIComponent(searchTerm)}`);
+        if (!response.ok) throw new Error('Gagal mencari pengguna');
+        const users = await response.json();
+
+        renderSearchResults(users);
+    } catch (error) {
+        console.error('Search error:', error);
+    }
+}
+
+function renderSearchResults(users) {
+    let html = '';
+
+    if (users.length > 0) {
+        html += `<div class="px-6 pt-4 pb-2"><span class="text-xs font-semibold text-gray-500 uppercase">Hasil Pencarian</span></div>`;
+        users.forEach(user => {
+            html += createMemberHTML(user);
+        });
+    } else {
+        html = '<div class="p-6 text-center text-gray-500">Tidak ada hasil ditemukan</div>';
+    }
+
+    chatListContainer.innerHTML = html;
+}
+
+// -----------------------------------------------------------------
+// LANGKAH 4: Fungsi Fetch Data (API Calls)
+// -----------------------------------------------------------------
+
+async function loadConversations() {
+    chatListContainer.innerHTML = '<div class="p-4 text-center text-gray-500">Memuat...</div>';
+    try {
+        const response = await fetch(`${API_URL}/api/workspace/${WORKSPACE_ID}/chat`);
+        if (!response.ok) throw new Error('Gagal memuat percakapan');
+        const data = await response.json();
+
+        const sortedConversations = data.conversations.sort((a, b) => {
+            const timeA = a.last_message ? new Date(a.last_message.created_at) : 0;
+            const timeB = b.last_message ? new Date(b.last_message.created_at) : 0;
+            return timeB - timeA;
+        });
+
+        window.allConversations = [data.main_group, ...sortedConversations].filter(Boolean);
+
+        // 🔥 PERBAIKAN: Render sidebar dengan urutan yang benar
+        renderSidebarContent(data, sortedConversations);
+
+    } catch (error) {
+        console.error(error);
+        chatListContainer.innerHTML = '<div class="p-6 text-center text-red-500">Gagal memuat. (JS Error)</div>';
+    }
+}
+
 
 // -----------------------------------------------------------------
 // 🔥 FUNGSI DOWNLOAD & PREVIEW GAMBAR (TAMBAHKAN SEBELUM formatFileSize)
@@ -874,61 +1142,119 @@ window.removeFile = function (index) {
     renderFilePreview();
 }
 
-// -----------------------------------------------------------------
-// LANGKAH 4: Fungsi Fetch Data (API Calls)
-// -----------------------------------------------------------------
+// 🔥 FUNGSI DETECT LINKS YANG LEBIH KOMPREHENSIF
+function detectAndCreateLinks(text) {
+    if (!text) return '';
 
-async function loadConversations() {
-    chatListContainer.innerHTML = '<div class="p-4 text-center text-gray-500">Memuat...</div>';
-    try {
-        const response = await fetch(`${API_URL}/api/workspace/${WORKSPACE_ID}/chat`);
-        if (!response.ok) throw new Error('Gagal memuat percakapan');
-        const data = await response.json();
+    // Regex untuk mendeteksi berbagai jenis URL
+    const urlRegex = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/g;
 
-        const sortedConversations = data.conversations.sort((a, b) => {
-            const timeA = a.last_message ? new Date(a.last_message.created_at) : 0;
-            const timeB = b.last_message ? new Date(b.last_message.created_at) : 0;
-            return timeB - timeA;
-        });
+    return text.replace(urlRegex, function (url) {
+        // Bersihkan URL dari karakter punctuation di akhir
+        let cleanUrl = url;
+        const punctuation = ['.', ',', '!', '?', ';', ':', ')', ']', '}'];
 
-        window.allConversations = [data.main_group, ...sortedConversations].filter(Boolean);
-        let html = '';
-
-        const existingPrivateChatUserIds = data.conversations
-            .filter(c => c.type === 'private')
-            .flatMap(c => c.participants)
-            .map(p => p.user_id)
-            .filter(id => id !== AUTH_USER_ID);
-        const existingUserSet = new Set(existingPrivateChatUserIds);
-        const filteredMembers = data.members.filter(member => {
-            return !existingUserSet.has(member.id);
-        });
-
-        if (data.main_group) {
-            html += `<div class="px-6 pt-4 pb-2"><span class="text-xs font-semibold text-gray-500 uppercase">Ruang Kerja</span></div>`;
-            html += createConversationHTML(data.main_group);
+        while (punctuation.includes(cleanUrl.slice(-1))) {
+            cleanUrl = cleanUrl.slice(0, -1);
         }
-        if (sortedConversations.length > 0) {
-            html += `<div class="px-6 pt-4 pb-2 mt-2"><span class="text-xs font-semibold text-gray-500 uppercase">Percakapan</span></div>`;
-            html += sortedConversations.map(createConversationHTML).join('');
-        }
-        if (filteredMembers.length > 0) {
-            html += `<div class="px-6 pt-4 pb-2 mt-2"><span class="text-xs font-semibold text-gray-500 uppercase">Anggota Tim</span></div>`;
-            filteredMembers.forEach(member => {
-                html += createMemberHTML(member);
-            });
-        }
-        if (html === '') {
-            chatListContainer.innerHTML = '<div class="p-6 text-center text-gray-500">Belum ada data.</div>';
-            return;
-        }
-        chatListContainer.innerHTML = html;
 
-    } catch (error) {
-        console.error(error);
-        chatListContainer.innerHTML = '<div class="p-6 text-center text-red-500">Gagal memuat. (JS Error)</div>';
-    }
+        // Coba buat URL object untuk validasi
+        try {
+            const urlObj = new URL(cleanUrl);
+            let displayText = urlObj.hostname.replace('www.', '');
+
+            // Tambahkan path jika tidak terlalu panjang
+            if (urlObj.pathname !== '/' && displayText.length + urlObj.pathname.length < 30) {
+                displayText += urlObj.pathname;
+            }
+
+            return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer"
+                    class="text-blue-500 hover:text-blue-600 hover:underline break-words"
+                    title="${cleanUrl}">${displayText}</a>`;
+
+        } catch (e) {
+            // Jika URL tidak valid, return teks asli
+            return url;
+        }
+    });
 }
+
+/** 🔥 PERBAIKAN KRUSIAL: Setup listener Laravel Echo */
+function setupEchoListeners() {
+    if (typeof Echo === 'undefined') {
+        console.error('❌ Laravel Echo not configured (Echo is undefined).');
+        return;
+    }
+
+    console.log('🚀 Setting up Echo listeners...');
+    console.log('📋 All conversations:', window.allConversations);
+
+    // Hentikan listener lama
+    window.allConversations.forEach(conversation => {
+        const channelName = `conversation.${conversation.id}`;
+        console.log(`🔌 Leaving old channel: private-${channelName}`);
+        Echo.leave(channelName);
+    });
+
+    // Dengarkan di setiap channel percakapan
+    window.allConversations.forEach(conversation => {
+        const channelName = `conversation.${conversation.id}`;
+        console.log(`🔔 Subscribing to: private-${channelName}`);
+
+        const channel = Echo.private(channelName);
+
+        channel.subscribed(() => {
+            console.log(`✅ Successfully subscribed to: private-${channelName}`);
+        });
+
+        channel.error((error) => {
+            console.error(`❌ Error subscribing to ${channelName}:`, error);
+        });
+
+        // 🔥 Listen untuk NewMessageSent event
+        channel.listen('.NewMessageSent', (e) => {
+            console.log('📨 ===== NEW MESSAGE EVENT =====');
+            console.log('📨 Channel:', channelName);
+            console.log('📨 Raw event:', e);
+            console.log('📨 Message data:', e.message);
+            console.log('📨 Current conversation:', currentConversationId);
+            console.log('📨 ==============================');
+
+            if (e.message) {
+                handleNewMessage(e.message);
+            } else {
+                console.error('❌ Event tidak punya property "message":', e);
+            }
+        });
+
+        // 🔥 Event untuk message deleted
+        channel.listen('.MessageDeleted', (e) => {
+            console.log('🗑️ ===== DELETE MESSAGE EVENT =====');
+            console.log('🗑️ Channel:', channelName);
+            console.log('🗑️ Raw event:', e);
+            console.log('🗑️ ==================================');
+
+            if (e.message_id || e.id) {
+                handleMessageDeleted(e);
+            }
+        });
+
+        // 🔥 PERBAIKAN: Tambahkan typing indicators
+        channel.listenForWhisper('typing', (data) => {
+            console.log('⌨️ Typing event received:', data);
+            handleUserTyping(data);
+        });
+
+        channel.listenForWhisper('stop-typing', (data) => {
+            console.log('⏹️ Stop typing event received:', data);
+            handleUserStopTyping(data);
+        });
+    });
+
+    console.log('✅ Echo listeners setup complete!');
+    console.log('📡 Active channels:', Object.keys(window.Echo.connector.channels));
+}
+
 
 window.startChatWithUser = async function (userId, userName) {
     chatHeaderTitle.textContent = `Membuka chat dengan ${userName}...`;
@@ -1080,47 +1406,65 @@ async function handleSendMessage(e) {
     });
 
     isSending = true;
+
+    // Tampilkan loading state
+    const originalSendHTML = sendButton.innerHTML;
+    sendButton.innerHTML = `
+        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+    `;
     sendButton.disabled = true;
+    messageInput.disabled = true;
+    uploadButton.disabled = true;
 
     const formData = new FormData();
     formData.append('conversation_id', currentConversationId);
     formData.append('content', content);
 
-    // 🔥 PERBAIKAN: Handle file upload dengan benar
+    // File upload
     selectedFiles.forEach((file, index) => {
-        formData.append('files[]', file, file.name); // 🔥 TAMBAHKAN PARAMETER filename
+        formData.append('files[]', file, file.name);
         console.log(`📎 File ${index}:`, file.name, file.size, file.type);
     });
 
-    // 🔥 OPTIMISTIC UI: Tampilkan preview sementara
+    // 🔥 PERBAIKAN: Hanya buat optimistic UI jika benar-benar perlu
     const tempMessageId = 'temp-' + Date.now();
-    const tempAttachments = selectedFiles.map(file => {
-        const isImage = file.type.startsWith('image/');
-        const isVideo = file.type.startsWith('video/');
-        const isPDF = file.type === 'application/pdf';
+    let shouldShowOptimistic = true;
 
-        return {
-            file_name: file.name,
-            file_size: file.size,
-            file_type: file.type,
-            uploading: true,
-            preview_url: isImage ? URL.createObjectURL(file) : null
+    // Cek apakah sudah ada temp message yang sama
+    const existingTempMessages = document.querySelectorAll('[id^="temp-"]');
+    if (existingTempMessages.length > 0) {
+        shouldShowOptimistic = false;
+        console.log('⚠️ Ada temp message lain, skip optimistic UI');
+    }
+
+    if (shouldShowOptimistic) {
+        const tempAttachments = selectedFiles.map(file => {
+            const isImage = file.type.startsWith('image/');
+            const isVideo = file.type.startsWith('video/');
+            const isPDF = file.type === 'application/pdf';
+
+            return {
+                file_name: file.name,
+                file_size: file.size,
+                file_type: file.type,
+                uploading: true,
+                preview_url: isImage ? URL.createObjectURL(file) : null
+            };
+        });
+
+        const tempMessage = {
+            id: tempMessageId,
+            content: content || `📎 Mengirim ${selectedFiles.length} file...`,
+            sender_id: AUTH_USER_ID,
+            sender: { full_name: 'Anda' },
+            created_at: new Date().toISOString(),
+            message_type: selectedFiles.length > 0 ? 'file' : 'text',
+            is_read: false,
+            attachments: tempAttachments
         };
-    });
 
-    // Di bagian optimistic UI, pastikan message_type benar:
-    const tempMessage = {
-        id: tempMessageId,
-        content: content || `📎 Mengirim ${selectedFiles.length} file...`,
-        sender_id: AUTH_USER_ID,
-        sender: { full_name: 'Anda' },
-        created_at: new Date().toISOString(),
-        message_type: selectedFiles.length > 0 ? 'file' : 'text', // 🔥 PASTIKAN 'file' bukan '/file'
-        is_read: false,
-        attachments: tempAttachments
-    };
-
-    appendMessage(tempMessage);
+        appendMessage(tempMessage);
+    }
 
     // Reset input
     messageInput.value = '';
@@ -1134,7 +1478,6 @@ async function handleSendMessage(e) {
             headers: {
                 'X-CSRF-TOKEN': CSRF_TOKEN,
                 'Accept': 'application/json'
-                // 🔥 HAPUS 'Content-Type': biarkan browser set otomatis untuk FormData
             },
             body: formData
         });
@@ -1148,14 +1491,18 @@ async function handleSendMessage(e) {
         const result = await response.json();
         console.log('✅ Message sent successfully:', result.data.id);
 
-        // 🔥 HAPUS TEMP MESSAGE - pesan real akan datang dari broadcast
-        const tempMsgElement = document.getElementById(tempMessageId);
-        if (tempMsgElement) {
-            tempMsgElement.remove();
-            console.log('🗑️ Temp message removed, waiting for real message from broadcast...');
+        // 🔥 PERBAIKAN: Hapus temp message hanya jika optimistic UI ditampilkan
+        if (shouldShowOptimistic) {
+            const tempMsgElement = document.getElementById(tempMessageId);
+            if (tempMsgElement) {
+                tempMsgElement.remove();
+                console.log('🗑️ Temp message removed, waiting for real message from broadcast...');
+            }
+        } else {
+            console.log('⏩ Skip temp removal, no optimistic UI was shown');
         }
 
-        // Update sidebar preview (optimistic)
+        // Update sidebar preview
         updateSidebarOnNewMessage(result.data, false);
 
     } catch (error) {
@@ -1167,6 +1514,7 @@ async function handleSendMessage(e) {
             const contentElement = tempMsgElement.querySelector('p');
             if (contentElement) {
                 contentElement.textContent += ' ❌ (Gagal terkirim)';
+                contentElement.classList.add('text-red-300');
             }
             tempMsgElement.classList.add('opacity-50');
         }
@@ -1179,11 +1527,16 @@ async function handleSendMessage(e) {
             confirmButtonText: 'OK'
         });
     } finally {
+        // Reset loading state dengan benar
         isSending = false;
+        sendButton.innerHTML = originalSendHTML;
         sendButton.disabled = false;
+        messageInput.disabled = false;
+        uploadButton.disabled = false;
         console.log('🔄 Reset isSending to false');
     }
 }
+
 // -----------------------------------------------------------------
 // DRAG & DROP HANDLERS
 // -----------------------------------------------------------------
@@ -1268,18 +1621,33 @@ function handleNewMessage(message) {
 
     const isOwnMessage = message.sender_id === AUTH_USER_ID;
 
-    // 🔥 PERBAIKAN: Untuk pesan sendiri, hanya tampilkan jika belum ada
+    // 🔥 PERBAIKAN KRUSIAL: Untuk pesan sendiri, handle dengan benar
     if (isOwnMessage) {
         console.log('📤 Own message from broadcast:', message.id);
 
         // Cek apakah pesan sudah ada di DOM (untuk avoid duplicate)
         const existingMessage = document.getElementById(message.id);
         if (existingMessage) {
-            console.log('✅ Message already exists, skip');
-            return;
+            console.log('✅ Message already exists, updating read status only');
+
+            // Update read status saja, jangan buat duplicate
+            const statusElement = existingMessage.querySelector('.read-status');
+            if (statusElement) {
+                statusElement.innerHTML = `
+                    <div class="flex items-center">
+                        <svg class="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <svg class="w-3.5 h-3.5 text-blue-500 -ml-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                `;
+            }
+            return; // 🔥 STOP di sini, jangan append message lagi
         }
 
-        // Jika di conversation yang sama, tampilkan pesan real
+        // Jika di conversation yang sama dan belum ada, tampilkan pesan real
         if (message.conversation_id === currentConversationId) {
             console.log('✅ Displaying own message in current conversation');
             appendMessage(message);
@@ -1319,70 +1687,6 @@ function handleMessageDeleted(data) {
     updateSidebarPreviewAfterDelete(conversationId);
 }
 
-/** 🔥 PERBAIKAN KRUSIAL: Setup listener Laravel Echo */
-function setupEchoListeners() {
-    if (typeof Echo === 'undefined') {
-        console.error('❌ Laravel Echo not configured (Echo is undefined).');
-        return;
-    }
-
-    console.log('🚀 Setting up Echo listeners...');
-    console.log('📋 All conversations:', window.allConversations);
-
-    // Hentikan listener lama
-    window.allConversations.forEach(conversation => {
-        const channelName = `conversation.${conversation.id}`;
-        console.log(`🔌 Leaving old channel: private-${channelName}`);
-        Echo.leave(channelName);
-    });
-
-    // Dengarkan di setiap channel percakapan
-    window.allConversations.forEach(conversation => {
-        const channelName = `conversation.${conversation.id}`;
-        console.log(`🔔 Subscribing to: private-${channelName}`);
-
-        const channel = Echo.private(channelName);
-
-        channel.subscribed(() => {
-            console.log(`✅ Successfully subscribed to: private-${channelName}`);
-        });
-
-        channel.error((error) => {
-            console.error(`❌ Error subscribing to ${channelName}:`, error);
-        });
-
-        // 🔥 Listen untuk NewMessageSent event
-        channel.listen('.NewMessageSent', (e) => {
-            console.log('📨 ===== NEW MESSAGE EVENT =====');
-            console.log('📨 Channel:', channelName);
-            console.log('📨 Raw event:', e);
-            console.log('📨 Message data:', e.message);
-            console.log('📨 Current conversation:', currentConversationId);
-            console.log('📨 ==============================');
-
-            if (e.message) {
-                handleNewMessage(e.message);
-            } else {
-                console.error('❌ Event tidak punya property "message":', e);
-            }
-        });
-
-        // 🔥 Event untuk message deleted
-        channel.listen('.MessageDeleted', (e) => {
-            console.log('🗑️ ===== DELETE MESSAGE EVENT =====');
-            console.log('🗑️ Channel:', channelName);
-            console.log('🗑️ Raw event:', e);
-            console.log('🗑️ ==================================');
-
-            if (e.message_id || e.id) {
-                handleMessageDeleted(e);
-            }
-        });
-    });
-
-    console.log('✅ Echo listeners setup complete!');
-    console.log('📡 Active channels:', Object.keys(window.Echo.connector.channels));
-}
 
 function updateSidebarOnNewMessage(message, incrementUnread) {
     const conversationId = message.conversation_id;
@@ -1503,6 +1807,50 @@ function setupInputListeners() {
         fileInput.value = '';
     });
 
+    // 🔥 PERBAIKAN: Tambahkan search dengan debounce
+    const searchInput = document.querySelector('input[placeholder="Cari rekan tim..."]');
+    if (searchInput) {
+        const debouncedSearch = debounce(searchUsers, 300);
+        searchInput.addEventListener('input', (e) => {
+            debouncedSearch(e.target.value);
+        });
+
+        // Clear search ketika dikosongkan
+        searchInput.addEventListener('blur', (e) => {
+            if (!e.target.value.trim()) {
+                setTimeout(() => loadConversations(), 100);
+            }
+        });
+    }
+
+    // 🔥 PERBAIKAN: Typing indicators
+    messageInput.addEventListener('input', function () {
+        if (!currentConversationId) return;
+
+        if (!isTyping) {
+            isTyping = true;
+            // Broadcast typing event
+            console.log('⌨️ Sending typing event...');
+            window.Echo.private(`conversation.${currentConversationId}`)
+                .whisper('typing', {
+                    user_id: AUTH_USER_ID,
+                    user_name: 'Anda'
+                });
+        }
+
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+            isTyping = false;
+            // Broadcast stop typing
+            console.log('⏹️ Sending stop typing event...');
+            window.Echo.private(`conversation.${currentConversationId}`)
+                .whisper('stop-typing', {
+                    user_id: AUTH_USER_ID
+                });
+        }, 1000);
+    });
+
+    // Drag & Drop listeners
     chatInputBar.addEventListener('dragenter', handleDragEnter);
     chatInputBar.addEventListener('dragover', handleDragOver);
     chatInputBar.addEventListener('dragleave', handleDragLeave);
@@ -1518,6 +1866,41 @@ function scrollToBottom() {
 window.selectConversation = function (conversationId) {
     loadMessages(conversationId);
 }
+
+// -----------------------------------------------------------------
+// LANGKAH 7.5: Enhanced Error Handling (TAMBAHKAN SEBELUM DOMContentLoaded)
+// -----------------------------------------------------------------
+
+// Global error handler
+window.addEventListener('unhandledrejection', event => {
+    console.error('Unhandled promise rejection:', event.reason);
+
+    // Hanya tampilkan alert untuk error yang critical
+    if (event.reason.message && !event.reason.message.includes('Failed to fetch')) {
+        Swal.fire({
+            title: 'Terjadi Kesalahan',
+            text: 'Silakan refresh halaman dan coba lagi',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+    }
+});
+
+// Network status monitor
+window.addEventListener('online', () => {
+    console.log('🟢 Koneksi internet pulih');
+    // Bisa tambahkan notifikasi subtle di sini
+});
+
+window.addEventListener('offline', () => {
+    console.log('🔴 Koneksi internet terputus');
+    Swal.fire({
+        title: 'Koneksi Terputus',
+        text: 'Periksa koneksi internet Anda',
+        icon: 'warning',
+        confirmButtonText: 'OK'
+    });
+});
 
 // -----------------------------------------------------------------
 // LANGKAH 7: Inisialisasi
@@ -1540,3 +1923,5 @@ document.addEventListener('DOMContentLoaded', async function () {
     setupEchoListeners();
     scrollToBottom();
 });
+
+

@@ -3,9 +3,9 @@
 @section('title', 'Chat')
 
 @section('content')
-@push('scripts')
-    @vite('resources/js/chat.js')
-@endpush
+    @push('scripts')
+        @vite('resources/js/chat.js')
+    @endpush
 
     {{-- Menjadi seperti ini (tambahkan id dan data- attributes) --}}
     <div id="chat-page-container"class="h-full bg-[#E9EFFD] flex flex-col" data-workspace-id="{{ $workspace->id }}"
@@ -155,7 +155,24 @@
         .chat-list-scroll {
             scrollbar-gutter: stable;
         }
+
+        /* 🔥 FIX LAYOUT SHIFT - SweetAlert Modal */
+        .swal2-container {
+            backdrop-filter: blur(2px);
+            background: rgba(0, 0, 0, 0.4) !important;
+            z-index: 10000 !important;
+        }
+
+        .swal2-popup {
+            border-radius: 12px !important;
+        }
+
+        html {
+            overflow-y: scroll;
+        }
+
+        body.swal2-shown {
+            overflow: hidden !important;
+        }
     </style>
 @endsection
-
-
