@@ -3,7 +3,10 @@
 @section('title', 'Dokumen dan File')
 
 @section('content')
-    <div x-data="documentSearch()" x-init="$store.workspace = { selectedMenu: 'dokumen' }" class="bg-[#f3f6fc] min-h-screen">
+<div x-data="documentSearch()" 
+         x-init="$store.workspace = { selectedMenu: 'dokumen' };
+            // Inisialisasi data dari backend
+            initData(@js($folders), @js($rootFiles));"  class="bg-[#f3f6fc] min-h-screen">
 
         {{-- Workspace Navigation --}}
         @include('components.workspace-nav', ['active' => 'dokumen'])
@@ -72,10 +75,73 @@
                 excelFiles: [],
                 members: [],
                 availableWorkspaces: [],
+                backendFolders: [],
+                backendRootFiles: [],
 
                 // Computed Properties
                 get allDocuments() {
-                    return [...this.folders, ...this.pdfFiles, ...this.wordFiles, ...this.excelFiles];
+                    return [...this.backendFolders, ...this.backendRootFiles];
+                },
+
+                // Function untuk inisialisasi data
+                initData(foldersData, rootFilesData) {
+                    // Simpan data dari backend
+                    this.backendFolders = foldersData;
+                    this.backendRootFiles = rootFilesData;
+                    
+                    // Convert data Laravel Collection ke format yang diharapkan Alpine
+                    this.processBackendData();
+                },
+
+                processBackendData() {
+                    // Process folders
+                    this.folders = this.backendFolders.map(folder => ({
+                        id: folder.id,
+                        name: folder.name,
+                        type: 'Folder',
+                        icon: this.getFolderIcon(),
+                        isSecret: folder.is_private || false,
+                        creator: {
+                            name: folder.creator?.name || 'Unknown',
+                            avatar: folder.creator?.avatar || 'https://i.pravatar.cc/32?img=8'
+                        },
+                        createdAt: folder.created_at,
+                        recipients: [],
+                        subFolders: [], // Anda perlu menyesuaikan jika ada nested folders
+                        files: folder.files ? this.processFiles(folder.files) : [],
+                        filesCount: folder.files_count || 0
+                    }));
+
+                    // Process root files
+                    this.processRootFiles();
+                },
+
+                processFiles(files) {
+                    return files.map(file => ({
+                        id: file.id,
+                        name: file.name || file.file_name,
+                        type: this.getFileType(file.name || file.file_name),
+                        icon: this.getFileIcon(this.getFileType(file.name || file.file_name)),
+                        size: this.formatFileSize(file.size || 0),
+                        creator: {
+                            name: file.uploader?.name || 'Unknown',
+                            avatar: file.uploader?.avatar || 'https://i.pravatar.cc/32?img=8'
+                        },
+                        createdAt: file.created_at || file.uploaded_at,
+                        isSecret: file.is_private || false,
+                        // Tambahan properti untuk kompatibilitas
+                        comments: file.comments || [],
+                        recipients: []
+                    }));
+                },
+
+                processRootFiles() {
+                    const processedFiles = this.processFiles(this.backendRootFiles);
+                    
+                    // Group by type untuk kompatibilitas dengan kode existing
+                    this.pdfFiles = processedFiles.filter(file => file.type === 'PDF');
+                    this.wordFiles = processedFiles.filter(file => file.type === 'Word');
+                    this.excelFiles = processedFiles.filter(file => file.type === 'Excel');
                 },
 
                 get fileBreadcrumbs() {
