@@ -21,6 +21,38 @@ use Illuminate\Support\Str;
 
 class TaskController extends Controller
 {
+
+
+
+    private function canAccessWorkspace($workspaceId)
+    {
+        $user = Auth::user();
+        $activeCompanyId = session('active_company_id');
+
+        // ✅ CEK APAKAH USER ADALAH SUPERADMIN/ADMIN/MANAGER DI COMPANY
+        $userCompany = $user->userCompanies()
+            ->where('company_id', $activeCompanyId)
+            ->with('role')
+            ->first();
+
+        $userRole = $userCompany?->role?->name ?? 'Member';
+        
+        // ✅ JIKA SUPERADMIN/ADMIN/MANAGER, BOLEH AKSES SEMUA WORKSPACE DI COMPANY
+        if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
+            return true;
+        }
+
+        // ✅ JIKA BUKAN, CEK APAKAH USER ADALAH ANGGOTA WORKSPACE
+        $userWorkspace = UserWorkspace::where('user_id', $user->id)
+            ->where('workspace_id', $workspaceId)
+            ->where('status_active', true)
+            ->first();
+
+        return !is_null($userWorkspace);
+    }
+
+
+
     // ============================================================
     // === GET BOARD COLUMNS (HANYA UNTUK WORKSPACE YANG DIMINTA)
     // ============================================================
@@ -29,12 +61,8 @@ class TaskController extends Controller
         try {
             $user = Auth::user();
 
-            // Validasi: user harus memiliki akses ke workspace ini
-            $userWorkspace = UserWorkspace::where('user_id', $user->id)
-                ->where('workspace_id', $workspaceId)
-                ->first();
-
-            if (!$userWorkspace) {
+            // ✅ VALIDASI: Gunakan method helper untuk cek akses
+            if (!$this->canAccessWorkspace($workspaceId)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak memiliki akses ke workspace ini'
@@ -54,22 +82,11 @@ class TaskController extends Controller
                 ->orderBy('position')
                 ->get();
 
-            // Debug log
-            Log::info("Board columns for workspace {$workspaceId}: {$columns->count()} columns found");
-            foreach ($columns as $col) {
-                Log::info(" - Column: {$col->name} (ID: {$col->id}, Workspace: {$col->workspace_id})");
-            }
-
             return response()->json([
                 'success' => true,
                 'columns' => $columns,
                 'workspace_name' => $workspace->name,
-                'workspace_id' => $workspace->id,
-                'debug_info' => [
-                    'requested_workspace_id' => $workspaceId,
-                    'columns_count' => $columns->count(),
-                    'columns_workspace_ids' => $columns->pluck('workspace_id')->unique()->toArray()
-                ]
+                'workspace_id' => $workspace->id
             ]);
         } catch (\Exception $e) {
             Log::error('Error getting board columns: ' . $e->getMessage());
@@ -93,12 +110,8 @@ class TaskController extends Controller
         try {
             $user = Auth::user();
 
-            // Validasi akses user ke workspace
-            $userWorkspace = UserWorkspace::where('user_id', $user->id)
-                ->where('workspace_id', $request->workspace_id)
-                ->first();
-
-            if (!$userWorkspace) {
+            // ✅ VALIDASI: Gunakan method helper untuk cek akses
+            if (!$this->canAccessWorkspace($request->workspace_id)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak memiliki akses ke workspace ini'
@@ -127,17 +140,10 @@ class TaskController extends Controller
                 'created_by' => $user->id
             ]);
 
-            Log::info("New column created: {$column->name} for workspace {$request->workspace_id}");
-
             return response()->json([
                 'success' => true,
                 'message' => 'Kolom berhasil ditambahkan',
-                'column' => $column,
-                'debug_info' => [
-                    'workspace_id' => $request->workspace_id,
-                    'workspace_name' => $workspace->name,
-                    'company_id' => $workspace->company_id
-                ]
+                'column' => $column
             ]);
         } catch (\Exception $e) {
             Log::error('Error creating board column: ' . $e->getMessage());
@@ -249,14 +255,12 @@ class TaskController extends Controller
     // ============================================================
     // === SHOW KANBAN PAGE
     // ============================================================
-    public function showKanban(Workspace $workspace)
+     public function showKanban(Workspace $workspace)
     {
         $user = Auth::user();
-        $userWorkspace = UserWorkspace::where('user_id', $user->id)
-            ->where('workspace_id', $workspace->id)
-            ->first();
 
-        if (!$userWorkspace) {
+        // ✅ VALIDASI: Gunakan method helper untuk cek akses
+        if (!$this->canAccessWorkspace($workspace->id)) {
             abort(403, 'Anda tidak memiliki akses ke workspace ini');
         }
 
@@ -309,12 +313,8 @@ class TaskController extends Controller
         try {
             $user = Auth::user();
 
-            // Validasi akses user ke workspace
-            $userWorkspace = UserWorkspace::where('user_id', $user->id)
-                ->where('workspace_id', $workspaceId)
-                ->first();
-
-            if (!$userWorkspace) {
+            // ✅ VALIDASI: Gunakan method helper untuk cek akses
+            if (!$this->canAccessWorkspace($workspaceId)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak memiliki akses ke workspace ini'
@@ -356,12 +356,8 @@ class TaskController extends Controller
             $task = Task::findOrFail($taskId);
             $user = Auth::user();
 
-            // Validasi akses user ke workspace task
-            $userWorkspace = UserWorkspace::where('user_id', $user->id)
-                ->where('workspace_id', $task->workspace_id)
-                ->first();
-
-            if (!$userWorkspace) {
+            // ✅ VALIDASI: Gunakan method helper untuk cek akses workspace task
+            if (!$this->canAccessWorkspace($task->workspace_id)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak memiliki akses ke task ini'
@@ -406,12 +402,8 @@ class TaskController extends Controller
             $task = Task::findOrFail($taskId);
             $user = Auth::user();
 
-            // Validasi akses user ke workspace task
-            $userWorkspace = UserWorkspace::where('user_id', $user->id)
-                ->where('workspace_id', $task->workspace_id)
-                ->first();
-
-            if (!$userWorkspace) {
+            // ✅ VALIDASI: Gunakan method helper untuk cek akses workspace task
+            if (!$this->canAccessWorkspace($task->workspace_id)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak memiliki akses ke task ini'
@@ -450,7 +442,6 @@ class TaskController extends Controller
                 );
             }
 
-            // ✅ PASTIKAN: Get updated assigned members dengan query yang sama
             $assignedMembers = TaskAssignment::with('user')
                 ->where('task_id', $taskId)
                 ->get()
@@ -467,7 +458,6 @@ class TaskController extends Controller
                 'success' => true,
                 'message' => 'Anggota tugas berhasil diupdate',
                 'assigned_members' => $assignedMembers,
-                // ✅ TAMBAHKAN: Juga kembalikan user_ids untuk konsistensi
                 'user_ids' => $request->user_ids
             ]);
         } catch (\Exception $e) {
@@ -485,10 +475,6 @@ class TaskController extends Controller
     // ✅ UPDATE: Create task dengan attachments support
     public function storeWithAssignments(Request $request)
     {
-        // Debug data yang diterima
-        \Log::info('Data tugas diterima:', $request->all());
-        \Log::info('Description length:', ['length' => strlen($request->description)]);
-
         $request->validate([
             'workspace_id' => 'required|exists:workspaces,id',
             'title' => 'required|string|max:255',
@@ -501,43 +487,39 @@ class TaskController extends Controller
             'checklists.*.title' => 'required|string|max:255',
             'checklists.*.is_done' => 'boolean',
             'is_secret' => 'boolean',
-            'attachment_ids' => 'array', // ✅ TAMBAHKAN UNTUK ATTACHMENTS
+            'attachment_ids' => 'array',
             'attachment_ids.*' => 'exists:attachments,id'
         ]);
 
         try {
-        $user = Auth::user();
+            $user = Auth::user();
 
-        // Validasi akses user ke workspace
-        $userWorkspace = UserWorkspace::where('user_id', $user->id)
-            ->where('workspace_id', $request->workspace_id)
-            ->first();
-
-        if (!$userWorkspace) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses ke workspace ini'
-            ], 403);
-        }
+            // ✅ VALIDASI: Gunakan method helper untuk cek akses
+            if (!$this->canAccessWorkspace($request->workspace_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke workspace ini'
+                ], 403);
+            }
 
             DB::beginTransaction();
 
             // Buat task
-        $task = Task::create([
-            'id' => Str::uuid()->toString(),
-            'workspace_id' => $request->workspace_id,
-            'created_by' => $user->id,
-            'title' => $request->title,
-            'description' => $request->description,
-            'board_column_id' => $request->board_column_id,
-            'status' => 'todo',
-            'priority' => $request->priority ?? 'medium',
-            'is_secret' => $request->is_secret ?? false,
-            'start_datetime' => $request->start_datetime,
-            'due_datetime' => $request->due_datetime,
-            'phase' => $request->phase
-        ]);
-        
+            $task = Task::create([
+                'id' => Str::uuid()->toString(),
+                'workspace_id' => $request->workspace_id,
+                'created_by' => $user->id,
+                'title' => $request->title,
+                'description' => $request->description,
+                'board_column_id' => $request->board_column_id,
+                'status' => 'todo',
+                'priority' => $request->priority ?? 'medium',
+                'is_secret' => $request->is_secret ?? false,
+                'start_datetime' => $request->start_datetime,
+                'due_datetime' => $request->due_datetime,
+                'phase' => $request->phase
+            ]);
+            
             // Assign anggota jika ada
             if (!empty($request->user_ids)) {
                 foreach ($request->user_ids as $userId) {
@@ -568,39 +550,38 @@ class TaskController extends Controller
                 }
             }
 
-            // ✅ ATTACH FILES JIKA ADA
-            
-        // ✅ UPDATE ATTACHMENTS DENGAN TASK ID YANG BARU DIBUAT
-        if (!empty($request->attachment_ids)) {
-            Attachment::whereIn('id', $request->attachment_ids)
-                ->where('attachable_type', 'App\\Models\\Task')
-                ->whereNull('attachable_id') // Hanya update yang belum di-assign
-                ->update([
-                    'attachable_id' => $task->id
-                ]);
-        }
+            // Update attachments dengan task ID yang baru dibuat
+            if (!empty($request->attachment_ids)) {
+                Attachment::whereIn('id', $request->attachment_ids)
+                    ->where('attachable_type', 'App\\Models\\Task')
+                    ->whereNull('attachable_id')
+                    ->update([
+                        'attachable_id' => $task->id
+                    ]);
+            }
 
             DB::commit();
 
-            // Load relations untuk response (termasuk attachments)
-        $task->load(['assignees', 'labels.color', 'checklists', 'attachments.uploader']);
+            // Load relations untuk response
+            $task->load(['assignees', 'labels.color', 'checklists', 'attachments.uploader']);
 
             return response()->json([
-            'success' => true,
-            'message' => 'Tugas berhasil dibuat',
-            'task' => $task,
-            'is_secret' => $task->is_secret
-        ]);
+                'success' => true,
+                'message' => 'Tugas berhasil dibuat',
+                'task' => $task,
+                'is_secret' => $task->is_secret
+            ]);
 
         } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error creating task with assignments: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal membuat tugas: ' . $e->getMessage()
-        ], 500);
+            DB::rollBack();
+            Log::error('Error creating task with assignments: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat tugas: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
+
 
 
 
@@ -611,12 +592,8 @@ class TaskController extends Controller
         try {
             $user = Auth::user();
 
-            // Validasi akses user ke workspace
-            $userWorkspace = UserWorkspace::where('user_id', $user->id)
-                ->where('workspace_id', $workspaceId)
-                ->first();
-
-            if (!$userWorkspace) {
+            // ✅ VALIDASI: Gunakan method helper untuk cek akses
+            if (!$this->canAccessWorkspace($workspaceId)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak memiliki akses ke workspace ini'
@@ -816,12 +793,8 @@ class TaskController extends Controller
         try {
             $user = Auth::user();
 
-            // Validasi akses user ke workspace
-            $userWorkspace = UserWorkspace::where('user_id', $user->id)
-                ->where('workspace_id', $workspaceId)
-                ->first();
-
-            if (!$userWorkspace) {
+            // ✅ VALIDASI: Gunakan method helper untuk cek akses
+            if (!$this->canAccessWorkspace($workspaceId)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak memiliki akses ke workspace ini'
@@ -844,7 +817,6 @@ class TaskController extends Controller
             ], 500);
         }
     }
-
 
 
 
@@ -1058,12 +1030,8 @@ class TaskController extends Controller
         try {
             $user = Auth::user();
 
-            // Validasi akses user ke workspace
-            $userWorkspace = UserWorkspace::where('user_id', $user->id)
-                ->where('workspace_id', $workspaceId)
-                ->first();
-
-            if (!$userWorkspace) {
+            // ✅ VALIDASI: Gunakan method helper untuk cek akses
+            if (!$this->canAccessWorkspace($workspaceId)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak memiliki akses ke workspace ini'
@@ -1099,12 +1067,7 @@ class TaskController extends Controller
             return response()->json([
                 'success' => true,
                 'tasks' => $tasks,
-                'user_role' => $userRole,
-                'debug_info' => [
-                    'total_tasks' => $tasks->count(),
-                    'secret_tasks' => $tasks->where('is_secret', true)->count(),
-                    'user_id' => $user->id
-                ]
+                'user_role' => $userRole
             ]);
         } catch (\Exception $e) {
             Log::error('Error getting workspace tasks with access: ' . $e->getMessage());
@@ -1114,6 +1077,7 @@ class TaskController extends Controller
             ], 500);
         }
     }
+
 
 
 

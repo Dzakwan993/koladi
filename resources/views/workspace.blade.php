@@ -27,7 +27,7 @@
             if ($currentWorkspace) {
                 $canAccess = false;
                 
-                // Jika SuperAdmin/Admin/Manager di company, boleh akses
+                // Jika SuperAdmin/Admin/Manager di company, boleh akses semua workspace
                 if ($isCompanyAdmin) {
                     $canAccess = true;
                 } 
