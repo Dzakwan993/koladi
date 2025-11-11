@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log; // <- TAMBAH INI
 use Illuminate\Support\Str;
 use App\Models\Workspace;
 use App\Models\UserWorkspace;
+use App\Models\UserCompany;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\Company;

@@ -13,11 +13,13 @@ class TaskAssignment extends Model
     protected $table = 'task_assignments';
     public $incrementing = false;
     protected $keyType = 'string';
+    public $timestamps = false;
 
     protected $fillable = [
         'id',
         'task_id',
-        'user_id'
+        'user_id',
+        'assigned_at'
     ];
 
     protected $casts = [
@@ -29,17 +31,20 @@ class TaskAssignment extends Model
         parent::boot();
 
         static::creating(function ($model) {
-            $model->id = $model->id ?: Str::uuid()->toString();
+            if (empty($model->id)) {
+                $model->id = Str::uuid()->toString();
+            }
+            if (empty($model->assigned_at)) {
+                $model->assigned_at = now();
+            }
         });
     }
 
-    // Relasi ke Task
     public function task()
     {
         return $this->belongsTo(Task::class, 'task_id');
     }
 
-    // Relasi ke User
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use App\Models\BoardColumn;
 use App\Models\Workspace;
 use App\Models\UserWorkspace;
@@ -473,115 +474,153 @@ class TaskController extends Controller
     // ✅ UPDATE: Create task dengan assignments dan checklists
     // ✅ UPDATE: Create task dengan assignments, checklists, dan secret flag
     // ✅ UPDATE: Create task dengan attachments support
-    public function storeWithAssignments(Request $request)
-    {
-        $request->validate([
-            'workspace_id' => 'required|exists:workspaces,id',
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'user_ids' => 'array',
-            'user_ids.*' => 'exists:users,id',
-            'label_ids' => 'array',
-            'label_ids.*' => 'exists:labels,id',
-            'checklists' => 'array',
-            'checklists.*.title' => 'required|string|max:255',
-            'checklists.*.is_done' => 'boolean',
-            'is_secret' => 'boolean',
-            'attachment_ids' => 'array',
-            'attachment_ids.*' => 'exists:attachments,id',
-            'start_datetime' => 'nullable|date_format:Y-m-d H:i',
-            'due_datetime' => 'nullable|date_format:Y-m-d H:i|after:start_datetime',
-        ]);
+    // ✅ UPDATE: Create task dengan assignments, checklists, dan secret flag
+// ✅ UPDATE: Create task dengan attachments support
+public function storeWithAssignments(Request $request)
+{
+    // Validasi yang lebih robust
+    $validator = Validator::make($request->all(), [
+        'workspace_id' => 'required|exists:workspaces,id',
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'phase' => 'required|string|max:255',
+        'user_ids' => 'array',
+        'user_ids.*' => 'exists:users,id',
+        'label_ids' => 'array', 
+        'label_ids.*' => 'exists:labels,id',
+        'checklists' => 'array',
+        'checklists.*.title' => 'required|string|max:255',
+        'checklists.*.is_done' => 'boolean',
+        'is_secret' => 'boolean',
+        'attachment_ids' => 'array',
+        'attachment_ids.*' => 'exists:attachments,id',
+        'start_datetime' => 'nullable|date_format:Y-m-d H:i:s',
+        'due_datetime' => 'nullable|date_format:Y-m-d H:i:s|after:start_datetime',
+        'board_column_id' => 'nullable|exists:board_columns,id'
+    ]);
 
-        try {
-            $user = Auth::user();
+    // Di method storeWithAssignments
+if ($validator->fails()) {
+    Log::error('Validation failed:', $validator->errors()->toArray());
+    return response()->json([
+        'success' => false,
+        'message' => 'Validasi gagal',
+        'errors' => $validator->errors(),
+        'received_data' => $request->all() // Untuk debugging
+    ], 422);
+}
 
-            // ✅ VALIDASI: Gunakan method helper untuk cek akses
-            if (!$this->canAccessWorkspace($request->workspace_id)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke workspace ini'
-                ], 403);
-            }
+    try {
+        $user = Auth::user();
 
-            DB::beginTransaction();
-
-            // Buat task
-            $task = Task::create([
-                'id' => Str::uuid()->toString(),
-                'workspace_id' => $request->workspace_id,
-                'created_by' => $user->id,
-                'title' => $request->title,
-                'description' => $request->description,
-                'board_column_id' => $request->board_column_id,
-                'status' => 'todo',
-                'priority' => $request->priority ?? 'medium',
-                'is_secret' => $request->is_secret ?? false,
-                'start_datetime' => $request->start_datetime,
-                'due_datetime' => $request->due_datetime,
-                'phase' => $request->phase
-            ]);
-
-            // Assign anggota jika ada
-            if (!empty($request->user_ids)) {
-                foreach ($request->user_ids as $userId) {
-                    TaskAssignment::create([
-                        'id' => Str::uuid()->toString(),
-                        'task_id' => $task->id,
-                        'user_id' => $userId,
-                        'assigned_at' => now()
-                    ]);
-                }
-            }
-
-            // Attach labels jika ada
-            if (!empty($request->label_ids)) {
-                $task->labels()->attach($request->label_ids);
-            }
-
-            // Create checklists jika ada
-            if (!empty($request->checklists)) {
-                foreach ($request->checklists as $index => $checklistData) {
-                    Checklist::create([
-                        'id' => Str::uuid()->toString(),
-                        'task_id' => $task->id,
-                        'title' => $checklistData['title'],
-                        'is_done' => $checklistData['is_done'] ?? false,
-                        'position' => $index
-                    ]);
-                }
-            }
-
-            // Update attachments dengan task ID yang baru dibuat
-            if (!empty($request->attachment_ids)) {
-                Attachment::whereIn('id', $request->attachment_ids)
-                    ->where('attachable_type', 'App\\Models\\Task')
-                    ->whereNull('attachable_id')
-                    ->update([
-                        'attachable_id' => $task->id
-                    ]);
-            }
-
-            DB::commit();
-
-            // Load relations untuk response
-            $task->load(['assignees', 'labels.color', 'checklists', 'attachments.uploader']);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Tugas berhasil dibuat',
-                'task' => $task,
-                'is_secret' => $task->is_secret
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error creating task with assignments: ' . $e->getMessage());
+        // Validasi akses workspace
+        if (!$this->canAccessWorkspace($request->workspace_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat tugas: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Anda tidak memiliki akses ke workspace ini'
+            ], 403);
         }
+
+        DB::beginTransaction();
+
+        // Buat task
+        $task = Task::create([
+            'id' => Str::uuid()->toString(),
+            'workspace_id' => $request->workspace_id,
+            'created_by' => $user->id,
+            'title' => $request->title,
+            'description' => $request->description,
+            'board_column_id' => $request->board_column_id ?? $this->getDefaultBoardColumnId($request->workspace_id),
+            'status' => 'todo',
+            'priority' => $request->priority ?? 'medium',
+            'is_secret' => $request->is_secret ?? false,
+            'start_datetime' => $request->start_datetime,
+            'due_datetime' => $request->due_datetime,
+            'phase' => $request->phase
+        ]);
+
+        // Assign anggota
+        if (!empty($request->user_ids)) {
+            foreach ($request->user_ids as $userId) {
+                TaskAssignment::create([
+                    'id' => Str::uuid()->toString(),
+                    'task_id' => $task->id,
+                    'user_id' => $userId,
+                    'assigned_at' => now()
+                ]);
+            }
+        }
+
+        // ✅ PERBAIKI: Attach labels dengan cara yang aman
+        if (!empty($request->label_ids)) {
+            // Gunakan sync tanpa detach untuk menghindari masalah ID
+            $task->labels()->syncWithoutDetaching($request->label_ids);
+            
+            // ATAU gunakan create manual untuk setiap label
+            // foreach ($request->label_ids as $labelId) {
+            //     DB::table('task_labels')->insert([
+            //         'task_id' => $task->id,
+            //         'label_id' => $labelId,
+            //         'created_at' => now(),
+            //         'updated_at' => now()
+            //     ]);
+            // }
+        }
+
+        // Create checklists
+        if (!empty($request->checklists)) {
+    foreach ($request->checklists as $index => $checklistData) {
+        Checklist::create([
+            'id' => Str::uuid()->toString(),
+            'task_id' => $task->id,
+            'title' => $checklistData['title'],
+            'is_done' => $checklistData['is_done'] ?? false,
+            'position' => $index // Pastikan position diset
+        ]);
     }
+}
+
+        // Update attachments
+        if (!empty($request->attachment_ids)) {
+            Attachment::whereIn('id', $request->attachment_ids)
+                ->where('attachable_type', 'App\\Models\\Task')
+                ->whereNull('attachable_id')
+                ->update(['attachable_id' => $task->id]);
+        }
+
+        DB::commit();
+
+        // Load relations
+        $task->load(['assignees.user', 'labels.color', 'checklists', 'attachments.uploader']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tugas berhasil dibuat',
+            'task' => $task,
+            'is_secret' => $task->is_secret
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error creating task: ' . $e->getMessage());
+        Log::error('Stack trace: ' . $e->getTraceAsString());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal membuat tugas: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+// Helper method untuk mendapatkan default board column
+private function getDefaultBoardColumnId($workspaceId)
+{
+    $defaultColumn = BoardColumn::where('workspace_id', $workspaceId)
+        ->where('name', 'like', '%To Do%')
+        ->first();
+    
+    return $defaultColumn ? $defaultColumn->id : null;
+}
 
 
 
@@ -716,48 +755,49 @@ class TaskController extends Controller
     }
 
     // ✅ NEW: Manage task labels
-    public function manageTaskLabels(Request $request, $taskId)
-    {
-        $request->validate([
-            'label_ids' => 'required|array',
-            'label_ids.*' => 'exists:labels,id'
-        ]);
+    // ✅ NEW: Manage task labels
+public function manageTaskLabels(Request $request, $taskId)
+{
+    $request->validate([
+        'label_ids' => 'required|array',
+        'label_ids.*' => 'exists:labels,id'
+    ]);
 
-        try {
-            $task = Task::findOrFail($taskId);
-            $user = Auth::user();
+    try {
+        $task = Task::findOrFail($taskId);
+        $user = Auth::user();
 
-            // Validasi akses user ke workspace task
-            $userWorkspace = UserWorkspace::where('user_id', $user->id)
-                ->where('workspace_id', $task->workspace_id)
-                ->first();
+        // Validasi akses user ke workspace task
+        $userWorkspace = UserWorkspace::where('user_id', $user->id)
+            ->where('workspace_id', $task->workspace_id)
+            ->first();
 
-            if (!$userWorkspace) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke task ini'
-                ], 403);
-            }
-
-            // Sync labels
-            $task->labels()->sync($request->label_ids);
-
-            // Get updated labels with colors
-            $updatedLabels = $task->labels()->with('color')->get();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Label tugas berhasil diupdate',
-                'labels' => $updatedLabels
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error managing task labels: ' . $e->getMessage());
+        if (!$userWorkspace) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengupdate label tugas: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
         }
+
+        // ✅ PERBAIKI: Gunakan sync yang aman
+        $task->labels()->sync($request->label_ids);
+
+        // Get updated labels with colors
+        $updatedLabels = $task->labels()->with('color')->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Label tugas berhasil diupdate',
+            'labels' => $updatedLabels
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error managing task labels: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengupdate label tugas: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     // ✅ NEW: Get task labels
     public function getTaskLabels($taskId)

@@ -35,8 +35,11 @@ class Checklist extends Model
 
         static::creating(function ($model) {
             $model->id = $model->id ?: Str::uuid()->toString();
-            if (!$model->position) {
-                $model->position = static::where('task_id', $model->task_id)->max('position') + 1;
+            
+            // Set position jika tidak disediakan
+            if (is_null($model->position)) {
+                $maxPosition = static::where('task_id', $model->task_id)->max('position');
+                $model->position = $maxPosition ? $maxPosition + 1 : 0;
             }
         });
     }

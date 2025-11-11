@@ -30,6 +30,12 @@ class Task extends Model
         'phase'
     ];
 
+    protected $attributes = [
+        'is_secret' => false,
+        'priority' => 'medium',
+        'status' => 'todo'
+    ];
+
     protected $casts = [
         'is_secret' => 'boolean',
         'start_datetime' => 'datetime',
@@ -45,6 +51,17 @@ class Task extends Model
 
         static::creating(function ($model) {
             $model->id = $model->id ?: Str::uuid()->toString();
+            
+            // Set default board column jika tidak disediakan
+            if (!$model->board_column_id) {
+                $defaultColumn = BoardColumn::where('workspace_id', $model->workspace_id)
+                    ->where('name', 'like', '%To Do%')
+                    ->first();
+                    
+                if ($defaultColumn) {
+                    $model->board_column_id = $defaultColumn->id;
+                }
+            }
         });
     }
 
@@ -68,10 +85,11 @@ class Task extends Model
 
     // Relasi many-to-many ke Users melalui TaskAssignment
     public function assignees()
-    {
-        return $this->belongsToMany(User::class, 'task_assignments', 'task_id', 'user_id')
-            ->withTimestamps();
-    }
+{
+    return $this->belongsToMany(User::class, 'task_assignments', 'task_id', 'user_id')
+        ->withPivot(['assigned_at']) // Hanya ambil assigned_at, jangan timestamps
+        ->using(TaskAssignment::class); // Specify custom pivot model
+}
 
     // Relasi ke TaskAssignments
     public function taskAssignments()
@@ -80,7 +98,6 @@ class Task extends Model
     }
 
     // Relasi ke Checklists
-    // Di dalam Task model, tambahkan relasi:
     public function checklists()
     {
         return $this->hasMany(Checklist::class, 'task_id')->orderBy('position');
@@ -98,6 +115,21 @@ class Task extends Model
         return $this->morphMany(Comment::class, 'commentable');
     }
 
+    // Relasi ke Labels
+    public function labels()
+    {
+        return $this->belongsToMany(Label::class, 'task_labels', 'task_id', 'label_id')
+            ->withTimestamps();
+    }
+
+    // Relasi ke TaskLabels (jika menggunakan model pivot)
+    public function taskLabels()
+    {
+        return $this->hasMany(TaskLabel::class, 'task_id');
+    }
+
+    // ===== SCOPES =====
+    
     // Scope untuk tugas rahasia
     public function scopeSecret($query)
     {
@@ -125,19 +157,66 @@ class Task extends Model
     // Scope untuk tugas yang belum selesai
     public function scopeIncomplete($query)
     {
-        return $query->where('status', '!=', 'completed');
+        return $query->where('status', '!=', 'done');
     }
 
     // Scope untuk tugas yang sudah lewat deadline
     public function scopeOverdue($query)
     {
-        return $query->where('due_datetime', '<', now());
+        return $query->where('due_datetime', '<', now())
+                    ->whereNotIn('status', ['done', 'cancel']);
     }
 
-    public function labels()
+    // Scope untuk tugas yang akan datang
+    public function scopeUpcoming($query)
     {
-        return $this->belongsToMany(Label::class, 'task_labels', 'task_id', 'label_id')
-            ->using(TaskLabel::class)
-            ->withTimestamps();
+        return $query->where('start_datetime', '>', now())
+                    ->where('status', 'todo');
+    }
+
+    // ===== HELPER METHODS =====
+
+    public function isOverdue()
+    {
+        return $this->due_datetime && $this->due_datetime->lt(now()) 
+               && !in_array($this->status, ['done', 'cancel']);
+    }
+
+    public function isSecret()
+    {
+        return $this->is_secret;
+    }
+
+    public function getProgressPercentage()
+    {
+        if ($this->checklists->count() === 0) {
+            return 0;
+        }
+
+        $completed = $this->checklists->where('is_done', true)->count();
+        return round(($completed / $this->checklists->count()) * 100);
+    }
+
+    // Validation rules
+    public static function rules($forCreate = true)
+    {
+        $rules = [
+            'workspace_id' => 'required|exists:workspaces,id',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'phase' => 'required|string|max:255',
+            'status' => 'sometimes|in:todo,inprogress,done,cancel',
+            'priority' => 'sometimes|in:low,medium,high,urgent',
+            'is_secret' => 'boolean',
+            'start_datetime' => 'nullable|date',
+            'due_datetime' => 'nullable|date|after:start_datetime',
+            'board_column_id' => 'nullable|exists:board_columns,id'
+        ];
+
+        if ($forCreate) {
+            $rules['created_by'] = 'required|exists:users,id';
+        }
+
+        return $rules;
     }
 }

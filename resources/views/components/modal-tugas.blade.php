@@ -211,49 +211,49 @@
              <p class="text-center text-sm text-gray-500 mt-1">Didalam To do list di HQ</p>
          </div>
 
-         <form class="p-6 space-y-4">
+         <form @submit.prevent="createTask()" class="p-6 space-y-4">
              <!-- Nama Tugas -->
              <div>
                  <label class="text-sm font-medium text-gray-700 mb-2 block">Nama Tugas <span
                          class="text-red-500">*</span></label>
-                 <input type="text" placeholder="Masukkan nama tugas..."
-                     class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
+                 <input type="text" x-model="taskForm.title" placeholder="Masukkan nama tugas..."
+                     class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                     required />
              </div>
 
              <!-- PHASE INPUT -->
-             <div>
-                 <label class="text-sm font-medium text-gray-700 mb-2 block">Phase <span
-                         class="text-red-500">*</span></label>
-                 <input type="text" x-model="taskForm.phase"
-                     placeholder="Masukkan nama phase (contoh: Inisiasi, Perencanaan, Eksekusi)"
-                     class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-             </div>
+             <!-- Di modal tambah tugas -->
+<div>
+    <label class="text-sm font-medium text-gray-700 mb-2 block">Phase <span class="text-red-500">*</span></label>
+    <input type="text" x-model="taskForm.phase" placeholder="Masukkan nama phase" required
+        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+    <p x-show="!taskForm.phase" class="text-red-500 text-xs mt-1">Phase wajib diisi</p>
+</div>
 
              <!-- Anggota & Tugas Rahasia -->
              <!-- Di dalam modal tambah tugas, setelah section Anggota -->
              <div class="mb-4">
-                 <label class="text-sm font-medium text-gray-700 mb-2 block">Anggota <span
-                         class="text-red-500">*</span></label>
+                 <label class="text-sm font-medium text-gray-700 mb-2 block">Anggota</label>
                  <div class="flex items-center justify-between">
                      <div class="flex items-center gap-2">
-                         <template x-for="(member, index) in (taskForm.members || [])" :key="member?.id || index">
-                             <div class="relative" x-show="member && member.avatar">
+                         <template x-for="(member, index) in taskForm.members" :key="member?.id || index">
+                             <div class="relative">
                                  <img :src="member.avatar" class="w-9 h-9 rounded-full border-2 border-gray-300"
                                      :alt="member.name" :title="member.name">
-                                 <button x-show="isEditMode" @click="removeAssignedMember(member.id)"
+                                 <button type="button" @click="removeAssignedMember(member.id)"
                                      class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs flex items-center justify-center">
                                      ×
                                  </button>
                              </div>
                          </template>
 
+
                          <!-- Tombol tambah anggota -->
-                         <button type="button" @click="openAddMemberModalForTask(currentTask || null)"
+                         <button type="button" @click="openAddMemberModalForTask()"
                              class="w-9 h-9 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:border-gray-400 transition">
                              <span class="text-xl font-light">+</span>
                          </button>
                      </div>
-
                      <!-- ✅ SWITCH BUTTON TUGAS RAHASIA -->
                      <div class="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
                          <span class="text-xs text-blue-700 font-medium">Tugas Rahasia?</span>
@@ -295,9 +295,7 @@
 
              <!-- Catatan -->
              <div class="mb-4">
-                 <label class="text-sm font-medium text-gray-700 mb-2 block">
-                     Catatan <span class="text-red-500">*</span>
-                 </label>
+                 <label class="text-sm font-medium text-gray-700 mb-2 block">Catatan</label>
                  <div class="border rounded-lg overflow-hidden">
                      <textarea id="editor-catatan" name="catatan"></textarea>
                  </div>
@@ -816,35 +814,31 @@
              <div class="grid grid-cols-2 gap-4">
                  <div>
                      <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Mulai</label>
-                     <input type="date" x-model="taskForm.startDate" 
-                     class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                     />
+                     <input type="date" x-model="taskForm.startDate"
+                         class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
                  </div>
                  <div>
                      <label class="block text-sm font-medium text-gray-700 mb-2">Jam Mulai</label>
                      <!-- ✅ UBAH LABEL -->
-                     <input type="time" x-model="taskForm.startTime" 
-                     class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                     />
+                     <input type="time" x-model="taskForm.startTime"
+                         class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
                  </div>
                  <div>
                      <label class="block text-sm font-medium text-gray-700 mb-2">Tenggat</label>
-                     <input type="date" x-model="taskForm.dueDate" 
-                     class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                     />
+                     <input type="date" x-model="taskForm.dueDate"
+                         class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
                  </div>
                  <div>
                      <label class="block text-sm font-medium text-gray-700 mb-2">Jam Tenggat</label>
                      <!-- ✅ UBAH LABEL -->
-                     <input type="time" x-model="taskForm.dueTime" 
-                     class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                     />
+                     <input type="time" x-model="taskForm.dueTime"
+                         class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
                  </div>
              </div>
 
-             <!-- Tombol -->
+             <!-- Tombol Simpan -->
              <div class="flex justify-center gap-3 pt-4">
-                 <button type="button" @click="openTaskModal = false"
+                 <button type="button" @click="openTaskModal = false; resetTaskForm()"
                      class="px-10 py-2 rounded-md bg-white hover:bg-gray-50 text-blue-600 border border-blue-600 font-medium text-sm">
                      Batal
                  </button>
