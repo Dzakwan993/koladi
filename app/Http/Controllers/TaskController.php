@@ -36,7 +36,7 @@ class TaskController extends Controller
             ->first();
 
         $userRole = $userCompany?->role?->name ?? 'Member';
-        
+
         // ✅ JIKA SUPERADMIN/ADMIN/MANAGER, BOLEH AKSES SEMUA WORKSPACE DI COMPANY
         if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
             return true;
@@ -255,7 +255,7 @@ class TaskController extends Controller
     // ============================================================
     // === SHOW KANBAN PAGE
     // ============================================================
-     public function showKanban(Workspace $workspace)
+    public function showKanban(Workspace $workspace)
     {
         $user = Auth::user();
 
@@ -488,7 +488,9 @@ class TaskController extends Controller
             'checklists.*.is_done' => 'boolean',
             'is_secret' => 'boolean',
             'attachment_ids' => 'array',
-            'attachment_ids.*' => 'exists:attachments,id'
+            'attachment_ids.*' => 'exists:attachments,id',
+            'start_datetime' => 'nullable|date_format:Y-m-d H:i',
+            'due_datetime' => 'nullable|date_format:Y-m-d H:i|after:start_datetime',
         ]);
 
         try {
@@ -519,7 +521,7 @@ class TaskController extends Controller
                 'due_datetime' => $request->due_datetime,
                 'phase' => $request->phase
             ]);
-            
+
             // Assign anggota jika ada
             if (!empty($request->user_ids)) {
                 foreach ($request->user_ids as $userId) {
@@ -571,7 +573,6 @@ class TaskController extends Controller
                 'task' => $task,
                 'is_secret' => $task->is_secret
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error creating task with assignments: ' . $e->getMessage());
@@ -1092,78 +1093,81 @@ class TaskController extends Controller
      * Upload attachment untuk task
      */
     public function uploadAttachment(Request $request)
-{
-    $request->validate([
-        'file' => 'required|file|max:10240',
-        'attachable_type' => 'required|string',
-        // HAPUS: 'attachable_id' => 'required' - karena belum ada ID tugas
-    ]);
+    {
+        $request->validate([
+            'file' => 'required|file|max:10240',
+            'attachable_type' => 'required|string',
+            // HAPUS: 'attachable_id' => 'required' - karena belum ada ID tugas
+        ]);
 
-    try {
-        $user = Auth::user();
-        $file = $request->file('file');
+        try {
+            $user = Auth::user();
+            $file = $request->file('file');
 
-        // Validasi tipe file
-        $allowedMimeTypes = [
-            'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/vnd.ms-powerpoint',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'text/plain',
-            'application/zip',
-            'application/x-rar-compressed'
-        ];
+            // Validasi tipe file
+            $allowedMimeTypes = [
+                'image/jpeg',
+                'image/jpg',
+                'image/png',
+                'image/gif',
+                'image/webp',
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'text/plain',
+                'application/zip',
+                'application/x-rar-compressed'
+            ];
 
-        if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
+            if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tipe file tidak didukung.'
+                ], 400);
+            }
+
+            // Generate unique filename
+            $fileName = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+
+            // Simpan file
+            $path = $file->storeAs('attachments', $fileName, 'public');
+
+            // ✅ BUAT ATTACHMENT TANPA attachable_id (akan diupdate nanti)
+            $attachment = Attachment::create([
+                'id' => Str::uuid()->toString(),
+                'attachable_type' => $request->attachable_type,
+                'attachable_id' => null, // Biarkan null untuk sementara
+                'file_url' => $path,
+                'uploaded_by' => $user->id,
+                'uploaded_at' => now()
+            ]);
+
+            $attachment->load('uploader');
+
+            Log::info('File berhasil diupload (sementara):', [
+                'attachment_id' => $attachment->id,
+                'file_url' => $attachment->file_url,
+                'attachable_id' => $attachment->attachable_id // Masih null
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'attachment' => $attachment,
+                'message' => 'File berhasil diupload'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error uploading attachment: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Tipe file tidak didukung.'
-            ], 400);
+                'message' => 'Gagal upload file: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Generate unique filename
-        $fileName = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
-        
-        // Simpan file
-        $path = $file->storeAs('attachments', $fileName, 'public');
-
-        // ✅ BUAT ATTACHMENT TANPA attachable_id (akan diupdate nanti)
-        $attachment = Attachment::create([
-            'id' => Str::uuid()->toString(),
-            'attachable_type' => $request->attachable_type,
-            'attachable_id' => null, // Biarkan null untuk sementara
-            'file_url' => $path,
-            'uploaded_by' => $user->id,
-            'uploaded_at' => now()
-        ]);
-
-        $attachment->load('uploader');
-
-        Log::info('File berhasil diupload (sementara):', [
-            'attachment_id' => $attachment->id,
-            'file_url' => $attachment->file_url,
-            'attachable_id' => $attachment->attachable_id // Masih null
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'attachment' => $attachment,
-            'message' => 'File berhasil diupload'
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error uploading attachment: ' . $e->getMessage());
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal upload file: ' . $e->getMessage()
-        ], 500);
     }
-}
 
     /**
      * Get attachments untuk task

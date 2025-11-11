@@ -1568,10 +1568,13 @@
                                     })),
                                     // ✅ KIRIM ARRAY ATTACHMENT IDs YANG SUDAH DIUPLOAD
                                     attachment_ids: this.taskForm.attachments.map(att => att.id),
+                                    // Di method createTask()
                                     start_datetime: this.taskForm.startDate && this.taskForm.startTime ?
-                                        `${this.taskForm.startDate} ${this.taskForm.startTime}:00` : null,
+                                        `${this.taskForm.startDate} ${this.taskForm.startTime}` :
+                                        null, // ✅ HAPUS :00 jika tidak perlu seconds
                                     due_datetime: this.taskForm.dueDate && this.taskForm.dueTime ?
-                                        `${this.taskForm.dueDate} ${this.taskForm.dueTime}:00` : null
+                                        `${this.taskForm.dueDate} ${this.taskForm.dueTime}` :
+                                        null // ✅ HAPUS :00 jika tidak perlu seconds
                                 };
 
                                 // Hapus properties yang null/undefined
@@ -1660,33 +1663,33 @@
 
                         // Update method resetTaskForm
                         // ✅ Update method resetTaskForm
-resetTaskForm() {
-    // Reset CKEditor terlebih dahulu
-    this.resetCKEditor('editor-catatan');
+                        resetTaskForm() {
+                            // Reset CKEditor terlebih dahulu
+                            this.resetCKEditor('editor-catatan');
 
-    this.taskForm = {
-        title: '',
-        phase: '',
-        members: [],
-        is_secret: false,
-        notes: '',
-        attachments: [],
-        checklists: [],
-        labels: [], // ✅ RESET LABELS JUGA
-        startDate: '',
-        startTime: '',
-        dueDate: '',
-        dueTime: ''
-    };
+                            this.taskForm = {
+                                title: '',
+                                phase: '',
+                                members: [],
+                                is_secret: false,
+                                notes: '',
+                                attachments: [],
+                                checklists: [],
+                                labels: [], // ✅ RESET LABELS JUGA
+                                startDate: '',
+                                startTime: '',
+                                dueDate: '',
+                                dueTime: ''
+                            };
 
-    // Reset selected state di labelData
-    this.labelData.labels.forEach(label => {
-        label.selected = false;
-    });
+                            // Reset selected state di labelData
+                            this.labelData.labels.forEach(label => {
+                                label.selected = false;
+                            });
 
-    this.uploading = false;
-    this.uploadProgress = 0;
-},
+                            this.uploading = false;
+                            this.uploadProgress = 0;
+                        },
 
                         // Members
                         filteredMembers() {
@@ -2993,17 +2996,17 @@ resetTaskForm() {
 
 
                         // ✅ NEW: Method untuk menghapus label yang sudah dipilih
-removeSelectedLabel(labelId) {
-    this.taskForm.labels = this.taskForm.labels.filter(label => label.id !== labelId);
-    
-    // Juga update selected state di labelData
-    const label = this.labelData.labels.find(l => l.id === labelId);
-    if (label) {
-        label.selected = false;
-    }
-    
-    console.log('Label dihapus:', labelId, 'Labels tersisa:', this.taskForm.labels);
-},
+                        removeSelectedLabel(labelId) {
+                            this.taskForm.labels = this.taskForm.labels.filter(label => label.id !== labelId);
+
+                            // Juga update selected state di labelData
+                            const label = this.labelData.labels.find(l => l.id === labelId);
+                            if (label) {
+                                label.selected = false;
+                            }
+
+                            console.log('Label dihapus:', labelId, 'Labels tersisa:', this.taskForm.labels);
+                        },
 
                         // Filter labels untuk search
                         filteredLabels() {
@@ -3017,24 +3020,24 @@ removeSelectedLabel(labelId) {
 
                         // Open label modal
                         // ✅ PERBAIKI: Method untuk membuka modal label
-openLabelModalForTask(task = null) {
-    this.openLabelModal = true;
-    this.labelData.searchLabel = '';
+                        openLabelModalForTask(task = null) {
+                            this.openLabelModal = true;
+                            this.labelData.searchLabel = '';
 
-    if (task && task.id) {
-        // Untuk task yang sudah ada - load labels dari database
-        this.loadTaskLabels(task.id);
-    } else {
-        // Untuk task baru - sync selected state dengan taskForm.labels
-        this.labelData.labels.forEach(label => {
-            // Cek apakah label ini sudah ada di taskForm.labels
-            const isSelected = this.taskForm.labels.some(selectedLabel => 
-                selectedLabel.id === label.id
-            );
-            label.selected = isSelected;
-        });
-    }
-},
+                            if (task && task.id) {
+                                // Untuk task yang sudah ada - load labels dari database
+                                this.loadTaskLabels(task.id);
+                            } else {
+                                // Untuk task baru - sync selected state dengan taskForm.labels
+                                this.labelData.labels.forEach(label => {
+                                    // Cek apakah label ini sudah ada di taskForm.labels
+                                    const isSelected = this.taskForm.labels.some(selectedLabel =>
+                                        selectedLabel.id === label.id
+                                    );
+                                    label.selected = isSelected;
+                                });
+                            }
+                        },
 
 
 
