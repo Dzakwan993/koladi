@@ -43,23 +43,15 @@ class Workspace extends Model
             foreach ($defaultColumns as $column) {
                 BoardColumn::create([
                     'id' => Str::uuid()->toString(),
-                    'workspace_id' => $workspace->id, // ✅ PASTIKAN workspace_id spesifik
+                    'workspace_id' => $workspace->id,
                     'name' => $column['name'],
                     'position' => $column['position'],
                     'created_by' => $workspace->created_by,
                 ]);
             }
 
-            // Tambahkan creator sebagai anggota workspace
-            $superAdminRole = Role::where('name', 'SuperAdmin')->first();
-            if ($superAdminRole) {
-                UserWorkspace::create([
-                    'user_id' => $workspace->created_by,
-                    'workspace_id' => $workspace->id, // ✅ PASTIKAN workspace_id spesifik
-                    'roles_id' => $superAdminRole->id,
-                    'status_active' => true
-                ]);
-            }
+            // ❌ HAPUS BAGIAN INI: Creator TIDAK otomatis ditambahkan sebagai member workspace
+            // SuperAdmin, Admin, Manager yang membuat workspace tidak menjadi member workspace
         });
     }
 

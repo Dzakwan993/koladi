@@ -267,12 +267,12 @@
                         <p class="block text-sm font-medium text-gray-700 mb-3">Pindahkan ke</p>
 
                         <div class="space-y-3">
-                            <label class="flex items-center">
+                            {{-- <label class="flex items-center">
                                 <input type="radio" name="edit-workspace-type" value="HQ"
                                     class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                                     x-model="editWorkspaceData.type">
                                 <span class="ml-2 text-gray-700">HQ</span>
-                            </label>
+                            </label> --}}
 
                             <label class="flex items-center">
                                 <input type="radio" name="edit-workspace-type" value="Tim"
