@@ -1473,34 +1473,236 @@
                             // === METHODS ===
 
                             // ✅ UPDATE: Open task detail - load dari database
+                            // ✅ PERBAIKI: Method untuk membuka detail tugas
+                            // ✅ PERBAIKI: Method untuk membuka detail tugas
 async openDetail(taskId) {
     try {
-        // Load task detail dari API
-        const response = await fetch(`/tasks/${taskId}/detail`); // Anda perlu buat endpoint ini
+        console.log('Loading task detail for:', taskId);
+        
+        const response = await fetch(`/tasks/${taskId}/detail`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
 
         if (data.success) {
-            this.currentTask = data.task;
+            // Format data untuk kompatibilitas dengan frontend
+            this.currentTask = {
+                id: data.task.id,
+                title: data.task.title,
+                phase: data.task.phase,
+                description: data.task.description,
+                is_secret: data.task.is_secret,
+                status: data.task.status,
+                priority: data.task.priority,
+                startDate: data.task.start_datetime ? data.task.start_datetime.split('T')[0] : '',
+                startTime: data.task.start_datetime ? data.task.start_datetime.split('T')[1]?.substring(0, 5) : '',
+                dueDate: data.task.due_datetime ? data.task.due_datetime.split('T')[0] : '',
+                dueTime: data.task.due_datetime ? data.task.due_datetime.split('T')[1]?.substring(0, 5) : '',
+                members: data.task.assigned_members || [],
+                labels: data.task.labels || [],
+                checklist: data.task.checklists ? data.task.checklists.map(cl => ({
+                    id: cl.id,
+                    name: cl.title,
+                    title: cl.title,
+                    done: cl.is_done,
+                    is_done: cl.is_done,
+                    position: cl.position
+                })) : [],
+                attachments: data.task.attachments || [],
+                progress_percentage: data.task.progress_percentage,
+                is_overdue: data.task.is_overdue,
+                created_at: data.task.created_at,
+                updated_at: data.task.updated_at,
+                board_column: data.task.board_column
+            };
+
+            this.assignedMembers = data.task.assigned_members || [];
+            this.selectedMemberIds = this.assignedMembers.map(member => member.id);
+            
             this.isEditMode = false;
             this.openTaskDetail = true;
 
-            // Load task assignments
-            await this.loadTaskAssignments(taskId);
-            // Load task labels
-            await this.loadTaskLabels(taskId);
+            console.log('Task detail loaded:', this.currentTask);
         } else {
-            alert('Gagal memuat detail tugas: ' + data.message);
+            this.showNotification('Gagal memuat detail tugas: ' + data.message, 'error');
         }
     } catch (error) {
         console.error('Error loading task detail:', error);
-        alert('Terjadi kesalahan saat memuat detail tugas');
+        this.showNotification('Terjadi kesalahan saat memuat detail tugas', 'error');
     }
 },
 
-openTaskModalForColumn(columnId = null) {
-            this.currentColumnId = columnId;
-            this.openTaskModal = true;
-        },
+                            // ✅ NEW: Method untuk menyimpan perubahan tugas
+                            async saveTaskEdit() {
+                                if (!this.currentTask) return;
+
+                                try {
+                                    const formData = {
+                                        title: this.currentTask.title,
+                                        phase: this.currentTask.phase,
+                                        description: this.currentTask.description,
+                                        is_secret: this.currentTask.is_secret,
+                                        user_ids: this.assignedMembers.map(member => member.id),
+                                        label_ids: this.currentTask.labels.map(label => label.id),
+                                        board_column_id: this.currentTask.board_column?.id
+                                    };
+
+                                    // Tambahkan datetime jika ada
+                                    if (this.currentTask.startDate && this.currentTask.startTime) {
+                                        formData.start_datetime = `${this.currentTask.startDate}T${this.currentTask.startTime}:00`;
+                                    }
+                                    if (this.currentTask.dueDate && this.currentTask.dueTime) {
+                                        formData.due_datetime = `${this.currentTask.dueDate}T${this.currentTask.dueTime}:00`;
+                                    }
+
+                                    const response = await fetch(`/tasks/${this.currentTask.id}/update`, {
+                                        method: 'PUT',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': this.getCsrfToken()
+                                        },
+                                        body: JSON.stringify(formData)
+                                    });
+
+                                    const data = await response.json();
+
+                                    if (data.success) {
+                                        this.showNotification('Tugas berhasil diperbarui!', 'success');
+                                        this.isEditMode = false;
+
+                                        // Reload data
+                                        await this.loadKanbanTasks();
+                                        await this.loadBoardColumns();
+                                    } else {
+                                        throw new Error(data.message || 'Gagal memperbarui tugas');
+                                    }
+                                } catch (error) {
+                                    console.error('Error updating task:', error);
+                                    this.showNotification(`Gagal memperbarui tugas: ${error.message}`, 'error');
+                                }
+                            },
+
+                            // ✅ NEW: Method untuk menghapus checklist item
+                            async removeChecklistItemFromDetail(index) {
+                                if (!this.currentTask || !this.currentTask.checklist) return;
+
+                                const item = this.currentTask.checklist[index];
+                                if (confirm(`Hapus item "${item.title}"?`)) {
+                                    try {
+                                        // Jika item sudah ada di database, hapus via API
+                                        if (item.id && !item.id.toString().startsWith('temp-')) {
+                                            const response = await fetch(`/tasks/checklists/${item.id}`, {
+                                                method: 'DELETE',
+                                                headers: {
+                                                    'X-CSRF-TOKEN': this.getCsrfToken()
+                                                }
+                                            });
+
+                                            const data = await response.json();
+                                            if (!data.success) {
+                                                throw new Error('Gagal menghapus dari server');
+                                            }
+                                        }
+
+                                        this.currentTask.checklist.splice(index, 1);
+                                        this.showNotification('Item checklist berhasil dihapus', 'success');
+                                    } catch (error) {
+                                        console.error('Error deleting checklist item:', error);
+                                        this.showNotification('Gagal menghapus item checklist', 'error');
+                                    }
+                                }
+                            },
+
+                            // ✅ NEW: Method untuk menambah checklist item di detail
+                            addChecklistItemToDetail() {
+                                if (!this.currentTask.checklist) {
+                                    this.currentTask.checklist = [];
+                                }
+
+                                const newItem = {
+                                    id: 'temp-' + Date.now(),
+                                    title: '',
+                                    is_done: false,
+                                    done: false,
+                                    position: this.currentTask.checklist.length
+                                };
+
+                                this.currentTask.checklist.push(newItem);
+
+                                // Focus ke input baru
+                                this.$nextTick(() => {
+                                    const inputs = document.querySelectorAll('#detail-checklist-container input[type="text"]');
+                                    if (inputs.length > 0) {
+                                        inputs[inputs.length - 1].focus();
+                                    }
+                                });
+                            },
+
+                            // ✅ NEW: Method untuk update checklist item di detail
+                            async updateChecklistItemInDetail(item) {
+                                try {
+                                    // Jika item sudah ada di database, update via API
+                                    if (item.id && !item.id.toString().startsWith('temp-')) {
+                                        const response = await fetch(`/tasks/checklists/${item.id}`, {
+                                            method: 'PUT',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-CSRF-TOKEN': this.getCsrfToken()
+                                            },
+                                            body: JSON.stringify({
+                                                title: item.title,
+                                                is_done: item.is_done
+                                            })
+                                        });
+
+                                        const data = await response.json();
+                                        if (!data.success) {
+                                            throw new Error('Gagal menyimpan perubahan');
+                                        }
+                                    }
+                                } catch (error) {
+                                    console.error('Error updating checklist item:', error);
+                                    this.showNotification('Gagal menyimpan perubahan checklist', 'error');
+                                }
+                            },
+
+                            // ✅ NEW: Calculate progress untuk task detail
+                            calculateTaskProgress(task) {
+                                if (!task.checklist || task.checklist.length === 0) return 0;
+                                const completed = task.checklist.filter(item => item.is_done || item.done).length;
+                                return Math.round((completed / task.checklist.length) * 100);
+                            },
+
+                            // ✅ NEW: Format date untuk detail
+                            formatDetailDate(dateString) {
+                                if (!dateString) return '';
+                                const date = new Date(dateString);
+                                return date.toLocaleDateString('id-ID', {
+                                    day: 'numeric',
+                                    month: 'long',
+                                    year: 'numeric'
+                                });
+                            },
+
+                            // ✅ NEW: Method untuk menghapus attachment dari detail
+                            removeAttachmentFromDetail(index) {
+                                if (!this.currentTask?.attachments) return;
+
+                                const file = this.currentTask.attachments[index];
+                                if (confirm(`Hapus file ${file.name}?`)) {
+                                    // Hapus dari server jika perlu
+                                    this.deleteAttachmentFromServer(file.id);
+                                    this.currentTask.attachments.splice(index, 1);
+                                }
+                            },
+
+                            openTaskModalForColumn(columnId = null) {
+                                this.currentColumnId = columnId;
+                                this.openTaskModal = true;
+                            },
 
                             // Enable edit mode
                             enableEditMode() {
@@ -1576,9 +1778,9 @@ openTaskModalForColumn(columnId = null) {
                                 }
 
                                 if (!this.currentColumnId) {
-                this.showNotification('Kolom tujuan tidak ditemukan', 'error');
-                return;
-            }
+                                    this.showNotification('Kolom tujuan tidak ditemukan', 'error');
+                                    return;
+                                }
 
                                 try {
                                     const workspaceId = this.getCurrentWorkspaceId();
@@ -1588,21 +1790,21 @@ openTaskModalForColumn(columnId = null) {
                                     }
 
                                     // Siapkan data untuk backend
-                                     const formData = {
-                workspace_id: this.getCurrentWorkspaceId(),
-                board_column_id: this.currentColumnId, // ← KIRIM INI
-                title: this.taskForm.title,
-                description: this.taskForm.description,
-                phase: this.taskForm.phase,
-                user_ids: this.taskForm.members.map(m => m.id),
-                is_secret: this.taskForm.is_secret,
-                label_ids: this.taskForm.labels.map(l => l.id),
-                checklists: this.taskForm.checklists.map(item => ({
-                    title: item.title,
-                    is_done: item.is_done || false
-                })),
-                attachment_ids: this.taskForm.attachments.map(att => att.id)
-            };
+                                    const formData = {
+                                        workspace_id: this.getCurrentWorkspaceId(),
+                                        board_column_id: this.currentColumnId, // ← KIRIM INI
+                                        title: this.taskForm.title,
+                                        description: this.taskForm.description,
+                                        phase: this.taskForm.phase,
+                                        user_ids: this.taskForm.members.map(m => m.id),
+                                        is_secret: this.taskForm.is_secret,
+                                        label_ids: this.taskForm.labels.map(l => l.id),
+                                        checklists: this.taskForm.checklists.map(item => ({
+                                            title: item.title,
+                                            is_done: item.is_done || false
+                                        })),
+                                        attachment_ids: this.taskForm.attachments.map(att => att.id)
+                                    };
 
                                     // Tambahkan datetime jika ada
                                     if (this.taskForm.startDate && this.taskForm.startTime) {
@@ -2261,10 +2463,10 @@ openTaskModalForColumn(columnId = null) {
 
                             // Methods untuk menghitung progress
                             calculateProgress(task) {
-    if (!task.checklist || task.checklist.length === 0) return 0;
-    const completed = task.checklist.filter(item => item.is_done || item.done).length;
-    return Math.round((completed / task.checklist.length) * 100);
-},
+                                if (!task.checklist || task.checklist.length === 0) return 0;
+                                const completed = task.checklist.filter(item => item.is_done || item.done).length;
+                                return Math.round((completed / task.checklist.length) * 100);
+                            },
 
                             // Method untuk menghitung persentase phase berdasarkan tugas selesai
                             calculatePhaseProgress(phaseId) {
@@ -2302,7 +2504,7 @@ openTaskModalForColumn(columnId = null) {
                                 });
                             },
 
-                            
+
 
 
                             // Add this to your kanbanApp() methods
@@ -2487,57 +2689,57 @@ openTaskModalForColumn(columnId = null) {
 
                             // ✅ NEW: Handle ketika task dipindahkan
                             // ✅ UPDATE: Handle ketika task dipindahkan
-async handleTaskMove(evt, columnId) {
-    const taskId = evt.item.dataset.taskId;
-    const fromColumnId = evt.from.id.replace('column-', '');
-    const toColumnId = evt.to.id.replace('column-', '');
+                            async handleTaskMove(evt, columnId) {
+                                const taskId = evt.item.dataset.taskId;
+                                const fromColumnId = evt.from.id.replace('column-', '');
+                                const toColumnId = evt.to.id.replace('column-', '');
 
-    if (fromColumnId === toColumnId) return;
+                                if (fromColumnId === toColumnId) return;
 
-    try {
-        // Update task position di database
-        const response = await fetch('/tasks/update-column', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                task_id: taskId,
-                board_column_id: toColumnId
-            })
-        });
+                                try {
+                                    // Update task position di database
+                                    const response = await fetch('/tasks/update-column', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                        },
+                                        body: JSON.stringify({
+                                            task_id: taskId,
+                                            board_column_id: toColumnId
+                                        })
+                                    });
 
-        const data = await response.json();
+                                    const data = await response.json();
 
-        if (data.success) {
-            // Update local state
-            const taskIndex = this.tasks.findIndex(t => t.id === taskId);
-            if (taskIndex !== -1) {
-                this.tasks[taskIndex].board_column_id = toColumnId;
-                this.tasks[taskIndex].status = toColumnId; // Update status juga
-            }
-            this.showNotification('Tugas berhasil dipindahkan', 'success');
-        } else {
-            console.error('Gagal update task column:', data.message);
-            // Optionally revert the move visually
-        }
-    } catch (error) {
-        console.error('Error updating task column:', error);
-        this.showNotification('Gagal memindahkan tugas', 'error');
-    }
-},
+                                    if (data.success) {
+                                        // Update local state
+                                        const taskIndex = this.tasks.findIndex(t => t.id === taskId);
+                                        if (taskIndex !== -1) {
+                                            this.tasks[taskIndex].board_column_id = toColumnId;
+                                            this.tasks[taskIndex].status = toColumnId; // Update status juga
+                                        }
+                                        this.showNotification('Tugas berhasil dipindahkan', 'success');
+                                    } else {
+                                        console.error('Gagal update task column:', data.message);
+                                        // Optionally revert the move visually
+                                    }
+                                } catch (error) {
+                                    console.error('Error updating task column:', error);
+                                    this.showNotification('Gagal memindahkan tugas', 'error');
+                                }
+                            },
 
                             // ✅ NEW: Method untuk mendapatkan tasks berdasarkan kolom
                             getTasksByColumn(columnId) {
-    return this.tasks.filter(task => task.board_column_id === columnId);
-},
+                                return this.tasks.filter(task => task.board_column_id === columnId);
+                            },
 
                             // ✅ NEW: Method untuk filter tasks di kolom tertentu
-                           getFilteredTasksByColumn(columnId) {
-    const columnTasks = this.tasks.filter(task => task.board_column_id === columnId);
-    return this.filterTasks(columnTasks);
-},
+                            getFilteredTasksByColumn(columnId) {
+                                const columnTasks = this.tasks.filter(task => task.board_column_id === columnId);
+                                return this.filterTasks(columnTasks);
+                            },
 
                             // ✅ NEW: Helper untuk notification
                             showNotification(message, type = 'info') {
@@ -2552,55 +2754,55 @@ async handleTaskMove(evt, columnId) {
 
                             // ✅ Initialize ketika component mounted
                             init() {
-    try {
-        // Inisialisasi state dengan nilai default
-        this.currentTask = {
-            is_secret: false,
-            labels: [],
-            startDate: '',
-            startTime: '',
-            dueDate: '',
-            dueTime: '',
-            members: []
-        };
+                                try {
+                                    // Inisialisasi state dengan nilai default
+                                    this.currentTask = {
+                                        is_secret: false,
+                                        labels: [],
+                                        startDate: '',
+                                        startTime: '',
+                                        dueDate: '',
+                                        dueTime: '',
+                                        members: []
+                                    };
 
-        this.taskForm = {
-            title: '',
-            phase: '',
-            members: [],
-            is_secret: false,
-            notes: '',
-            description: '',
-            attachments: [],
-            checklists: [],
-            labels: [],
-            startDate: '',
-            startTime: '',
-            dueDate: '',
-            dueTime: ''
-        };
+                                    this.taskForm = {
+                                        title: '',
+                                        phase: '',
+                                        members: [],
+                                        is_secret: false,
+                                        notes: '',
+                                        description: '',
+                                        attachments: [],
+                                        checklists: [],
+                                        labels: [],
+                                        startDate: '',
+                                        startTime: '',
+                                        dueDate: '',
+                                        dueTime: ''
+                                    };
 
-        this.labelData = {
-            labels: [],
-            colors: [],
-            selectedLabelIds: [],
-            newLabelName: '',
-            newLabelColor: null,
-            searchLabel: ''
-        };
+                                    this.labelData = {
+                                        labels: [],
+                                        colors: [],
+                                        selectedLabelIds: [],
+                                        newLabelName: '',
+                                        newLabelColor: null,
+                                        searchLabel: ''
+                                    };
 
-        // Load data
-        this.loadBoardColumns();
-        this.loadKanbanTasks(); // ✅ GUNAKAN YANG BARU
-        this.loadWorkspaceMembers();
-        this.loadLabels();
-        this.loadColors();
+                                    // Load data
+                                    this.loadBoardColumns();
+                                    this.loadKanbanTasks(); // ✅ GUNAKAN YANG BARU
+                                    this.loadWorkspaceMembers();
+                                    this.loadLabels();
+                                    this.loadColors();
 
-        console.log('✅ Aplikasi initialized dengan semua state');
-    } catch (error) {
-        console.error('❌ Error initializing app:', error);
-    }
-},
+                                    console.log('✅ Aplikasi initialized dengan semua state');
+                                } catch (error) {
+                                    console.error('❌ Error initializing app:', error);
+                                }
+                            },
 
                             // ✅ NEW: Method untuk load tasks dari database
                             async loadTasks() {

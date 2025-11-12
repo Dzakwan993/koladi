@@ -137,6 +137,11 @@ Route::middleware(['auth'])->group(function () {
 
         // untuk card kanban kolom
         Route::get('/workspace/{workspaceId}/kanban-tasks', [TaskController::class, 'getKanbanTasks'])->name('tasks.kanban');
+
+        // ✅ Task Detail Routes
+    Route::get('/{taskId}/detail', [TaskController::class, 'getTaskDetail'])->name('tasks.detail');
+    Route::put('/{taskId}/update', [TaskController::class, 'updateTaskDetail'])->name('tasks.update');
+
     });
 
     // ✅ Calendar & Schedule Routes

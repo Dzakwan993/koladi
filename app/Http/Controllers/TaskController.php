@@ -475,160 +475,159 @@ class TaskController extends Controller
     // ✅ UPDATE: Create task dengan assignments, checklists, dan secret flag
     // ✅ UPDATE: Create task dengan attachments support
     // ✅ UPDATE: Create task dengan assignments, checklists, dan secret flag
-// ✅ UPDATE: Create task dengan attachments support
-public function storeWithAssignments(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'workspace_id' => 'required|exists:workspaces,id',
-        'board_column_id' => 'required|exists:board_columns,id', // ← WAJIB DIPERBAIKI
-        'title' => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'phase' => 'required|string|max:255',
-        'user_ids' => 'array',
-        'user_ids.*' => 'exists:users,id',
-        'label_ids' => 'array', 
-        'label_ids.*' => 'exists:labels,id',
-        'checklists' => 'array',
-        'checklists.*.title' => 'required|string|max:255',
-        'checklists.*.is_done' => 'boolean',
-        'is_secret' => 'boolean',
-        'attachment_ids' => 'array',
-        'attachment_ids.*' => 'exists:attachments,id',
-        'start_datetime' => 'nullable|date_format:Y-m-d H:i:s',
-        'due_datetime' => 'nullable|date_format:Y-m-d H:i:s|after:start_datetime'
-    ]);
+    // ✅ UPDATE: Create task dengan attachments support
+    public function storeWithAssignments(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'workspace_id' => 'required|exists:workspaces,id',
+            'board_column_id' => 'required|exists:board_columns,id', // ← WAJIB DIPERBAIKI
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'phase' => 'required|string|max:255',
+            'user_ids' => 'array',
+            'user_ids.*' => 'exists:users,id',
+            'label_ids' => 'array',
+            'label_ids.*' => 'exists:labels,id',
+            'checklists' => 'array',
+            'checklists.*.title' => 'required|string|max:255',
+            'checklists.*.is_done' => 'boolean',
+            'is_secret' => 'boolean',
+            'attachment_ids' => 'array',
+            'attachment_ids.*' => 'exists:attachments,id',
+            'start_datetime' => 'nullable|date_format:Y-m-d H:i:s',
+            'due_datetime' => 'nullable|date_format:Y-m-d H:i:s|after:start_datetime'
+        ]);
 
-    if ($validator->fails()) {
-        Log::error('Validation failed:', $validator->errors()->toArray());
-        return response()->json([
-            'success' => false,
-            'message' => 'Validasi gagal',
-            'errors' => $validator->errors()
-        ], 422);
-    }
-
-    try {
-        $user = Auth::user();
-
-        if (!$this->canAccessWorkspace($request->workspace_id)) {
+        if ($validator->fails()) {
+            Log::error('Validation failed:', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki akses ke workspace ini'
-            ], 403);
-        }
-
-        // ✅ VALIDASI: Pastikan board_column_id termasuk dalam workspace yang sama
-        $boardColumn = BoardColumn::where('id', $request->board_column_id)
-            ->where('workspace_id', $request->workspace_id)
-            ->first();
-
-        if (!$boardColumn) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kolom board tidak valid untuk workspace ini'
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
             ], 422);
         }
 
-        DB::beginTransaction();
+        try {
+            $user = Auth::user();
 
-        // Buat task dengan board_column_id yang dipilih
-        $taskData = [
-            'id' => Str::uuid()->toString(),
-            'workspace_id' => $request->workspace_id,
-            'board_column_id' => $request->board_column_id, // ← GUNAKAN YANG DIPILIH
-            'created_by' => $user->id,
-            'title' => $request->title,
-            'description' => $request->description,
-            'phase' => $request->phase,
-            'status' => 'todo',
-            'priority' => $request->priority ?? 'medium',
-            'is_secret' => $request->is_secret ?? false
-        ];
-
-        // Tambahkan datetime jika ada
-        if ($request->start_datetime) {
-            $taskData['start_datetime'] = $request->start_datetime;
-        }
-        if ($request->due_datetime) {
-            $taskData['due_datetime'] = $request->due_datetime;
-        }
-
-        $task = Task::create($taskData);
-
-        // ✅ PERBAIKI: Assign anggota dengan cara yang lebih sederhana
-        if (!empty($request->user_ids)) {
-            foreach ($request->user_ids as $userId) {
-                \App\Models\TaskAssignment::create([
-                    'id' => Str::uuid()->toString(),
-                    'task_id' => $task->id,
-                    'user_id' => $userId,
-                    'assigned_at' => now()
-                ]);
+            if (!$this->canAccessWorkspace($request->workspace_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke workspace ini'
+                ], 403);
             }
-        }
 
-        // ✅ Attach labels
-        if (!empty($request->label_ids)) {
-            $task->labels()->attach($request->label_ids);
-        }
+            // ✅ VALIDASI: Pastikan board_column_id termasuk dalam workspace yang sama
+            $boardColumn = BoardColumn::where('id', $request->board_column_id)
+                ->where('workspace_id', $request->workspace_id)
+                ->first();
 
-        // Create checklists
-        if (!empty($request->checklists)) {
-            foreach ($request->checklists as $index => $checklistData) {
-                \App\Models\Checklist::create([
-                    'id' => Str::uuid()->toString(),
-                    'task_id' => $task->id,
-                    'title' => $checklistData['title'],
-                    'is_done' => $checklistData['is_done'] ?? false,
-                    'position' => $index
-                ]);
+            if (!$boardColumn) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kolom board tidak valid untuk workspace ini'
+                ], 422);
             }
+
+            DB::beginTransaction();
+
+            // Buat task dengan board_column_id yang dipilih
+            $taskData = [
+                'id' => Str::uuid()->toString(),
+                'workspace_id' => $request->workspace_id,
+                'board_column_id' => $request->board_column_id, // ← GUNAKAN YANG DIPILIH
+                'created_by' => $user->id,
+                'title' => $request->title,
+                'description' => $request->description,
+                'phase' => $request->phase,
+                'status' => 'todo',
+                'priority' => $request->priority ?? 'medium',
+                'is_secret' => $request->is_secret ?? false
+            ];
+
+            // Tambahkan datetime jika ada
+            if ($request->start_datetime) {
+                $taskData['start_datetime'] = $request->start_datetime;
+            }
+            if ($request->due_datetime) {
+                $taskData['due_datetime'] = $request->due_datetime;
+            }
+
+            $task = Task::create($taskData);
+
+            // ✅ PERBAIKI: Assign anggota dengan cara yang lebih sederhana
+            if (!empty($request->user_ids)) {
+                foreach ($request->user_ids as $userId) {
+                    \App\Models\TaskAssignment::create([
+                        'id' => Str::uuid()->toString(),
+                        'task_id' => $task->id,
+                        'user_id' => $userId,
+                        'assigned_at' => now()
+                    ]);
+                }
+            }
+
+            // ✅ Attach labels
+            if (!empty($request->label_ids)) {
+                $task->labels()->attach($request->label_ids);
+            }
+
+            // Create checklists
+            if (!empty($request->checklists)) {
+                foreach ($request->checklists as $index => $checklistData) {
+                    \App\Models\Checklist::create([
+                        'id' => Str::uuid()->toString(),
+                        'task_id' => $task->id,
+                        'title' => $checklistData['title'],
+                        'is_done' => $checklistData['is_done'] ?? false,
+                        'position' => $index
+                    ]);
+                }
+            }
+
+            // Update attachments
+            if (!empty($request->attachment_ids)) {
+                \App\Models\Attachment::whereIn('id', $request->attachment_ids)
+                    ->where('attachable_type', 'App\\Models\\Task')
+                    ->whereNull('attachable_id')
+                    ->update(['attachable_id' => $task->id]);
+            }
+
+            DB::commit();
+
+            // ✅ PERBAIKI: Load relations dengan nama yang benar
+            $task->load([
+                'assignments.user',
+                'labels.color',
+                'checklists',
+                'attachments'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tugas berhasil dibuat',
+                'task' => $task,
+                'is_secret' => $task->is_secret
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error creating task: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat tugas: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Update attachments
-        if (!empty($request->attachment_ids)) {
-            \App\Models\Attachment::whereIn('id', $request->attachment_ids)
-                ->where('attachable_type', 'App\\Models\\Task')
-                ->whereNull('attachable_id')
-                ->update(['attachable_id' => $task->id]);
-        }
-
-        DB::commit();
-
-        // ✅ PERBAIKI: Load relations dengan nama yang benar
-        $task->load([
-            'assignments.user', 
-            'labels.color', 
-            'checklists', 
-            'attachments'
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Tugas berhasil dibuat',
-            'task' => $task,
-            'is_secret' => $task->is_secret
-        ]);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error creating task: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal membuat tugas: ' . $e->getMessage()
-        ], 500);
     }
-}
 
-// Helper method untuk mendapatkan default board column
-private function getDefaultBoardColumnId($workspaceId)
-{
-    $defaultColumn = BoardColumn::where('workspace_id', $workspaceId)
-        ->where('name', 'like', '%To Do%')
-        ->first();
-    
-    return $defaultColumn ? $defaultColumn->id : null;
-}
+    // Helper method untuk mendapatkan default board column
+    private function getDefaultBoardColumnId($workspaceId)
+    {
+        $defaultColumn = BoardColumn::where('workspace_id', $workspaceId)
+            ->where('name', 'like', '%To Do%')
+            ->first();
+
+        return $defaultColumn ? $defaultColumn->id : null;
+    }
 
 
 
@@ -667,81 +666,81 @@ private function getDefaultBoardColumnId($workspaceId)
     // ✅ NEW: Create new label
     // Di TaskController - perbaiki method createLabel
     public function createLabel(Request $request)
-{
-    Log::info('Create Label Request:', $request->all());
+    {
+        Log::info('Create Label Request:', $request->all());
 
-    $request->validate([
-        'name' => 'required|string|max:255',
-        'color_id' => 'required|exists:colors,id',
-        'workspace_id' => 'required|exists:workspaces,id'
-    ]);
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'color_id' => 'required|exists:colors,id',
+            'workspace_id' => 'required|exists:workspaces,id'
+        ]);
 
-    try {
-        $user = Auth::user();
-        $activeCompanyId = session('active_company_id');
+        try {
+            $user = Auth::user();
+            $activeCompanyId = session('active_company_id');
 
-        // ✅ GUNAKAN METHOD HELPER YANG SAMA SEPERTI METHOD LAIN
-        if (!$this->canAccessWorkspace($request->workspace_id)) {
-            Log::error('User tidak memiliki akses ke workspace', [
-                'user_id' => $user->id,
-                'workspace_id' => $request->workspace_id
+            // ✅ GUNAKAN METHOD HELPER YANG SAMA SEPERTI METHOD LAIN
+            if (!$this->canAccessWorkspace($request->workspace_id)) {
+                Log::error('User tidak memiliki akses ke workspace', [
+                    'user_id' => $user->id,
+                    'workspace_id' => $request->workspace_id
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke workspace ini'
+                ], 403);
+            }
+
+            // Validasi workspace dalam company aktif
+            $workspace = Workspace::find($request->workspace_id);
+            if ($workspace->company_id !== $activeCompanyId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Workspace tidak termasuk dalam perusahaan yang aktif'
+                ], 403);
+            }
+
+            // Cek apakah label dengan nama yang sama sudah ada
+            $existingLabel = Label::where('name', $request->name)->first();
+            if ($existingLabel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Label dengan nama ini sudah ada'
+                ], 400);
+            }
+
+            $label = Label::create([
+                'id' => Str::uuid()->toString(),
+                'name' => $request->name,
+                'color_id' => $request->color_id
+            ]);
+
+            // Load relation color untuk response
+            $label->load('color');
+
+            Log::info('Label berhasil dibuat:', [
+                'label_id' => $label->id,
+                'name' => $label->name,
+                'color_id' => $label->color_id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Label berhasil dibuat',
+                'label' => $label
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error creating label: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki akses ke workspace ini'
-            ], 403);
+                'message' => 'Gagal membuat label: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Validasi workspace dalam company aktif
-        $workspace = Workspace::find($request->workspace_id);
-        if ($workspace->company_id !== $activeCompanyId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Workspace tidak termasuk dalam perusahaan yang aktif'
-            ], 403);
-        }
-
-        // Cek apakah label dengan nama yang sama sudah ada
-        $existingLabel = Label::where('name', $request->name)->first();
-        if ($existingLabel) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Label dengan nama ini sudah ada'
-            ], 400);
-        }
-
-        $label = Label::create([
-            'id' => Str::uuid()->toString(),
-            'name' => $request->name,
-            'color_id' => $request->color_id
-        ]);
-
-        // Load relation color untuk response
-        $label->load('color');
-
-        Log::info('Label berhasil dibuat:', [
-            'label_id' => $label->id,
-            'name' => $label->name,
-            'color_id' => $label->color_id
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Label berhasil dibuat',
-            'label' => $label
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Error creating label: ' . $e->getMessage(), [
-            'trace' => $e->getTraceAsString()
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal membuat label: ' . $e->getMessage()
-        ], 500);
     }
-}
 
     // ✅ NEW: Get available colors
     public function getColors()
@@ -764,48 +763,48 @@ private function getDefaultBoardColumnId($workspaceId)
 
     // ✅ NEW: Manage task labels
     // ✅ NEW: Manage task labels
-public function manageTaskLabels(Request $request, $taskId)
-{
-    $request->validate([
-        'label_ids' => 'required|array',
-        'label_ids.*' => 'exists:labels,id'
-    ]);
+    public function manageTaskLabels(Request $request, $taskId)
+    {
+        $request->validate([
+            'label_ids' => 'required|array',
+            'label_ids.*' => 'exists:labels,id'
+        ]);
 
-    try {
-        $task = Task::findOrFail($taskId);
-        $user = Auth::user();
+        try {
+            $task = Task::findOrFail($taskId);
+            $user = Auth::user();
 
-        // Validasi akses user ke workspace task
-        $userWorkspace = UserWorkspace::where('user_id', $user->id)
-            ->where('workspace_id', $task->workspace_id)
-            ->first();
+            // Validasi akses user ke workspace task
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                ->where('workspace_id', $task->workspace_id)
+                ->first();
 
-        if (!$userWorkspace) {
+            if (!$userWorkspace) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            // ✅ PERBAIKI: Gunakan sync yang aman
+            $task->labels()->sync($request->label_ids);
+
+            // Get updated labels with colors
+            $updatedLabels = $task->labels()->with('color')->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Label tugas berhasil diupdate',
+                'labels' => $updatedLabels
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error managing task labels: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki akses ke task ini'
-            ], 403);
+                'message' => 'Gagal mengupdate label tugas: ' . $e->getMessage()
+            ], 500);
         }
-
-        // ✅ PERBAIKI: Gunakan sync yang aman
-        $task->labels()->sync($request->label_ids);
-
-        // Get updated labels with colors
-        $updatedLabels = $task->labels()->with('color')->get();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Label tugas berhasil diupdate',
-            'labels' => $updatedLabels
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Error managing task labels: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengupdate label tugas: ' . $e->getMessage()
-        ], 500);
     }
-}
 
     // ✅ NEW: Get task labels
     public function getTaskLabels($taskId)
@@ -1345,143 +1344,339 @@ public function manageTaskLabels(Request $request, $taskId)
 
 
     // ✅ NEW: Get tasks untuk kanban board dengan relasi lengkap
-public function getKanbanTasks($workspaceId)
-{
-    try {
-        $user = Auth::user();
+    public function getKanbanTasks($workspaceId)
+    {
+        try {
+            $user = Auth::user();
 
-        // ✅ VALIDASI: Gunakan method helper untuk cek akses
-        if (!$this->canAccessWorkspace($workspaceId)) {
+            // ✅ VALIDASI: Gunakan method helper untuk cek akses
+            if (!$this->canAccessWorkspace($workspaceId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke workspace ini'
+                ], 403);
+            }
+
+            // Ambil semua tugas di workspace dengan relasi lengkap
+            $query = Task::with([
+                'assignments.user',
+                'labels.color',
+                'checklists',
+                'boardColumn',
+                'creator'
+            ])
+                ->where('workspace_id', $workspaceId);
+
+            // Filter hak akses untuk tugas rahasia
+            $userCompany = $user->userCompanies()
+                ->where('company_id', session('active_company_id'))
+                ->with('role')
+                ->first();
+
+            $userRole = $userCompany?->role?->name ?? 'Member';
+
+            if (!in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin'])) {
+                $query->where(function ($q) use ($user) {
+                    $q->where('is_secret', false)
+                        ->orWhere('created_by', $user->id)
+                        ->orWhereHas('assignments', function ($assignmentQuery) use ($user) {
+                            $assignmentQuery->where('user_id', $user->id);
+                        });
+                });
+            }
+
+            $tasks = $query->get()->map(function ($task) {
+                return [
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'description' => $task->description,
+                    'status' => $task->status,
+                    'board_column_id' => $task->board_column_id,
+                    'priority' => $task->priority,
+                    'is_secret' => $task->is_secret,
+                    'phase' => $task->phase,
+                    'start_datetime' => $task->start_datetime?->toISOString(),
+                    'due_datetime' => $task->due_datetime?->toISOString(),
+                    'created_at' => $task->created_at->toISOString(),
+                    'updated_at' => $task->updated_at->toISOString(),
+                    'assignees' => $task->assignments->map(function ($assignment) {
+                        return [
+                            'id' => $assignment->user->id,
+                            'name' => $assignment->user->full_name,
+                            'email' => $assignment->user->email,
+                            'avatar' => $assignment->user->avatar ?: 'https://i.pravatar.cc/32?img=' . rand(1, 70)
+                        ];
+                    }),
+                    'labels' => $task->labels->map(function ($label) {
+                        return [
+                            'id' => $label->id,
+                            'name' => $label->name,
+                            'color' => $label->color->rgb
+                        ];
+                    }),
+                    'checklists' => $task->checklists->map(function ($checklist) {
+                        return [
+                            'id' => $checklist->id,
+                            'title' => $checklist->title,
+                            'is_done' => $checklist->is_done,
+                            'position' => $checklist->position
+                        ];
+                    }),
+                    'progress_percentage' => $task->getProgressPercentage(),
+                    'is_overdue' => $task->isOverdue()
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'tasks' => $tasks,
+                'user_role' => $userRole
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting kanban tasks: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki akses ke workspace ini'
-            ], 403);
+                'message' => 'Gagal mengambil data tugas untuk kanban'
+            ], 500);
         }
-
-        // Ambil semua tugas di workspace dengan relasi lengkap
-        $query = Task::with([
-            'assignments.user', 
-            'labels.color', 
-            'checklists', 
-            'boardColumn',
-            'creator'
-        ])
-        ->where('workspace_id', $workspaceId);
-
-        // Filter hak akses untuk tugas rahasia
-        $userCompany = $user->userCompanies()
-            ->where('company_id', session('active_company_id'))
-            ->with('role')
-            ->first();
-
-        $userRole = $userCompany?->role?->name ?? 'Member';
-
-        if (!in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin'])) {
-            $query->where(function ($q) use ($user) {
-                $q->where('is_secret', false)
-                    ->orWhere('created_by', $user->id)
-                    ->orWhereHas('assignments', function ($assignmentQuery) use ($user) {
-                        $assignmentQuery->where('user_id', $user->id);
-                    });
-            });
-        }
-
-        $tasks = $query->get()->map(function ($task) {
-            return [
-                'id' => $task->id,
-                'title' => $task->title,
-                'description' => $task->description,
-                'status' => $task->status,
-                'board_column_id' => $task->board_column_id,
-                'priority' => $task->priority,
-                'is_secret' => $task->is_secret,
-                'phase' => $task->phase,
-                'start_datetime' => $task->start_datetime?->toISOString(),
-                'due_datetime' => $task->due_datetime?->toISOString(),
-                'created_at' => $task->created_at->toISOString(),
-                'updated_at' => $task->updated_at->toISOString(),
-                'assignees' => $task->assignments->map(function ($assignment) {
-                    return [
-                        'id' => $assignment->user->id,
-                        'name' => $assignment->user->full_name,
-                        'email' => $assignment->user->email,
-                        'avatar' => $assignment->user->avatar ?: 'https://i.pravatar.cc/32?img=' . rand(1, 70)
-                    ];
-                }),
-                'labels' => $task->labels->map(function ($label) {
-                    return [
-                        'id' => $label->id,
-                        'name' => $label->name,
-                        'color' => $label->color->rgb
-                    ];
-                }),
-                'checklists' => $task->checklists->map(function ($checklist) {
-                    return [
-                        'id' => $checklist->id,
-                        'title' => $checklist->title,
-                        'is_done' => $checklist->is_done,
-                        'position' => $checklist->position
-                    ];
-                }),
-                'progress_percentage' => $task->getProgressPercentage(),
-                'is_overdue' => $task->isOverdue()
-            ];
-        });
-
-        return response()->json([
-            'success' => true,
-            'tasks' => $tasks,
-            'user_role' => $userRole
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Error getting kanban tasks: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil data tugas untuk kanban'
-        ], 500);
     }
-}
 
 
 
-// ✅ NEW: Get task detail untuk modal
+    // ✅ NEW: Get task detail untuk modal
+    // ✅ NEW: Get task detail untuk modal dengan semua relasi lengkap
+    // ✅ PERBAIKI: Get task detail untuk modal
 public function getTaskDetail($taskId)
 {
     try {
+        // Validasi UUID
+        if (!Str::isUuid($taskId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ID tugas tidak valid'
+            ], 400);
+        }
+
         $task = Task::with([
             'assignments.user',
             'labels.color', 
-            'checklists',
+            'checklists' => function($query) {
+                $query->orderBy('position');
+            },
             'attachments',
             'boardColumn',
-            'creator',
-            'comments.user'
-        ])->findOrFail($taskId);
+            'creator'
+        ])->find($taskId);
+
+        if (!$task) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tugas tidak ditemukan'
+            ], 404);
+        }
 
         $user = Auth::user();
 
         // Validasi akses
-        if (!$task->userHasAccess($user)) {
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Anda tidak memiliki akses ke task ini'
             ], 403);
         }
 
+        // Format response
+        $taskData = [
+            'id' => $task->id,
+            'title' => $task->title,
+            'phase' => $task->phase,
+            'description' => $task->description,
+            'is_secret' => $task->is_secret,
+            'status' => $task->status,
+            'priority' => $task->priority,
+            'start_datetime' => $task->start_datetime,
+            'due_datetime' => $task->due_datetime,
+            'created_at' => $task->created_at,
+            'updated_at' => $task->updated_at,
+            'board_column' => $task->boardColumn ? [
+                'id' => $task->boardColumn->id,
+                'name' => $task->boardColumn->name
+            ] : null,
+            'creator' => $task->creator ? [
+                'id' => $task->creator->id,
+                'name' => $task->creator->full_name,
+                'email' => $task->creator->email
+            ] : null,
+            'assigned_members' => $task->assignments->map(function($assignment) {
+                return [
+                    'id' => $assignment->user->id,
+                    'name' => $assignment->user->full_name,
+                    'email' => $assignment->user->email,
+                    'avatar' => $assignment->user->avatar ?: 'https://i.pravatar.cc/32?img=' . rand(1, 70)
+                ];
+            })->toArray(),
+            'labels' => $task->labels->map(function($label) {
+                return [
+                    'id' => $label->id,
+                    'name' => $label->name,
+                    'color' => $label->color->rgb
+                ];
+            })->toArray(),
+            'checklists' => $task->checklists->map(function($checklist) {
+                return [
+                    'id' => $checklist->id,
+                    'title' => $checklist->title,
+                    'is_done' => (bool)$checklist->is_done,
+                    'position' => $checklist->position
+                ];
+            })->toArray(),
+            'attachments' => $task->attachments->map(function($attachment) {
+                return [
+                    'id' => $attachment->id,
+                    'name' => $attachment->file_name,
+                    'url' => Storage::disk('public')->exists($attachment->file_url) 
+                        ? Storage::disk('public')->url($attachment->file_url)
+                        : null,
+                    'type' => $this->getFileType($attachment->file_url),
+                    'uploaded_by' => $attachment->uploader ? [
+                        'name' => $attachment->uploader->full_name
+                    ] : null,
+                    'uploaded_at' => $attachment->uploaded_at
+                ];
+            })->toArray(),
+            'progress_percentage' => $this->calculateTaskProgress($task),
+            'is_overdue' => $task->due_datetime && $task->due_datetime->lt(now()) && !in_array($task->status, ['done', 'cancel'])
+        ];
+
         return response()->json([
             'success' => true,
-            'task' => $task->toApiResponse() // Gunakan method yang sudah ada di model
+            'task' => $taskData
         ]);
 
     } catch (\Exception $e) {
         Log::error('Error getting task detail: ' . $e->getMessage());
         return response()->json([
             'success' => false,
-            'message' => 'Gagal mengambil detail tugas'
+            'message' => 'Gagal mengambil detail tugas: ' . $e->getMessage()
         ], 500);
     }
 }
 
+    // ✅ NEW: Update task detail
+    public function updateTaskDetail(Request $request, $taskId)
+    {
+        try {
+            $task = Task::findOrFail($taskId);
+            $user = Auth::user();
 
+            // Validasi akses
+            if (!$this->canAccessWorkspace($task->workspace_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
 
+            $validator = Validator::make($request->all(), [
+                'title' => 'sometimes|string|max:255',
+                'phase' => 'sometimes|string|max:255',
+                'description' => 'nullable|string',
+                'is_secret' => 'boolean',
+                'start_datetime' => 'nullable|date',
+                'due_datetime' => 'nullable|date|after:start_datetime',
+                'board_column_id' => 'sometimes|exists:board_columns,id',
+                'user_ids' => 'array',
+                'user_ids.*' => 'exists:users,id',
+                'label_ids' => 'array',
+                'label_ids.*' => 'exists:labels,id'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            // Update task data
+            $taskData = $request->only([
+                'title',
+                'phase',
+                'description',
+                'is_secret',
+                'start_datetime',
+                'due_datetime',
+                'board_column_id'
+            ]);
+
+            $task->update($taskData);
+
+            // Update assignments jika ada
+            if ($request->has('user_ids')) {
+                $task->assignments()->delete();
+                foreach ($request->user_ids as $userId) {
+                    TaskAssignment::create([
+                        'id' => Str::uuid()->toString(),
+                        'task_id' => $task->id,
+                        'user_id' => $userId,
+                        'assigned_at' => now()
+                    ]);
+                }
+            }
+
+            // Update labels jika ada
+            if ($request->has('label_ids')) {
+                $task->labels()->sync($request->label_ids);
+            }
+
+            DB::commit();
+
+            // Reload task dengan relasi
+            $task->load(['assignments.user', 'labels.color', 'checklists', 'attachments']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tugas berhasil diperbarui',
+                'task' => $task
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating task detail: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui tugas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Helper method untuk menghitung progress
+    private function calculateTaskProgress($task)
+    {
+        if ($task->checklists->count() === 0) {
+            return 0;
+        }
+
+        $completed = $task->checklists->where('is_done', true)->count();
+        return round(($completed / $task->checklists->count()) * 100);
+    }
+
+    // Helper method untuk menentukan tipe file
+    private function getFileType($fileUrl)
+    {
+        $extension = pathinfo($fileUrl, PATHINFO_EXTENSION);
+
+        $imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $documentTypes = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'];
+
+        if (in_array(strtolower($extension), $imageTypes)) {
+            return 'image';
+        } elseif (in_array(strtolower($extension), $documentTypes)) {
+            return 'document';
+        } else {
+            return 'other';
+        }
+    }
 }
