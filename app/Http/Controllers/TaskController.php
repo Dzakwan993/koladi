@@ -1332,4 +1332,146 @@ public function manageTaskLabels(Request $request, $taskId)
             abort(404, 'File tidak ditemukan');
         }
     }
+
+
+    // ✅ NEW: Get tasks untuk kanban board dengan relasi lengkap
+public function getKanbanTasks($workspaceId)
+{
+    try {
+        $user = Auth::user();
+
+        // ✅ VALIDASI: Gunakan method helper untuk cek akses
+        if (!$this->canAccessWorkspace($workspaceId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke workspace ini'
+            ], 403);
+        }
+
+        // Ambil semua tugas di workspace dengan relasi lengkap
+        $query = Task::with([
+            'assignments.user', 
+            'labels.color', 
+            'checklists', 
+            'boardColumn',
+            'creator'
+        ])
+        ->where('workspace_id', $workspaceId);
+
+        // Filter hak akses untuk tugas rahasia
+        $userCompany = $user->userCompanies()
+            ->where('company_id', session('active_company_id'))
+            ->with('role')
+            ->first();
+
+        $userRole = $userCompany?->role?->name ?? 'Member';
+
+        if (!in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin'])) {
+            $query->where(function ($q) use ($user) {
+                $q->where('is_secret', false)
+                    ->orWhere('created_by', $user->id)
+                    ->orWhereHas('assignments', function ($assignmentQuery) use ($user) {
+                        $assignmentQuery->where('user_id', $user->id);
+                    });
+            });
+        }
+
+        $tasks = $query->get()->map(function ($task) {
+            return [
+                'id' => $task->id,
+                'title' => $task->title,
+                'description' => $task->description,
+                'status' => $task->status,
+                'board_column_id' => $task->board_column_id,
+                'priority' => $task->priority,
+                'is_secret' => $task->is_secret,
+                'phase' => $task->phase,
+                'start_datetime' => $task->start_datetime?->toISOString(),
+                'due_datetime' => $task->due_datetime?->toISOString(),
+                'created_at' => $task->created_at->toISOString(),
+                'updated_at' => $task->updated_at->toISOString(),
+                'assignees' => $task->assignments->map(function ($assignment) {
+                    return [
+                        'id' => $assignment->user->id,
+                        'name' => $assignment->user->full_name,
+                        'email' => $assignment->user->email,
+                        'avatar' => $assignment->user->avatar ?: 'https://i.pravatar.cc/32?img=' . rand(1, 70)
+                    ];
+                }),
+                'labels' => $task->labels->map(function ($label) {
+                    return [
+                        'id' => $label->id,
+                        'name' => $label->name,
+                        'color' => $label->color->rgb
+                    ];
+                }),
+                'checklists' => $task->checklists->map(function ($checklist) {
+                    return [
+                        'id' => $checklist->id,
+                        'title' => $checklist->title,
+                        'is_done' => $checklist->is_done,
+                        'position' => $checklist->position
+                    ];
+                }),
+                'progress_percentage' => $task->getProgressPercentage(),
+                'is_overdue' => $task->isOverdue()
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'tasks' => $tasks,
+            'user_role' => $userRole
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error getting kanban tasks: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil data tugas untuk kanban'
+        ], 500);
+    }
+}
+
+
+
+// ✅ NEW: Get task detail untuk modal
+public function getTaskDetail($taskId)
+{
+    try {
+        $task = Task::with([
+            'assignments.user',
+            'labels.color', 
+            'checklists',
+            'attachments',
+            'boardColumn',
+            'creator',
+            'comments.user'
+        ])->findOrFail($taskId);
+
+        $user = Auth::user();
+
+        // Validasi akses
+        if (!$task->userHasAccess($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
+        }
+
+        return response()->json([
+            'success' => true,
+            'task' => $task->toApiResponse() // Gunakan method yang sudah ada di model
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error getting task detail: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil detail tugas'
+        ], 500);
+    }
+}
+
+
+
 }
