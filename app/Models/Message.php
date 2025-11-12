@@ -19,21 +19,20 @@ class Message extends Model
         'sender_id',
         'content',
         'message_type',
-        'reply_to_message_id',
+        'reply_to_message_id', // 🔥 TAMBAHKAN INI
         'is_edited',
         'is_read',
         'edited_at',
         'read_at',
-        'deleted_at'  // ✅ Ini aman karena ada di fillable
+        'deleted_at'
     ];
 
-    // 🔥 PENTING: Tambahkan cast untuk semua datetime fields
     protected $casts = [
         'is_edited' => 'boolean',
         'is_read' => 'boolean',
         'edited_at' => 'datetime',
         'read_at' => 'datetime',
-        'deleted_at' => 'datetime',  // 🔥 INI YANG KURANG!
+        'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -55,14 +54,34 @@ class Message extends Model
         return $this->belongsTo(User::class, 'sender_id');
     }
 
+    // ✅ Relasi untuk reply message
     public function replyTo()
     {
-        return $this->belongsTo(Message::class, 'reply_to_message_id');
+        return $this->belongsTo(Message::class, 'reply_to_message_id')
+            ->with('sender'); // Auto load sender
     }
 
-    // 🔥 RELASI KE ATTACHMENTS (Polymorphic)
+    // ✅ Relasi untuk messages yang reply ke message ini
+    public function replies()
+    {
+        return $this->hasMany(Message::class, 'reply_to_message_id');
+    }
+
     public function attachments()
     {
         return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    // 🆕 Method untuk cek apakah pesan bisa diedit
+    public function canBeEdited()
+    {
+        // Tidak bisa edit pesan yang sudah dihapus
+        if ($this->deleted_at !== null) {
+            return false;
+        }
+
+        // Hanya bisa edit dalam 15 menit
+        $fifteenMinutesAgo = now()->subMinutes(15);
+        return $this->created_at >= $fifteenMinutesAgo;
     }
 }

@@ -7,6 +7,54 @@
         @vite('resources/js/chat.js')
     @endpush
 
+    <style>
+        /* Custom Scrollbar (dari kode Anda, sudah bagus) */
+        #chatContainer::-webkit-scrollbar,
+        .chat-list-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chatContainer::-webkit-scrollbar-track,
+        .chat-list-scroll::-webkit-scrollbar-track {
+            background: #F0F2F5;
+            /* Ubah warna track scrollbar agar sesuai background chat */
+        }
+
+        #chatContainer::-webkit-scrollbar-thumb,
+        .chat-list-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        #chatContainer::-webkit-scrollbar-thumb:hover,
+        .chat-list-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .chat-list-scroll {
+            scrollbar-gutter: stable;
+        }
+
+        /* 🔥 FIX LAYOUT SHIFT - SweetAlert Modal */
+        .swal2-container {
+            backdrop-filter: blur(2px);
+            background: rgba(0, 0, 0, 0.4) !important;
+            z-index: 10000 !important;
+        }
+
+        .swal2-popup {
+            border-radius: 12px !important;
+        }
+
+        html {
+            overflow-y: scroll;
+        }
+
+        body.swal2-shown {
+            overflow: hidden !important;
+        }
+    </style>
+
     {{-- Menjadi seperti ini (tambahkan id dan data- attributes) --}}
     <div id="chat-page-container"class="h-full bg-[#E9EFFD] flex flex-col" data-workspace-id="{{ $workspace->id }}"
         data-auth-user-id="{{ Auth::id() }}" data-api-url="{{ url('/') }}" data-csrf-token="{{ csrf_token() }}">
@@ -50,6 +98,23 @@
                         {{-- Preview File yang Dipilih --}}
                         <div id="filePreviewContainer" class="mb-3" style="display: none;">
                             <div id="filePreviewList" class="flex flex-wrap gap-2"></div>
+                        </div>
+
+                        <div id="replyPreviewContainer" class="mb-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-3"
+                            style="display: none;">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <p id="replySenderName" class="text-xs font-semibold text-blue-700"></p>
+                                    <p id="replyContent" class="text-xs text-blue-600 truncate"></p>
+                                </div>
+                                <button type="button" onclick="cancelReply()"
+                                    class="text-blue-500 hover:text-blue-700 ml-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
 
                         <form id="sendMessageForm" class="flex items-center bg-[#E9EFFD] rounded-full px-5 py-3">
@@ -128,51 +193,4 @@
         </div>
     </div>
 
-    <style>
-        /* Custom Scrollbar (dari kode Anda, sudah bagus) */
-        #chatContainer::-webkit-scrollbar,
-        .chat-list-scroll::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        #chatContainer::-webkit-scrollbar-track,
-        .chat-list-scroll::-webkit-scrollbar-track {
-            background: #F0F2F5;
-            /* Ubah warna track scrollbar agar sesuai background chat */
-        }
-
-        #chatContainer::-webkit-scrollbar-thumb,
-        .chat-list-scroll::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
-        }
-
-        #chatContainer::-webkit-scrollbar-thumb:hover,
-        .chat-list-scroll::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-
-        .chat-list-scroll {
-            scrollbar-gutter: stable;
-        }
-
-        /* 🔥 FIX LAYOUT SHIFT - SweetAlert Modal */
-        .swal2-container {
-            backdrop-filter: blur(2px);
-            background: rgba(0, 0, 0, 0.4) !important;
-            z-index: 10000 !important;
-        }
-
-        .swal2-popup {
-            border-radius: 12px !important;
-        }
-
-        html {
-            overflow-y: scroll;
-        }
-
-        body.swal2-shown {
-            overflow: hidden !important;
-        }
-    </style>
 @endsection

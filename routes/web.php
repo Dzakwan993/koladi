@@ -99,7 +99,6 @@ Route::middleware(['auth'])->group(function () {
     })->name('chat');
 
     // LANGKAH 2: Grup semua rute API chat Anda di bawah prefix '/api'
-    // Ini akan cocok dengan panggilan 'fetch' di chat.js
     Route::prefix('api')->name('api.')->group(function () {
 
         // Rute untuk mengambil daftar chat & anggota (JSON)
@@ -113,7 +112,11 @@ Route::middleware(['auth'])->group(function () {
 
         // Rute untuk membuat percakapan baru (POST)
         Route::post('/chat/create', [ChatController::class, 'createConversation'])->name('chat.create');
-        // routes/api.php
+
+        // Edit message
+        Route::put('/chat/message/{message}', [ChatController::class, 'editMessage'])
+            ->middleware('auth');
+
         // PASTIKAN ada route DELETE
         Route::delete('/chat/message/{message}', [ChatController::class, 'deleteMessage']);
 
@@ -125,7 +128,6 @@ Route::middleware(['auth'])->group(function () {
             $query->select('id', 'full_name', 'avatar'); // 🔥 INCLUDE AVATAR
         }])->get();
     });
-    // 🔥🔥🔥 --- PERBAIKAN CHAT SELESAI --- 🔥🔥🔥
 
     // Halaman Jadwal
     Route::get('/jadwal', function () {

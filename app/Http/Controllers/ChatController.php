@@ -7,13 +7,14 @@ use App\Models\Workspace;
 use App\Models\Attachment;
 use App\Models\Conversation;
 use Illuminate\Http\Request;
+use App\Events\MessageEdited;
 use App\Events\MessageDeleted;
+use App\Events\NewMessageSent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ConversationParticipant;
 use Illuminate\Support\Facades\Storage;
-use App\Events\NewMessageSent;
 
 class ChatController extends Controller
 {
@@ -79,6 +80,9 @@ class ChatController extends Controller
         ]);
     }
 
+    /**
+     * Load messages dengan relasi replyTo
+     */
     public function showMessages(string $conversationId)
     {
         $userId = Auth::id();
@@ -91,7 +95,8 @@ class ChatController extends Controller
             return response()->json(['error' => 'Akses ditolak'], 403);
         }
 
-        $messages = Message::with(['sender', 'attachments'])
+        // 🆕 Tambahkan 'replyTo.sender' ke eager loading
+        $messages = Message::with(['sender', 'attachments', 'replyTo.sender'])
             ->where('conversation_id', $conversationId)
             ->orderBy('created_at', 'asc')
             ->get();
@@ -115,12 +120,60 @@ class ChatController extends Controller
         return response()->json($messages);
     }
 
+    /**
+     * 🆕 Edit message - PERBAIKAN VERSION
+     */
+    public function editMessage(Request $request, Message $message)
+    {
+        $userId = Auth::id();
+
+        if ($message->sender_id !== $userId) {
+            return response()->json(['error' => 'Anda tidak berhak mengedit pesan ini'], 403);
+        }
+
+        if (!$message->canBeEdited()) {
+            return response()->json(['error' => 'Pesan tidak dapat diedit (sudah dihapus atau waktu edit habis)'], 400);
+        }
+
+        $request->validate([
+            'content' => 'required|string|max:5000',
+        ]);
+
+        try {
+            // 🔥 PERBAIKAN: Gunakan proper property assignment
+            $message->content = $request->content;
+            $message->is_edited = true;
+            $message->edited_at = now();
+            $message->save();
+
+            $message->load(['sender', 'attachments', 'replyTo.sender']);
+
+            // Broadcast event edit
+            event(new MessageEdited($message)); // 🆕 Gunakan event yang benar
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error editing message: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Gagal mengedit pesan',
+            ], 500);
+        }
+    }
+
+    /**
+     * Send message dengan support reply - PERBAIKAN VERSION
+     */
     public function store(Request $request)
     {
         $request->validate([
             'conversation_id' => 'required|uuid|exists:conversations,id',
             'content' => 'nullable|string',
             'files.*' => 'nullable|file|max:10240',
+            'reply_to_message_id' => 'nullable|uuid|exists:messages,id', // 🆕
         ]);
 
         $userId = Auth::id();
@@ -136,18 +189,18 @@ class ChatController extends Controller
         DB::beginTransaction();
 
         try {
-            // 🔥 PERBAIKAN: Tentukan message_type dengan benar
             $messageType = 'text';
-            if ($request->hasFile('files')) {
-                $messageType = 'file'; // Pastikan 'file' bukan 'deleted'
+            if ($request->hasFile('files')) { // 🔥 PERBAIKAN: Hapus parameter 'key'
+                $messageType = 'file';
             }
 
-            $message = Message::create([
+            $message = Message::create([ // 🔥 PERBAIKAN: Hapus parameter 'attributes'
                 'conversation_id' => $request->conversation_id,
                 'sender_id'       => $userId,
-                'content'         => $request->input('content') ?? '',
-                'message_type'    => $messageType, // 🔥 INI YANG PERLU DIPERBAIKI
-                'deleted_at'      => null, // 🔥 PASTIKAN null
+                'content'         => $request->input('content') ?? '', // 🔥 PERBAIKAN: Hapus 'key'
+                'message_type'    => $messageType,
+                'reply_to_message_id' => $request->input('reply_to_message_id'), // 🆕
+                'deleted_at'      => null,
             ]);
 
             // Upload files
@@ -169,21 +222,11 @@ class ChatController extends Controller
                 }
             }
 
-            // 🔥 Load relasi dengan benar
-            $message->load(['sender', 'attachments']);
-
-            // 🔥 DEBUG: Log message data
-            Log::info('New message created:', [
-                'id' => $message->id,
-                'type' => $message->message_type,
-                'content' => $message->content,
-                'deleted_at' => $message->deleted_at,
-                'attachments_count' => $message->attachments->count()
-            ]);
+            // 🆕 Load relasi dengan replyTo
+            $message->load(['sender', 'attachments', 'replyTo.sender']);
 
             DB::commit();
 
-            // Broadcast event
             event(new NewMessageSent($message));
 
             return response()->json([

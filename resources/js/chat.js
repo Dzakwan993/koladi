@@ -8,6 +8,8 @@ window.allConversations = [];
 
 let selectedFiles = [];
 let isSending = false;
+let currentReplyToMessage = null;
+let currentEditMessage = null;
 
 // -----------------------------------------------------------------
 // LANGKAH 1.5: Typing Variables (TAMBAHKAN SETELAH VARIABLE GLOBAL)
@@ -53,254 +55,6 @@ function getInitials(name) {
     return (names[0][0] + names[names.length - 1][0]).toUpperCase();
 }
 
-/** 🔥 PERBAIKAN: Fungsi untuk menghapus pesan dengan SweetAlert */
-window.deleteMessage = async function (messageId) {
-    console.log('🗑️ Attempting to delete message:', messageId);
-
-    if (!messageId || messageId.startsWith('temp-')) {
-        console.error('Invalid message ID:', messageId);
-        return;
-    }
-
-    // 🔥 FIX: Prevent layout shift
-    const body = document.body;
-    const scrollY = window.scrollY;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-
-    body.style.overflow = 'hidden';
-    body.style.paddingRight = scrollbarWidth + 'px';
-    body.style.position = 'fixed';
-    body.style.top = `-${scrollY}px`;
-    body.style.width = '100%';
-
-    const { value: willDelete } = await Swal.fire({
-        title: 'Hapus Pesan?',
-        text: "Pesan yang sudah dihapus tidak dapat dikembalikan",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Ya, Hapus!',
-        cancelButtonText: 'Batal',
-        reverseButtons: true,
-        customClass: {
-            container: 'swal-no-shift'
-        }
-    });
-
-    // 🔥 RESTORE: Reset body styles
-    body.style.overflow = '';
-    body.style.paddingRight = '';
-    body.style.position = '';
-    body.style.top = '';
-    body.style.width = '';
-    window.scrollTo(0, scrollY);
-
-    if (!willDelete) {
-        console.log('User cancelled deletion');
-        return;
-    }
-
-    try {
-        console.log('📤 Sending DELETE request...');
-
-        const response = await fetch(`${API_URL}/api/chat/message/${messageId}`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRF-TOKEN': CSRF_TOKEN,
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            credentials: 'include'
-        });
-
-        console.log('📥 Response status:', response.status);
-
-        if (response.status === 404) {
-            throw new Error('Pesan tidak ditemukan (404)');
-        }
-
-        if (response.status === 403) {
-            throw new Error('Anda tidak memiliki akses untuk menghapus pesan ini');
-        }
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Server error:', errorText);
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
-        }
-
-        const result = await response.json();
-        console.log('✅ Delete result:', result);
-
-        if (result.success) {
-            console.log('🎉 Delete successful, updating UI...');
-
-            // Optimistic update
-            const messageElement = document.getElementById(messageId);
-            if (messageElement) {
-                const isOwnMessage = messageElement.classList.contains('justify-end');
-                replaceMessageWithDeletedText(messageId, isOwnMessage);
-                updateSidebarPreviewAfterDelete(currentConversationId);
-            }
-
-            // Success notification
-            await Swal.fire({
-                title: 'Berhasil!',
-                text: 'Pesan berhasil dihapus',
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
-            });
-        } else {
-            throw new Error(result.error || 'Gagal menghapus pesan');
-        }
-
-    } catch (error) {
-        console.error('❌ Delete error:', error);
-
-        await Swal.fire({
-            title: 'Gagal!',
-            text: error.message || 'Terjadi kesalahan saat menghapus pesan',
-            icon: 'error',
-            confirmButtonText: 'OK'
-        });
-    }
-}
-
-function updateSidebarPreviewAfterDelete(conversationId) {
-    const previewElement = document.getElementById(`preview-${conversationId}`);
-    if (!previewElement) return;
-
-    // Cari pesan terakhir yang belum dihapus dari DOM
-    const messageElements = Array.from(document.querySelectorAll('#messageList > [id^="message-"]'));
-    const nonDeletedMessages = messageElements.filter(el => {
-        return !el.querySelector('.bg-gray-300.text-gray-600.italic'); // Bukan pesan yang sudah dihapus
-    });
-
-    console.log('🔄 Updating sidebar preview:', {
-        conversationId,
-        totalMessages: messageElements.length,
-        nonDeletedMessages: nonDeletedMessages.length
-    });
-
-    if (nonDeletedMessages.length > 0) {
-        const lastMessageElement = nonDeletedMessages[nonDeletedMessages.length - 1];
-        const lastMessageText = lastMessageElement.querySelector('p.text-sm')?.textContent || '';
-
-        // 🔥 PERBAIKAN: Handle pesan yang dihapus
-        const isDeletedMessage = lastMessageElement.classList.contains('deleted-message') ||
-            lastMessageElement.querySelector('.bg-gray-300.text-gray-600.italic');
-
-        if (isDeletedMessage) {
-            // Cek apakah pesan dihapus oleh pengirim atau orang lain
-            const isOwnMessage = lastMessageElement.classList.contains('justify-end');
-            if (isOwnMessage) {
-                previewElement.textContent = 'Kamu telah menghapus pesan ini';
-            } else {
-                const senderName = lastMessageElement.querySelector('.font-semibold.text-gray-700')?.textContent || 'User';
-                previewElement.textContent = `${senderName}: Pesan telah dihapus`;
-            }
-        }
-        else if (lastMessageText.includes('Mengirim')) {
-            previewElement.textContent = lastMessageText;
-        } else {
-            // Ambil info pengirim dan konten
-            const isOwnMessage = lastMessageElement.classList.contains('justify-end');
-            const senderName = isOwnMessage ? 'Anda' :
-                lastMessageElement.querySelector('.font-semibold.text-gray-700')?.textContent || 'User';
-
-            const content = lastMessageText || 'Mengirim file';
-            previewElement.textContent = isOwnMessage ? `Anda: ${content}` : `${senderName}: ${content}`;
-        }
-    } else {
-        // Tidak ada pesan yang tersisa
-        previewElement.textContent = 'Belum ada pesan';
-    }
-}
-
-function replaceMessageWithDeletedText(messageId, isOwnMessage = true) {
-    const messageElement = document.getElementById(messageId);
-    if (!messageElement) {
-        console.warn(`Element dengan ID ${messageId} tidak ditemukan`);
-        return;
-    }
-
-    const deletedText = isOwnMessage ? 'Kamu telah menghapus pesan ini' : 'Pesan ini telah dihapus';
-    const timeElement = messageElement.querySelector('.text-xs.text-gray-500');
-    const time = timeElement ? timeElement.textContent : '';
-
-    let senderName = 'User';
-    if (!isOwnMessage) {
-        const nameElement = messageElement.querySelector('.font-semibold.text-gray-700');
-        if (nameElement) {
-            senderName = nameElement.textContent;
-        }
-    }
-
-    const initials = getInitials(isOwnMessage ? 'Anda' : senderName);
-
-    const replacementHTML = isOwnMessage ? `
-        <div id="${messageId}" class="flex items-start justify-end deleted-message">
-            <div class="flex flex-col items-end max-w-[70%]">
-                <div class="flex items-center justify-end gap-2 mb-1">
-                    <span class="text-xs text-gray-500">${time}</span>
-                    <span class="font-semibold text-gray-700 text-sm">Anda</span>
-                </div>
-                <div class="bg-gray-300 text-gray-600 rounded-2xl rounded-br-md px-4 py-3 shadow-sm italic">
-                    <p class="text-sm">${deletedText}</p>
-                </div>
-            </div>
-            <div class="flex-shrink-0 ml-3">
-                <div class="w-8 h-8 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center font-bold text-xs">
-                    ${initials}
-                </div>
-            </div>
-        </div>
-    ` : `
-        <div id="${messageId}" class="flex items-start justify-start deleted-message">
-            <div class="flex-shrink-0 mr-3">
-                <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-800 flex items-center justify-center font-bold text-xs">
-                    ${initials}
-                </div>
-            </div>
-            <div class="flex flex-col items-start max-w-[70%]">
-                <div class="flex items-center gap-2 mb-1">
-                    <span class="font-semibold text-gray-700 text-sm">${senderName}</span>
-                    <span class="text-xs text-gray-500">${time}</span>
-                </div>
-                <div class="bg-gray-300 text-gray-600 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm italic">
-                    <p class="text-sm">${deletedText}</p>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Smooth transition
-    messageElement.style.transition = 'all 0.3s ease';
-    messageElement.style.opacity = '0';
-    messageElement.style.transform = 'scale(0.9)';
-
-    setTimeout(() => {
-        messageElement.outerHTML = replacementHTML;
-        const newElement = document.getElementById(messageId);
-        if (newElement) {
-            newElement.style.opacity = '0';
-            newElement.style.transform = 'scale(0.9)';
-            setTimeout(() => {
-                newElement.style.transition = 'all 0.3s ease';
-                newElement.style.opacity = '1';
-                newElement.style.transform = 'scale(1)';
-
-                // 🔥 PERBAIKAN: Update sidebar setelah animasi selesai
-                setTimeout(() => {
-                    updateSidebarPreviewAfterDelete(currentConversationId);
-                }, 350);
-            }, 50);
-        }
-    }, 300);
-}
-
 function formatTime(dateTimeString) {
     if (!dateTimeString) return '';
     const date = new Date(dateTimeString);
@@ -332,6 +86,151 @@ function getAvatarUrl(user) {
     }
     return null;
 }
+
+function fixFileUrl(fileUrl) {
+    if (!fileUrl) return '';
+    if (fileUrl.includes('http://localhost/storage/')) {
+        return fileUrl.replace('http://localhost/storage/', 'http://127.0.0.1:8000/storage/');
+    }
+    if (fileUrl.startsWith('chat_files/')) {
+        return `${API_URL}/storage/${fileUrl}`;
+    }
+    if (fileUrl.startsWith('/storage/')) {
+        return `${API_URL}${fileUrl}`;
+    }
+    return fileUrl;
+}
+
+function formatFileSize(bytes) {
+    if (bytes >= 1073741824) {
+        return (bytes / 1073741824).toFixed(2) + ' GB';
+    } else if (bytes >= 1048576) {
+        return (bytes / 1048576).toFixed(2) + ' MB';
+    } else if (bytes >= 1024) {
+        return (bytes / 1024).toFixed(2) + ' KB';
+    }
+    return bytes + ' B';
+}
+
+function getFileIcon(fileType) {
+    if (fileType.startsWith('image/')) {
+        return `<svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>`;
+    } else if (fileType.startsWith('video/')) {
+        return `<svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>`;
+    } else if (fileType === 'application/pdf') {
+        return `<svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+            </svg>`;
+    } else {
+        return `<svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>`;
+    }
+}
+
+
+function getReadStatusHTML(message) {
+    const isRead = message.is_read;
+    if (isRead) {
+        return `
+                <div class="flex items-center">
+                    <svg class="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <svg class="w-3.5 h-3.5 text-blue-500 -ml-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+            `;
+    } else {
+        return `
+                <div class="flex items-center">
+                    <svg class="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <svg class="w-3.5 h-3.5 text-gray-400 -ml-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+            `;
+    }
+}
+
+function createDateSeparatorHTML(dateLabel) {
+    return `
+    <div class="flex justify-center items-center my-4">
+        <span class="bg-white border border-gray-200 rounded-full px-4 py-1 text-xs text-gray-500 shadow-sm">
+            ${dateLabel}
+        </span>
+    </div>
+    `;
+}
+
+function detectAndCreateLinks(text) {
+    if (!text) return '';
+
+    // Regex untuk mendeteksi berbagai jenis URL
+    const urlRegex = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/g;
+
+    return text.replace(urlRegex, function (url) {
+        // Bersihkan URL dari karakter punctuation di akhir
+        let cleanUrl = url;
+        const punctuation = ['.', ',', '!', '?', ';', ':', ')', ']', '}'];
+
+        while (punctuation.includes(cleanUrl.slice(-1))) {
+            cleanUrl = cleanUrl.slice(0, -1);
+        }
+
+        // Coba buat URL object untuk validasi
+        try {
+            const urlObj = new URL(cleanUrl);
+            let displayText = urlObj.hostname.replace('www.', '');
+
+            // Tambahkan path jika tidak terlalu panjang
+            if (urlObj.pathname !== '/' && displayText.length + urlObj.pathname.length < 30) {
+                displayText += urlObj.pathname;
+            }
+
+            return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer"
+                        class="text-blue-500 hover:text-blue-600 hover:underline break-words"
+                        title="${cleanUrl}">${displayText}</a>`;
+
+        } catch (e) {
+            // Jika URL tidak valid, return teks asli
+            return url;
+        }
+    });
+}
+
+function updateSendButton() {
+    const hasText = messageInput.value.trim().length > 0;
+    const hasFiles = selectedFiles.length > 0;
+    sendButton.style.display = (hasText || hasFiles) ? 'flex' : 'none';
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function scrollToBottom() {
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+// -----------------------------------------------------------------
+// LANGKAH 3.5: Fungsi Helper RENDER HTML
+// -----------------------------------------------------------------
 
 function createConversationHTML(conversation) {
     let chatName = conversation.name;
@@ -439,26 +338,25 @@ function createConversationHTML(conversation) {
     const unreadCount = conversation.unread_count || 0;
 
     return `
-<div class="px-6 py-3 hover:bg-gray-50 cursor-pointer ${currentConversationId === conversation.id ? 'bg-[#E9EFFD] text-blue-600 font-semibold' : 'text-gray-800'}"
-   data-conversation-id="${conversation.id}"
-   onclick="selectConversation('${conversation.id}')">
-   <div class="flex items-center">
-     <div class="relative flex-shrink-0">
-       ${avatarHTML}
-     </div>
-     <div class="ml-3 flex-1 min-w-0">
-       <h4 class="text-sm truncate">${chatName}</h4>
-       <p id="preview-${conversation.id}" class="text-xs text-gray-500 truncate">${lastMessageText}</p>
-     </div>
-     <div id="unread-badge-${conversation.id}" class="ml-2 flex-shrink-0" style="${unreadCount > 0 ? 'display: block;' : 'display: none;'}">
-         <div class="min-w-[18px] h-[18px] rounded-full bg-blue-500 flex items-center justify-center">
-           <span id="unread-count-${conversation.id}" class="text-[10px] font-semibold text-white px-1">${unreadCount}</span>
-           </div>
-     </div>
-   </div>
-</div>`;
+    <div class="px-6 py-3 hover:bg-gray-50 cursor-pointer ${currentConversationId === conversation.id ? 'bg-[#E9EFFD] text-blue-600 font-semibold' : 'text-gray-800'}"
+    data-conversation-id="${conversation.id}"
+    onclick="selectConversation('${conversation.id}')">
+    <div class="flex items-center">
+        <div class="relative flex-shrink-0">
+        ${avatarHTML}
+        </div>
+        <div class="ml-3 flex-1 min-w-0">
+        <h4 class="text-sm truncate">${chatName}</h4>
+        <p id="preview-${conversation.id}" class="text-xs text-gray-500 truncate">${lastMessageText}</p>
+        </div>
+        <div id="unread-badge-${conversation.id}" class="ml-2 flex-shrink-0" style="${unreadCount > 0 ? 'display: block;' : 'display: none;'}">
+            <div class="min-w-[18px] h-[18px] rounded-full bg-blue-500 flex items-center justify-center">
+            <span id="unread-count-${conversation.id}" class="text-[10px] font-semibold text-white px-1">${unreadCount}</span>
+            </div>
+        </div>
+    </div>
+    </div>`;
 }
-
 
 function createMemberHTML(member) {
     const initials = getInitials(member.full_name);
@@ -476,59 +374,18 @@ function createMemberHTML(member) {
         : `<div class="w-10 h-10 rounded-full bg-gray-200 text-gray-800 flex items-center justify-center font-bold text-sm">${initials}</div>`;
 
     return `
-<div class="px-6 py-3 hover:bg-gray-50 cursor-pointer text-gray-800"
-     onclick="startChatWithUser('${member.id}', '${member.full_name}')">
-   <div class="flex items-center">
-     <div class="relative flex-shrink-0">
-       ${avatarHTML}
-     </div>
-     <div class="ml-3 flex-1 min-w-0">
-       <h4 class="text-sm font-semibold truncate">${member.full_name}</h4>
-       <p class="text-xs text-gray-500 truncate">Mulai percakapan</p>
-     </div>
-   </div>
-</div>`;
-}
-
-function getReadStatusHTML(message) {
-    const isRead = message.is_read;
-    if (isRead) {
-        return `
-            <div class="flex items-center">
-                <svg class="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                <svg class="w-3.5 h-3.5 text-blue-500 -ml-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-            </div>
-        `;
-    } else {
-        return `
-            <div class="flex items-center">
-                <svg class="w-3.5 h-3.5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                <svg class="w-3.5 h-3.5 text-gray-400 -ml-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-            </div>
-        `;
-    }
-}
-
-function fixFileUrl(fileUrl) {
-    if (!fileUrl) return '';
-    if (fileUrl.includes('http://localhost/storage/')) {
-        return fileUrl.replace('http://localhost/storage/', 'http://127.0.0.1:8000/storage/');
-    }
-    if (fileUrl.startsWith('chat_files/')) {
-        return `${API_URL}/storage/${fileUrl}`;
-    }
-    if (fileUrl.startsWith('/storage/')) {
-        return `${API_URL}${fileUrl}`;
-    }
-    return fileUrl;
+    <div class="px-6 py-3 hover:bg-gray-50 cursor-pointer text-gray-800"
+        onclick="startChatWithUser('${member.id}', '${member.full_name}')">
+    <div class="flex items-center">
+        <div class="relative flex-shrink-0">
+        ${avatarHTML}
+        </div>
+        <div class="ml-3 flex-1 min-w-0">
+        <h4 class="text-sm font-semibold truncate">${member.full_name}</h4>
+        <p class="text-xs text-gray-500 truncate">Mulai percakapan</p>
+        </div>
+    </div>
+    </div>`;
 }
 
 function createMessageHTML(message) {
@@ -536,24 +393,20 @@ function createMessageHTML(message) {
     const senderName = isSender ? 'Anda' : (message.sender ? message.sender.full_name : 'User');
     const initials = getInitials(senderName);
 
-    // 🔥 PERBAIKAN: Ambil avatar sender
+    // Avatar
     const senderAvatar = message.sender ? getAvatarUrl(message.sender) : null;
-
-    // Avatar HTML - pakai image jika ada
     const avatarHTML = senderAvatar
-        ? `<img src="${senderAvatar}" alt="${senderName}" class="w-8 h-8 rounded-full object-cover border border-gray-200">`
-        : `<div class="w-8 h-8 rounded-full ${isSender ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-800'} flex items-center justify-center font-bold text-xs">${initials}</div>`;
+        ? `<img src="${senderAvatar}" alt="${senderName}" class="w-8 h-8 rounded-full object-cover border border-gray-200 flex-shrink-0">`
+        : `<div class="w-8 h-8 rounded-full ${isSender ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-800'} flex items-center justify-center font-bold text-xs flex-shrink-0">${initials}</div>`;
 
     const time = formatTime(message.created_at);
+    const editIndicator = message.is_edited ? `<span class="text-xs text-gray-400 ml-2">(diedit)</span>` : '';
 
-    // 🔥 PERBAIKAN: Cek apakah pesan benar-benar dihapus
+    // Cek apakah pesan dihapus
     const isDeleted = message.message_type === 'deleted' ||
         (message.deleted_at !== null && message.deleted_at !== undefined);
 
-    // 🔥 PERBAIKAN: Untuk file message, content bisa kosong tapi bukan deleted
-    const isFileMessage = message.message_type === 'file' ||
-        (message.attachments && message.attachments.length > 0);
-
+    // Attachments
     let attachmentsHTML = '';
     if (message.attachments && message.attachments.length > 0) {
         attachmentsHTML = '<div class="mt-2 space-y-2">';
@@ -566,7 +419,7 @@ function createMessageHTML(message) {
                 attachmentsHTML += `
                     <div class="relative">
                         <img src="${att.preview_url}" alt="${att.file_name}"
-                             class="max-w-xs rounded-xl shadow-md opacity-70">
+                            class="max-w-xs rounded-xl shadow-md opacity-70">
                         <div class="absolute inset-0 bg-black bg-opacity-30 rounded-xl flex items-center justify-center">
                             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
                         </div>
@@ -585,8 +438,8 @@ function createMessageHTML(message) {
                 attachmentsHTML += `
                     <div class="relative group max-w-xs">
                         <img src="${imageUrl}" alt="${att.file_name}"
-                             class="rounded-xl shadow-md cursor-pointer"
-                             onclick="openImageModal('${imageUrl}', '${att.file_name}')">
+                            class="rounded-xl shadow-md cursor-pointer"
+                            onclick="openImageModal('${imageUrl}', '${att.file_name}')">
                         <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button onclick="downloadImage('${imageUrl}', '${att.file_name}')"
                                     class="bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition"
@@ -627,20 +480,149 @@ function createMessageHTML(message) {
         attachmentsHTML += '</div>';
     }
 
-    // 🔥 PERBAIKAN KRUSIAL: Hanya tampilkan sebagai deleted jika benar-benar dihapus
+    // 🔥 PERBAIKAN: Reply preview dengan layout yang benar
+    let replyPreviewHTML = '';
+    if (message.reply_to_message_id && message.replyTo) {
+        const repliedMessage = message.replyTo;
+        const repliedSenderName = repliedMessage.sender_id === AUTH_USER_ID ?
+            'Anda' : (repliedMessage.sender ? repliedMessage.sender.full_name : 'User');
+
+        const isRepliedMessageDeleted = repliedMessage.message_type === 'deleted' ||
+            (repliedMessage.deleted_at !== null && repliedMessage.deleted_at !== undefined);
+
+        let repliedContent = '';
+        let repliedAttachmentIcon = '';
+
+        if (isRepliedMessageDeleted) {
+            repliedContent = repliedMessage.sender_id === AUTH_USER_ID ?
+                'Kamu telah menghapus pesan ini' : 'Pesan ini telah dihapus';
+        } else if (repliedMessage.attachments && repliedMessage.attachments.length > 0) {
+            // Tampilkan info file untuk pesan dengan attachment
+            const fileCount = repliedMessage.attachments.length;
+            const fileType = repliedMessage.attachments[0].file_type;
+
+            if (fileType.startsWith('image/')) {
+                repliedContent = 'Gambar';
+                repliedAttachmentIcon = '🖼️';
+            } else if (fileType.startsWith('video/')) {
+                repliedContent = 'Video';
+                repliedAttachmentIcon = '🎬';
+            } else if (fileType === 'application/pdf') {
+                repliedContent = 'PDF';
+                repliedAttachmentIcon = '📄';
+            } else {
+                repliedContent = `${fileCount} file`;
+                repliedAttachmentIcon = '📎';
+            }
+
+            // Jika ada konten text juga, tambahkan
+            if (repliedMessage.content && repliedMessage.content.trim() !== '') {
+                repliedContent = repliedMessage.content;
+            }
+        } else {
+            repliedContent = repliedMessage.content || 'Pesan kosong';
+        }
+
+        replyPreviewHTML = `
+            <div class="reply-preview mb-2 p-2 border-l-4 border-blue-500 bg-blue-50 rounded-r-lg cursor-pointer hover:bg-blue-100 transition-colors"
+                 onclick="scrollToMessage('${message.reply_to_message_id}')">
+                <div class="flex items-start gap-2">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-semibold text-blue-700 flex items-center gap-1">
+                            <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                            </svg>
+                            ${repliedSenderName}
+                        </p>
+                        <div class="flex items-center gap-1 mt-1">
+                            ${repliedAttachmentIcon ? `<span class="text-xs">${repliedAttachmentIcon}</span>` : ''}
+                            <p class="text-xs text-blue-600 truncate">${repliedContent}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Action buttons
+    let actionButtonsHTML = '';
+    if (!isDeleted) {
+        if (isSender) {
+            actionButtonsHTML = `
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button class="edit-message-btn text-gray-400 hover:text-blue-500 p-1 rounded"
+                            title="Edit pesan"
+                            onclick="startEditMessage('${message.id}')">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                    </button>
+                    <button class="reply-message-btn text-gray-400 hover:text-green-500 p-1 rounded"
+                            title="Balas pesan"
+                            onclick="startReplyMessage('${message.id}')">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                        </svg>
+                    </button>
+                    <button class="delete-message-btn text-gray-400 hover:text-red-500 p-1 rounded"
+                            title="Hapus pesan"
+                            onclick="deleteMessage('${message.id}')">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            `;
+        } else {
+            actionButtonsHTML = `
+                <button class="reply-message-btn opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-green-500 p-1 rounded"
+                        title="Balas pesan"
+                        onclick="startReplyMessage('${message.id}')">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                    </svg>
+                </button>
+            `;
+        }
+    }
+
+    // 🔥 PERBAIKAN UTAMA: Layout bubble yang menyesuaikan konten
+    let contentHTML = '';
+    if (message.content && message.content.trim() !== '') {
+        const processedContent = detectAndCreateLinks(message.content);
+        contentHTML = `<div class="message-content text-sm" style="word-break: break-word;">${processedContent}</div>`;
+    } else if (message.attachments && message.attachments.length > 0) {
+        const fileCount = message.attachments.length;
+        if (fileCount === 1) {
+            const fileType = message.attachments[0].file_type;
+            if (fileType.startsWith('image/')) {
+                contentHTML = `<div class="message-content text-sm italic">📷 Gambar</div>`;
+            } else if (fileType.startsWith('video/')) {
+                contentHTML = `<div class="message-content text-sm italic">🎬 Video</div>`;
+            } else if (fileType === 'application/pdf') {
+                contentHTML = `<div class="message-content text-sm italic">📄 PDF</div>`;
+            } else {
+                contentHTML = `<div class="message-content text-sm italic">📎 File</div>`;
+            }
+        } else {
+            contentHTML = `<div class="message-content text-sm italic">📎 ${fileCount} files</div>`;
+        }
+    }
+
+    // Pesan yang dihapus
     if (isDeleted) {
         const deletedText = isSender ? 'Kamu telah menghapus pesan ini' : 'Pesan ini telah dihapus';
 
         if (isSender) {
             return `
-                <div id="${message.id}" class="flex items-start justify-end">
+                <div id="${message.id}" class="flex items-start justify-end message-new">
                     <div class="flex flex-col items-end max-w-[70%]">
                         <div class="flex items-center justify-end gap-2 mb-1">
                             <span class="text-xs text-gray-500">${time}</span>
                             <span class="font-semibold text-gray-700 text-sm">Anda</span>
                         </div>
-                        <div class="bg-gray-300 text-gray-600 rounded-2xl rounded-br-md px-4 py-3 shadow-sm italic">
-                            <p class="text-sm">${deletedText}</p>
+                        <div class="bg-gray-300 text-gray-600 rounded-2xl rounded-br-md px-4 py-3 shadow-sm italic w-auto min-w-0 max-w-full">
+                            <p class="text-sm" style="word-break: break-word;">${deletedText}</p>
                         </div>
                     </div>
                     <div class="flex-shrink-0 ml-3">
@@ -650,7 +632,7 @@ function createMessageHTML(message) {
             `;
         } else {
             return `
-                <div id="${message.id}" class="flex items-start justify-start">
+                <div id="${message.id}" class="flex items-start justify-start message-new">
                     <div class="flex-shrink-0 mr-3">
                         ${avatarHTML}
                     </div>
@@ -659,8 +641,8 @@ function createMessageHTML(message) {
                             <span class="font-semibold text-gray-700 text-sm">${senderName}</span>
                             <span class="text-xs text-gray-500">${time}</span>
                         </div>
-                        <div class="bg-gray-300 text-gray-600 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm italic">
-                            <p class="text-sm">${deletedText}</p>
+                        <div class="bg-gray-300 text-gray-600 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm italic w-auto min-w-0 max-w-full">
+                            <p class="text-sm" style="word-break: break-word;">${deletedText}</p>
                         </div>
                     </div>
                 </div>
@@ -668,77 +650,21 @@ function createMessageHTML(message) {
         }
     }
 
-    // 🔥 FUNGSI BARU: Deteksi dan ubah URL menjadi link
-    function detectAndCreateLinks(text) {
-        if (!text) return '';
-
-        // Regex untuk mendeteksi URL
-        const urlRegex = /(https?:\/\/[^\s]+)/g;
-
-        return text.replace(urlRegex, function (url) {
-            // Bersihkan URL dari karakter yang tidak diinginkan di akhir
-            let cleanUrl = url;
-            if (url.endsWith('.') || url.endsWith(',') || url.endsWith('!') || url.endsWith('?')) {
-                cleanUrl = url.slice(0, -1);
-            }
-
-            // Tampilkan domain sebagai teks link
-            let displayText = cleanUrl;
-            try {
-                const domain = new URL(cleanUrl).hostname;
-                displayText = domain.replace('www.', '');
-            } catch (e) {
-                // Jika URL tidak valid, tetap gunakan URL asli
-            }
-
-            return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-600 hover:underline break-all">${displayText}</a>`;
-        });
-    }
-
-    // 🔥 PERBAIKAN: Untuk file message tanpa content, tampilkan default text
-    let contentHTML = '';
-    if (message.content && message.content.trim() !== '') {
-        const processedContent = detectAndCreateLinks(message.content);
-        contentHTML = `<p class="text-sm" style="word-break: break-word;">${processedContent}</p>`;
-    } else if (isFileMessage) {
-        // Tampilkan text default untuk file message tanpa content
-        const fileCount = message.attachments ? message.attachments.length : 0;
-        if (fileCount === 1) {
-            const fileType = message.attachments[0].file_type;
-            if (fileType.startsWith('image/')) {
-                contentHTML = `<p class="text-sm italic">📷 Gambar</p>`;
-            } else if (fileType.startsWith('video/')) {
-                contentHTML = `<p class="text-sm italic">🎬 Video</p>`;
-            } else if (fileType === 'application/pdf') {
-                contentHTML = `<p class="text-sm italic">📄 PDF</p>`;
-            } else {
-                contentHTML = `<p class="text-sm italic">📎 File</p>`;
-            }
-        } else {
-            contentHTML = `<p class="text-sm italic">📎 ${fileCount} files</p>`;
-        }
-    }
-
-    // Tampilan normal untuk pesan yang belum dihapus
+    // Pesan normal - BUBBLE MENYESUAIKAN KONTEN
     if (isSender) {
         return `
-            <div id="${message.id}" class="flex items-start justify-end group">
-                <div class="flex flex-col items-end max-w-[70%]">
-                    <div class="flex items-center justify-end gap-2 mb-1">
-                        <button class="delete-message-btn opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-500 p-1 rounded"
-                                title="Hapus pesan"
-                                onclick="deleteMessage('${message.id}')">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                            </svg>
-                        </button>
-                        <span class="text-xs text-gray-500">${time}</span>
+            <div id="${message.id}" class="flex items-start justify-end group message-new">
+                <div class="flex flex-col items-end max-w-[70%] min-w-0">
+                    <div class="flex items-center justify-end gap-2 mb-1 w-full">
+                        ${actionButtonsHTML}
+                        <span class="text-xs text-gray-500 whitespace-nowrap">${time} ${editIndicator}</span>
                         <div class="flex items-center read-status">
                             ${getReadStatusHTML(message)}
                         </div>
-                        <span class="font-semibold text-gray-700 text-sm">Anda</span>
+                        <span class="font-semibold text-gray-700 text-sm whitespace-nowrap">Anda</span>
                     </div>
-                    <div class="bg-blue-100  rounded-2xl rounded-br-md px-4 py-3 shadow-sm">
+                    <div class="bg-blue-100 rounded-2xl rounded-br-md px-4 py-3 shadow-sm w-auto min-w-0 max-w-full">
+                        ${replyPreviewHTML}
                         ${contentHTML}
                         ${attachmentsHTML}
                     </div>
@@ -750,16 +676,18 @@ function createMessageHTML(message) {
         `;
     } else {
         return `
-            <div id="${message.id}" class="flex items-start justify-start">
+            <div id="${message.id}" class="flex items-start justify-start group message-new">
                 <div class="flex-shrink-0 mr-3">
                     ${avatarHTML}
                 </div>
-                <div class="flex flex-col items-start max-w-[70%]">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="font-semibold text-gray-700 text-sm">${senderName}</span>
-                        <span class="text-xs text-gray-500">${time}</span>
+                <div class="flex flex-col items-start max-w-[70%] min-w-0">
+                    <div class="flex items-center gap-2 mb-1 w-full">
+                        <span class="font-semibold text-gray-700 text-sm whitespace-nowrap">${senderName}</span>
+                        <span class="text-xs text-gray-500 whitespace-nowrap">${time} ${editIndicator}</span>
+                        ${actionButtonsHTML}
                     </div>
-                    <div class="bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm">
+                    <div class="bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm w-auto min-w-0 max-w-full">
+                        ${replyPreviewHTML}
                         ${contentHTML}
                         ${attachmentsHTML}
                     </div>
@@ -769,59 +697,253 @@ function createMessageHTML(message) {
     }
 }
 
+// -----------------------------------------------------------------
+// LANGKAH 3.6: Fungsi UPDATE SIDEBAR & MESSAGE HANDLING
+// -----------------------------------------------------------------
+
+function updateSidebarPreviewAfterDelete(conversationId) {
+    const previewElement = document.getElementById(`preview-${conversationId}`);
+    if (!previewElement) {
+        console.log('❌ Preview element not found for conversation:', conversationId);
+        return;
+    }
+
+    // 🔥 PERBAIKAN: Gunakan selector yang lebih tepat untuk mencari pesan
+    const messageElements = Array.from(document.querySelectorAll('#messageList > [id]'));
+    const nonDeletedMessages = messageElements.filter(el => {
+        const id = el.id;
+        // Filter hanya elemen dengan ID message (bukan separator, dll)
+        return id && id.startsWith('message-') && !el.querySelector('.bg-gray-300.text-gray-600.italic');
+    });
+
+    console.log('🔄 Updating sidebar preview:', {
+        conversationId,
+        totalMessages: messageElements.length,
+        nonDeletedMessages: nonDeletedMessages.length,
+        messageElements: messageElements.map(el => el.id) // Debug: lihat ID apa saja yang ditemukan
+    });
+
+    // 🔥 PERBAIKAN: Handle kasus tidak ada pesan sama sekali
+    if (nonDeletedMessages.length === 0) {
+        previewElement.textContent = 'Belum ada pesan';
+        return;
+    }
+
+    const lastMessageElement = nonDeletedMessages[nonDeletedMessages.length - 1];
+
+    // 🔥 PERBAIKAN: Handle berbagai jenis pesan dengan lebih robust
+    let lastMessageText = '';
+
+    // Coba ambil konten dari berbagai elemen yang mungkin
+    const contentElement = lastMessageElement.querySelector('.message-content');
+    if (contentElement) {
+        lastMessageText = contentElement.textContent || '';
+    } else {
+        // Fallback untuk pesan yang dihapus
+        const deletedText = lastMessageElement.querySelector('.bg-gray-300.text-gray-600.italic p');
+        if (deletedText) {
+            lastMessageText = deletedText.textContent || '';
+        } else {
+            // Fallback lainnya
+            const textElements = lastMessageElement.querySelectorAll('p.text-sm');
+            for (let element of textElements) {
+                if (!element.classList.contains('text-gray-500') &&
+                    !element.classList.contains('text-xs')) {
+                    lastMessageText = element.textContent || '';
+                    break;
+                }
+            }
+        }
+    }
+
+    // Handle pesan yang dihapus
+    const isDeletedMessage = lastMessageElement.classList.contains('deleted-message') ||
+        lastMessageElement.querySelector('.bg-gray-300.text-gray-600.italic');
+
+    if (isDeletedMessage) {
+        const isOwnMessage = lastMessageElement.classList.contains('justify-end');
+        if (isOwnMessage) {
+            previewElement.textContent = 'Kamu telah menghapus pesan ini';
+        } else {
+            const senderName = lastMessageElement.querySelector('.font-semibold.text-gray-700')?.textContent || 'User';
+            previewElement.textContent = `${senderName}: Pesan telah dihapus`;
+        }
+    }
+    else if (lastMessageText.includes('Mengirim')) {
+        previewElement.textContent = lastMessageText;
+    } else {
+        // Ambil info pengirim dan konten
+        const isOwnMessage = lastMessageElement.classList.contains('justify-end');
+        const senderName = isOwnMessage ? 'Anda' :
+            lastMessageElement.querySelector('.font-semibold.text-gray-700')?.textContent || 'User';
+
+        const content = lastMessageText || 'Mengirim file';
+        previewElement.textContent = isOwnMessage ? `Anda: ${content}` : `${senderName}: ${content}`;
+    }
+}
+
+function replaceMessageWithDeletedText(messageId, isOwnMessage = true) {
+    console.log('🔄 Replacing message with deleted text:', messageId);
+
+    const messageElement = document.getElementById(messageId);
+    if (!messageElement) {
+        console.warn(`❌ Element dengan ID ${messageId} tidak ditemukan`);
+        return;
+    }
+
+    // 🔥 PERBAIKAN: Cek apakah elemen masih punya parent dan ada di DOM
+    if (!messageElement.parentNode || !document.body.contains(messageElement)) {
+        console.warn(`❌ Element dengan ID ${messageId} tidak ada di DOM`);
+        // Tetap update sidebar
+        updateSidebarPreviewAfterDelete(currentConversationId);
+        return;
+    }
+
+    const deletedText = isOwnMessage ? 'Kamu telah menghapus pesan ini' : 'Pesan ini telah dihapus';
+    const timeElement = messageElement.querySelector('.text-xs.text-gray-500');
+    const time = timeElement ? timeElement.textContent : '';
+
+    let senderName = 'User';
+    if (!isOwnMessage) {
+        const nameElement = messageElement.querySelector('.font-semibold.text-gray-700');
+        if (nameElement) {
+            senderName = nameElement.textContent;
+        }
+    }
+
+    const initials = getInitials(isOwnMessage ? 'Anda' : senderName);
+
+    const replacementHTML = isOwnMessage ? `
+            <div id="${messageId}" class="flex items-start justify-end deleted-message">
+                <div class="flex flex-col items-end max-w-[70%]">
+                    <div class="flex items-center justify-end gap-2 mb-1">
+                        <span class="text-xs text-gray-500">${time}</span>
+                        <span class="font-semibold text-gray-700 text-sm">Anda</span>
+                    </div>
+                    <div class="bg-gray-300 text-gray-600 rounded-2xl rounded-br-md px-4 py-3 shadow-sm italic">
+                        <p class="text-sm">${deletedText}</p>
+                    </div>
+                </div>
+                <div class="flex-shrink-0 ml-3">
+                    <div class="w-8 h-8 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center font-bold text-xs">
+                        ${initials}
+                    </div>
+                </div>
+            </div>
+        ` : `
+            <div id="${messageId}" class="flex items-start justify-start deleted-message">
+                <div class="flex-shrink-0 mr-3">
+                    <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-800 flex items-center justify-center font-bold text-xs">
+                        ${initials}
+                    </div>
+                </div>
+                <div class="flex flex-col items-start max-w-[70%]">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="font-semibold text-gray-700 text-sm">${senderName}</span>
+                        <span class="text-xs text-gray-500">${time}</span>
+                    </div>
+                    <div class="bg-gray-300 text-gray-600 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm italic">
+                        <p class="text-sm">${deletedText}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+    try {
+        // 🔥 PERBAIKAN: Langsung replace tanpa animasi jika ada masalah
+        if (!messageElement.parentNode || !document.body.contains(messageElement)) {
+            console.warn('❌ Element tidak valid, skip animasi');
+            return;
+        }
+
+        // Smooth transition
+        messageElement.style.transition = 'all 0.3s ease';
+        messageElement.style.opacity = '0';
+        messageElement.style.transform = 'scale(0.9)';
+
+        setTimeout(() => {
+            try {
+                // 🔥 PERBAIKAN: Double check sebelum replace
+                if (messageElement.parentNode && document.body.contains(messageElement)) {
+                    messageElement.outerHTML = replacementHTML;
+
+                    const newElement = document.getElementById(messageId);
+                    if (newElement) {
+                        newElement.style.opacity = '0';
+                        newElement.style.transform = 'scale(0.9)';
+                        setTimeout(() => {
+                            newElement.style.transition = 'all 0.3s ease';
+                            newElement.style.opacity = '1';
+                            newElement.style.transform = 'scale(1)';
+
+                            // Update sidebar setelah animasi selesai
+                            setTimeout(() => {
+                                updateSidebarPreviewAfterDelete(currentConversationId);
+                            }, 350);
+                        }, 50);
+                    }
+                } else {
+                    console.warn('❌ Parent node hilang selama animasi, update sidebar saja');
+                    updateSidebarPreviewAfterDelete(currentConversationId);
+                }
+            } catch (error) {
+                console.error('❌ Error during replacement:', error);
+                // Tetap update sidebar meski ada error
+                updateSidebarPreviewAfterDelete(currentConversationId);
+            }
+        }, 300);
+    } catch (error) {
+        console.error('❌ Error in replaceMessageWithDeletedText:', error);
+        // Tetap update sidebar meski ada error
+        updateSidebarPreviewAfterDelete(currentConversationId);
+    }
+}
+
 function updateAllOwnMessagesToRead() {
     const ownMessageElements = document.querySelectorAll('.flex.items-start.justify-end');
     ownMessageElements.forEach(element => {
         const statusElement = element.querySelector('.read-status');
         if (statusElement) {
             statusElement.innerHTML = `
-                <div class="flex items-center">
-                    <svg class="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                    </svg>
-                    <svg class="w-3.5 h-3.5 text-blue-500 -ml-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                    </svg>
-                </div>
-            `;
+                    <div class="flex items-center">
+                        <svg class="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <svg class="w-3.5 h-3.5 text-blue-500 -ml-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                    </div>
+                `;
         }
     });
 }
 
-function updateSendButton() {
-    const hasText = messageInput.value.trim().length > 0;
-    const hasFiles = selectedFiles.length > 0;
-    sendButton.style.display = (hasText || hasFiles) ? 'flex' : 'none';
-}
+function appendMessage(message) {
+    const emptyState = messageList.querySelector('.flex.h-full.items-center.justify-center');
+    if (emptyState) emptyState.remove();
+    const emptyState2 = messageList.querySelector('.p-6.text-center.text-gray-500');
+    if (emptyState2) emptyState2.remove();
 
-function createDateSeparatorHTML(dateLabel) {
-    return `
-   <div class="flex justify-center items-center my-4">
-       <span class="bg-white border border-gray-200 rounded-full px-4 py-1 text-xs text-gray-500 shadow-sm">
-           ${dateLabel}
-       </span>
-   </div>
-   `;
-}
+    const today = new Date().toDateString();
+    const allSeparators = messageList.querySelectorAll('div.flex.justify-center.items-center span');
+    let lastSeparatorText = null;
+    if (allSeparators.length > 0) {
+        lastSeparatorText = allSeparators[allSeparators.length - 1].textContent.trim();
+    }
 
-// -----------------------------------------------------------------
-// LANGKAH 3.5: Debounce Helper
-// -----------------------------------------------------------------
+    if (!lastSeparatorText || lastSeparatorText !== 'Hari ini') {
+        if (new Date(message.created_at).toDateString() === today) {
+            messageList.insertAdjacentHTML('beforeend', createDateSeparatorHTML('Hari ini'));
+        }
+    }
 
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
+    const messageHTML = createMessageHTML(message);
+    messageList.insertAdjacentHTML('beforeend', messageHTML);
+    scrollToBottom();
 }
 
 // -----------------------------------------------------------------
-// LANGKAH 3.6: Typing Functions (TAMBAHKAN SETELAH FUNGSI HELPER)
+// LANGKAH 3.7: Typing Functions
 // -----------------------------------------------------------------
 
 function showTypingIndicator(userId, userName) {
@@ -829,15 +951,15 @@ function showTypingIndicator(userId, userName) {
     hideTypingIndicator();
 
     const indicatorHTML = `
-        <div id="typing-indicator" class="flex items-center gap-2 text-gray-500 text-sm italic mb-4">
-            <div class="flex gap-1">
-                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
-                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+            <div id="typing-indicator" class="flex items-center gap-2 text-gray-500 text-sm italic mb-4">
+                <div class="flex gap-1">
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                </div>
+                <span>${userName} sedang mengetik...</span>
             </div>
-            <span>${userName} sedang mengetik...</span>
-        </div>
-    `;
+        `;
 
     messageList.insertAdjacentHTML('beforeend', indicatorHTML);
     scrollToBottom();
@@ -870,6 +992,547 @@ function handleUserStopTyping(data) {
     }
 }
 
+// -----------------------------------------------------------------
+// LANGKAH 4: Fungsi CRUD Messages (HAPUS, EDIT, REPLY)
+// -----------------------------------------------------------------
+window.deleteMessage = async function (messageId) {
+    console.log('🗑️ Attempting to delete message:', messageId);
+
+    if (!messageId || messageId.startsWith('temp-')) {
+        console.error('Invalid message ID:', messageId);
+        return;
+    }
+
+    // 🔥 FIX: Prevent layout shift
+    const body = document.body;
+    const scrollY = window.scrollY;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    body.style.overflow = 'hidden';
+    body.style.paddingRight = scrollbarWidth + 'px';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.width = '100%';
+
+    const { value: willDelete } = await Swal.fire({
+        title: 'Hapus Pesan?',
+        text: "Pesan yang sudah dihapus tidak dapat dikembalikan",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal',
+        reverseButtons: true,
+        customClass: {
+            container: 'swal-no-shift'
+        }
+    });
+
+    // 🔥 RESTORE: Reset body styles
+    body.style.overflow = '';
+    body.style.paddingRight = '';
+    body.style.position = '';
+    body.style.top = '';
+    body.style.width = '';
+    window.scrollTo(0, scrollY);
+
+    if (!willDelete) {
+        console.log('User cancelled deletion');
+        return;
+    }
+
+    try {
+        console.log('📤 Sending DELETE request...');
+
+        const response = await fetch(`${API_URL}/api/chat/message/${messageId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+
+        console.log('📥 Response status:', response.status);
+
+        if (response.status === 404) {
+            throw new Error('Pesan tidak ditemukan (404)');
+        }
+
+        if (response.status === 403) {
+            throw new Error('Anda tidak memiliki akses untuk menghapus pesan ini');
+        }
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server error:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ Delete result:', result);
+
+        if (result.success) {
+            console.log('🎉 Delete successful');
+
+            // 🔥 PERBAIKAN: Optimistic update dengan error handling yang lebih baik
+            const messageElement = document.getElementById(messageId);
+            if (messageElement && messageElement.parentNode && document.body.contains(messageElement)) {
+                const isOwnMessage = messageElement.classList.contains('justify-end');
+                replaceMessageWithDeletedText(messageId, isOwnMessage);
+            } else {
+                console.log('⚠️ Message element not available for optimistic update');
+                // Tetap update sidebar
+                updateSidebarPreviewAfterDelete(currentConversationId);
+            }
+
+            // Success notification
+            await Swal.fire({
+                title: 'Berhasil!',
+                text: 'Pesan berhasil dihapus',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        } else {
+            throw new Error(result.error || 'Gagal menghapus pesan');
+        }
+
+    } catch (error) {
+        console.error('❌ Delete error:', error);
+
+        await Swal.fire({
+            title: 'Gagal!',
+            text: error.message || 'Terjadi kesalahan saat menghapus pesan',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+    }
+}
+
+// 🆕 Fungsi untuk memulai reply
+window.startReplyMessage = function (messageId) {
+    console.log('🔁 Starting reply to message:', messageId);
+
+    const messageElement = document.getElementById(messageId);
+    if (!messageElement) {
+        console.error('❌ Message element not found:', messageId);
+        return;
+    }
+
+    currentReplyToMessage = messageId;
+
+    // Ambil data pesan yang akan di-reply dengan lebih akurat
+    let messageContent = '';
+    const contentElement = messageElement.querySelector('.message-content');
+
+    if (contentElement) {
+        messageContent = contentElement.textContent || '';
+    } else {
+        // Fallback untuk berbagai tipe pesan
+        const textElements = messageElement.querySelectorAll('p.text-sm');
+        for (let element of textElements) {
+            if (!element.classList.contains('text-gray-500') &&
+                !element.classList.contains('italic') &&
+                !element.classList.contains('text-xs')) {
+                messageContent = element.textContent || '';
+                break;
+            }
+        }
+
+        // Jika masih kosong, cek untuk pesan file
+        if (!messageContent) {
+            const fileIndicator = messageElement.querySelector('.italic');
+            if (fileIndicator) {
+                messageContent = fileIndicator.textContent || '📎 File';
+            }
+        }
+    }
+
+    const senderName = messageElement.querySelector('.font-semibold')?.textContent || 'User';
+    const isOwnMessage = messageElement.classList.contains('justify-end');
+
+    console.log('🔁 Reply data:', {
+        messageId,
+        content: messageContent,
+        senderName,
+        isOwnMessage
+    });
+
+    // Tampilkan reply preview
+    const replyPreviewContainer = document.getElementById('replyPreviewContainer');
+    const replySenderName = document.getElementById('replySenderName');
+    const replyContent = document.getElementById('replyContent');
+
+    if (replyPreviewContainer && replySenderName && replyContent) {
+        replySenderName.textContent = `Membalas ${isOwnMessage ? 'Anda' : senderName}`;
+        replyContent.textContent = messageContent.length > 50 ?
+            messageContent.substring(0, 50) + '...' : messageContent;
+        replyPreviewContainer.style.display = 'block';
+    } else {
+        console.error('❌ Reply preview elements not found in DOM');
+        // Fallback: buat elemen jika tidak ada
+        createReplyPreviewContainer();
+        return;
+    }
+
+    // Hapus edit mode jika aktif
+    cancelEdit();
+
+    // Focus ke input
+    if (messageInput) {
+        messageInput.focus();
+
+        // Scroll ke input area
+        setTimeout(() => {
+            messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    }
+
+    console.log('✅ Reply mode activated for message:', messageId);
+}
+
+// 🆕 Fungsi fallback untuk membuat reply preview container jika tidak ada
+function createReplyPreviewContainer() {
+    console.log('🛠️ Creating reply preview container...');
+
+    const replyHTML = `
+        <div id="replyPreviewContainer" class="mb-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-3" style="display: none;">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <p id="replySenderName" class="text-xs font-semibold text-blue-700"></p>
+                    <p id="replyContent" class="text-xs text-blue-600 truncate"></p>
+                </div>
+                <button type="button" onclick="cancelReply()" class="text-blue-500 hover:text-blue-700 ml-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `;
+
+    // Insert sebelum form
+    sendMessageForm.insertAdjacentHTML('beforebegin', replyHTML);
+    console.log('✅ Reply preview container created');
+}
+
+// 🆕 Fungsi untuk membatalkan reply
+window.cancelReply = function () {
+    console.log('❌ Canceling reply');
+
+    currentReplyToMessage = null;
+    const replyPreviewContainer = document.getElementById('replyPreviewContainer');
+
+    if (replyPreviewContainer) {
+        replyPreviewContainer.style.display = 'none';
+        console.log('✅ Reply preview hidden');
+    }
+}
+
+// 🆕 Fungsi untuk memulai edit
+window.startEditMessage = function (messageId) {
+    console.log('✏️ Starting edit for message:', messageId);
+
+    const messageElement = document.getElementById(messageId);
+    if (!messageElement) {
+        console.error('❌ Message element not found:', messageId);
+        return;
+    }
+
+    currentEditMessage = messageId;
+
+    // 🔥 PERBAIKAN: Ambil konten pesan asli dengan lebih akurat
+    let messageContent = '';
+
+    // Coba ambil dari berbagai elemen yang mungkin
+    const contentElement = messageElement.querySelector('.message-content');
+    if (contentElement) {
+        messageContent = contentElement.textContent || '';
+    } else {
+        // Fallback: cari elemen teks langsung
+        const textElements = messageElement.querySelectorAll('p.text-sm');
+        for (let element of textElements) {
+            if (!element.classList.contains('text-gray-500') &&
+                !element.classList.contains('italic')) {
+                messageContent = element.textContent || '';
+                break;
+            }
+        }
+    }
+
+    console.log('📝 Original message content:', messageContent);
+
+    // Hapus reply mode jika aktif
+    cancelReply();
+
+    // Set nilai input
+    messageInput.value = messageContent.trim();
+    messageInput.focus();
+
+    // Tampilkan edit mode UI
+    const editModeHTML = `
+        <div id="editMode" class="mb-2 p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-500 flex justify-between items-center">
+            <div class="flex-1">
+                <p class="text-xs font-medium text-yellow-700">Mengedit pesan</p>
+                <p class="text-xs text-yellow-600 truncate">${messageContent.substring(0, 50)}${messageContent.length > 50 ? '...' : ''}</p>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="saveEditMessage()" class="text-xs bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition">
+                    Simpan
+                </button>
+                <button type="button" onclick="cancelEdit()" class="text-xs bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 transition">
+                    Batal
+                </button>
+            </div>
+        </div>
+    `;
+
+    // Hapus edit mode lama jika ada
+    const existingEditMode = document.getElementById('editMode');
+    if (existingEditMode) existingEditMode.remove();
+
+    sendMessageForm.insertAdjacentHTML('beforebegin', editModeHTML);
+
+    updateSendButton();
+
+    // Scroll ke input area
+    setTimeout(() => {
+        messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+}
+
+// 🆕 Fungsi untuk menyimpan edit
+window.saveEditMessage = async function () {
+    if (!currentEditMessage) return;
+
+    const content = messageInput.value.trim();
+    if (!content) {
+        await Swal.fire({
+            title: 'Error',
+            text: 'Pesan tidak boleh kosong',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/api/chat/message/${currentEditMessage}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ content })
+        });
+
+        if (!response.ok) throw new Error('Gagal mengedit pesan');
+
+        const result = await response.json();
+
+        if (result.success) {
+            cancelEdit();
+
+            // Update message di UI akan dilakukan via broadcast
+            await Swal.fire({
+                title: 'Berhasil!',
+                text: 'Pesan berhasil diedit',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+    } catch (error) {
+        console.error('Edit error:', error);
+        await Swal.fire({
+            title: 'Gagal!',
+            text: 'Gagal mengedit pesan',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+    }
+}
+
+// 🆕 Fungsi untuk membatalkan edit
+window.cancelEdit = function () {
+    currentEditMessage = null;
+    messageInput.value = '';
+
+    const editMode = document.getElementById('editMode');
+    if (editMode) editMode.remove();
+
+    updateSendButton();
+}
+
+// 🆕 Fungsi untuk scroll ke pesan yang di-reply
+window.scrollToMessage = function (messageId) {
+    const messageElement = document.getElementById(messageId);
+    if (messageElement) {
+        // Hitung offset untuk scroll yang lebih tepat
+        const elementRect = messageElement.getBoundingClientRect();
+        const absoluteElementTop = elementRect.top + window.pageYOffset;
+        const middle = absoluteElementTop - (window.innerHeight / 2) + (elementRect.height / 2);
+
+        window.scrollTo({
+            top: middle,
+            behavior: 'smooth'
+        });
+
+        // Highlight efek yang lebih menarik
+        messageElement.style.transition = 'all 0.5s ease';
+        messageElement.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
+        messageElement.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.3)';
+
+        setTimeout(() => {
+            messageElement.style.backgroundColor = '';
+            messageElement.style.boxShadow = '';
+        }, 2000);
+    } else {
+        console.log('Pesan tidak ditemukan, mungkin belum di-load');
+    }
+}
+
+// -----------------------------------------------------------------
+// LANGKAH 5: Fungsi File Handling
+// -----------------------------------------------------------------
+function renderFilePreview() {
+    if (selectedFiles.length === 0) {
+        filePreviewContainer.style.display = 'none';
+        return;
+    }
+
+    filePreviewContainer.style.display = 'block';
+    filePreviewList.innerHTML = '';
+
+    selectedFiles.forEach((file, index) => {
+        const isImage = file.type.startsWith('image/');
+        let previewHTML = '';
+
+        if (isImage) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = document.getElementById(`file-preview-${index}`);
+                if (preview) {
+                    preview.querySelector('img').src = e.target.result;
+                }
+            };
+            reader.readAsDataURL(file);
+
+            previewHTML = `
+                    <div id="file-preview-${index}" class="relative bg-white rounded-lg border border-gray-200 p-2 w-24 h-24">
+                        <img src="" alt="${file.name}" class="w-full h-16 object-cover rounded">
+                        <button type="button" onclick="removeFile(${index})"
+                            class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600">
+                            ×
+                        </button>
+                        <p class="text-xs text-gray-600 mt-1 truncate">${file.name}</p>
+                    </div>
+                `;
+        } else {
+            previewHTML = `
+                    <div id="file-preview-${index}" class="relative bg-white rounded-lg border border-gray-200 p-3 flex items-center gap-2 max-w-xs">
+                        <div class="flex-shrink-0">
+                            ${getFileIcon(file.type)}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-800 truncate">${file.name}</p>
+                            <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
+                        </div>
+                        <button type="button" onclick="removeFile(${index})"
+                            class="flex-shrink-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600">
+                            ×
+                        </button>
+                    </div>
+                `;
+        }
+
+        filePreviewList.insertAdjacentHTML('beforeend', previewHTML);
+    });
+
+    updateSendButton();
+}
+
+window.removeFile = function (index) {
+    selectedFiles.splice(index, 1);
+    renderFilePreview();
+}
+
+/** Download gambar */
+window.downloadImage = async function (imageUrl, fileName) {
+    try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName || 'image.jpg';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        // Tampilkan notifikasi sukses
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
+        });
+
+        Toast.fire({
+            icon: 'success',
+            title: 'Gambar berhasil diunduh'
+        });
+    } catch (error) {
+        console.error('Error downloading image:', error);
+        await Swal.fire({
+            title: 'Gagal',
+            text: 'Gagal mengunduh gambar',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+    }
+}
+
+/** Preview gambar full screen dengan modal */
+window.openImageModal = function (imageUrl, fileName) {
+    Swal.fire({
+        imageUrl: imageUrl,
+        imageAlt: fileName,
+        showCloseButton: true,
+        showConfirmButton: true,
+        confirmButtonText: '<i class="fas fa-download"></i> Download',
+        confirmButtonColor: '#3B82F6',
+        showCancelButton: true,
+        cancelButtonText: 'Tutup',
+        customClass: {
+            popup: 'rounded-2xl',
+            image: 'rounded-lg',
+            confirmButton: 'rounded-lg px-4 py-2',
+            cancelButton: 'rounded-lg px-4 py-2'
+        },
+        width: 'auto',
+        padding: '2rem',
+        background: '#1f2937',
+        color: '#fff',
+        imageWidth: '90%',
+        imageHeight: 'auto'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            downloadImage(imageUrl, fileName);
+        }
+    });
+}
+
+
+// -----------------------------------------------------------------
+// LANGKAH 6: Fungsi API Calls & Data Loading
+// -----------------------------------------------------------------
 function renderSidebarContent(data, sortedConversations) {
     let html = '';
 
@@ -944,10 +1607,6 @@ function renderSearchResults(users) {
     chatListContainer.innerHTML = html;
 }
 
-// -----------------------------------------------------------------
-// LANGKAH 4: Fungsi Fetch Data (API Calls)
-// -----------------------------------------------------------------
-
 async function loadConversations() {
     chatListContainer.innerHTML = '<div class="p-4 text-center text-gray-500">Memuat...</div>';
     try {
@@ -969,323 +1628,6 @@ async function loadConversations() {
     } catch (error) {
         console.error(error);
         chatListContainer.innerHTML = '<div class="p-6 text-center text-red-500">Gagal memuat. (JS Error)</div>';
-    }
-}
-
-
-// -----------------------------------------------------------------
-// 🔥 FUNGSI DOWNLOAD & PREVIEW GAMBAR (TAMBAHKAN SEBELUM formatFileSize)
-// -----------------------------------------------------------------
-
-/** Download gambar */
-window.downloadImage = async function (imageUrl, fileName) {
-    try {
-        const response = await fetch(imageUrl);
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName || 'image.jpg';
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-
-        // Tampilkan notifikasi sukses
-        const Toast = Swal.mixin({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 2000,
-            timerProgressBar: true
-        });
-
-        Toast.fire({
-            icon: 'success',
-            title: 'Gambar berhasil diunduh'
-        });
-    } catch (error) {
-        console.error('Error downloading image:', error);
-        await Swal.fire({
-            title: 'Gagal',
-            text: 'Gagal mengunduh gambar',
-            icon: 'error',
-            confirmButtonText: 'OK'
-        });
-    }
-}
-
-/** Preview gambar full screen dengan modal */
-window.openImageModal = function (imageUrl, fileName) {
-    Swal.fire({
-        imageUrl: imageUrl,
-        imageAlt: fileName,
-        showCloseButton: true,
-        showConfirmButton: true,
-        confirmButtonText: '<i class="fas fa-download"></i> Download',
-        confirmButtonColor: '#3B82F6',
-        showCancelButton: true,
-        cancelButtonText: 'Tutup',
-        customClass: {
-            popup: 'rounded-2xl',
-            image: 'rounded-lg',
-            confirmButton: 'rounded-lg px-4 py-2',
-            cancelButton: 'rounded-lg px-4 py-2'
-        },
-        width: 'auto',
-        padding: '2rem',
-        background: '#1f2937',
-        color: '#fff',
-        imageWidth: '90%',
-        imageHeight: 'auto'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            downloadImage(imageUrl, fileName);
-        }
-    });
-}
-
-// -----------------------------------------------------------------
-// FILE UPLOAD HELPERS
-// -----------------------------------------------------------------
-
-function formatFileSize(bytes) {
-    if (bytes >= 1073741824) {
-        return (bytes / 1073741824).toFixed(2) + ' GB';
-    } else if (bytes >= 1048576) {
-        return (bytes / 1048576).toFixed(2) + ' MB';
-    } else if (bytes >= 1024) {
-        return (bytes / 1024).toFixed(2) + ' KB';
-    }
-    return bytes + ' B';
-}
-
-function getFileIcon(fileType) {
-    if (fileType.startsWith('image/')) {
-        return `<svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-        </svg>`;
-    } else if (fileType.startsWith('video/')) {
-        return `<svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-        </svg>`;
-    } else if (fileType === 'application/pdf') {
-        return `<svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-        </svg>`;
-    } else {
-        return `<svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-        </svg>`;
-    }
-}
-
-function renderFilePreview() {
-    if (selectedFiles.length === 0) {
-        filePreviewContainer.style.display = 'none';
-        return;
-    }
-
-    filePreviewContainer.style.display = 'block';
-    filePreviewList.innerHTML = '';
-
-    selectedFiles.forEach((file, index) => {
-        const isImage = file.type.startsWith('image/');
-        let previewHTML = '';
-
-        if (isImage) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const preview = document.getElementById(`file-preview-${index}`);
-                if (preview) {
-                    preview.querySelector('img').src = e.target.result;
-                }
-            };
-            reader.readAsDataURL(file);
-
-            previewHTML = `
-                <div id="file-preview-${index}" class="relative bg-white rounded-lg border border-gray-200 p-2 w-24 h-24">
-                    <img src="" alt="${file.name}" class="w-full h-16 object-cover rounded">
-                    <button type="button" onclick="removeFile(${index})"
-                        class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600">
-                        ×
-                    </button>
-                    <p class="text-xs text-gray-600 mt-1 truncate">${file.name}</p>
-                </div>
-            `;
-        } else {
-            previewHTML = `
-                <div id="file-preview-${index}" class="relative bg-white rounded-lg border border-gray-200 p-3 flex items-center gap-2 max-w-xs">
-                    <div class="flex-shrink-0">
-                        ${getFileIcon(file.type)}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-gray-800 truncate">${file.name}</p>
-                        <p class="text-xs text-gray-500">${formatFileSize(file.size)}</p>
-                    </div>
-                    <button type="button" onclick="removeFile(${index})"
-                        class="flex-shrink-0 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600">
-                        ×
-                    </button>
-                </div>
-            `;
-        }
-
-        filePreviewList.insertAdjacentHTML('beforeend', previewHTML);
-    });
-
-    updateSendButton();
-}
-
-window.removeFile = function (index) {
-    selectedFiles.splice(index, 1);
-    renderFilePreview();
-}
-
-// 🔥 FUNGSI DETECT LINKS YANG LEBIH KOMPREHENSIF
-function detectAndCreateLinks(text) {
-    if (!text) return '';
-
-    // Regex untuk mendeteksi berbagai jenis URL
-    const urlRegex = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/g;
-
-    return text.replace(urlRegex, function (url) {
-        // Bersihkan URL dari karakter punctuation di akhir
-        let cleanUrl = url;
-        const punctuation = ['.', ',', '!', '?', ';', ':', ')', ']', '}'];
-
-        while (punctuation.includes(cleanUrl.slice(-1))) {
-            cleanUrl = cleanUrl.slice(0, -1);
-        }
-
-        // Coba buat URL object untuk validasi
-        try {
-            const urlObj = new URL(cleanUrl);
-            let displayText = urlObj.hostname.replace('www.', '');
-
-            // Tambahkan path jika tidak terlalu panjang
-            if (urlObj.pathname !== '/' && displayText.length + urlObj.pathname.length < 30) {
-                displayText += urlObj.pathname;
-            }
-
-            return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer"
-                    class="text-blue-500 hover:text-blue-600 hover:underline break-words"
-                    title="${cleanUrl}">${displayText}</a>`;
-
-        } catch (e) {
-            // Jika URL tidak valid, return teks asli
-            return url;
-        }
-    });
-}
-
-/** 🔥 PERBAIKAN KRUSIAL: Setup listener Laravel Echo */
-function setupEchoListeners() {
-    if (typeof Echo === 'undefined') {
-        console.error('❌ Laravel Echo not configured (Echo is undefined).');
-        return;
-    }
-
-    console.log('🚀 Setting up Echo listeners...');
-    console.log('📋 All conversations:', window.allConversations);
-
-    // Hentikan listener lama
-    window.allConversations.forEach(conversation => {
-        const channelName = `conversation.${conversation.id}`;
-        console.log(`🔌 Leaving old channel: private-${channelName}`);
-        Echo.leave(channelName);
-    });
-
-    // Dengarkan di setiap channel percakapan
-    window.allConversations.forEach(conversation => {
-        const channelName = `conversation.${conversation.id}`;
-        console.log(`🔔 Subscribing to: private-${channelName}`);
-
-        const channel = Echo.private(channelName);
-
-        channel.subscribed(() => {
-            console.log(`✅ Successfully subscribed to: private-${channelName}`);
-        });
-
-        channel.error((error) => {
-            console.error(`❌ Error subscribing to ${channelName}:`, error);
-        });
-
-        // 🔥 Listen untuk NewMessageSent event
-        channel.listen('.NewMessageSent', (e) => {
-            console.log('📨 ===== NEW MESSAGE EVENT =====');
-            console.log('📨 Channel:', channelName);
-            console.log('📨 Raw event:', e);
-            console.log('📨 Message data:', e.message);
-            console.log('📨 Current conversation:', currentConversationId);
-            console.log('📨 ==============================');
-
-            if (e.message) {
-                handleNewMessage(e.message);
-            } else {
-                console.error('❌ Event tidak punya property "message":', e);
-            }
-        });
-
-        // 🔥 Event untuk message deleted
-        channel.listen('.MessageDeleted', (e) => {
-            console.log('🗑️ ===== DELETE MESSAGE EVENT =====');
-            console.log('🗑️ Channel:', channelName);
-            console.log('🗑️ Raw event:', e);
-            console.log('🗑️ ==================================');
-
-            if (e.message_id || e.id) {
-                handleMessageDeleted(e);
-            }
-        });
-
-        // 🔥 PERBAIKAN: Tambahkan typing indicators
-        channel.listenForWhisper('typing', (data) => {
-            console.log('⌨️ Typing event received:', data);
-            handleUserTyping(data);
-        });
-
-        channel.listenForWhisper('stop-typing', (data) => {
-            console.log('⏹️ Stop typing event received:', data);
-            handleUserStopTyping(data);
-        });
-    });
-
-    console.log('✅ Echo listeners setup complete!');
-    console.log('📡 Active channels:', Object.keys(window.Echo.connector.channels));
-}
-
-
-window.startChatWithUser = async function (userId, userName) {
-    chatHeaderTitle.textContent = `Membuka chat dengan ${userName}...`;
-    messageList.innerHTML = '<div class="p-6 text-center text-gray-500">Memuat...</div>';
-    chatInputBar.style.display = 'none';
-    try {
-        const response = await fetch(`${API_URL}/api/chat/create`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': CSRF_TOKEN,
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                workspace_id: WORKSPACE_ID,
-                type: 'private',
-                participants: [userId]
-            })
-        });
-        if (!response.ok) throw new Error('Gagal membuat percakapan');
-        const result = await response.json();
-        const newConversationId = result.conversation.id;
-
-        await loadConversations();
-        await loadMessages(newConversationId);
-        setupEchoListeners();
-
-    } catch (error) {
-        console.error(error);
-        chatHeaderTitle.textContent = 'Gagal';
-        messageList.innerHTML = '<div class="p-6 text-center text-red-500">Gagal membuat percakapan.</div>';
     }
 }
 
@@ -1379,242 +1721,90 @@ async function markConversationAsRead(conversationId) {
     }
 }
 
-async function handleSendMessage(e) {
-    e.preventDefault();
-
-    if (isSending) {
-        console.log('⚠️ Masih proses kirim sebelumnya, skip...');
-        return;
-    }
-
-    const content = messageInput.value.trim();
-
-    if (!content && selectedFiles.length === 0) {
-        console.log('❌ Tidak ada konten atau file');
-        return;
-    }
-
-    if (!currentConversationId) {
-        console.log('❌ Tidak ada conversation yang dipilih');
-        return;
-    }
-
-    console.log('📤 Preparing to send:', {
-        content: content,
-        files: selectedFiles.length,
-        conversationId: currentConversationId
-    });
-
-    isSending = true;
-
-    // Tampilkan loading state
-    const originalSendHTML = sendButton.innerHTML;
-    sendButton.innerHTML = `
-        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-    `;
-    sendButton.disabled = true;
-    messageInput.disabled = true;
-    uploadButton.disabled = true;
-
-    const formData = new FormData();
-    formData.append('conversation_id', currentConversationId);
-    formData.append('content', content);
-
-    // File upload
-    selectedFiles.forEach((file, index) => {
-        formData.append('files[]', file, file.name);
-        console.log(`📎 File ${index}:`, file.name, file.size, file.type);
-    });
-
-    // 🔥 PERBAIKAN: Hanya buat optimistic UI jika benar-benar perlu
-    const tempMessageId = 'temp-' + Date.now();
-    let shouldShowOptimistic = true;
-
-    // Cek apakah sudah ada temp message yang sama
-    const existingTempMessages = document.querySelectorAll('[id^="temp-"]');
-    if (existingTempMessages.length > 0) {
-        shouldShowOptimistic = false;
-        console.log('⚠️ Ada temp message lain, skip optimistic UI');
-    }
-
-    if (shouldShowOptimistic) {
-        const tempAttachments = selectedFiles.map(file => {
-            const isImage = file.type.startsWith('image/');
-            const isVideo = file.type.startsWith('video/');
-            const isPDF = file.type === 'application/pdf';
-
-            return {
-                file_name: file.name,
-                file_size: file.size,
-                file_type: file.type,
-                uploading: true,
-                preview_url: isImage ? URL.createObjectURL(file) : null
-            };
-        });
-
-        const tempMessage = {
-            id: tempMessageId,
-            content: content || `📎 Mengirim ${selectedFiles.length} file...`,
-            sender_id: AUTH_USER_ID,
-            sender: { full_name: 'Anda' },
-            created_at: new Date().toISOString(),
-            message_type: selectedFiles.length > 0 ? 'file' : 'text',
-            is_read: false,
-            attachments: tempAttachments
-        };
-
-        appendMessage(tempMessage);
-    }
-
-    // Reset input
-    messageInput.value = '';
-    selectedFiles = [];
-    renderFilePreview();
-    updateSendButton();
-
+window.startChatWithUser = async function (userId, userName) {
+    chatHeaderTitle.textContent = `Membuka chat dengan ${userName}...`;
+    messageList.innerHTML = '<div class="p-6 text-center text-gray-500">Memuat...</div>';
+    chatInputBar.style.display = 'none';
     try {
-        const response = await fetch(`${API_URL}/api/chat/send`, {
+        const response = await fetch(`${API_URL}/api/chat/create`, {
             method: 'POST',
             headers: {
+                'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': CSRF_TOKEN,
                 'Accept': 'application/json'
             },
-            body: formData
+            body: JSON.stringify({
+                workspace_id: WORKSPACE_ID,
+                type: 'private',
+                participants: [userId]
+            })
         });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Server error:', errorText);
-            throw new Error(`Gagal mengirim pesan: ${response.status}`);
-        }
-
+        if (!response.ok) throw new Error('Gagal membuat percakapan');
         const result = await response.json();
-        console.log('✅ Message sent successfully:', result.data.id);
+        const newConversationId = result.conversation.id;
 
-        // 🔥 PERBAIKAN: Hapus temp message hanya jika optimistic UI ditampilkan
-        if (shouldShowOptimistic) {
-            const tempMsgElement = document.getElementById(tempMessageId);
-            if (tempMsgElement) {
-                tempMsgElement.remove();
-                console.log('🗑️ Temp message removed, waiting for real message from broadcast...');
-            }
-        } else {
-            console.log('⏩ Skip temp removal, no optimistic UI was shown');
-        }
-
-        // Update sidebar preview
-        updateSidebarOnNewMessage(result.data, false);
+        await loadConversations();
+        await loadMessages(newConversationId);
+        setupEchoListeners();
 
     } catch (error) {
-        console.error('❌ Error sending message:', error);
-
-        // Tampilkan error di temp message
-        const tempMsgElement = document.getElementById(tempMessageId);
-        if (tempMsgElement) {
-            const contentElement = tempMsgElement.querySelector('p');
-            if (contentElement) {
-                contentElement.textContent += ' ❌ (Gagal terkirim)';
-                contentElement.classList.add('text-red-300');
-            }
-            tempMsgElement.classList.add('opacity-50');
-        }
-
-        // Tampilkan alert
-        await Swal.fire({
-            title: 'Gagal Mengirim',
-            text: 'Pesan gagal terkirim. Silakan coba lagi.',
-            icon: 'error',
-            confirmButtonText: 'OK'
-        });
-    } finally {
-        // Reset loading state dengan benar
-        isSending = false;
-        sendButton.innerHTML = originalSendHTML;
-        sendButton.disabled = false;
-        messageInput.disabled = false;
-        uploadButton.disabled = false;
-        console.log('🔄 Reset isSending to false');
+        console.error(error);
+        chatHeaderTitle.textContent = 'Gagal';
+        messageList.innerHTML = '<div class="p-6 text-center text-red-500">Gagal membuat percakapan.</div>';
     }
 }
 
 // -----------------------------------------------------------------
-// DRAG & DROP HANDLERS
+// LANGKAH 7: Fungsi Event Handlers (REALTIME)
 // -----------------------------------------------------------------
+// 🆕 Fungsi untuk handle message edited
+function handleMessageEdited(message) {
+    console.log('✏️ Handling edited message:', message.id);
 
-let dragCounter = 0;
-
-function handleDragEnter(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounter++;
-    if (dragCounter === 1) {
-        dropZone.style.display = 'flex';
-    }
-}
-
-function handleDragOver(e) {
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-function handleDragLeave(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounter--;
-    if (dragCounter === 0) {
-        dropZone.style.display = 'none';
-    }
-}
-
-function handleDrop(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounter = 0;
-    dropZone.style.display = 'none';
-
-    const files = Array.from(e.dataTransfer.files);
-    const validFiles = files.filter(file => {
-        if (file.size > 10 * 1024 * 1024) {
-            alert(`File "${file.name}" terlalu besar. Maksimal 10MB per file.`);
-            return false;
-        }
-        return true;
-    });
-
-    if (validFiles.length > 0) {
-        selectedFiles = [...selectedFiles, ...validFiles];
-        renderFilePreview();
-        messageInput.focus();
-    }
-}
-
-function appendMessage(message) {
-    const emptyState = messageList.querySelector('.flex.h-full.items-center.justify-center');
-    if (emptyState) emptyState.remove();
-    const emptyState2 = messageList.querySelector('.p-6.text-center.text-gray-500');
-    if (emptyState2) emptyState2.remove();
-
-    const today = new Date().toDateString();
-    const allSeparators = messageList.querySelectorAll('div.flex.justify-center.items-center span');
-    let lastSeparatorText = null;
-    if (allSeparators.length > 0) {
-        lastSeparatorText = allSeparators[allSeparators.length - 1].textContent.trim();
+    const messageElement = document.getElementById(message.id);
+    if (messageElement) {
+        // Replace message element dengan yang baru
+        const newMessageHTML = createMessageHTML(message);
+        messageElement.outerHTML = newMessageHTML;
     }
 
-    if (!lastSeparatorText || lastSeparatorText !== 'Hari ini') {
-        if (new Date(message.created_at).toDateString() === today) {
-            messageList.insertAdjacentHTML('beforeend', createDateSeparatorHTML('Hari ini'));
-        }
-    }
-
-    const messageHTML = createMessageHTML(message);
-    messageList.insertAdjacentHTML('beforeend', messageHTML);
-    scrollToBottom();
+    // Update sidebar jika perlu
+    updateSidebarOnNewMessage(message, false);
 }
 
-// -----------------------------------------------------------------
-// 🔥 PERBAIKAN UTAMA: Real-time (Laravel Echo)
-// -----------------------------------------------------------------
+function handleMessageDeleted(data) {
+    console.log('🗑️ Message deleted event:', data);
+
+    const messageId = data.message_id || data.id;
+    const senderId = data.sender_id;
+    const conversationId = data.conversation_id;
+
+    console.log('🔍 Looking for message element:', messageId);
+
+    // Cek apakah elemen masih ada di DOM
+    const messageElement = document.getElementById(messageId);
+    if (!messageElement) {
+        console.log('⚠️ Message element not found in DOM, mungkin sudah dihapus:', messageId);
+        // Tetap update sidebar
+        updateSidebarPreviewAfterDelete(conversationId);
+        return;
+    }
+
+    // Cek apakah elemen masih punya parent (masih di DOM)
+    if (!messageElement.parentNode) {
+        console.log('⚠️ Message element has no parent node:', messageId);
+        // Tetap update sidebar
+        updateSidebarPreviewAfterDelete(conversationId);
+        return;
+    }
+
+    // Ganti bubble dengan text "telah dihapus"
+    const isOwnMessage = senderId === AUTH_USER_ID;
+    replaceMessageWithDeletedText(messageId, isOwnMessage);
+
+    // Update sidebar preview
+    updateSidebarPreviewAfterDelete(conversationId);
+}
 
 function handleNewMessage(message) {
     console.log('📨 Received message:', message.id, 'from:', message.sender_id);
@@ -1634,15 +1824,15 @@ function handleNewMessage(message) {
             const statusElement = existingMessage.querySelector('.read-status');
             if (statusElement) {
                 statusElement.innerHTML = `
-                    <div class="flex items-center">
-                        <svg class="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                        <svg class="w-3.5 h-3.5 text-blue-500 -ml-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                        </svg>
-                    </div>
-                `;
+                        <div class="flex items-center">
+                            <svg class="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                            <svg class="w-3.5 h-3.5 text-blue-500 -ml-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    `;
             }
             return; // 🔥 STOP di sini, jangan append message lagi
         }
@@ -1670,23 +1860,6 @@ function handleNewMessage(message) {
         updateSidebarOnNewMessage(message, true);
     }
 }
-
-/** 🔥 PERBAIKAN: Handle message deleted event */
-function handleMessageDeleted(data) {
-    console.log('🗑️ Message deleted event:', data);
-
-    const messageId = data.message_id || data.id;
-    const senderId = data.sender_id;
-    const conversationId = data.conversation_id;
-
-    // Ganti bubble dengan text "telah dihapus"
-    const isOwnMessage = senderId === AUTH_USER_ID;
-    replaceMessageWithDeletedText(messageId, isOwnMessage);
-
-    // 🔥 PERBAIKAN: Update sidebar preview
-    updateSidebarPreviewAfterDelete(conversationId);
-}
-
 
 function updateSidebarOnNewMessage(message, incrementUnread) {
     const conversationId = message.conversation_id;
@@ -1767,7 +1940,331 @@ function updateSidebarOnNewMessage(message, incrementUnread) {
 }
 
 // -----------------------------------------------------------------
-// LANGKAH 6: Event Listeners
+// LANGKAH 8: Fungsi Form Handling
+// -----------------------------------------------------------------
+
+async function handleSendMessage(e) {
+    e.preventDefault();
+
+    if (isSending) {
+        console.log('⚠️ Masih proses kirim sebelumnya, skip...');
+        return;
+    }
+
+    const content = messageInput.value.trim();
+
+    if (!content && selectedFiles.length === 0) {
+        console.log('❌ Tidak ada konten atau file');
+        return;
+    }
+
+    if (!currentConversationId) {
+        console.log('❌ Tidak ada conversation yang dipilih');
+        return;
+    }
+
+    console.log('📤 Preparing to send:', {
+        content: content,
+        files: selectedFiles.length,
+        conversationId: currentConversationId,
+        replyTo: currentReplyToMessage, // 🆕
+        editMessage: currentEditMessage // 🆕
+    });
+
+    // 🆕 Jika dalam mode edit, handle secara terpisah
+    if (currentEditMessage) {
+        await saveEditMessage();
+        return;
+    }
+
+    isSending = true;
+
+    // Tampilkan loading state
+    const originalSendHTML = sendButton.innerHTML;
+    sendButton.innerHTML = `
+        <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+    `;
+    sendButton.disabled = true;
+    messageInput.disabled = true;
+    uploadButton.disabled = true;
+
+    const formData = new FormData();
+    formData.append('conversation_id', currentConversationId);
+    formData.append('content', content);
+
+    // 🆕 Tambahkan reply_to jika ada
+    if (currentReplyToMessage) {
+        formData.append('reply_to_message_id', currentReplyToMessage);
+    }
+
+    // File upload
+    selectedFiles.forEach((file, index) => {
+        formData.append('files[]', file, file.name);
+        console.log(`📎 File ${index}:`, file.name, file.size, file.type);
+    });
+
+    // 🔥 PERBAIKAN: Hanya buat optimistic UI jika benar-benar perlu
+    const tempMessageId = 'temp-' + Date.now();
+    let shouldShowOptimistic = true;
+
+    // Cek apakah sudah ada temp message yang sama
+    const existingTempMessages = document.querySelectorAll('[id^="temp-"]');
+    if (existingTempMessages.length > 0) {
+        shouldShowOptimistic = false;
+        console.log('⚠️ Ada temp message lain, skip optimistic UI');
+    }
+
+    if (shouldShowOptimistic) {
+        const tempAttachments = selectedFiles.map(file => {
+            const isImage = file.type.startsWith('image/');
+            const isVideo = file.type.startsWith('video/');
+            const isPDF = file.type === 'application/pdf';
+
+            return {
+                file_name: file.name,
+                file_size: file.size,
+                file_type: file.type,
+                uploading: true,
+                preview_url: isImage ? URL.createObjectURL(file) : null
+            };
+        });
+
+        // 🆕 Include reply data dalam temp message
+        const tempMessage = {
+            id: tempMessageId,
+            content: content || `📎 Mengirim ${selectedFiles.length} file...`,
+            sender_id: AUTH_USER_ID,
+            sender: { full_name: 'Anda' },
+            created_at: new Date().toISOString(),
+            message_type: selectedFiles.length > 0 ? 'file' : 'text',
+            is_read: false,
+            reply_to_message_id: currentReplyToMessage, // 🆕
+            attachments: tempAttachments
+        };
+
+        appendMessage(tempMessage);
+    }
+
+    // Reset input
+    messageInput.value = '';
+    selectedFiles = [];
+    renderFilePreview();
+
+    // 🆕 Reset reply setelah setup form data
+    if (currentReplyToMessage) {
+        cancelReply();
+    }
+
+    updateSendButton();
+
+    try {
+        const response = await fetch(`${API_URL}/api/chat/send`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Accept': 'application/json'
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Server error:', errorText);
+            throw new Error(`Gagal mengirim pesan: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ Message sent successfully:', result.data.id);
+
+        // 🔥 PERBAIKAN: Hapus temp message hanya jika optimistic UI ditampilkan
+        if (shouldShowOptimistic) {
+            const tempMsgElement = document.getElementById(tempMessageId);
+            if (tempMsgElement) {
+                tempMsgElement.remove();
+                console.log('🗑️ Temp message removed, waiting for real message from broadcast...');
+            }
+        } else {
+            console.log('⏩ Skip temp removal, no optimistic UI was shown');
+        }
+
+        // Update sidebar preview
+        updateSidebarOnNewMessage(result.data, false);
+
+    } catch (error) {
+        console.error('❌ Error sending message:', error);
+
+        // Tampilkan error di temp message
+        const tempMsgElement = document.getElementById(tempMessageId);
+        if (tempMsgElement) {
+            const contentElement = tempMsgElement.querySelector('p');
+            if (contentElement) {
+                contentElement.textContent += ' ❌ (Gagal terkirim)';
+                contentElement.classList.add('text-red-300');
+            }
+            tempMsgElement.classList.add('opacity-50');
+        }
+
+        // Tampilkan alert
+        await Swal.fire({
+            title: 'Gagal Mengirim',
+            text: 'Pesan gagal terkirim. Silakan coba lagi.',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+    } finally {
+        // Reset loading state dengan benar
+        isSending = false;
+        sendButton.innerHTML = originalSendHTML;
+        sendButton.disabled = false;
+        messageInput.disabled = false;
+        uploadButton.disabled = false;
+        console.log('🔄 Reset isSending to false');
+    }
+}
+
+// -----------------------------------------------------------------
+// LANGKAH 9: Drag & Drop Handlers
+// -----------------------------------------------------------------
+
+let dragCounter = 0;
+
+function handleDragEnter(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter++;
+    if (dragCounter === 1) {
+        dropZone.style.display = 'flex';
+    }
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function handleDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter--;
+    if (dragCounter === 0) {
+        dropZone.style.display = 'none';
+    }
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter = 0;
+    dropZone.style.display = 'none';
+
+    const files = Array.from(e.dataTransfer.files);
+    const validFiles = files.filter(file => {
+        if (file.size > 10 * 1024 * 1024) {
+            alert(`File "${file.name}" terlalu besar. Maksimal 10MB per file.`);
+            return false;
+        }
+        return true;
+    });
+
+    if (validFiles.length > 0) {
+        selectedFiles = [...selectedFiles, ...validFiles];
+        renderFilePreview();
+        messageInput.focus();
+    }
+}
+
+// -----------------------------------------------------------------
+// LANGKAH 10: Echo Listeners & Setup
+// -----------------------------------------------------------------
+
+function setupEchoListeners() {
+    if (typeof Echo === 'undefined') {
+        console.error('❌ Laravel Echo not configured (Echo is undefined).');
+        return;
+    }
+
+    console.log('🚀 Setting up Echo listeners...');
+    console.log('📋 All conversations:', window.allConversations);
+
+    // Hentikan listener lama
+    window.allConversations.forEach(conversation => {
+        const channelName = `conversation.${conversation.id}`;
+        console.log(`🔌 Leaving old channel: private-${channelName}`);
+        Echo.leave(channelName);
+    });
+
+    // Dengarkan di setiap channel percakapan
+    window.allConversations.forEach(conversation => {
+        const channelName = `conversation.${conversation.id}`;
+        console.log(`🔔 Subscribing to: private-${channelName}`);
+
+        const channel = Echo.private(channelName);
+
+        channel.subscribed(() => {
+            console.log(`✅ Successfully subscribed to: private-${channelName}`);
+        });
+
+        channel.error((error) => {
+            console.error(`❌ Error subscribing to ${channelName}:`, error);
+        });
+
+        // 🔥 Listen untuk NewMessageSent event
+        channel.listen('.NewMessageSent', (e) => {
+            console.log('📨 ===== NEW MESSAGE EVENT =====');
+            console.log('📨 Channel:', channelName);
+            console.log('📨 Raw event:', e);
+            console.log('📨 Message data:', e.message);
+            console.log('📨 Current conversation:', currentConversationId);
+            console.log('📨 ==============================');
+
+            if (e.message) {
+                handleNewMessage(e.message);
+            } else {
+                console.error('❌ Event tidak punya property "message":', e);
+            }
+        });
+
+        // 🔥 Event untuk message deleted
+        channel.listen('.MessageDeleted', (e) => {
+            console.log('🗑️ ===== DELETE MESSAGE EVENT =====');
+            console.log('🗑️ Channel:', channelName);
+            console.log('🗑️ Raw event:', e);
+            console.log('🗑️ ==================================');
+
+            if (e.message_id || e.id) {
+                handleMessageDeleted(e);
+            }
+        });
+
+        // 🔥 PERBAIKAN: Tambahkan typing indicators
+        channel.listenForWhisper('typing', (data) => {
+            console.log('⌨️ Typing event received:', data);
+            handleUserTyping(data);
+        });
+
+        channel.listenForWhisper('stop-typing', (data) => {
+            console.log('⏹️ Stop typing event received:', data);
+            handleUserStopTyping(data);
+        });
+
+        channel.listen('.MessageEdited', (e) => {
+            console.log('✏️ ===== MESSAGE EDITED EVENT =====');
+            console.log('✏️ Channel:', channelName);
+            console.log('✏️ Raw event:', e);
+            console.log('✏️ =================================');
+
+            if (e.message) {
+                handleMessageEdited(e.message);
+            }
+        });
+    });
+
+    console.log('✅ Echo listeners setup complete!');
+    console.log('📡 Active channels:', Object.keys(window.Echo.connector.channels));
+}
+
+// -----------------------------------------------------------------
+// LANGKAH 11: Event Listeners Setup
 // -----------------------------------------------------------------
 
 function setupInputListeners() {
@@ -1859,16 +2356,16 @@ function setupInputListeners() {
     dropZone.addEventListener('dragover', handleDragOver);
 }
 
-function scrollToBottom() {
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-}
+// -----------------------------------------------------------------
+// LANGKAH 12: Global Functions
+// -----------------------------------------------------------------
 
 window.selectConversation = function (conversationId) {
     loadMessages(conversationId);
 }
 
 // -----------------------------------------------------------------
-// LANGKAH 7.5: Enhanced Error Handling (TAMBAHKAN SEBELUM DOMContentLoaded)
+// LANGKAH 13: Error Handling & Initialization
 // -----------------------------------------------------------------
 
 // Global error handler
@@ -1902,9 +2399,11 @@ window.addEventListener('offline', () => {
     });
 });
 
+
 // -----------------------------------------------------------------
-// LANGKAH 7: Inisialisasi
+// LANGKAH 14: Inisialisasi
 // -----------------------------------------------------------------
+
 document.addEventListener('DOMContentLoaded', async function () {
     const chatPageContainer = document.getElementById('chat-page-container');
     if (!chatPageContainer) {
@@ -1923,5 +2422,3 @@ document.addEventListener('DOMContentLoaded', async function () {
     setupEchoListeners();
     scrollToBottom();
 });
-
-
