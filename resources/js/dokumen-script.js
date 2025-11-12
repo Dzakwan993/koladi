@@ -82,31 +82,54 @@ export default function documentSearch() {
                 },
 
                 processRootFiles() {
-                    const processedFiles = this.processFiles(this.backendRootFiles);
-                    
+                    // Pastikan kita memproses file root melalui processFiles sehingga logic nama/tipe/icon konsisten
+                    const processedFiles = this.processFiles(this.backendRootFiles || []);
+
                     // Group by type untuk kompatibilitas dengan kode existing
-                    this.pdfFiles = processedFiles.filter(file => file.type === 'PDF');
-                    this.wordFiles = processedFiles.filter(file => file.type === 'Word');
-                    this.excelFiles = processedFiles.filter(file => file.type === 'Excel');
+                    this.pdfFiles        = processedFiles.filter(f => f.type === 'PDF');
+                    this.wordFiles       = processedFiles.filter(f => f.type === 'Word');
+                    this.excelFiles      = processedFiles.filter(f => f.type === 'Excel');
+                    this.powerPointFiles = processedFiles.filter(f => f.type === 'PowerPoint');
+                    this.textFiles       = processedFiles.filter(f => f.type === 'Text');
+                    this.imageFiles      = processedFiles.filter(f => f.type === 'Image');
+                    this.zipFiles        = processedFiles.filter(f => f.type === 'Zip');
+                    this.videoFiles      = processedFiles.filter(f => f.type === 'Video');
+                    this.audioFiles      = processedFiles.filter(f => f.type === 'Audio');
+                    this.codeFiles       = processedFiles.filter(f => f.type === 'Code');
+                    this.unknownFiles    = processedFiles.filter(f => f.type === 'Unknown');
                 },
 
                 processFiles(files) {
-                    return files.map(file => ({
-                        id: file.id,
-                        name: file.name || file.file_name,
-                        type: this.getFileType(file.name || file.file_name),
-                        icon: this.getFileIcon(this.getFileType(file.name || file.file_name)),
-                        size: this.formatFileSize(file.size || 0),
-                        creator: {
-                            name: file.uploader?.name || 'Unknown',
-                            avatar: file.uploader?.avatar || 'https://i.pravatar.cc/32?img=8'
-                        },
-                        createdAt: file.created_at || file.uploaded_at,
-                        isSecret: file.is_private || false,
-                        // Tambahan properti untuk kompatibilitas
-                        comments: file.comments || [],
-                        recipients: []
-                    }));
+                    return (files || []).map(file => {
+                        // Ambil nama dari properti yang ada, atau ekstrak dari URL
+                        const originalName = file.name || file.file_name || null;
+                        const extractedName = file.file_url
+                            ? file.file_url.split('/').pop()
+                            : null;
+                        // Prioritaskan originalName bila ada, kalau gak ada pakai extractedName
+                        const displayName = originalName || extractedName || 'Unknown File';
+
+                        // Dapatkan type dari displayName (getFileType harus mampu menerima nama)
+                        const type = this.getFileType(displayName);
+
+                        return {
+                            id: file.id,
+                            // gunakan displayName agar di Blade x-text="file.name" muncul
+                            name: displayName,
+                            type: type,
+                            icon: this.getFileIcon(type),
+                            size: this.formatFileSize(file.size || 0),
+                            creator: {
+                                // perhatikan properti uploader: kamu pakai full_name di data
+                                name: file.uploader?.full_name || file.uploader?.name || 'Unknown',
+                                avatar: file.uploader?.avatar || 'https://i.pravatar.cc/32?img=8'
+                            },
+                            createdAt: file.created_at || file.uploaded_at,
+                            isSecret: file.is_private || false,
+                            comments: file.comments || [],
+                            recipients: []
+                        };
+                    });
                 },
 
                 get fileBreadcrumbs() {
@@ -289,6 +312,23 @@ export default function documentSearch() {
                     this.breadcrumbs = [];
                     this.currentFile = null;
                 },
+
+                get allFiles() {
+                    return [
+                        ...this.pdfFiles,
+                        ...this.wordFiles,
+                        ...this.excelFiles,
+                        ...this.powerPointFiles,
+                        ...this.textFiles,
+                        ...this.imageFiles,
+                        ...this.zipFiles,
+                        ...this.videoFiles,
+                        ...this.audioFiles,
+                        ...this.codeFiles,
+                        ...this.unknownFiles,
+                    ];
+                },
+
 
                 updateBreadcrumbs() {
                     this.breadcrumbs = [...this.folderHistory];
@@ -544,20 +584,39 @@ export default function documentSearch() {
                 },
 
                 getFileType(filename) {
-                    if (filename.toLowerCase().endsWith('.pdf')) return 'PDF';
-                    if (filename.toLowerCase().endsWith('.docx') || filename.toLowerCase().endsWith('.doc')) return 'Word';
-                    if (filename.toLowerCase().endsWith('.xlsx') || filename.toLowerCase().endsWith('.xls')) return 'Excel';
-                    return 'File';
+                    const name = filename.toLowerCase();
+                    if (name.endsWith('.pdf')) return 'PDF';
+                    if (name.endsWith('.doc') || name.endsWith('.docx')) return 'Word';
+                    if (name.endsWith('.xls') || name.endsWith('.xlsx') || name.endsWith('.csv')) return 'Excel';
+                    if (name.endsWith('.ppt') || name.endsWith('.pptx')) return 'PowerPoint';
+                    if (name.endsWith('.txt') || name.endsWith('.rtf') || name.endsWith('.odt')) return 'Text';
+                    if (name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') || name.endsWith('.gif') || name.endsWith('.svg') || name.endsWith('.webp') || name.endsWith('.bmp')) return 'Image';
+                    if (name.endsWith('.zip') || name.endsWith('.rar') || name.endsWith('.7z') || name.endsWith('.tar') || name.endsWith('.gz')) return 'Zip';
+                    if (name.endsWith('.mp4') || name.endsWith('.mov') || name.endsWith('.avi') || name.endsWith('.mkv')) return 'Video';
+                    if (name.endsWith('.mp3') || name.endsWith('.wav') || name.endsWith('.ogg')) return 'Audio';
+                    if (name.endsWith('.js') || name.endsWith('.html') || name.endsWith('.css') || name.endsWith('.json') || name.endsWith('.xml') || name.endsWith('.php') || name.endsWith('.py')) return 'Code';
+
+                    return 'Unknown'; // fallback
                 },
 
                 getFileIcon(fileType) {
-                    const icons = {
-                        'PDF': `${window.assetPath}images/icons/pdf.svg`,
-                        'Word': `${window.assetPath}images/icons/microsoft-word.svg`,
-                        'Excel': `${window.assetPath}images/icons/excel.svg`,
-                        'File': `${window.assetPath}images/icons/file.svg`,
+                    const base = window.assetPath || '/'
+
+                   const icons = {
+                        'PDF': `${base}images/icons/pdf.svg`,
+                        'Word': `${base}images/icons/microsoft-word.svg`,
+                        'Excel': `${base}images/icons/excel.svg`,
+                        'PowerPoint': `${base}images/icons/powerpoint.svg`,
+                        'Text': `${base}images/icons/text-file.svg`,
+                        'Image': `${base}images/icons/image.svg`,
+                        'Zip': `${base}images/icons/zip.svg`,
+                        'Video': `${base}images/icons/video.svg`,
+                        'Audio': `${base}images/icons/audio.svg`,
+                        'Code': `${base}images/icons/code.svg`,
+                        'Unknown': `${base}images/icons/file-unknown.svg`,
                     };
-                    return icons[fileType] || icons['File'];
+
+                    return icons[fileType] || icons['Unknown'];
                 },
 
                 getFolderIcon() {

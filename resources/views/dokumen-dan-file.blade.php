@@ -8,7 +8,7 @@
 @section('title', 'Dokumen dan File')
 
 @section('content')
-<div x-data="documentSearch" 
+<div x-data="documentSearch()" 
          x-init="$store.workspace = { selectedMenu: 'dokumen' };
             // Inisialisasi data dari backend
             initData(@js($folders), @js($rootFiles));"  class="bg-[#f3f6fc] min-h-screen">
