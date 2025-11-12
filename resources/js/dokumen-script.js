@@ -43,10 +43,21 @@ export default function documentSearch() {
                 backendFolders: [],
                 backendRootFiles: [],
 
-                // Computed Properties
-                get allDocuments() {
-                    return [...this.backendFolders, ...this.backendRootFiles];
-                },
+                get allFiles() {
+                    return [
+                        ...this.pdfFiles,
+                        ...this.wordFiles,
+                        ...this.excelFiles,
+                        ...this.powerPointFiles,
+                        ...this.textFiles,
+                        ...this.imageFiles,
+                        ...this.zipFiles,
+                        ...this.videoFiles,
+                        ...this.audioFiles,
+                        ...this.codeFiles,
+                        ...this.unknownFiles,
+                    ];
+                },                
 
                 // Function untuk inisialisasi data
                 initData(foldersData, rootFilesData) {
@@ -59,6 +70,7 @@ export default function documentSearch() {
                 },
 
                 processBackendData() {
+                    
                     // Process folders
                     this.folders = this.backendFolders.map(folder => ({
                         id: folder.id,
@@ -76,6 +88,7 @@ export default function documentSearch() {
                         files: folder.files ? this.processFiles(folder.files) : [],
                         filesCount: folder.files_count || 0
                     }));
+
 
                     // Process root files
                     this.processRootFiles();
@@ -150,6 +163,7 @@ export default function documentSearch() {
 
                 // Search Functions
                 filterDocuments() {
+                    console.log('search Query:', this.searchQuery);
                     if (this.searchQuery.trim() === '') {
                         this.filteredDocuments = [];
                         return;
@@ -166,9 +180,15 @@ export default function documentSearch() {
                         );
                         this.filteredDocuments = [...folderResults, ...fileResults];
                     } else {
-                        this.filteredDocuments = this.allDocuments.filter(doc =>
-                            doc.name.toLowerCase().includes(query) || doc.type.toLowerCase().includes(query)
+                        const folderResults = this.folders.filter(folder =>
+                            folder.name.toLowerCase().includes(query)
                         );
+
+                        const fileResults = this.allFiles.filter(file =>
+                            file.name.toLowerCase().includes(query) || file.type.toLowerCase().includes(query)
+                        );
+
+                        this.filteredDocuments = [...folderResults, ...fileResults];
                     }
                 },
 
@@ -312,23 +332,6 @@ export default function documentSearch() {
                     this.breadcrumbs = [];
                     this.currentFile = null;
                 },
-
-                get allFiles() {
-                    return [
-                        ...this.pdfFiles,
-                        ...this.wordFiles,
-                        ...this.excelFiles,
-                        ...this.powerPointFiles,
-                        ...this.textFiles,
-                        ...this.imageFiles,
-                        ...this.zipFiles,
-                        ...this.videoFiles,
-                        ...this.audioFiles,
-                        ...this.codeFiles,
-                        ...this.unknownFiles,
-                    ];
-                },
-
 
                 updateBreadcrumbs() {
                     this.breadcrumbs = [...this.folderHistory];
