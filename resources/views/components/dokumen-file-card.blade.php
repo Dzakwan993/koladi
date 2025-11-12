@@ -19,4 +19,7 @@
 
     <img :src="file.icon" :alt="file.type" class="w-14 h-14 mb-3">
     <span class="text-xs text-gray-600 truncate w-full" x-text="file.name"></span>
+
+     <!-- Tambahan: Tampilkan type -->
+    <span class="text-xs text-gray-400 mt-1" x-text="file.type"></span>
 </div>

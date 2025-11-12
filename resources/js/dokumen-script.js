@@ -43,6 +43,7 @@ export default function documentSearch() {
                 backendFolders: [],
                 backendRootFiles: [],
 
+                // Mengembalikan seluruh data file
                 get allFiles() {
                     return [
                         ...this.pdfFiles,
@@ -84,7 +85,7 @@ export default function documentSearch() {
                         },
                         createdAt: folder.created_at,
                         recipients: [],
-                        subFolders: [], // Anda perlu menyesuaikan jika ada nested folders
+                        subFolders: [], 
                         files: folder.files ? this.processFiles(folder.files) : [],
                         filesCount: folder.files_count || 0
                     }));
@@ -163,6 +164,7 @@ export default function documentSearch() {
 
                 // Search Functions
                 filterDocuments() {
+                    console.log('%c🔥 filterDocuments terpanggil!', 'color: orange');
                     console.log('search Query:', this.searchQuery);
                     if (this.searchQuery.trim() === '') {
                         this.filteredDocuments = [];
@@ -171,25 +173,65 @@ export default function documentSearch() {
 
                     const query = this.searchQuery.toLowerCase();
 
-                    if (this.currentFolder) {
-                        const folderResults = this.currentFolder.subFolders.filter(folder =>
-                            folder.name.toLowerCase().includes(query)
-                        );
-                        const fileResults = this.currentFolder.files.filter(file =>
-                            file.name.toLowerCase().includes(query) || file.type.toLowerCase().includes(query)
-                        );
-                        this.filteredDocuments = [...folderResults, ...fileResults];
-                    } else {
-                        const folderResults = this.folders.filter(folder =>
-                            folder.name.toLowerCase().includes(query)
-                        );
+                    // Ambil semua folder (semua level)
+                    const allFolders = this.getAllFolders(this.folders);
 
-                        const fileResults = this.allFiles.filter(file =>
-                            file.name.toLowerCase().includes(query) || file.type.toLowerCase().includes(query)
-                        );
+                    // Ambil semua file (semua level)
+                    const allFiles = this.getAllFiles(this.folders);
 
-                        this.filteredDocuments = [...folderResults, ...fileResults];
-                    }
+                    // Ambil file di root (kalau ada)
+                    const rootFiles = this.allFiles || [];
+
+                    // Gabungkan semua dokumen
+                    const allDocuments = [...allFolders, ...allFiles, ...rootFiles];
+
+                    console.log('allDocuments:', allDocuments);
+
+                     // Filter berdasarkan nama atau tipe
+                    this.filteredDocuments = allDocuments.filter(doc =>
+                        doc.name.toLowerCase().includes(query) ||
+                        (doc.type && doc.type.toLowerCase().includes(query))
+                    );
+                },
+
+                getAllFiles(folders){
+                    let result = [];
+
+                    // Safety check: pastikan 'folders' itu array
+                    if (!Array.isArray(folders)) return result;
+
+                    folders.forEach(folder => {
+                        // Ambil semua file di folder ini
+                        if (folder.files && folder.files.length > 0) {
+                            result = result.concat(folder.files);
+                        }
+
+                        // Kalau ada subfolder, ambil file-nya juga secara rekursif
+                        if (folder.subFolders && folder.subFolders.length > 0) {
+                            result = result.concat(this.getAllFiles(folder.subFolders));
+                        }
+                    });
+
+                    return result;
+                },
+
+                getAllFolders(folders){
+                    let result = [];
+
+                    // Safety check: kalau bukan array, return kosong
+                    if (!Array.isArray(folders)) return result;
+
+                    folders.forEach(folder => {
+                        // Masukkan folder ini ke hasil
+                        result.push(folder);
+
+                        // Kalau folder punya subFolders, ambil juga semua isinya (rekursif)
+                        if (folder.subFolders && folder.subFolders.length > 0) {
+                            result = result.concat(this.getAllFolders(folder.subFolders));
+                        }
+                    });
+
+                    return result;
                 },
 
                 clearSearch() {
