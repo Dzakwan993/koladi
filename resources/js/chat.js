@@ -389,6 +389,21 @@ function createMemberHTML(member) {
 }
 
 function createMessageHTML(message) {
+    console.log('🔍 Creating message HTML:', {
+        id: message.id,
+        hasReply: !!message.reply_to_message_id,
+        replyTo: message.replyTo,
+        replyToMessageId: message.reply_to_message_id
+    });
+
+    if (message.reply_to_message_id && message.replyTo) {
+        console.log('🔍 Reply data details:', {
+            repliedMessage: message.replyTo,
+            repliedContent: message.replyTo.content,
+            repliedSender: message.replyTo.sender
+        });
+    }
+    
     const isSender = message.sender_id === AUTH_USER_ID;
     const senderName = isSender ? 'Anda' : (message.sender ? message.sender.full_name : 'User');
     const initials = getInitials(senderName);
@@ -494,8 +509,7 @@ function createMessageHTML(message) {
         let repliedAttachmentIcon = '';
 
         if (isRepliedMessageDeleted) {
-            repliedContent = repliedMessage.sender_id === AUTH_USER_ID ?
-                'Kamu telah menghapus pesan ini' : 'Pesan ini telah dihapus';
+            repliedContent = 'Pesan telah dihapus';
         } else if (repliedMessage.attachments && repliedMessage.attachments.length > 0) {
             // Tampilkan info file untuk pesan dengan attachment
             const fileCount = repliedMessage.attachments.length;
@@ -523,20 +537,27 @@ function createMessageHTML(message) {
             repliedContent = repliedMessage.content || 'Pesan kosong';
         }
 
+        // Potong teks jika terlalu panjang
+        const displayContent = repliedContent.length > 50 ?
+            repliedContent.substring(0, 50) + '...' : repliedContent;
+
         replyPreviewHTML = `
-            <div class="reply-preview mb-2 p-2 border-l-4 border-blue-500 bg-blue-50 rounded-r-lg cursor-pointer hover:bg-blue-100 transition-colors"
+            <div class="reply-info mb-2 p-2 bg-blue-50 rounded-lg border-l-4 border-blue-400 cursor-pointer hover:bg-blue-100 transition-colors"
                  onclick="scrollToMessage('${message.reply_to_message_id}')">
                 <div class="flex items-start gap-2">
+                    <div class="text-blue-500 mt-0.5 flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                        </svg>
+                    </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-xs font-semibold text-blue-700 flex items-center gap-1">
-                            <svg class="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
-                            </svg>
-                            ${repliedSenderName}
-                        </p>
-                        <div class="flex items-center gap-1 mt-1">
-                            ${repliedAttachmentIcon ? `<span class="text-xs">${repliedAttachmentIcon}</span>` : ''}
-                            <p class="text-xs text-blue-600 truncate">${repliedContent}</p>
+                        <div class="text-xs font-semibold text-blue-700 mb-1">
+                            Membalas ${repliedSenderName}
+                        </div>
+                        <div class="text-xs text-blue-600 truncate flex items-center gap-1">
+                            ${repliedAttachmentIcon ? `<span>${repliedAttachmentIcon}</span>` : ''}
+                            <span class="truncate">${displayContent}</span>
                         </div>
                     </div>
                 </div>
@@ -586,7 +607,7 @@ function createMessageHTML(message) {
         }
     }
 
-    // 🔥 PERBAIKAN UTAMA: Layout bubble yang menyesuaikan konten
+    // Content
     let contentHTML = '';
     if (message.content && message.content.trim() !== '') {
         const processedContent = detectAndCreateLinks(message.content);
@@ -653,8 +674,8 @@ function createMessageHTML(message) {
     // Pesan normal - BUBBLE MENYESUAIKAN KONTEN
     if (isSender) {
         return `
-            <div id="${message.id}" class="flex items-start justify-end group message-new">
-                <div class="flex flex-col items-end max-w-[70%] min-w-0">
+            <div id="${message.id}" class="flex items-start justify-end group message-new mb-4">
+                <div class="flex flex-col items-end max-w-[75%] min-w-0">
                     <div class="flex items-center justify-end gap-2 mb-1 w-full">
                         ${actionButtonsHTML}
                         <span class="text-xs text-gray-500 whitespace-nowrap">${time} ${editIndicator}</span>
@@ -663,7 +684,8 @@ function createMessageHTML(message) {
                         </div>
                         <span class="font-semibold text-gray-700 text-sm whitespace-nowrap">Anda</span>
                     </div>
-                    <div class="bg-blue-100 rounded-2xl rounded-br-md px-4 py-3 shadow-sm w-auto min-w-0 max-w-full">
+
+                    <div class="bg-blue-500 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm w-auto min-w-0 max-w-full">
                         ${replyPreviewHTML}
                         ${contentHTML}
                         ${attachmentsHTML}
@@ -676,16 +698,17 @@ function createMessageHTML(message) {
         `;
     } else {
         return `
-            <div id="${message.id}" class="flex items-start justify-start group message-new">
+            <div id="${message.id}" class="flex items-start justify-start group message-new mb-4">
                 <div class="flex-shrink-0 mr-3">
                     ${avatarHTML}
                 </div>
-                <div class="flex flex-col items-start max-w-[70%] min-w-0">
+                <div class="flex flex-col items-start max-w-[75%] min-w-0">
                     <div class="flex items-center gap-2 mb-1 w-full">
                         <span class="font-semibold text-gray-700 text-sm whitespace-nowrap">${senderName}</span>
                         <span class="text-xs text-gray-500 whitespace-nowrap">${time} ${editIndicator}</span>
                         ${actionButtonsHTML}
                     </div>
+
                     <div class="bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm w-auto min-w-0 max-w-full">
                         ${replyPreviewHTML}
                         ${contentHTML}
@@ -696,7 +719,6 @@ function createMessageHTML(message) {
         `;
     }
 }
-
 // -----------------------------------------------------------------
 // LANGKAH 3.6: Fungsi UPDATE SIDEBAR & MESSAGE HANDLING
 // -----------------------------------------------------------------
@@ -1122,44 +1144,15 @@ window.startReplyMessage = function (messageId) {
         return;
     }
 
-    currentReplyToMessage = messageId;
+    // Dapatkan data message dari DOM atau dari stored messages
+    const messageData = getMessageDataById(messageId); // Anda perlu implement fungsi ini
 
-    // Ambil data pesan yang akan di-reply dengan lebih akurat
-    let messageContent = '';
-    const contentElement = messageElement.querySelector('.message-content');
-
-    if (contentElement) {
-        messageContent = contentElement.textContent || '';
-    } else {
-        // Fallback untuk berbagai tipe pesan
-        const textElements = messageElement.querySelectorAll('p.text-sm');
-        for (let element of textElements) {
-            if (!element.classList.contains('text-gray-500') &&
-                !element.classList.contains('italic') &&
-                !element.classList.contains('text-xs')) {
-                messageContent = element.textContent || '';
-                break;
-            }
-        }
-
-        // Jika masih kosong, cek untuk pesan file
-        if (!messageContent) {
-            const fileIndicator = messageElement.querySelector('.italic');
-            if (fileIndicator) {
-                messageContent = fileIndicator.textContent || '📎 File';
-            }
-        }
+    if (!messageData) {
+        console.error('❌ Message data not found:', messageId);
+        return;
     }
 
-    const senderName = messageElement.querySelector('.font-semibold')?.textContent || 'User';
-    const isOwnMessage = messageElement.classList.contains('justify-end');
-
-    console.log('🔁 Reply data:', {
-        messageId,
-        content: messageContent,
-        senderName,
-        isOwnMessage
-    });
+    currentReplyToMessage = messageId;
 
     // Tampilkan reply preview
     const replyPreviewContainer = document.getElementById('replyPreviewContainer');
@@ -1167,15 +1160,25 @@ window.startReplyMessage = function (messageId) {
     const replyContent = document.getElementById('replyContent');
 
     if (replyPreviewContainer && replySenderName && replyContent) {
-        replySenderName.textContent = `Membalas ${isOwnMessage ? 'Anda' : senderName}`;
-        replyContent.textContent = messageContent.length > 50 ?
-            messageContent.substring(0, 50) + '...' : messageContent;
+        const senderName = messageData.sender_id === AUTH_USER_ID ?
+            'Anda' : (messageData.sender ? messageData.sender.full_name : 'User');
+
+        let content = messageData.content || '';
+        if (!content && messageData.attachments && messageData.attachments.length > 0) {
+            const fileType = messageData.attachments[0].file_type;
+            if (fileType.startsWith('image/')) {
+                content = 'Gambar';
+            } else if (fileType.startsWith('video/')) {
+                content = 'Video';
+            } else {
+                content = 'File';
+            }
+        }
+
+        replySenderName.textContent = `Membalas ${senderName}`;
+        replyContent.textContent = content.length > 50 ?
+            content.substring(0, 50) + '...' : content;
         replyPreviewContainer.style.display = 'block';
-    } else {
-        console.error('❌ Reply preview elements not found in DOM');
-        // Fallback: buat elemen jika tidak ada
-        createReplyPreviewContainer();
-        return;
     }
 
     // Hapus edit mode jika aktif
@@ -1184,14 +1187,32 @@ window.startReplyMessage = function (messageId) {
     // Focus ke input
     if (messageInput) {
         messageInput.focus();
-
-        // Scroll ke input area
         setTimeout(() => {
             messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
     }
 
     console.log('✅ Reply mode activated for message:', messageId);
+}
+
+// 🆕 Fungsi helper untuk mendapatkan data message
+function getMessageDataById(messageId) {
+    // Cari di messages yang sudah di-load
+    // Anda perlu menyimpan messages dalam array global atau query dari DOM
+    const messageElement = document.getElementById(messageId);
+    if (!messageElement) return null;
+
+    // Ambil data dari DOM attributes atau dari stored array
+    // Ini adalah implementasi sederhana, sesuaikan dengan struktur data Anda
+    return {
+        id: messageId,
+        sender_id: messageElement.classList.contains('justify-end') ? AUTH_USER_ID : 'other',
+        sender: {
+            full_name: messageElement.querySelector('.font-semibold')?.textContent || 'User'
+        },
+        content: messageElement.querySelector('.message-content')?.textContent || '',
+        attachments: [] // Anda perlu handle ini sesuai struktur
+    };
 }
 
 // 🆕 Fungsi fallback untuk membuat reply preview container jika tidak ada

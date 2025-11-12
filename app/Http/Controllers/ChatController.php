@@ -23,14 +23,27 @@ class ChatController extends Controller
         $userId = Auth::id();
         $workspace = Workspace::findOrFail($workspaceId);
 
-        $mainGroup = Conversation::firstOrCreate(
-            [
+        // ✅ PERBAIKAN: Approach yang lebih aman dengan double-check
+        $mainGroup = Conversation::where('workspace_id', $workspaceId)
+            ->where('type', 'group')
+            ->first();
+
+        // Jika tidak ada, buat baru
+        if (!$mainGroup) {
+            $mainGroup = Conversation::create([
                 'workspace_id' => $workspaceId,
                 'type' => 'group',
-                'name' => $workspace->name
-            ],
-            ['created_by' => $workspace->user_id]
-        );
+                'name' => $workspace->name,
+                'created_by' => $workspace->created_by // ✅ PERBAIKAN: gunakan created_by, bukan user_id
+            ]);
+
+            Log::info("Created new main conversation for workspace {$workspaceId} with name '{$workspace->name}'");
+        }
+        // ✅ DOUBLE SAFETY: Jika sudah ada, sync nama jika berbeda
+        else if ($mainGroup->name !== $workspace->name) {
+            $mainGroup->update(['name' => $workspace->name]);
+            Log::info("Synced conversation name from '{$mainGroup->name}' to '{$workspace->name}' for workspace {$workspaceId}");
+        }
 
         $mainGroupParticipant = ConversationParticipant::firstOrCreate(
             [
@@ -83,6 +96,9 @@ class ChatController extends Controller
     /**
      * Load messages dengan relasi replyTo
      */
+    /**
+     * Load messages dengan relasi replyTo - PERBAIKAN VERSION
+     */
     public function showMessages(string $conversationId)
     {
         $userId = Auth::id();
@@ -95,11 +111,25 @@ class ChatController extends Controller
             return response()->json(['error' => 'Akses ditolak'], 403);
         }
 
-        // 🆕 Tambahkan 'replyTo.sender' ke eager loading
-        $messages = Message::with(['sender', 'attachments', 'replyTo.sender'])
+        // ✅✅✅ PERBAIKAN KRUSIAL: Load SEMUA relasi termasuk replyTo dengan eager loading
+        $messages = Message::with([
+            'sender',
+            'attachments',
+            'replyTo.sender',      // ✅ TAMBAH INI
+            'replyTo.attachments'  // ✅ TAMBAH INI
+        ])
             ->where('conversation_id', $conversationId)
             ->orderBy('created_at', 'asc')
             ->get();
+
+        // 🔥 DEBUG: Log untuk memastikan replyTo terload
+        $messagesWithReply = $messages->filter(fn($msg) => !is_null($msg->reply_to_message_id));
+        Log::info('Loaded messages with reply data', [
+            'conversation_id' => $conversationId,
+            'total_messages' => $messages->count(),
+            'messages_with_reply' => $messagesWithReply->count(),
+            'reply_to_loaded' => $messagesWithReply->first() ? !is_null($messagesWithReply->first()->replyTo) : false
+        ]);
 
         try {
             ConversationParticipant::where('conversation_id', $conversationId)
@@ -140,16 +170,23 @@ class ChatController extends Controller
         ]);
 
         try {
-            // 🔥 PERBAIKAN: Gunakan proper property assignment
-            $message->content = $request->content;
-            $message->is_edited = true;
-            $message->edited_at = now();
-            $message->save();
+            // Update message
+            $message->update([
+                'content' => $request->input('content'),
+                'is_edited' => true,
+                'edited_at' => now()
+            ]);
 
-            $message->load(['sender', 'attachments', 'replyTo.sender']);
+            // ✅ PERBAIKAN: Load SEMUA relasi termasuk replyTo
+            $message->load([
+                'sender',
+                'attachments',
+                'replyTo.sender',
+                'replyTo.attachments'
+            ]);
 
             // Broadcast event edit
-            event(new MessageEdited($message)); // 🆕 Gunakan event yang benar
+            event(new MessageEdited($message));
 
             return response()->json([
                 'success' => true,
@@ -223,7 +260,7 @@ class ChatController extends Controller
             }
 
             // 🆕 Load relasi dengan replyTo
-            $message->load(['sender', 'attachments', 'replyTo.sender']);
+            $message->load(['sender', 'attachments', 'replyTo.sender', 'replyTo.attachments']);
 
             DB::commit();
 
@@ -242,6 +279,7 @@ class ChatController extends Controller
             ], 500);
         }
     }
+
     private function updateConversationLastMessage($conversationId)
     {
         // Cari pesan terbaru yang belum dihapus

@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log; // <- TAMBAH INI
-use Illuminate\Support\Str;
-use App\Models\Workspace;
-use App\Models\UserWorkspace;
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
 use App\Models\Company;
+use App\Models\Workspace;
+use Illuminate\Support\Str;
+use App\Models\Conversation;
+use Illuminate\Http\Request;
+use App\Models\UserWorkspace;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log; // <- TAMBAH INI
 
 class WorkspaceController extends Controller
 {
@@ -125,17 +126,43 @@ public function index()
             return response()->json(['error' => 'Anda tidak memiliki akses ke workspace ini'], 403);
         }
 
-        $workspace->update([
-            'name' => $request->name,
-            'type' => $request->type,
-            'description' => $request->description
-        ]);
+        DB::beginTransaction();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Workspace berhasil diperbarui!',
-            'workspace' => $workspace
-        ]);
+        try {
+            $oldName = $workspace->name;
+
+            // Update workspace
+            $workspace->update([
+                'name' => $request->name,
+                'type' => $request->type,
+                'description' => $request->description
+            ]);
+
+            // ✅ PERBAIKAN: Update conversation name juga
+            $mainConversation = Conversation::where('workspace_id', $workspace->id)
+                ->where('type', 'group')
+                ->first();
+
+            if ($mainConversation && $mainConversation->name === $oldName) {
+                $mainConversation->update(['name' => $request->name]);
+                Log::info("Updated conversation name from '{$oldName}' to '{$request->name}' for workspace {$workspace->id}");
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Workspace berhasil diperbarui!',
+                'workspace' => $workspace
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating workspace: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui workspace: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     // Hapus workspace
