@@ -1108,6 +1108,9 @@
                                 file: null
                             },
 
+
+                            currentColumnId: null,
+
                             // --- Members ---
                             searchMember: '',
                             selectAll: false,
@@ -1387,7 +1390,7 @@
                                     id: 5,
                                     title: "Testing Sistem Integrasi",
                                     phase: "Testing",
-                                    status: "inprogress",
+                                    status: "   ",
                                     members: [{
                                         name: 'Dzakwan',
                                         avatar: 'https://i.pravatar.cc/40?img=2'
@@ -1494,6 +1497,11 @@ async openDetail(taskId) {
     }
 },
 
+openTaskModalForColumn(columnId = null) {
+            this.currentColumnId = columnId;
+            this.openTaskModal = true;
+        },
+
                             // Enable edit mode
                             enableEditMode() {
                                 this.isEditMode = true;
@@ -1567,6 +1575,11 @@ async openDetail(taskId) {
                                     return;
                                 }
 
+                                if (!this.currentColumnId) {
+                this.showNotification('Kolom tujuan tidak ditemukan', 'error');
+                return;
+            }
+
                                 try {
                                     const workspaceId = this.getCurrentWorkspaceId();
                                     if (!workspaceId) {
@@ -1575,20 +1588,21 @@ async openDetail(taskId) {
                                     }
 
                                     // Siapkan data untuk backend
-                                    const formData = {
-                                        workspace_id: workspaceId,
-                                        title: this.taskForm.title,
-                                        description: this.taskForm.description, // Langsung dari form
-                                        phase: this.taskForm.phase,
-                                        user_ids: this.taskForm.members.map(m => m.id),
-                                        is_secret: this.taskForm.is_secret,
-                                        label_ids: this.taskForm.labels.map(l => l.id),
-                                        checklists: this.taskForm.checklists.map(item => ({
-                                            title: item.title,
-                                            is_done: item.is_done || false
-                                        })),
-                                        attachment_ids: this.taskForm.attachments.map(att => att.id)
-                                    };
+                                     const formData = {
+                workspace_id: this.getCurrentWorkspaceId(),
+                board_column_id: this.currentColumnId, // ← KIRIM INI
+                title: this.taskForm.title,
+                description: this.taskForm.description,
+                phase: this.taskForm.phase,
+                user_ids: this.taskForm.members.map(m => m.id),
+                is_secret: this.taskForm.is_secret,
+                label_ids: this.taskForm.labels.map(l => l.id),
+                checklists: this.taskForm.checklists.map(item => ({
+                    title: item.title,
+                    is_done: item.is_done || false
+                })),
+                attachment_ids: this.taskForm.attachments.map(att => att.id)
+            };
 
                                     // Tambahkan datetime jika ada
                                     if (this.taskForm.startDate && this.taskForm.startTime) {

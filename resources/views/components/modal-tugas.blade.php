@@ -213,6 +213,8 @@
 
          <form @submit.prevent="createTask()" class="p-6 space-y-4">
              <!-- Nama Tugas -->
+                 <input type="hidden" x-model="currentColumnId" name="board_column_id">
+
              <div>
                  <label class="text-sm font-medium text-gray-700 mb-2 block">Nama Tugas <span
                          class="text-red-500">*</span></label>

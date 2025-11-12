@@ -480,6 +480,7 @@ public function storeWithAssignments(Request $request)
 {
     $validator = Validator::make($request->all(), [
         'workspace_id' => 'required|exists:workspaces,id',
+        'board_column_id' => 'required|exists:board_columns,id', // ← WAJIB DIPERBAIKI
         'title' => 'required|string|max:255',
         'description' => 'nullable|string',
         'phase' => 'required|string|max:255',
@@ -494,8 +495,7 @@ public function storeWithAssignments(Request $request)
         'attachment_ids' => 'array',
         'attachment_ids.*' => 'exists:attachments,id',
         'start_datetime' => 'nullable|date_format:Y-m-d H:i:s',
-        'due_datetime' => 'nullable|date_format:Y-m-d H:i:s|after:start_datetime',
-        'board_column_id' => 'nullable|exists:board_columns,id'
+        'due_datetime' => 'nullable|date_format:Y-m-d H:i:s|after:start_datetime'
     ]);
 
     if ($validator->fails()) {
@@ -517,20 +517,32 @@ public function storeWithAssignments(Request $request)
             ], 403);
         }
 
+        // ✅ VALIDASI: Pastikan board_column_id termasuk dalam workspace yang sama
+        $boardColumn = BoardColumn::where('id', $request->board_column_id)
+            ->where('workspace_id', $request->workspace_id)
+            ->first();
+
+        if (!$boardColumn) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kolom board tidak valid untuk workspace ini'
+            ], 422);
+        }
+
         DB::beginTransaction();
 
-        // Buat task
+        // Buat task dengan board_column_id yang dipilih
         $taskData = [
             'id' => Str::uuid()->toString(),
             'workspace_id' => $request->workspace_id,
+            'board_column_id' => $request->board_column_id, // ← GUNAKAN YANG DIPILIH
             'created_by' => $user->id,
             'title' => $request->title,
             'description' => $request->description,
             'phase' => $request->phase,
             'status' => 'todo',
             'priority' => $request->priority ?? 'medium',
-            'is_secret' => $request->is_secret ?? false,
-            'board_column_id' => $request->board_column_id ?? $this->getDefaultBoardColumnId($request->workspace_id)
+            'is_secret' => $request->is_secret ?? false
         ];
 
         // Tambahkan datetime jika ada
@@ -601,8 +613,6 @@ public function storeWithAssignments(Request $request)
     } catch (\Exception $e) {
         DB::rollBack();
         Log::error('Error creating task: ' . $e->getMessage());
-        Log::error('Stack trace: ' . $e->getTraceAsString());
-        
         return response()->json([
             'success' => false,
             'message' => 'Gagal membuat tugas: ' . $e->getMessage()

@@ -156,7 +156,7 @@
                             </div>
                         </div>
 
-                        <button @click="openTaskModal = true"
+                        <button @click="openTaskModalForColumn(column.id)"
                             class="w-full mt-3 py-2 text-sm font-medium text-gray-600 bg-white rounded-lg border border-gray-300 hover:bg-blue-500 hover:text-white hover:border-blue-500 transition-all duration-200 shadow-sm">
                             + Buat Tugas
                         </button>
