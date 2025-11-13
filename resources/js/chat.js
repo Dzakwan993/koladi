@@ -347,7 +347,7 @@ function createConversationHTML(conversation) {
         ${avatarHTML}
         </div>
         <div class="ml-3 flex-1 min-w-0">
-        <h4 class="text-sm truncate">${chatName}</h4>
+        <h4 class="text-sm font-semibold truncate">${chatName}</h4>
         <p id="preview-${conversation.id}" class="text-xs text-gray-500 truncate">${lastMessageText}</p>
         </div>
         <div id="unread-badge-${conversation.id}" class="ml-2 flex-shrink-0" style="${unreadCount > 0 ? 'display: block;' : 'display: none;'}">
@@ -708,7 +708,7 @@ function createMessageHTML(message) {
                         <span class="font-semibold text-gray-700 text-sm whitespace-nowrap">Anda</span>
                     </div>
 
-                    <div class="bg-blue-500 text-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm w-auto min-w-0 max-w-full">
+                    <div class="bg-blue-100  rounded-2xl rounded-br-md px-4 py-3 shadow-sm w-auto min-w-0 max-w-full">
                         ${replyPreviewHTML}
                         ${contentHTML}
                         ${attachmentsHTML}
