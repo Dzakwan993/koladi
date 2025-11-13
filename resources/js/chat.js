@@ -10,6 +10,7 @@ let selectedFiles = [];
 let isSending = false;
 let currentReplyToMessage = null;
 let currentEditMessage = null;
+let loadedMessages = new Map();
 
 // -----------------------------------------------------------------
 // LANGKAH 1.5: Typing Variables (TAMBAHKAN SETELAH VARIABLE GLOBAL)
@@ -391,19 +392,11 @@ function createMemberHTML(member) {
 function createMessageHTML(message) {
     console.log('🔍 Creating message HTML:', {
         id: message.id,
-        hasReply: !!message.reply_to_message_id,
+        hasReplyId: !!message.reply_to_message_id,
         replyTo: message.replyTo,
-        replyToMessageId: message.reply_to_message_id
+        replyToExists: !!message.replyTo
     });
 
-    if (message.reply_to_message_id && message.replyTo) {
-        console.log('🔍 Reply data details:', {
-            repliedMessage: message.replyTo,
-            repliedContent: message.replyTo.content,
-            repliedSender: message.replyTo.sender
-        });
-    }
-    
     const isSender = message.sender_id === AUTH_USER_ID;
     const senderName = isSender ? 'Anda' : (message.sender ? message.sender.full_name : 'User');
     const initials = getInitials(senderName);
@@ -495,53 +488,55 @@ function createMessageHTML(message) {
         attachmentsHTML += '</div>';
     }
 
-    // 🔥 PERBAIKAN: Reply preview dengan layout yang benar
+    // 🔥 PERBAIKAN KRUSIAL: Reply preview dengan pengecekan yang lebih ketat
     let replyPreviewHTML = '';
-    if (message.reply_to_message_id && message.replyTo) {
-        const repliedMessage = message.replyTo;
-        const repliedSenderName = repliedMessage.sender_id === AUTH_USER_ID ?
-            'Anda' : (repliedMessage.sender ? repliedMessage.sender.full_name : 'User');
+    if (message.reply_to_message_id) {
+        console.log('🔍 Processing reply preview for message:', message.id);
+        console.log('🔍 Reply data:', message.reply_to); // 🔥 UBAH DARI replyTo
 
-        const isRepliedMessageDeleted = repliedMessage.message_type === 'deleted' ||
-            (repliedMessage.deleted_at !== null && repliedMessage.deleted_at !== undefined);
+        // ✅ SAFETY CHECK: Pastikan reply_to ada dan valid
+        if (message.reply_to && typeof message.reply_to === 'object') { // 🔥 UBAH
+            const repliedMessage = message.reply_to; // 🔥 UBAH
+            const repliedSenderName = repliedMessage.sender_id === AUTH_USER_ID ?
+                'Anda' : (repliedMessage.sender ? repliedMessage.sender.full_name : 'User');
 
-        let repliedContent = '';
-        let repliedAttachmentIcon = '';
+            const isRepliedMessageDeleted = repliedMessage.message_type === 'deleted' ||
+                (repliedMessage.deleted_at !== null && repliedMessage.deleted_at !== undefined);
 
-        if (isRepliedMessageDeleted) {
-            repliedContent = 'Pesan telah dihapus';
-        } else if (repliedMessage.attachments && repliedMessage.attachments.length > 0) {
-            // Tampilkan info file untuk pesan dengan attachment
-            const fileCount = repliedMessage.attachments.length;
-            const fileType = repliedMessage.attachments[0].file_type;
+            let repliedContent = '';
+            let repliedAttachmentIcon = '';
 
-            if (fileType.startsWith('image/')) {
-                repliedContent = 'Gambar';
-                repliedAttachmentIcon = '🖼️';
-            } else if (fileType.startsWith('video/')) {
-                repliedContent = 'Video';
-                repliedAttachmentIcon = '🎬';
-            } else if (fileType === 'application/pdf') {
-                repliedContent = 'PDF';
-                repliedAttachmentIcon = '📄';
+            if (isRepliedMessageDeleted) {
+                repliedContent = 'Pesan telah dihapus';
+            } else if (repliedMessage.attachments && repliedMessage.attachments.length > 0) {
+                const fileCount = repliedMessage.attachments.length;
+                const fileType = repliedMessage.attachments[0].file_type;
+
+                if (fileType.startsWith('image/')) {
+                    repliedContent = 'Gambar';
+                    repliedAttachmentIcon = '🖼️';
+                } else if (fileType.startsWith('video/')) {
+                    repliedContent = 'Video';
+                    repliedAttachmentIcon = '🎬';
+                } else if (fileType === 'application/pdf') {
+                    repliedContent = 'PDF';
+                    repliedAttachmentIcon = '📄';
+                } else {
+                    repliedContent = `${fileCount} file`;
+                    repliedAttachmentIcon = '📎';
+                }
+
+                if (repliedMessage.content && repliedMessage.content.trim() !== '') {
+                    repliedContent = repliedMessage.content;
+                }
             } else {
-                repliedContent = `${fileCount} file`;
-                repliedAttachmentIcon = '📎';
+                repliedContent = repliedMessage.content || 'Pesan kosong';
             }
 
-            // Jika ada konten text juga, tambahkan
-            if (repliedMessage.content && repliedMessage.content.trim() !== '') {
-                repliedContent = repliedMessage.content;
-            }
-        } else {
-            repliedContent = repliedMessage.content || 'Pesan kosong';
-        }
+            const displayContent = repliedContent.length > 50 ?
+                repliedContent.substring(0, 50) + '...' : repliedContent;
 
-        // Potong teks jika terlalu panjang
-        const displayContent = repliedContent.length > 50 ?
-            repliedContent.substring(0, 50) + '...' : repliedContent;
-
-        replyPreviewHTML = `
+            replyPreviewHTML = `
             <div class="reply-info mb-2 p-2 bg-blue-50 rounded-lg border-l-4 border-blue-400 cursor-pointer hover:bg-blue-100 transition-colors"
                  onclick="scrollToMessage('${message.reply_to_message_id}')">
                 <div class="flex items-start gap-2">
@@ -563,8 +558,36 @@ function createMessageHTML(message) {
                 </div>
             </div>
         `;
-    }
 
+            console.log('✅ Reply preview created successfully');
+        } else {
+            console.warn('⚠️ Reply data is missing or invalid:', {
+                reply_to_message_id: message.reply_to_message_id,
+                reply_to: message.reply_to // 🔥 UBAH
+            });
+
+            replyPreviewHTML = `
+            <div class="reply-info mb-2 p-2 bg-gray-50 rounded-lg border-l-4 border-gray-300">
+                <div class="flex items-start gap-2">
+                    <div class="text-gray-400 mt-0.5 flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-semibold text-gray-500 mb-1">
+                            Membalas pesan
+                        </div>
+                        <div class="text-xs text-gray-400 italic">
+                            Data pesan tidak tersedia
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        }
+    }
     // Action buttons
     let actionButtonsHTML = '';
     if (!isDeleted) {
@@ -1197,13 +1220,15 @@ window.startReplyMessage = function (messageId) {
 
 // 🆕 Fungsi helper untuk mendapatkan data message
 function getMessageDataById(messageId) {
-    // Cari di messages yang sudah di-load
-    // Anda perlu menyimpan messages dalam array global atau query dari DOM
+    // Coba ambil dari stored messages dulu
+    if (loadedMessages.has(messageId)) {
+        return loadedMessages.get(messageId);
+    }
+
+    // Fallback: ambil dari DOM
     const messageElement = document.getElementById(messageId);
     if (!messageElement) return null;
 
-    // Ambil data dari DOM attributes atau dari stored array
-    // Ini adalah implementasi sederhana, sesuaikan dengan struktur data Anda
     return {
         id: messageId,
         sender_id: messageElement.classList.contains('justify-end') ? AUTH_USER_ID : 'other',
@@ -1211,7 +1236,7 @@ function getMessageDataById(messageId) {
             full_name: messageElement.querySelector('.font-semibold')?.textContent || 'User'
         },
         content: messageElement.querySelector('.message-content')?.textContent || '',
-        attachments: [] // Anda perlu handle ini sesuai struktur
+        attachments: []
     };
 }
 
@@ -1391,30 +1416,57 @@ window.cancelEdit = function () {
 
 // 🆕 Fungsi untuk scroll ke pesan yang di-reply
 window.scrollToMessage = function (messageId) {
-    const messageElement = document.getElementById(messageId);
-    if (messageElement) {
-        // Hitung offset untuk scroll yang lebih tepat
-        const elementRect = messageElement.getBoundingClientRect();
-        const absoluteElementTop = elementRect.top + window.pageYOffset;
-        const middle = absoluteElementTop - (window.innerHeight / 2) + (elementRect.height / 2);
+    console.log('📜 Scrolling to message:', messageId);
 
-        window.scrollTo({
-            top: middle,
-            behavior: 'smooth'
+    const messageElement = document.getElementById(messageId);
+    if (!messageElement) {
+        console.log('⚠️ Pesan tidak ditemukan:', messageId);
+
+        // 🆕 Tampilkan notifikasi jika pesan tidak ditemukan
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true
         });
 
-        // Highlight efek yang lebih menarik
-        messageElement.style.transition = 'all 0.5s ease';
-        messageElement.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
-        messageElement.style.boxShadow = '0 0 0 2px rgba(59, 130, 246, 0.3)';
-
-        setTimeout(() => {
-            messageElement.style.backgroundColor = '';
-            messageElement.style.boxShadow = '';
-        }, 2000);
-    } else {
-        console.log('Pesan tidak ditemukan, mungkin belum di-load');
+        Toast.fire({
+            icon: 'info',
+            title: 'Pesan tidak ditemukan atau belum di-load'
+        });
+        return;
     }
+
+    // ✅ PERBAIKAN KRUSIAL: Scroll chatContainer, bukan window
+    const containerRect = chatContainer.getBoundingClientRect();
+    const messageRect = messageElement.getBoundingClientRect();
+
+    // Hitung posisi scroll yang tepat
+    const scrollTop = chatContainer.scrollTop;
+    const offsetTop = messageRect.top - containerRect.top + scrollTop;
+
+    // Posisikan message di tengah container
+    const targetScroll = offsetTop - (chatContainer.clientHeight / 2) + (messageRect.height / 2);
+
+    // Smooth scroll ke target
+    chatContainer.scrollTo({
+        top: targetScroll,
+        behavior: 'smooth'
+    });
+
+    // ✅ Highlight effect yang lebih smooth
+    messageElement.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+    messageElement.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+    messageElement.style.transform = 'scale(1.02)';
+    messageElement.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.4)';
+
+    // Remove highlight setelah 2 detik
+    setTimeout(() => {
+        messageElement.style.backgroundColor = '';
+        messageElement.style.transform = '';
+        messageElement.style.boxShadow = '';
+    }, 2000);
 }
 
 // -----------------------------------------------------------------
@@ -1688,9 +1740,43 @@ async function loadMessages(conversationId) {
     }
 
     try {
-        const response = await fetch(`${API_URL}/api/chat/${conversationId}/messages`);
+        const response = await fetch(`/api/chat/${conversationId}/messages`);
         if (!response.ok) throw new Error('Gagal memuat pesan');
+
         const messages = await response.json();
+
+        // 🔥 FIX: Convert snake_case ke camelCase untuk kompatibilitas
+        messages.forEach(msg => {
+            if (msg.reply_to) {
+                msg.replyTo = msg.reply_to;
+            }
+        });
+
+        // 🔥 SUPER DETAILED DEBUG
+        console.log('📥 ===== RESPONSE FROM BACKEND =====');
+        console.log('Total messages:', messages.length);
+
+        const messagesWithReplyId = messages.filter(m => m.reply_to_message_id);
+        console.log('Messages with reply_to_message_id:', messagesWithReplyId.length);
+
+        if (messagesWithReplyId.length > 0) {
+            const firstReply = messagesWithReplyId[0];
+            console.log('🔍 FIRST MESSAGE WITH REPLY:', {
+                id: firstReply.id,
+                reply_to_message_id: firstReply.reply_to_message_id,
+                replyTo: firstReply.replyTo,
+                replyTo_exists: !!firstReply.replyTo,
+                replyTo_type: typeof firstReply.replyTo,
+                replyTo_keys: firstReply.replyTo ? Object.keys(firstReply.replyTo) : null,
+                full_object: firstReply
+            });
+        }
+        console.log('===================================');
+
+        // Store messages
+        messages.forEach(msg => {
+            loadedMessages.set(msg.id, msg);
+        });
 
         if (messages.length === 0) {
             messageList.innerHTML = '<div class="p-6 text-center text-gray-500">Belum ada pesan di percakapan ini.</div>';
@@ -1722,7 +1808,7 @@ async function loadMessages(conversationId) {
         }
         scrollToBottom();
     } catch (error) {
-        console.error(error);
+        console.error('❌ Error loading messages:', error);
         messageList.innerHTML = '<div class="p-6 text-center text-red-500">Gagal memuat pesan.</div>';
     }
 }
@@ -1782,14 +1868,36 @@ window.startChatWithUser = async function (userId, userName) {
 function handleMessageEdited(message) {
     console.log('✏️ Handling edited message:', message.id);
 
-    const messageElement = document.getElementById(message.id);
-    if (messageElement) {
-        // Replace message element dengan yang baru
-        const newMessageHTML = createMessageHTML(message);
-        messageElement.outerHTML = newMessageHTML;
+    // 🔥 FIX: Convert reply_to ke replyTo
+    if (message.reply_to) {
+        message.replyTo = message.reply_to;
     }
 
-    // Update sidebar jika perlu
+    const messageElement = document.getElementById(message.id);
+    if (messageElement) {
+        // ✅ Replace message element dengan yang baru
+        const newMessageHTML = createMessageHTML(message);
+
+        // Smooth transition
+        messageElement.style.transition = 'opacity 0.3s ease';
+        messageElement.style.opacity = '0';
+
+        setTimeout(() => {
+            messageElement.outerHTML = newMessageHTML;
+
+            // Fade in
+            const updatedElement = document.getElementById(message.id);
+            if (updatedElement) {
+                updatedElement.style.opacity = '0';
+                setTimeout(() => {
+                    updatedElement.style.transition = 'opacity 0.3s ease';
+                    updatedElement.style.opacity = '1';
+                }, 50);
+            }
+        }, 300);
+    }
+
+    // Update sidebar preview
     updateSidebarOnNewMessage(message, false);
 }
 
@@ -1828,56 +1936,51 @@ function handleMessageDeleted(data) {
 }
 
 function handleNewMessage(message) {
-    console.log('📨 Received message:', message.id, 'from:', message.sender_id);
+    console.log('📨 ===== NEW MESSAGE EVENT =====');
+    console.log('📨 Raw message data:', message);
+    console.log('📨 reply_to data:', message.reply_to);
+    console.log('📨 reply_to_message_id:', message.reply_to_message_id);
+    console.log('📨 ==============================');
+
+    // 🔥 MAPPING: Convert reply_to ke replyTo untuk kompatibilitas dengan createMessageHTML
+    if (message.reply_to) {
+        message.replyTo = message.reply_to;
+        console.log('✅ Mapped reply_to to replyTo:', message.replyTo);
+    } else if (message.reply_to_message_id) {
+        console.warn('⚠️ Message has reply_to_message_id but no reply_to data!');
+    }
 
     const isOwnMessage = message.sender_id === AUTH_USER_ID;
 
-    // 🔥 PERBAIKAN KRUSIAL: Untuk pesan sendiri, handle dengan benar
     if (isOwnMessage) {
         console.log('📤 Own message from broadcast:', message.id);
 
-        // Cek apakah pesan sudah ada di DOM (untuk avoid duplicate)
         const existingMessage = document.getElementById(message.id);
         if (existingMessage) {
             console.log('✅ Message already exists, updating read status only');
-
-            // Update read status saja, jangan buat duplicate
             const statusElement = existingMessage.querySelector('.read-status');
             if (statusElement) {
-                statusElement.innerHTML = `
-                        <div class="flex items-center">
-                            <svg class="w-3.5 h-3.5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <svg class="w-3.5 h-3.5 text-blue-500 -ml-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                        </div>
-                    `;
+                statusElement.innerHTML = getReadStatusHTML(message);
             }
-            return; // 🔥 STOP di sini, jangan append message lagi
+            return;
         }
 
-        // Jika di conversation yang sama dan belum ada, tampilkan pesan real
         if (message.conversation_id === currentConversationId) {
             console.log('✅ Displaying own message in current conversation');
             appendMessage(message);
         }
 
-        // Update sidebar (tanpa increment unread)
         updateSidebarOnNewMessage(message, false);
         return;
     }
 
     // Pesan dari orang lain
     if (message.conversation_id === currentConversationId) {
-        // Tampilkan di chat aktif
         appendMessage(message);
         markConversationAsRead(message.conversation_id);
         updateAllOwnMessagesToRead();
         updateSidebarOnNewMessage(message, false);
     } else {
-        // Update sidebar dengan unread count
         updateSidebarOnNewMessage(message, true);
     }
 }

@@ -96,9 +96,6 @@ class ChatController extends Controller
     /**
      * Load messages dengan relasi replyTo
      */
-    /**
-     * Load messages dengan relasi replyTo - PERBAIKAN VERSION
-     */
     public function showMessages(string $conversationId)
     {
         $userId = Auth::id();
@@ -111,24 +108,36 @@ class ChatController extends Controller
             return response()->json(['error' => 'Akses ditolak'], 403);
         }
 
-        // ✅✅✅ PERBAIKAN KRUSIAL: Load SEMUA relasi termasuk replyTo dengan eager loading
-        $messages = Message::with([
-            'sender',
-            'attachments',
-            'replyTo.sender',      // ✅ TAMBAH INI
-            'replyTo.attachments'  // ✅ TAMBAH INI
-        ])
-            ->where('conversation_id', $conversationId)
+        // 🔥 PERBAIKAN: Gunakan reply_to (snake_case), bukan replyTo
+        $messages = Message::where('conversation_id', $conversationId)
+            ->with([
+                'sender:id,full_name,avatar',
+                'attachments',
+                'reply_to' => function ($query) {  // 🔥 UBAH DARI replyTo ke reply_to
+                    $query->select('id', 'sender_id', 'content', 'message_type', 'deleted_at', 'created_at')
+                        ->with([
+                            'sender:id,full_name,avatar',
+                            'attachments'
+                        ]);
+                }
+            ])
             ->orderBy('created_at', 'asc')
             ->get();
 
-        // 🔥 DEBUG: Log untuk memastikan replyTo terload
+        // 🔥 DEBUG
         $messagesWithReply = $messages->filter(fn($msg) => !is_null($msg->reply_to_message_id));
-        Log::info('Loaded messages with reply data', [
+
+        Log::info('📤 Sending messages to frontend', [
             'conversation_id' => $conversationId,
             'total_messages' => $messages->count(),
             'messages_with_reply' => $messagesWithReply->count(),
-            'reply_to_loaded' => $messagesWithReply->first() ? !is_null($messagesWithReply->first()->replyTo) : false
+            'sample_reply_data' => $messagesWithReply->first() ? [
+                'id' => $messagesWithReply->first()->id,
+                'reply_to_message_id' => $messagesWithReply->first()->reply_to_message_id,
+                'has_reply_to' => !is_null($messagesWithReply->first()->reply_to),  // 🔥 UBAH
+                'reply_to_content' => $messagesWithReply->first()->reply_to?->content,  // 🔥 UBAH
+                'reply_to_sender' => $messagesWithReply->first()->reply_to?->sender?->full_name  // 🔥 UBAH
+            ] : null
         ]);
 
         try {
@@ -147,7 +156,7 @@ class ChatController extends Controller
             Log::error('Gagal update last_read_at di showMessages: ' . $e->getMessage());
         }
 
-        return response()->json($messages);
+        return response()->json($messages->toArray());
     }
 
     /**
@@ -162,7 +171,7 @@ class ChatController extends Controller
         }
 
         if (!$message->canBeEdited()) {
-            return response()->json(['error' => 'Pesan tidak dapat diedit (sudah dihapus atau waktu edit habis)'], 400);
+            return response()->json(['error' => 'Pesan tidak dapat diedit'], 400);
         }
 
         $request->validate([
@@ -170,22 +179,21 @@ class ChatController extends Controller
         ]);
 
         try {
-            // Update message
             $message->update([
                 'content' => $request->input('content'),
                 'is_edited' => true,
                 'edited_at' => now()
             ]);
 
-            // ✅ PERBAIKAN: Load SEMUA relasi termasuk replyTo
+            // 🔥 PERBAIKAN: Load dengan reply_to
             $message->load([
                 'sender',
                 'attachments',
-                'replyTo.sender',
-                'replyTo.attachments'
+                'reply_to' => function ($query) {  // 🔥 reply_to
+                    $query->with('sender', 'attachments');
+                }
             ]);
 
-            // Broadcast event edit
             event(new MessageEdited($message));
 
             return response()->json([
@@ -210,7 +218,7 @@ class ChatController extends Controller
             'conversation_id' => 'required|uuid|exists:conversations,id',
             'content' => 'nullable|string',
             'files.*' => 'nullable|file|max:10240',
-            'reply_to_message_id' => 'nullable|uuid|exists:messages,id', // 🆕
+            'reply_to_message_id' => 'nullable|uuid|exists:messages,id',
         ]);
 
         $userId = Auth::id();
@@ -227,16 +235,16 @@ class ChatController extends Controller
 
         try {
             $messageType = 'text';
-            if ($request->hasFile('files')) { // 🔥 PERBAIKAN: Hapus parameter 'key'
+            if ($request->hasFile('files')) {
                 $messageType = 'file';
             }
 
-            $message = Message::create([ // 🔥 PERBAIKAN: Hapus parameter 'attributes'
+            $message = Message::create([
                 'conversation_id' => $request->conversation_id,
                 'sender_id'       => $userId,
-                'content'         => $request->input('content') ?? '', // 🔥 PERBAIKAN: Hapus 'key'
+                'content'         => $request->input('content') ?? '',
                 'message_type'    => $messageType,
-                'reply_to_message_id' => $request->input('reply_to_message_id'), // 🆕
+                'reply_to_message_id' => $request->input('reply_to_message_id'),
                 'deleted_at'      => null,
             ]);
 
@@ -259,11 +267,31 @@ class ChatController extends Controller
                 }
             }
 
-            // 🆕 Load relasi dengan replyTo
-            $message->load(['sender', 'attachments', 'replyTo.sender', 'replyTo.attachments']);
+            // 🔥 PERBAIKAN KRUSIAL: Load relasi dengan nama yang benar
+            $message->load([
+                'sender:id,full_name,avatar',
+                'attachments',
+                'reply_to' => function ($query) { // 🔥 GUNAKAN reply_to, bukan replyTo
+                    $query->select('id', 'sender_id', 'content', 'message_type', 'deleted_at', 'created_at')
+                        ->with([
+                            'sender:id,full_name,avatar',
+                            'attachments'
+                        ]);
+                }
+            ]);
+
+            // 🔥 DEBUG: Verifikasi sebelum broadcast
+            Log::info('📤 Broadcasting message', [
+                'message_id' => $message->id,
+                'reply_to_message_id' => $message->reply_to_message_id,
+                'has_reply_to' => !is_null($message->reply_to),
+                'reply_to_content' => $message->reply_to?->content ?? null,
+                'message_array' => $message->toArray()
+            ]);
 
             DB::commit();
 
+            // 🔥 Event akan otomatis load relasi dari constructor
             event(new NewMessageSent($message));
 
             return response()->json([
