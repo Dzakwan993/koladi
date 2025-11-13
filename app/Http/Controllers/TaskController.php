@@ -1446,127 +1446,35 @@ class TaskController extends Controller
     // ✅ NEW: Get task detail untuk modal
     // ✅ NEW: Get task detail untuk modal dengan semua relasi lengkap
     // ✅ PERBAIKI: Get task detail untuk modal
-public function getTaskDetail($taskId)
-{
-    try {
-        // Validasi UUID
-        if (!Str::isUuid($taskId)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'ID tugas tidak valid'
-            ], 400);
-        }
-
-        $task = Task::with([
-            'assignments.user',
-            'labels.color', 
-            'checklists' => function($query) {
-                $query->orderBy('position');
-            },
-            'attachments',
-            'boardColumn',
-            'creator'
-        ])->find($taskId);
-
-        if (!$task) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tugas tidak ditemukan'
-            ], 404);
-        }
-
-        $user = Auth::user();
-
-        // Validasi akses
-        if (!$this->canAccessWorkspace($task->workspace_id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses ke task ini'
-            ], 403);
-        }
-
-        // Format response
-        $taskData = [
-            'id' => $task->id,
-            'title' => $task->title,
-            'phase' => $task->phase,
-            'description' => $task->description,
-            'is_secret' => $task->is_secret,
-            'status' => $task->status,
-            'priority' => $task->priority,
-            'start_datetime' => $task->start_datetime,
-            'due_datetime' => $task->due_datetime,
-            'created_at' => $task->created_at,
-            'updated_at' => $task->updated_at,
-            'board_column' => $task->boardColumn ? [
-                'id' => $task->boardColumn->id,
-                'name' => $task->boardColumn->name
-            ] : null,
-            'creator' => $task->creator ? [
-                'id' => $task->creator->id,
-                'name' => $task->creator->full_name,
-                'email' => $task->creator->email
-            ] : null,
-            'assigned_members' => $task->assignments->map(function($assignment) {
-                return [
-                    'id' => $assignment->user->id,
-                    'name' => $assignment->user->full_name,
-                    'email' => $assignment->user->email,
-                    'avatar' => $assignment->user->avatar ?: 'https://i.pravatar.cc/32?img=' . rand(1, 70)
-                ];
-            })->toArray(),
-            'labels' => $task->labels->map(function($label) {
-                return [
-                    'id' => $label->id,
-                    'name' => $label->name,
-                    'color' => $label->color->rgb
-                ];
-            })->toArray(),
-            'checklists' => $task->checklists->map(function($checklist) {
-                return [
-                    'id' => $checklist->id,
-                    'title' => $checklist->title,
-                    'is_done' => (bool)$checklist->is_done,
-                    'position' => $checklist->position
-                ];
-            })->toArray(),
-            'attachments' => $task->attachments->map(function($attachment) {
-                return [
-                    'id' => $attachment->id,
-                    'name' => $attachment->file_name,
-                    'url' => Storage::disk('public')->exists($attachment->file_url) 
-                        ? Storage::disk('public')->url($attachment->file_url)
-                        : null,
-                    'type' => $this->getFileType($attachment->file_url),
-                    'uploaded_by' => $attachment->uploader ? [
-                        'name' => $attachment->uploader->full_name
-                    ] : null,
-                    'uploaded_at' => $attachment->uploaded_at
-                ];
-            })->toArray(),
-            'progress_percentage' => $this->calculateTaskProgress($task),
-            'is_overdue' => $task->due_datetime && $task->due_datetime->lt(now()) && !in_array($task->status, ['done', 'cancel'])
-        ];
-
-        return response()->json([
-            'success' => true,
-            'task' => $taskData
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error getting task detail: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil detail tugas: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-    // ✅ NEW: Update task detail
-    public function updateTaskDetail(Request $request, $taskId)
+    public function getTaskDetail($taskId)
     {
         try {
-            $task = Task::findOrFail($taskId);
+            // Validasi UUID
+            if (!Str::isUuid($taskId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ID tugas tidak valid'
+                ], 400);
+            }
+
+            $task = Task::with([
+                'assignments.user',
+                'labels.color',
+                'checklists' => function ($query) {
+                    $query->orderBy('position');
+                },
+                'attachments',
+                'boardColumn',
+                'creator'
+            ])->find($taskId);
+
+            if (!$task) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tugas tidak ditemukan'
+                ], 404);
+            }
+
             $user = Auth::user();
 
             // Validasi akses
@@ -1577,80 +1485,83 @@ public function getTaskDetail($taskId)
                 ], 403);
             }
 
-            $validator = Validator::make($request->all(), [
-                'title' => 'sometimes|string|max:255',
-                'phase' => 'sometimes|string|max:255',
-                'description' => 'nullable|string',
-                'is_secret' => 'boolean',
-                'start_datetime' => 'nullable|date',
-                'due_datetime' => 'nullable|date|after:start_datetime',
-                'board_column_id' => 'sometimes|exists:board_columns,id',
-                'user_ids' => 'array',
-                'user_ids.*' => 'exists:users,id',
-                'label_ids' => 'array',
-                'label_ids.*' => 'exists:labels,id'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validasi gagal',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            DB::beginTransaction();
-
-            // Update task data
-            $taskData = $request->only([
-                'title',
-                'phase',
-                'description',
-                'is_secret',
-                'start_datetime',
-                'due_datetime',
-                'board_column_id'
-            ]);
-
-            $task->update($taskData);
-
-            // Update assignments jika ada
-            if ($request->has('user_ids')) {
-                $task->assignments()->delete();
-                foreach ($request->user_ids as $userId) {
-                    TaskAssignment::create([
-                        'id' => Str::uuid()->toString(),
-                        'task_id' => $task->id,
-                        'user_id' => $userId,
-                        'assigned_at' => now()
-                    ]);
-                }
-            }
-
-            // Update labels jika ada
-            if ($request->has('label_ids')) {
-                $task->labels()->sync($request->label_ids);
-            }
-
-            DB::commit();
-
-            // Reload task dengan relasi
-            $task->load(['assignments.user', 'labels.color', 'checklists', 'attachments']);
+            // Format response
+            $taskData = [
+                'id' => $task->id,
+                'title' => $task->title,
+                'phase' => $task->phase,
+                'description' => $task->description,
+                'is_secret' => $task->is_secret,
+                'status' => $task->status,
+                'priority' => $task->priority,
+                'start_datetime' => $task->start_datetime,
+                'due_datetime' => $task->due_datetime,
+                'created_at' => $task->created_at,
+                'updated_at' => $task->updated_at,
+                'board_column' => $task->boardColumn ? [
+                    'id' => $task->boardColumn->id,
+                    'name' => $task->boardColumn->name
+                ] : null,
+                'creator' => $task->creator ? [
+                    'id' => $task->creator->id,
+                    'name' => $task->creator->full_name,
+                    'email' => $task->creator->email
+                ] : null,
+                'assigned_members' => $task->assignments->map(function ($assignment) {
+                    return [
+                        'id' => $assignment->user->id,
+                        'name' => $assignment->user->full_name,
+                        'email' => $assignment->user->email,
+                        'avatar' => $assignment->user->avatar ?: 'https://i.pravatar.cc/32?img=' . rand(1, 70)
+                    ];
+                })->toArray(),
+                'labels' => $task->labels->map(function ($label) {
+                    return [
+                        'id' => $label->id,
+                        'name' => $label->name,
+                        'color' => $label->color->rgb
+                    ];
+                })->toArray(),
+                'checklists' => $task->checklists->map(function ($checklist) {
+                    return [
+                        'id' => $checklist->id,
+                        'title' => $checklist->title,
+                        'is_done' => (bool)$checklist->is_done,
+                        'position' => $checklist->position
+                    ];
+                })->toArray(),
+                'attachments' => $task->attachments->map(function ($attachment) {
+                    return [
+                        'id' => $attachment->id,
+                        'name' => $attachment->file_name,
+                        'url' => Storage::disk('public')->exists($attachment->file_url)
+                            ? Storage::disk('public')->url($attachment->file_url)
+                            : null,
+                        'type' => $this->getFileType($attachment->file_url),
+                        'uploaded_by' => $attachment->uploader ? [
+                            'name' => $attachment->uploader->full_name
+                        ] : null,
+                        'uploaded_at' => $attachment->uploaded_at
+                    ];
+                })->toArray(),
+                'progress_percentage' => $this->calculateTaskProgress($task),
+                'is_overdue' => $task->due_datetime && $task->due_datetime->lt(now()) && !in_array($task->status, ['done', 'cancel'])
+            ];
 
             return response()->json([
                 'success' => true,
-                'message' => 'Tugas berhasil diperbarui',
-                'task' => $task
+                'task' => $taskData
             ]);
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error updating task detail: ' . $e->getMessage());
+            Log::error('Error getting task detail: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal memperbarui tugas: ' . $e->getMessage()
+                'message' => 'Gagal mengambil detail tugas: ' . $e->getMessage()
             ], 500);
         }
     }
+
+   
 
     // Helper method untuk menghitung progress
     private function calculateTaskProgress($task)
@@ -1679,4 +1590,245 @@ public function getTaskDetail($taskId)
             return 'other';
         }
     }
+
+
+
+    // ✅ NEW: Update task detail dengan semua field
+public function updateTaskDetail(Request $request, $taskId)
+{
+    try {
+        $task = Task::findOrFail($taskId);
+        $user = Auth::user();
+
+        // Validasi akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'sometimes|string|max:255',
+            'phase' => 'sometimes|string|max:255', // ✅ TAMBAHKAN VALIDASI PHASE
+            'description' => 'nullable|string',
+            'is_secret' => 'boolean',
+            'start_datetime' => 'nullable|date',
+            'due_datetime' => 'nullable|date|after:start_datetime',
+            'board_column_id' => 'sometimes|exists:board_columns,id',
+            'user_ids' => 'array',
+            'user_ids.*' => 'exists:users,id',
+            'label_ids' => 'array',
+            'label_ids.*' => 'exists:labels,id'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        // Update task data - ✅ TAMBAHKAN PHASE
+        $taskData = $request->only([
+            'title',
+            'phase', // ✅ INI YANG DITAMBAHKAN
+            'description',
+            'is_secret'
+        ]);
+
+        // Handle datetime fields
+        if ($request->has('start_datetime')) {
+            $taskData['start_datetime'] = $request->start_datetime;
+        }
+        
+        if ($request->has('due_datetime')) {
+            $taskData['due_datetime'] = $request->due_datetime;
+        }
+
+        // Update board column jika ada
+        if ($request->has('board_column_id')) {
+            $taskData['board_column_id'] = $request->board_column_id;
+        }
+
+        $task->update($taskData);
+
+        // Update assignments jika ada
+        if ($request->has('user_ids')) {
+            $task->assignments()->delete();
+            foreach ($request->user_ids as $userId) {
+                TaskAssignment::create([
+                    'id' => Str::uuid()->toString(),
+                    'task_id' => $task->id,
+                    'user_id' => $userId,
+                    'assigned_at' => now()
+                ]);
+            }
+        }
+
+        // Update labels jika ada
+        if ($request->has('label_ids')) {
+            $task->labels()->sync($request->label_ids);
+        }
+
+        DB::commit();
+
+        // Reload task dengan relasi
+        $task->load(['assignments.user', 'labels.color', 'checklists', 'attachments', 'boardColumn']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tugas berhasil diperbarui',
+            'task' => $task
+        ]);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error updating task detail: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memperbarui tugas: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+// ✅ NEW: Update checklist item
+public function updateChecklistItem(Request $request, $checklistId)
+{
+    try {
+        $checklist = Checklist::findOrFail($checklistId);
+        $task = Task::findOrFail($checklist->task_id);
+        $user = Auth::user();
+
+        // Validasi akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'sometimes|string|max:255',
+            'is_done' => 'sometimes|boolean'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $checklist->update($request->only(['title', 'is_done']));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Checklist berhasil diupdate',
+            'checklist' => $checklist
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error updating checklist item: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengupdate checklist: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+// ✅ NEW: Create checklist item untuk task
+public function createChecklistForTask(Request $request, $taskId)
+{
+    try {
+        $task = Task::findOrFail($taskId);
+        $user = Auth::user();
+
+        // Validasi akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|max:255'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $checklist = Checklist::create([
+            'id' => Str::uuid()->toString(),
+            'task_id' => $taskId,
+            'title' => $request->title,
+            'is_done' => false,
+            'position' => Checklist::where('task_id', $taskId)->max('position') + 1
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Checklist berhasil ditambahkan',
+            'checklist' => $checklist
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error creating checklist for task: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menambahkan checklist: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+// Di TaskController - tambahkan method untuk update attachments
+public function updateTaskAttachments(Request $request, $taskId)
+{
+    try {
+        $task = Task::findOrFail($taskId);
+        $user = Auth::user();
+
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
+        }
+
+        $request->validate([
+            'attachment_ids' => 'array',
+            'attachment_ids.*' => 'exists:attachments,id'
+        ]);
+
+        // Update attachments yang terkait dengan task ini
+        Attachment::where('attachable_type', 'App\\Models\\Task')
+            ->where('attachable_id', $taskId)
+            ->update(['attachable_id' => null]);
+
+        if (!empty($request->attachment_ids)) {
+            Attachment::whereIn('id', $request->attachment_ids)
+                ->update(['attachable_id' => $taskId]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Lampiran berhasil diupdate'
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error updating task attachments: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengupdate lampiran'
+        ], 500);
+    }
+}
 }

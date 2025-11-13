@@ -139,9 +139,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/workspace/{workspaceId}/kanban-tasks', [TaskController::class, 'getKanbanTasks'])->name('tasks.kanban');
 
         // ✅ Task Detail Routes
-    Route::get('/{taskId}/detail', [TaskController::class, 'getTaskDetail'])->name('tasks.detail');
-    Route::put('/{taskId}/update', [TaskController::class, 'updateTaskDetail'])->name('tasks.update');
+        Route::get('/{taskId}/detail', [TaskController::class, 'getTaskDetail'])->name('tasks.detail');
+        Route::put('/{taskId}/update', [TaskController::class, 'updateTaskDetail'])->name('tasks.update');
 
+        // ✅ Checklist Routes untuk detail
+        Route::post('/{taskId}/checklists', [TaskController::class, 'createChecklistForTask'])->name('tasks.checklists.create');
+        Route::put('/checklists/{checklistId}', [TaskController::class, 'updateChecklistItem'])->name('tasks.checklists.update');
+        Route::delete('/checklists/{checklistId}', [TaskController::class, 'deleteChecklist'])->name('tasks.checklists.delete');
+
+        Route::post('/{taskId}/attachments', [TaskController::class, 'updateTaskAttachments'])->name('tasks.attachments.update');
     });
 
     // ✅ Calendar & Schedule Routes
