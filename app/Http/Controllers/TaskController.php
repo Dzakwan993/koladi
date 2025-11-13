@@ -1831,4 +1831,168 @@ public function updateTaskAttachments(Request $request, $taskId)
         ], 500);
     }
 }
+
+
+
+// ✅ NEW: Update task title
+public function updateTaskTitle(Request $request, $taskId)
+{
+    try {
+        $task = Task::findOrFail($taskId);
+        $user = Auth::user();
+
+        // Validasi akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|max:255'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $task->update(['title' => $request->title]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Judul tugas berhasil diperbarui',
+            'task' => $task
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error updating task title: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memperbarui judul tugas'
+        ], 500);
+    }
+}
+
+// ✅ NEW: Add attachment to task
+public function addAttachmentToTask(Request $request, $taskId)
+{
+    $request->validate([
+        'file' => 'required|file|max:10240',
+    ]);
+
+    try {
+        $task = Task::findOrFail($taskId);
+        $user = Auth::user();
+
+        // Validasi akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
+        }
+
+        $file = $request->file('file');
+
+        // Validasi tipe file
+        $allowedMimeTypes = [
+            'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'text/plain',
+            'application/zip',
+            'application/x-rar-compressed'
+        ];
+
+        if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tipe file tidak didukung.'
+            ], 400);
+        }
+
+        // Generate unique filename
+        $fileName = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+
+        // Simpan file
+        $path = $file->storeAs('attachments', $fileName, 'public');
+
+        // Buat attachment
+        $attachment = Attachment::create([
+            'id' => Str::uuid()->toString(),
+            'attachable_type' => 'App\\Models\\Task',
+            'attachable_id' => $taskId,
+            'file_url' => $path,
+            'uploaded_by' => $user->id,
+            'uploaded_at' => now()
+        ]);
+
+        $attachment->load('uploader');
+
+        return response()->json([
+            'success' => true,
+            'attachment' => $attachment,
+            'message' => 'File berhasil diupload'
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error adding attachment to task: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal upload file: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+// ✅ NEW: Update task labels dengan modal label yang sama seperti tambah tugas
+public function updateTaskLabels(Request $request, $taskId)
+{
+    $request->validate([
+        'label_ids' => 'required|array',
+        'label_ids.*' => 'exists:labels,id'
+    ]);
+
+    try {
+        $task = Task::findOrFail($taskId);
+        $user = Auth::user();
+
+        // Validasi akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
+        }
+
+        // Sync labels
+        $task->labels()->sync($request->label_ids);
+
+        // Get updated labels with colors
+        $updatedLabels = $task->labels()->with('color')->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Label tugas berhasil diupdate',
+            'labels' => $updatedLabels
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error updating task labels: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengupdate label tugas: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+
 }

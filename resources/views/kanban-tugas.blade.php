@@ -1542,29 +1542,38 @@
                                 if (!this.currentTask) return;
 
                                 try {
+                                    // Validasi
+                                    if (!this.currentTask.title?.trim()) {
+                                        this.showNotification('Judul tugas harus diisi', 'error');
+                                        return;
+                                    }
+
+                                    // Simpan judul jika berubah
+                                    await this.saveTitleChange();
+
                                     // Format data untuk backend
                                     const formData = {
                                         title: this.currentTask.title,
                                         phase: this.currentTask.phase,
                                         description: this.currentTask.description,
-                                        is_secret: this.currentTask.is_secret, // ✅ PASTIKAN INI ADA
+                                        is_secret: this.currentTask.is_secret,
                                         user_ids: this.assignedMembers.map(member => member.id),
                                         label_ids: this.currentTask.labels.map(label => label.id),
                                         board_column_id: this.currentTask.board_column?.id
                                     };
 
-// Tambahkan datetime jika ada
-if (this.currentTask.startDate && this.currentTask.startTime) {
-    formData.start_datetime = `${this.currentTask.startDate}T${this.currentTask.startTime}:00`;
-} else {
-    formData.start_datetime = null; // Hapus jika dikosongkan
-}
+                                    // Tambahkan datetime jika ada
+                                    if (this.currentTask.startDate && this.currentTask.startTime) {
+                                        formData.start_datetime = `${this.currentTask.startDate}T${this.currentTask.startTime}:00`;
+                                    } else {
+                                        formData.start_datetime = null;
+                                    }
 
-if (this.currentTask.dueDate && this.currentTask.dueTime) {
-    formData.due_datetime = `${this.currentTask.dueDate}T${this.currentTask.dueTime}:00`;
-} else {
-    formData.due_datetime = null; // Hapus jika dikosongkan
-}
+                                    if (this.currentTask.dueDate && this.currentTask.dueTime) {
+                                        formData.due_datetime = `${this.currentTask.dueDate}T${this.currentTask.dueTime}:00`;
+                                    } else {
+                                        formData.due_datetime = null;
+                                    }
 
                                     console.log('Mengupdate task dengan data:', formData);
 
@@ -1577,7 +1586,17 @@ if (this.currentTask.dueDate && this.currentTask.dueTime) {
                                         body: JSON.stringify(formData)
                                     });
 
-                                    // ... rest of the code
+                                    const data = await response.json();
+
+                                    if (data.success) {
+                                        this.showNotification('Tugas berhasil diperbarui', 'success');
+                                        this.isEditMode = false;
+
+                                        // Refresh data
+                                        await this.loadKanbanTasks();
+                                    } else {
+                                        throw new Error(data.message || 'Gagal memperbarui tugas');
+                                    }
                                 } catch (error) {
                                     console.error('Error updating task:', error);
                                     this.showNotification(`Gagal memperbarui tugas: ${error.message}`, 'error');
@@ -1739,14 +1758,13 @@ if (this.currentTask.dueDate && this.currentTask.dueTime) {
                             enableEditMode() {
                                 this.isEditMode = true;
 
-                                // Beri waktu untuk DOM update kemudian inisialisasi CKEditor
+                                // Inisialisasi CKEditor untuk edit mode
                                 this.$nextTick(() => {
                                     setTimeout(() => {
                                         this.initEditModeEditors();
                                     }, 100);
                                 });
                             },
-
                             async initEditModeEditors() {
                                 try {
                                     // Inisialisasi CKEditor untuk edit mode
@@ -1768,11 +1786,141 @@ if (this.currentTask.dueDate && this.currentTask.dueTime) {
 
 
                             // Cancel edit
-                            cancelEdit() {
-                                if (!this.currentTask) return;
-                                const task = this.tasks.find(t => t.id === this.currentTask.id);
-                                this.currentTask = JSON.parse(JSON.stringify(task));
+                            async cancelEdit() {
+                                if (this.currentTask && this.currentTask.id) {
+                                    // Reload task detail untuk mendapatkan data asli
+                                    await this.openDetail(this.currentTask.id);
+                                }
                                 this.isEditMode = false;
+                            },
+
+
+
+                            async handleFileSelectDetail(event) {
+                                const files = Array.from(event.target.files);
+                                await this.processFilesDetail(files);
+                                event.target.value = '';
+                            },
+
+                            async handleFileDropDetail(event) {
+                                const files = Array.from(event.dataTransfer.files);
+                                await this.processFilesDetail(files);
+                            },
+
+                            async processFilesDetail(files) {
+                                for (const file of files) {
+                                    await this.uploadFileDetail(file);
+                                }
+                            },
+
+                            async uploadFileDetail(file) {
+                                this.uploadingDetail = true;
+                                this.uploadProgressDetail = 0;
+
+                                try {
+                                    const formData = new FormData();
+                                    formData.append('file', file);
+
+                                    const response = await fetch(`/tasks/${this.currentTask.id}/attachments/add`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRF-TOKEN': this.getCsrfToken()
+                                        },
+                                        body: formData
+                                    });
+
+                                    const data = await response.json();
+
+                                    if (data.success) {
+                                        // Tambahkan attachment ke current task
+                                        if (!this.currentTask.attachments) {
+                                            this.currentTask.attachments = [];
+                                        }
+
+                                        this.currentTask.attachments.push({
+                                            id: data.attachment.id,
+                                            name: file.name,
+                                            size: file.size,
+                                            type: this.getFileType(file.type),
+                                            url: '/storage/' + data.attachment.file_url
+                                        });
+
+                                        this.showNotification(`File ${file.name} berhasil diupload`, 'success');
+                                    } else {
+                                        throw new Error(data.message || 'Upload gagal');
+                                    }
+                                } catch (error) {
+                                    console.error('Error uploading file to task:', error);
+                                    alert(`Gagal upload file ${file.name}: ${error.message}`);
+                                } finally {
+                                    this.uploadingDetail = false;
+                                    this.uploadProgressDetail = 0;
+                                }
+                            },
+
+                            // ✅ NEW: Remove label dari task
+                            async removeLabelFromTask(labelId) {
+                                if (!this.currentTask?.labels) return;
+
+                                try {
+                                    const currentLabelIds = this.currentTask.labels.map(label => label.id);
+                                    const updatedLabelIds = currentLabelIds.filter(id => id !== labelId);
+
+                                    const response = await fetch(`/tasks/${this.currentTask.id}/labels/update`, {
+                                        method: 'PUT',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': this.getCsrfToken()
+                                        },
+                                        body: JSON.stringify({
+                                            label_ids: updatedLabelIds
+                                        })
+                                    });
+
+                                    const data = await response.json();
+
+                                    if (data.success) {
+                                        this.currentTask.labels = data.labels;
+                                        this.showNotification('Label berhasil dihapus', 'success');
+                                    } else {
+                                        throw new Error(data.message || 'Gagal menghapus label');
+                                    }
+                                } catch (error) {
+                                    console.error('Error removing label:', error);
+                                    this.showNotification('Gagal menghapus label', 'error');
+                                }
+                            },
+
+                            // ✅ NEW: Save title changes
+                            async saveTitleChange() {
+                                if (!this.currentTask?.title?.trim()) {
+                                    this.showNotification('Judul tidak boleh kosong', 'error');
+                                    return;
+                                }
+
+                                try {
+                                    const response = await fetch(`/tasks/${this.currentTask.id}/update-title`, {
+                                        method: 'PUT',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': this.getCsrfToken()
+                                        },
+                                        body: JSON.stringify({
+                                            title: this.currentTask.title
+                                        })
+                                    });
+
+                                    const data = await response.json();
+
+                                    if (data.success) {
+                                        this.showNotification('Judul berhasil diperbarui', 'success');
+                                    } else {
+                                        throw new Error(data.message || 'Gagal memperbarui judul');
+                                    }
+                                } catch (error) {
+                                    console.error('Error updating title:', error);
+                                    this.showNotification('Gagal memperbarui judul', 'error');
+                                }
                             },
 
                             // ✅ NEW: Load tasks dengan filter hak akses
@@ -2843,6 +2991,8 @@ if (this.currentTask.dueDate && this.currentTask.dueTime) {
                                     this.loadWorkspaceMembers();
                                     this.loadLabels();
                                     this.loadColors();
+                                    this.uploadingDetail = false;
+                                    this.uploadProgressDetail = 0;
 
                                     console.log('✅ Aplikasi initialized dengan semua state');
                                 } catch (error) {
@@ -3309,68 +3459,68 @@ if (this.currentTask.dueDate && this.currentTask.dueTime) {
                             },
                             // ✅ PERBAIKI: Method saveTaskLabels dengan handling yang lebih baik
                             // Di Alpine.js - perbaiki method saveTaskLabels untuk edit mode
-async saveTaskLabels(taskId = null) {
-    try {
-        const selectedLabelIds = this.labelData.labels
-            .filter(label => label.selected)
-            .map(label => label.id);
+                            async saveTaskLabels(taskId = null) {
+                                try {
+                                    const selectedLabelIds = this.labelData.labels
+                                        .filter(label => label.selected)
+                                        .map(label => label.id);
 
-        console.log('Menyimpan labels:', selectedLabelIds, 'untuk task:', taskId);
+                                    console.log('Menyimpan labels:', selectedLabelIds, 'untuk task:', taskId);
 
-        // Jika taskId null (task baru), simpan di form data
-        if (!taskId) {
-            const selectedLabels = this.labelData.labels
-                .filter(label => label.selected)
-                .map(label => ({
-                    id: label.id,
-                    name: label.name,
-                    color: label.color.rgb
-                }));
+                                    // Jika taskId null (task baru), simpan di form data
+                                    if (!taskId) {
+                                        const selectedLabels = this.labelData.labels
+                                            .filter(label => label.selected)
+                                            .map(label => ({
+                                                id: label.id,
+                                                name: label.name,
+                                                color: label.color.rgb
+                                            }));
 
-            this.taskForm.labels = selectedLabels;
-            this.openLabelModal = false;
-            this.showNotification('Label berhasil dipilih', 'success');
-            return;
-        }
+                                        this.taskForm.labels = selectedLabels;
+                                        this.openLabelModal = false;
+                                        this.showNotification('Label berhasil dipilih', 'success');
+                                        return;
+                                    }
 
-        // Untuk task yang sudah ada (EDIT MODE)
-        const response = await fetch(`/tasks/${taskId}/labels`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': this.getCsrfToken()
-            },
-            body: JSON.stringify({
-                label_ids: selectedLabelIds
-            })
-        });
+                                    // Untuk task yang sudah ada (EDIT MODE)
+                                    const response = await fetch(`/tasks/${taskId}/labels`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': this.getCsrfToken()
+                                        },
+                                        body: JSON.stringify({
+                                            label_ids: selectedLabelIds
+                                        })
+                                    });
 
-        const data = await response.json();
+                                    const data = await response.json();
 
-        if (data.success) {
-            // Update current task labels
-            if (this.currentTask) {
-                this.currentTask.labels = data.labels;
-            }
+                                    if (data.success) {
+                                        // Update current task labels
+                                        if (this.currentTask) {
+                                            this.currentTask.labels = data.labels;
+                                        }
 
-            // Reset selection
-            this.labelData.labels.forEach(label => label.selected = false);
-            this.openLabelModal = false;
+                                        // Reset selection
+                                        this.labelData.labels.forEach(label => label.selected = false);
+                                        this.openLabelModal = false;
 
-            this.showNotification('Label berhasil disimpan', 'success');
-            
-            // Refresh task detail
-            if (this.currentTask) {
-                await this.openDetail(this.currentTask.id);
-            }
-        } else {
-            alert('Gagal menyimpan label: ' + data.message);
-        }
-    } catch (error) {
-        console.error('Error saving task labels:', error);
-        alert('Terjadi kesalahan saat menyimpan label');
-    }
-},
+                                        this.showNotification('Label berhasil disimpan', 'success');
+
+                                        // Refresh task detail
+                                        if (this.currentTask) {
+                                            await this.openDetail(this.currentTask.id);
+                                        }
+                                    } else {
+                                        alert('Gagal menyimpan label: ' + data.message);
+                                    }
+                                } catch (error) {
+                                    console.error('Error saving task labels:', error);
+                                    alert('Terjadi kesalahan saat menyimpan label');
+                                }
+                            },
 
                             async loadTaskLabels(taskId) {
                                 try {
