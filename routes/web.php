@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AttachmentController;
 use Illuminate\Support\Facades\Auth;
 
 use Illuminate\Support\Facades\Route;
@@ -130,15 +131,25 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['auth'])->group(function () {
         Route::post('/workspace/{id}/pengumuman/store', [PengumumanController::class, 'store'])
             ->name('pengumuman.store');
-        Route::get(
-            '/pengumuman/anggota/{workspaceId}',
-            [App\Http\Controllers\PengumumanController::class, 'getAnggota']
-        )->name('pengumuman.anggota');
+        Route::get('/pengumuman/anggota/{workspaceId}',[App\Http\Controllers\PengumumanController::class, 'getAnggota'])->name('pengumuman.anggota');
 
         Route::get('/pengumuman/{pengumuman}', [PengumumanController::class, 'show'])->name('pengumuman.show');
-        Route::post('/comments', [CommentController::class, 'store'])->name('comments.store');
+
         Route::get('/comments/{pengumuman}', [CommentController::class, 'index'])->name('comments.index');
-        Route::post('/upload', [App\Http\Controllers\FileController::class, 'upload'])->name('upload');
+        Route::post('/comments', [CommentController::class, 'store'])->name('comments.store');
+        Route::post('/comments/reply', [CommentController::class, 'reply'])->name('comments.reply');
+
+        //uploadfile
+        Route::post('/upload', [App\Http\Controllers\AttachmentController::class, 'upload'])->name('upload');
+
+        //upload image
+        Route::post('/upload-image', [AttachmentController::class, 'uploadImage'])->name('upload.image');
+
+        //untuk edit pengumuman
+        Route::get('/pengumuman/{id}/edit-data', [PengumumanController::class, 'getEditData'])->name('pengumuman.edit.data');
+        Route::put('/pengumuman/{id}', [PengumumanController::class, 'update'])->name('pengumuman.update');
+
+
         Route::get('/workspace/{id}/pengumuman', [PengumumanController::class, 'index'])->name('workspace.pengumuman');
     });
 

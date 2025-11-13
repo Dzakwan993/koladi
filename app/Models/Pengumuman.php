@@ -58,7 +58,8 @@ class Pengumuman extends Model
      */
     public function isVisibleTo($user)
     {
-        if (!$user) return false;
+        if (!$user)
+            return false;
 
         // 🔸 1. Pembuat pengumuman otomatis bisa lihat
         if ($this->created_by === $user->id) {
@@ -79,6 +80,12 @@ class Pengumuman extends Model
         return $this->morphMany(Comment::class, 'commentable')->latest();
     }
 
-    
+    public function attachments()
+    {
+        return $this->morphMany(Attachment::class, 'attachable')->latest();
+    }
+
+
+
 }
 
