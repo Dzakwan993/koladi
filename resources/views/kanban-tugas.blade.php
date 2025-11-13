@@ -1007,6 +1007,13 @@
                     .preview-modal {
                         backdrop-filter: blur(4px);
                     }
+
+
+                    /* Tambahkan di section style */
+.modal-layer-1 { z-index: 50; }  /* Modal dasar */
+.modal-layer-2 { z-index: 60; }  /* Modal Detail Tugas */
+.modal-layer-3 { z-index: 70; }  /* Modal anak (anggota, label) */
+.modal-layer-4 { z-index: 80; }  /* Modal cucu (tambah label baru) */
                 </style>
 
                 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
