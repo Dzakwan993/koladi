@@ -1953,6 +1953,7 @@ public function addAttachmentToTask(Request $request, $taskId)
 }
 
 // ✅ NEW: Update task labels dengan modal label yang sama seperti tambah tugas
+// Di TaskController - pastikan method ini sudah ada
 public function updateTaskLabels(Request $request, $taskId)
 {
     $request->validate([

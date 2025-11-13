@@ -151,8 +151,9 @@ Route::middleware(['auth'])->group(function () {
 
 
         Route::put('/{taskId}/update-title', [TaskController::class, 'updateTaskTitle'])->name('tasks.update-title');
-Route::post('/{taskId}/attachments/add', [TaskController::class, 'addAttachmentToTask'])->name('tasks.attachments.add');
-Route::put('/{taskId}/labels/update', [TaskController::class, 'updateTaskLabels'])->name('tasks.labels.update');
+        Route::post('/{taskId}/attachments/add', [TaskController::class, 'addAttachmentToTask'])->name('tasks.attachments.add');
+        Route::put('/tasks/{taskId}/labels/update', [TaskController::class, 'updateTaskLabels'])->name('tasks.labels.update');
+        Route::put('/{taskId}/labels/update', [TaskController::class, 'updateTaskLabels'])->name('tasks.labels.update');
     });
 
     // ✅ Calendar & Schedule Routes

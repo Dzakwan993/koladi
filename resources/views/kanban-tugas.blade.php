@@ -1860,36 +1860,36 @@
 
                             // ✅ NEW: Remove label dari task
                             async removeLabelFromTask(labelId) {
-                                if (!this.currentTask?.labels) return;
+    if (!this.currentTask?.labels) return;
 
-                                try {
-                                    const currentLabelIds = this.currentTask.labels.map(label => label.id);
-                                    const updatedLabelIds = currentLabelIds.filter(id => id !== labelId);
+    try {
+        const currentLabelIds = this.currentTask.labels.map(label => label.id);
+        const updatedLabelIds = currentLabelIds.filter(id => id !== labelId);
 
-                                    const response = await fetch(`/tasks/${this.currentTask.id}/labels/update`, {
-                                        method: 'PUT',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'X-CSRF-TOKEN': this.getCsrfToken()
-                                        },
-                                        body: JSON.stringify({
-                                            label_ids: updatedLabelIds
-                                        })
-                                    });
+        const response = await fetch(`/tasks/${this.currentTask.id}/labels/update`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': this.getCsrfToken()
+            },
+            body: JSON.stringify({
+                label_ids: updatedLabelIds
+            })
+        });
 
-                                    const data = await response.json();
+        const data = await response.json();
 
-                                    if (data.success) {
-                                        this.currentTask.labels = data.labels;
-                                        this.showNotification('Label berhasil dihapus', 'success');
-                                    } else {
-                                        throw new Error(data.message || 'Gagal menghapus label');
-                                    }
-                                } catch (error) {
-                                    console.error('Error removing label:', error);
-                                    this.showNotification('Gagal menghapus label', 'error');
-                                }
-                            },
+        if (data.success) {
+            this.currentTask.labels = data.labels;
+            this.showNotification('Label berhasil dihapus', 'success');
+        } else {
+            throw new Error(data.message || 'Gagal menghapus label');
+        }
+    } catch (error) {
+        console.error('Error removing label:', error);
+        this.showNotification('Gagal menghapus label', 'error');
+    }
+},
 
                             // ✅ NEW: Save title changes
                             async saveTitleChange() {
@@ -2977,13 +2977,13 @@
                                     };
 
                                     this.labelData = {
-                                        labels: [],
-                                        colors: [],
-                                        selectedLabelIds: [],
-                                        newLabelName: '',
-                                        newLabelColor: null,
-                                        searchLabel: ''
-                                    };
+            labels: [],
+            colors: [],
+            selectedLabelIds: [],
+            newLabelName: '',
+            newLabelColor: null,
+            searchLabel: ''
+        };
 
                                     // Load data
                                     this.loadBoardColumns();
@@ -3459,84 +3459,89 @@
                             },
                             // ✅ PERBAIKI: Method saveTaskLabels dengan handling yang lebih baik
                             // Di Alpine.js - perbaiki method saveTaskLabels untuk edit mode
-                            async saveTaskLabels(taskId = null) {
-                                try {
-                                    const selectedLabelIds = this.labelData.labels
-                                        .filter(label => label.selected)
-                                        .map(label => label.id);
+                           async saveTaskLabels(taskId = null) {
+    try {
+        const selectedLabelIds = this.labelData.labels
+            .filter(label => label.selected)
+            .map(label => label.id);
 
-                                    console.log('Menyimpan labels:', selectedLabelIds, 'untuk task:', taskId);
+        console.log('Menyimpan labels:', selectedLabelIds, 'untuk task:', taskId);
 
-                                    // Jika taskId null (task baru), simpan di form data
-                                    if (!taskId) {
-                                        const selectedLabels = this.labelData.labels
-                                            .filter(label => label.selected)
-                                            .map(label => ({
-                                                id: label.id,
-                                                name: label.name,
-                                                color: label.color.rgb
-                                            }));
+        // Jika taskId null (task baru), simpan di form data
+        if (!taskId) {
+            const selectedLabels = this.labelData.labels
+                .filter(label => label.selected)
+                .map(label => ({
+                    id: label.id,
+                    name: label.name,
+                    color: label.color.rgb
+                }));
 
-                                        this.taskForm.labels = selectedLabels;
-                                        this.openLabelModal = false;
-                                        this.showNotification('Label berhasil dipilih', 'success');
-                                        return;
-                                    }
+            this.taskForm.labels = selectedLabels;
+            this.openLabelModal = false;
+            this.showNotification('Label berhasil dipilih', 'success');
+            return;
+        }
 
-                                    // Untuk task yang sudah ada (EDIT MODE)
-                                    const response = await fetch(`/tasks/${taskId}/labels`, {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'X-CSRF-TOKEN': this.getCsrfToken()
-                                        },
-                                        body: JSON.stringify({
-                                            label_ids: selectedLabelIds
-                                        })
-                                    });
+        // Untuk task yang sudah ada (EDIT MODE)
+        const response = await fetch(`/tasks/${taskId}/labels/update`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': this.getCsrfToken()
+            },
+            body: JSON.stringify({
+                label_ids: selectedLabelIds
+            })
+        });
 
-                                    const data = await response.json();
+        const data = await response.json();
 
-                                    if (data.success) {
-                                        // Update current task labels
-                                        if (this.currentTask) {
-                                            this.currentTask.labels = data.labels;
-                                        }
+        if (data.success) {
+            // Update current task labels
+            if (this.currentTask) {
+                this.currentTask.labels = data.labels;
+            }
 
-                                        // Reset selection
-                                        this.labelData.labels.forEach(label => label.selected = false);
-                                        this.openLabelModal = false;
+            // Reset selection
+            this.labelData.labels.forEach(label => label.selected = false);
+            this.openLabelModal = false;
 
-                                        this.showNotification('Label berhasil disimpan', 'success');
+            this.showNotification('Label berhasil disimpan', 'success');
 
-                                        // Refresh task detail
-                                        if (this.currentTask) {
-                                            await this.openDetail(this.currentTask.id);
-                                        }
-                                    } else {
-                                        alert('Gagal menyimpan label: ' + data.message);
-                                    }
-                                } catch (error) {
-                                    console.error('Error saving task labels:', error);
-                                    alert('Terjadi kesalahan saat menyimpan label');
-                                }
-                            },
+            // Refresh task detail
+            if (this.currentTask) {
+                await this.openDetail(this.currentTask.id);
+            }
+        } else {
+            alert('Gagal menyimpan label: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error saving task labels:', error);
+        alert('Terjadi kesalahan saat menyimpan label');
+    }
+},
 
                             async loadTaskLabels(taskId) {
-                                try {
-                                    const response = await fetch(`/tasks/${taskId}/labels`);
-                                    const data = await response.json();
+    try {
+        const response = await fetch(`/tasks/${taskId}/labels`);
+        const data = await response.json();
 
-                                    if (data.success) {
-                                        // Update selected state
-                                        this.labelData.labels.forEach(label => {
-                                            label.selected = data.labels.some(taskLabel => taskLabel.id === label.id);
-                                        });
-                                    }
-                                } catch (error) {
-                                    console.error('Error loading task labels:', error);
-                                }
-                            },
+        if (data.success) {
+            // Update selected state dengan benar
+            this.labelData.labels.forEach(label => {
+                label.selected = data.labels.some(taskLabel => 
+                    taskLabel.id === label.id
+                );
+            });
+            
+            console.log('Loaded task labels:', data.labels);
+        }
+    } catch (error) {
+        console.error('Error loading task labels:', error);
+    }
+},
+
 
 
 
@@ -3566,23 +3571,23 @@
                             // Open label modal
                             // ✅ PERBAIKI: Method untuk membuka modal label
                             openLabelModalForTask(task = null) {
-                                this.openLabelModal = true;
-                                this.labelData.searchLabel = '';
+    this.openLabelModal = true;
+    this.labelData.searchLabel = '';
 
-                                if (task && task.id) {
-                                    // Untuk task yang sudah ada - load labels dari database
-                                    this.loadTaskLabels(task.id);
-                                } else {
-                                    // Untuk task baru - sync selected state dengan taskForm.labels
-                                    this.labelData.labels.forEach(label => {
-                                        // Cek apakah label ini sudah ada di taskForm.labels
-                                        const isSelected = this.taskForm.labels.some(selectedLabel =>
-                                            selectedLabel.id === label.id
-                                        );
-                                        label.selected = isSelected;
-                                    });
-                                }
-                            },
+    if (task && task.id) {
+        // Untuk task yang sudah ada - load labels dari database
+        this.loadTaskLabels(task.id);
+    } else {
+        // Untuk task baru - sync selected state dengan taskForm.labels
+        this.labelData.labels.forEach(label => {
+            // Cek apakah label ini sudah ada di taskForm.labels
+            const isSelected = this.taskForm.labels.some(selectedLabel =>
+                selectedLabel.id === label.id
+            );
+            label.selected = isSelected;
+        });
+    }
+},
 
 
 

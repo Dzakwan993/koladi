@@ -1137,35 +1137,136 @@
             </div>
 
             <!-- Label Section dengan Edit di Edit Mode -->
-            <div class="mb-4">
-                <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-2">
-                    Label
-                    <button x-show="isEditMode" type="button" @click="openLabelModalForTask(currentTask)">
-                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                    </button>
-                </label>
-                <div class="flex flex-wrap gap-2">
-                    <template x-for="label in currentTask?.labels || []" :key="label.id">
-                        <div class="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1">
-                            <span class="inline-block w-3 h-3 rounded-full"
-                                :style="`background:${label.color}`"></span>
-                            <span class="text-sm font-medium text-gray-700" x-text="label.name"></span>
-                            <button x-show="isEditMode" type="button" @click="removeLabelFromTask(label.id)"
-                                class="text-gray-500 hover:text-red-500 text-xs">
-                                ×
-                            </button>
-                        </div>
-                    </template>
-
-                    <template x-if="!currentTask?.labels || currentTask.labels.length === 0">
-                        <span class="text-gray-500 text-sm">Tidak ada label</span>
-                    </template>
-                </div>
+            <!-- Di dalam modal Detail Tugas, section Label -->
+<div class="mb-4">
+    <label class="flex items-center gap-1 text-sm font-medium text-gray-700 mb-2">
+        Label
+        <button x-show="isEditMode" type="button" @click="openLabelModalForTask(currentTask)">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+        </button>
+    </label>
+    <div class="flex flex-wrap gap-2">
+        <template x-for="label in currentTask?.labels || []" :key="label.id">
+            <div class="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1">
+                <span class="inline-block w-3 h-3 rounded-full"
+                    :style="`background:${label.color}`"></span>
+                <span class="text-sm font-medium text-gray-700" x-text="label.name"></span>
+                <button x-show="isEditMode" type="button" @click="removeLabelFromTask(label.id)"
+                    class="text-gray-500 hover:text-red-500 text-xs">
+                    ×
+                </button>
             </div>
+        </template>
+
+        <template x-if="!currentTask?.labels || currentTask.labels.length === 0">
+            <span class="text-gray-500 text-sm">Tidak ada label</span>
+        </template>
+    </div>
+</div>
+
+
+<!-- Modal Pilih Label (Sama seperti di modal Tambah Tugas) -->
+<div x-show="openLabelModal" x-cloak
+    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Pilih Label</h2>
+
+        <!-- Search -->
+        <input type="text" x-model="labelData.searchLabel" placeholder="Cari label..."
+            class="w-full border rounded-lg p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+
+        <!-- Tombol Tambah Label -->
+        <button type="button" @click="openAddLabelModal = true; openLabelModal = false"
+            class="text-blue-600 text-sm hover:underline font-medium mb-3">
+            + Tambah Label Baru
+        </button>
+
+        <!-- List Label -->
+        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+            <template x-for="label in filteredLabels()" :key="label.id">
+                <label
+                    class="flex items-center cursor-pointer border rounded-lg px-3 py-2 hover:bg-gray-50 transition">
+                    <input type="checkbox" x-model="label.selected"
+                        class="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <div class="flex-1">
+                        <span
+                            class="inline-block px-3 py-1 rounded-md text-white text-sm font-medium shadow-sm"
+                            :style="`background:${label.color.rgb}`" x-text="label.name">
+                        </span>
+                    </div>
+                </label>
+            </template>
+
+            <!-- Empty State -->
+            <div x-show="filteredLabels().length === 0" class="text-center py-4 text-gray-500 text-sm">
+                <template x-if="labelData.searchLabel">
+                    Tidak ada label yang cocok
+                </template>
+                <template x-if="!labelData.searchLabel">
+                    Tidak ada label tersedia
+                </template>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end items-center mt-6 space-x-2">
+            <button type="button"
+                @click="openLabelModal = false; labelData.labels.forEach(l => l.selected = false)"
+                class="px-4 py-2 rounded-lg border text-sm hover:bg-gray-50">Batal</button>
+            <button type="button" @click="saveTaskLabels(currentTask ? currentTask.id : null)"
+                class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">
+                Simpan (<span x-text="labelData.labels.filter(l => l.selected).length"></span>)
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Tambah Label Baru -->
+<div x-show="openAddLabelModal" x-cloak
+    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Tambah Label Baru</h2>
+
+        <!-- Input nama -->
+        <input type="text" x-model="labelData.newLabelName" placeholder="Nama Label"
+            class="w-full border rounded-lg p-2 text-sm mb-4 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+
+        <!-- Pilihan Warna -->
+        <div class="grid grid-cols-6 gap-2 mb-4 max-h-40 overflow-y-auto pr-1">
+            <template x-for="color in labelData.colors" :key="color.id">
+                <div class="w-8 h-8 rounded-lg cursor-pointer border shadow-sm"
+                    :style="`background:${color.rgb}`" @click="labelData.newLabelColor = color.rgb"
+                    :class="{ 'ring-2 ring-offset-2 ring-blue-600': labelData.newLabelColor === color.rgb }">
+                </div>
+            </template>
+        </div>
+
+        <!-- Debug Info -->
+        <div class="text-xs text-gray-500 mb-2" x-show="labelData.newLabelColor">
+            Warna terpilih: <span x-text="labelData.newLabelColor"></span>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end space-x-2 mt-4">
+            <button type="button" @click="openAddLabelModal = false; openLabelModal = true"
+                class="px-4 py-2 rounded-lg border text-sm hover:bg-gray-50">Batal</button>
+            <button type="button"
+                @click="createNewLabel().then(id => { 
+                    if(id) { 
+                        openAddLabelModal = false; 
+                        openLabelModal = true; 
+                    } 
+                })"
+                :disabled="!labelData.newLabelName.trim() || !labelData.newLabelColor"
+                class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                Simpan
+            </button>
+        </div>
+    </div>
+</div>
 
             <!-- Checklist Section -->
             <div class="mb-4">
