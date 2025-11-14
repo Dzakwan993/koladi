@@ -2869,67 +2869,110 @@
                                 });
                             },
 
-                            initializeSortableForColumn(columnId) {
-                                const el = document.getElementById(`column-${columnId}`);
-                                if (el) {
-                                    new Sortable(el, {
-                                        group: {
-                                            name: 'kanban',
-                                            pull: true,
-                                            put: true
-                                        },
-                                        animation: 150,
-                                        ghostClass: 'bg-blue-300',
-                                        dragClass: 'bg-blue-100',
-                                        onEnd: (evt) => {
-                                            this.handleTaskMove(evt, columnId);
-                                        }
-                                    });
-                                }
-                            },
+                            // Di kanbanApp() - update method initializeSortableForColumn
+initializeSortableForColumn(columnId) {
+    const el = document.getElementById(`column-${columnId}`);
+    if (el) {
+        new Sortable(el, {
+            group: {
+                name: 'kanban',
+                pull: true,
+                put: true
+            },
+            animation: 150,
+            ghostClass: 'bg-blue-300',
+            dragClass: 'bg-blue-100',
+            onEnd: async (evt) => {
+                await this.handleTaskMove(evt, columnId);
+            }
+        });
+    }
+},
 
-                            // ✅ NEW: Handle ketika task dipindahkan
-                            // ✅ UPDATE: Handle ketika task dipindahkan
-                            async handleTaskMove(evt, columnId) {
-                                const taskId = evt.item.dataset.taskId;
-                                const fromColumnId = evt.from.id.replace('column-', '');
-                                const toColumnId = evt.to.id.replace('column-', '');
+// Update method handleTaskMove
+// Di kanbanApp() - perbaiki method handleTaskMove
+async handleTaskMove(evt, columnId) {
+    const taskId = evt.item.dataset.taskId;
+    const fromColumnId = evt.from.id.replace('column-', '');
+    const toColumnId = evt.to.id.replace('column-', '');
 
-                                if (fromColumnId === toColumnId) return;
+    if (fromColumnId === toColumnId) return;
 
-                                try {
-                                    // Update task position di database
-                                    const response = await fetch('/tasks/update-column', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                                        },
-                                        body: JSON.stringify({
-                                            task_id: taskId,
-                                            board_column_id: toColumnId
-                                        })
-                                    });
+    try {
+        console.log('Memindahkan task:', taskId, 'dari:', fromColumnId, 'ke:', toColumnId);
 
-                                    const data = await response.json();
+        // Update task column di database
+        const response = await fetch('/tasks/update-column', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': this.getCsrfToken()
+            },
+            body: JSON.stringify({
+                task_id: taskId,
+                board_column_id: toColumnId
+            })
+        });
 
-                                    if (data.success) {
-                                        // Update local state
-                                        const taskIndex = this.tasks.findIndex(t => t.id === taskId);
-                                        if (taskIndex !== -1) {
-                                            this.tasks[taskIndex].board_column_id = toColumnId;
-                                            this.tasks[taskIndex].status = toColumnId; // Update status juga
-                                        }
-                                        this.showNotification('Tugas berhasil dipindahkan', 'success');
-                                    } else {
-                                        console.error('Gagal update task column:', data.message);
-                                        // Optionally revert the move visually
-                                    }
-                                } catch (error) {
-                                    console.error('Error updating task column:', error);
-                                    this.showNotification('Gagal memindahkan tugas', 'error');
-                                }
-                            },
+        // Handle response yang bukan JSON (misal error 404/500)
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('HTTP Error:', response.status, errorText);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Update local state
+            const taskIndex = this.tasks.findIndex(t => t.id == taskId);
+            if (taskIndex !== -1) {
+                this.tasks[taskIndex].board_column_id = toColumnId;
+                this.tasks[taskIndex].status = data.new_status;
+                
+                this.showNotification(`Tugas dipindahkan ke ${data.new_column_name}`, 'success');
+                console.log('Task berhasil dipindahkan:', data);
+            }
+        } else {
+            console.error('Gagal update task column:', data.message);
+            this.showNotification(`Gagal memindahkan tugas: ${data.message}`, 'error');
+            
+            // Revert visual move dengan reload data
+            this.$nextTick(() => {
+                this.loadKanbanTasks();
+            });
+        }
+    } catch (error) {
+        console.error('Error updating task column:', error);
+        this.showNotification('Gagal memindahkan tugas: ' + error.message, 'error');
+        
+        // Revert visual move dengan reload data
+        this.$nextTick(() => {
+            this.loadKanbanTasks();
+        });
+    }
+},
+
+
+getStatusText(status) {
+    const statusMap = {
+        'todo': 'To Do',
+        'inprogress': 'Dikerjakan',
+        'done': 'Selesai',
+        'cancel': 'Batal'
+    };
+    
+    // Jika status ada di mapping, gunakan yang ada
+    if (statusMap[status]) {
+        return statusMap[status];
+    }
+    
+    // Untuk status custom, format dari snake_case ke Title Case
+    // Contoh: 'review_klien' menjadi 'Review Klien'
+    return status.split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+},
 
                             // ✅ NEW: Method untuk mendapatkan tasks berdasarkan kolom
                             getTasksByColumn(columnId) {

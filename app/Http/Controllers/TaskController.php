@@ -470,154 +470,252 @@ class TaskController extends Controller
         }
     }
 
-    // ✅ NEW: Create task dengan assignments
-    // ✅ UPDATE: Create task dengan assignments dan checklists
-    // ✅ UPDATE: Create task dengan assignments, checklists, dan secret flag
-    // ✅ UPDATE: Create task dengan attachments support
-    // ✅ UPDATE: Create task dengan assignments, checklists, dan secret flag
-    // ✅ UPDATE: Create task dengan attachments support
-    public function storeWithAssignments(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'workspace_id' => 'required|exists:workspaces,id',
-            'board_column_id' => 'required|exists:board_columns,id', // ← WAJIB DIPERBAIKI
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'phase' => 'required|string|max:255',
-            'user_ids' => 'array',
-            'user_ids.*' => 'exists:users,id',
-            'label_ids' => 'array',
-            'label_ids.*' => 'exists:labels,id',
-            'checklists' => 'array',
-            'checklists.*.title' => 'required|string|max:255',
-            'checklists.*.is_done' => 'boolean',
-            'is_secret' => 'boolean',
-            'attachment_ids' => 'array',
-            'attachment_ids.*' => 'exists:attachments,id',
-            'start_datetime' => 'nullable|date_format:Y-m-d H:i:s',
-            'due_datetime' => 'nullable|date_format:Y-m-d H:i:s|after:start_datetime'
-        ]);
+    // Di App\Http\Controllers\TaskController
 
-        if ($validator->fails()) {
-            Log::error('Validation failed:', $validator->errors()->toArray());
+/**
+ * Update task column ketika drag & drop
+ */
+// Di App\Http\Controllers\TaskController
+
+/**
+ * Update task column ketika drag & drop
+ */
+public function updateTaskColumn(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'task_id' => 'required|exists:tasks,id',
+        'board_column_id' => 'required|exists:board_columns,id'
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validasi gagal',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    try {
+        $task = Task::findOrFail($request->task_id);
+        $user = Auth::user();
+
+        // Validasi akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
+        }
+
+        // Validasi bahwa board column termasuk dalam workspace yang sama
+        $boardColumn = BoardColumn::where('id', $request->board_column_id)
+            ->where('workspace_id', $task->workspace_id)
+            ->first();
+
+        if (!$boardColumn) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kolom board tidak valid untuk workspace ini'
             ], 422);
         }
 
-        try {
-            $user = Auth::user();
+        DB::beginTransaction();
 
-            if (!$this->canAccessWorkspace($request->workspace_id)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke workspace ini'
-                ], 403);
-            }
+        // Pindahkan task ke kolom baru dan sync status
+        $task->moveToColumn($request->board_column_id);
 
-            // ✅ VALIDASI: Pastikan board_column_id termasuk dalam workspace yang sama
-            $boardColumn = BoardColumn::where('id', $request->board_column_id)
-                ->where('workspace_id', $request->workspace_id)
-                ->first();
+        DB::commit();
 
-            if (!$boardColumn) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Kolom board tidak valid untuk workspace ini'
-                ], 422);
-            }
+        // Reload task dengan relasi terbaru
+        $task->load(['boardColumn', 'assignments.user', 'labels.color']);
 
-            DB::beginTransaction();
+        return response()->json([
+            'success' => true,
+            'message' => 'Tugas berhasil dipindahkan',
+            'task' => $task,
+            'new_status' => $task->status,
+            'new_column_name' => $task->boardColumn->name
+        ]);
 
-            // Buat task dengan board_column_id yang dipilih
-            $taskData = [
-                'id' => Str::uuid()->toString(),
-                'workspace_id' => $request->workspace_id,
-                'board_column_id' => $request->board_column_id, // ← GUNAKAN YANG DIPILIH
-                'created_by' => $user->id,
-                'title' => $request->title,
-                'description' => $request->description,
-                'phase' => $request->phase,
-                'status' => 'todo',
-                'priority' => $request->priority ?? 'medium',
-                'is_secret' => $request->is_secret ?? false
-            ];
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error updating task column: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memindahkan tugas: ' . $e->getMessage()
+        ], 500);
+    }
+}
 
-            // Tambahkan datetime jika ada
-            if ($request->start_datetime) {
-                $taskData['start_datetime'] = $request->start_datetime;
-            }
-            if ($request->due_datetime) {
-                $taskData['due_datetime'] = $request->due_datetime;
-            }
+/**
+ * Create task dengan sync status otomatis
+ */
+public function storeWithAssignments(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'workspace_id' => 'required|exists:workspaces,id',
+        'board_column_id' => 'required|exists:board_columns,id',
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'phase' => 'required|string|max:255',
+        'user_ids' => 'array',
+        'user_ids.*' => 'exists:users,id',
+        'label_ids' => 'array',
+        'label_ids.*' => 'exists:labels,id',
+        'checklists' => 'array',
+        'checklists.*.title' => 'required|string|max:255',
+        'checklists.*.is_done' => 'boolean',
+        'is_secret' => 'boolean',
+        'attachment_ids' => 'array',
+        'attachment_ids.*' => 'exists:attachments,id',
+        'start_datetime' => 'nullable|date_format:Y-m-d H:i:s',
+        'due_datetime' => 'nullable|date_format:Y-m-d H:i:s|after:start_datetime'
+    ]);
 
-            $task = Task::create($taskData);
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validasi gagal',
+            'errors' => $validator->errors()
+        ], 422);
+    }
 
-            // ✅ PERBAIKI: Assign anggota dengan cara yang lebih sederhana
-            if (!empty($request->user_ids)) {
-                foreach ($request->user_ids as $userId) {
-                    \App\Models\TaskAssignment::create([
-                        'id' => Str::uuid()->toString(),
-                        'task_id' => $task->id,
-                        'user_id' => $userId,
-                        'assigned_at' => now()
-                    ]);
-                }
-            }
+    try {
+        $user = Auth::user();
 
-            // ✅ Attach labels
-            if (!empty($request->label_ids)) {
-                $task->labels()->attach($request->label_ids);
-            }
-
-            // Create checklists
-            if (!empty($request->checklists)) {
-                foreach ($request->checklists as $index => $checklistData) {
-                    \App\Models\Checklist::create([
-                        'id' => Str::uuid()->toString(),
-                        'task_id' => $task->id,
-                        'title' => $checklistData['title'],
-                        'is_done' => $checklistData['is_done'] ?? false,
-                        'position' => $index
-                    ]);
-                }
-            }
-
-            // Update attachments
-            if (!empty($request->attachment_ids)) {
-                \App\Models\Attachment::whereIn('id', $request->attachment_ids)
-                    ->where('attachable_type', 'App\\Models\\Task')
-                    ->whereNull('attachable_id')
-                    ->update(['attachable_id' => $task->id]);
-            }
-
-            DB::commit();
-
-            // ✅ PERBAIKI: Load relations dengan nama yang benar
-            $task->load([
-                'assignments.user',
-                'labels.color',
-                'checklists',
-                'attachments'
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Tugas berhasil dibuat',
-                'task' => $task,
-                'is_secret' => $task->is_secret
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error creating task: ' . $e->getMessage());
+        if (!$this->canAccessWorkspace($request->workspace_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat tugas: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Anda tidak memiliki akses ke workspace ini'
+            ], 403);
         }
+
+        // Validasi board column
+        $boardColumn = BoardColumn::where('id', $request->board_column_id)
+            ->where('workspace_id', $request->workspace_id)
+            ->first();
+
+        if (!$boardColumn) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kolom board tidak valid untuk workspace ini'
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        // Tentukan status berdasarkan kolom (mengikuti nama kolom untuk custom)
+        $status = $this->mapColumnToStatus($boardColumn->name);
+
+        // Buat task
+        $taskData = [
+            'id' => Str::uuid()->toString(),
+            'workspace_id' => $request->workspace_id,
+            'board_column_id' => $request->board_column_id,
+            'created_by' => $user->id,
+            'title' => $request->title,
+            'description' => $request->description,
+            'phase' => $request->phase,
+            'status' => $status, // Status otomatis berdasarkan kolom
+            'priority' => $request->priority ?? 'medium',
+            'is_secret' => $request->is_secret ?? false
+        ];
+
+        // Tambahkan datetime jika ada
+        if ($request->start_datetime) {
+            $taskData['start_datetime'] = $request->start_datetime;
+        }
+        if ($request->due_datetime) {
+            $taskData['due_datetime'] = $request->due_datetime;
+        }
+
+        $task = Task::create($taskData);
+
+        // Assign anggota, labels, checklists, attachments (sama seperti sebelumnya)
+        if (!empty($request->user_ids)) {
+            foreach ($request->user_ids as $userId) {
+                TaskAssignment::create([
+                    'id' => Str::uuid()->toString(),
+                    'task_id' => $task->id,
+                    'user_id' => $userId,
+                    'assigned_at' => now()
+                ]);
+            }
+        }
+
+        if (!empty($request->label_ids)) {
+            $task->labels()->attach($request->label_ids);
+        }
+
+        if (!empty($request->checklists)) {
+            foreach ($request->checklists as $index => $checklistData) {
+                Checklist::create([
+                    'id' => Str::uuid()->toString(),
+                    'task_id' => $task->id,
+                    'title' => $checklistData['title'],
+                    'is_done' => $checklistData['is_done'] ?? false,
+                    'position' => $index
+                ]);
+            }
+        }
+
+        if (!empty($request->attachment_ids)) {
+            Attachment::whereIn('id', $request->attachment_ids)
+                ->where('attachable_type', 'App\\Models\\Task')
+                ->whereNull('attachable_id')
+                ->update(['attachable_id' => $task->id]);
+        }
+
+        DB::commit();
+
+        $task->load([
+            'assignments.user',
+            'labels.color',
+            'checklists',
+            'attachments',
+            'boardColumn'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tugas berhasil dibuat',
+            'task' => $task,
+            'is_secret' => $task->is_secret,
+            'status' => $task->status,
+            'column_name' => $boardColumn->name
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error creating task: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal membuat tugas: ' . $e->getMessage()
+        ], 500);
     }
+}
+
+/**
+ * Mapping nama kolom ke status
+ */
+private function mapColumnToStatus($columnName)
+{
+    $mapping = [
+        'To Do List' => 'todo',
+        'Dikerjakan' => 'inprogress',
+        'Selesai' => 'done', 
+        'Batal' => 'cancel'
+    ];
+
+    // Untuk kolom default, gunakan mapping
+    if (array_key_exists($columnName, $mapping)) {
+        return $mapping[$columnName];
+    }
+    
+    // Untuk kolom custom, gunakan nama kolom sebagai status
+    // Konversi ke lowercase dan replace spasi dengan underscore
+    return strtolower(str_replace(' ', '_', $columnName));
+}
 
     // Helper method untuk mendapatkan default board column
     private function getDefaultBoardColumnId($workspaceId)

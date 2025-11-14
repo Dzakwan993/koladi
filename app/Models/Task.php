@@ -126,6 +126,35 @@ class Task extends Model
             ->withPivot('assigned_at');
     }
 
+    public function syncStatusFromColumn()
+{
+    if (!$this->boardColumn) {
+        return;
+    }
+
+    // Mapping nama kolom default ke status
+    $columnStatusMap = [
+        'To Do List' => 'todo',
+        'Dikerjakan' => 'inprogress', 
+        'Selesai' => 'done',
+        'Batal' => 'cancel'
+    ];
+
+    $columnName = $this->boardColumn->name;
+    
+    if (array_key_exists($columnName, $columnStatusMap)) {
+        // Untuk kolom default, gunakan mapping
+        $this->status = $columnStatusMap[$columnName];
+    } else {
+        // Untuk kolom custom, gunakan nama kolom sebagai status
+        // Konversi ke lowercase dan replace spasi dengan underscore
+        $this->status = strtolower(str_replace(' ', '_', $columnName));
+    }
+}
+
+
+
+
     // ===== RELASI LAINNYA =====
 
     // Relasi ke Checklists
@@ -332,16 +361,18 @@ class Task extends Model
      * Pindahkan tugas ke board column lain
      */
     public function moveToColumn($boardColumnId)
-    {
-        $column = BoardColumn::find($boardColumnId);
-        
-        if (!$column || $column->workspace_id !== $this->workspace_id) {
-            throw new \InvalidArgumentException("Board column tidak valid");
-        }
-
-        $this->board_column_id = $boardColumnId;
-        return $this->save();
+{
+    $column = BoardColumn::find($boardColumnId);
+    
+    if (!$column || $column->workspace_id !== $this->workspace_id) {
+        throw new \InvalidArgumentException("Board column tidak valid");
     }
+
+    $this->board_column_id = $boardColumnId;
+    $this->syncStatusFromColumn(); // Sync status otomatis
+    
+    return $this->save();
+}
 
     /**
      * Duplikat tugas
