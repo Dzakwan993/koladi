@@ -43,6 +43,7 @@ class PengumumanController extends Controller
                 // Kalau mau bisa kasih flag untuk blade: $bolehLihat = false misal
             }
         }
+        $workspace = $pengumuman->workspace;
 
         $pengumuman = Pengumuman::with('creator')->findOrFail($id);
 
@@ -52,7 +53,7 @@ class PengumumanController extends Controller
         // hitung semua komentar termasuk balasan
         $allCommentCount = $pengumuman->comments()->count();
 
-        return view('isiPengumuman', compact('pengumuman', 'commentCount', 'allCommentCount'));
+        return view('isiPengumuman', compact('pengumuman','workspace', 'commentCount', 'allCommentCount'));
 
     }
 
