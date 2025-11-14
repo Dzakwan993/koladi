@@ -149,6 +149,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/pengumuman/{id}/edit-data', [PengumumanController::class, 'getEditData'])->name('pengumuman.edit.data');
         Route::put('/pengumuman/{id}', [PengumumanController::class, 'update'])->name('pengumuman.update');
 
+        Route::delete('/pengumuman/{pengumuman}', [PengumumanController::class, 'destroy'])
+            ->name('pengumuman.destroy');
 
         Route::get('/workspace/{id}/pengumuman', [PengumumanController::class, 'index'])->name('workspace.pengumuman');
     });

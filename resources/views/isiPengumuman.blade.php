@@ -66,21 +66,27 @@
                                 <div x-show="open" x-transition.scale.origin.top.right
                                     class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-50">
                                     <h3 class="text-center font-semibold text-gray-800 mb-2">Aksi</h3>
-                       
-
-                                    @if ($pengumuman->created_by == Auth::id())
-                                        <hr class="border-gray-300 mb-3">
-                                        <button onclick="openEditModal('{{ $pengumuman->id }}')"
-                                            class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
-                                            <img src="{{ asset('images/icons/Pencil.svg') }}" alt="Edit" class="w-6 h-6">
-                                            <span class="text-gray-700 text-base">Edit</span>
-                                        </button>
-                                    @endif
 
 
+                                    <button onclick="
+                                        @if($pengumuman->created_by == Auth::id())
+                                            openEditModal('{{ $pengumuman->id }}');
+                                        @else
+                                            alert('Anda tidak memiliki akses untuk ini!');
+                                        @endif
+                                    "
+                                        class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
+                                        <img src="{{ asset('images/icons/Pencil.svg') }}" alt="Edit" class="w-6 h-6">
+                                        <span class="text-gray-700 text-base">Edit</span>
+                                    </button>
                                     <hr class="border-gray-300 my-2">
-
-                                    <button @click="open = false"
+                                    <button onclick="
+                                        @if($pengumuman->created_by == Auth::id())
+                                            deletePengumuman('{{ $pengumuman->id }}');
+                                        @else
+                                            alert('Anda tidak memiliki akses untuk ini!');
+                                        @endif
+                                    "
                                         class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
                                         <img src="{{ asset('images/icons/Trash.svg') }}" alt="Hapus" class="w-6 h-6">
                                         <span class="text-gray-700 text-base">Hapus</span>
@@ -231,14 +237,14 @@
                         <hr class="border-gray-200 my-6">
                         <div class="flex items-center gap-2 text-sm text-gray-600">
                             <!-- <span>Pengumuman ini diterima oleh 3 anggota</span>
-                                                                    <div class="flex -space-x-2">
-                                                                        <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
-                                                                            class="rounded-full w-8 h-8 border-2 border-white">
-                                                                        <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
-                                                                            class="rounded-full w-8 h-8 border-2 border-white">
-                                                                        <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
-                                                                            class="rounded-full w-8 h-8 border-2 border-white">
-                                                                    </div> -->
+                                                                                                            <div class="flex -space-x-2">
+                                                                                                                <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
+                                                                                                                    class="rounded-full w-8 h-8 border-2 border-white">
+                                                                                                                <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
+                                                                                                                    class="rounded-full w-8 h-8 border-2 border-white">
+                                                                                                                <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
+                                                                                                                    class="rounded-full w-8 h-8 border-2 border-white">
+                                                                                                            </div> -->
                         </div>
 
                     </div>
@@ -520,10 +526,10 @@
             const btn = document.createElement('button');
             btn.type = 'button'; btn.className = 'ck ck-button'; btn.title = 'Upload Image';
             btn.innerHTML = `
-                                                                                            <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
-                                                                                                ${imageIconSVG()}
-                                                                                            </span>
-                                                                                        `;
+                                                                                                                                    <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
+                                                                                                                                        ${imageIconSVG()}
+                                                                                                                                    </span>
+                                                                                                                                `;
             btn.style.marginLeft = '6px';
             btn.style.cursor = 'pointer';
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -563,15 +569,15 @@
             // Ikon SVG untuk tombol Upload Image
             function imageIconSVG() {
                 return `
-                                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                                                    <path d="M21 19V5a2 2 0 0 0-2-2H5
-                                                                        a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14
-                                                                        a2 2 0 0 0 2-2zM8.5 11
-                                                                        a1.5 1.5 0 1 1 0-3
-                                                                        1.5 1.5 0 0 1 0 3zM5 19
-                                                                        l4.5-6 3.5 4.5 2.5-3L19 19H5z"/>
-                                                                </svg>
-                                                            `;
+                                                                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                                                                                                            <path d="M21 19V5a2 2 0 0 0-2-2H5
+                                                                                                                a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14
+                                                                                                                a2 2 0 0 0 2-2zM8.5 11
+                                                                                                                a1.5 1.5 0 1 1 0-3
+                                                                                                                1.5 1.5 0 0 1 0 3zM5 19
+                                                                                                                l4.5-6 3.5 4.5 2.5-3L19 19H5z"/>
+                                                                                                        </svg>
+                                                                                                    `;
             }
         }
 
@@ -625,9 +631,9 @@
             // Ikon SVG untuk tombol Upload File
             function fileIconSVG() {
                 return `
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="20">
-                                        <path fill="currentColor" d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8.83a2 2 0 0 0-.59-1.41l-3.83-3.83A2 2 0 0 0 10.17 3H6zm4 2 4 4H10V4z"/>
-                                        </svg>`;
+                                                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="20">
+                                                                                <path fill="currentColor" d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8.83a2 2 0 0 0-.59-1.41l-3.83-3.83A2 2 0 0 0 10.17 3H6zm4 2 4 4H10V4z"/>
+                                                                                </svg>`;
             }
         }
     </script>
@@ -893,10 +899,10 @@
                                 btn.className = 'ck ck-button';
                                 btn.title = 'Upload Image';
                                 btn.innerHTML = `
-                    <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
-                        ${imageIconSVG()}
-                    </span>
-                `;
+                                                            <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
+                                                                ${imageIconSVG()}
+                                                            </span>
+                                                        `;
 
                                 btn.style.marginLeft = '6px';
                                 btn.style.padding = '4px 8px';
@@ -950,10 +956,10 @@
                                             alert('Terjadi kesalahan saat upload image.');
                                         } finally {
                                             btn.innerHTML = `
-                                <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
-                                    ${imageIconSVG()}
-                                </span>
-                            `;
+                                                                        <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
+                                                                            ${imageIconSVG()}
+                                                                        </span>
+                                                                    `;
                                         }
                                     }, { once: true });
                                 });
@@ -965,15 +971,15 @@
                             // Ikon SVG untuk tombol Upload Image
                             function imageIconSVG() {
                                 return `
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                        <path d="M21 19V5a2 2 0 0 0-2-2H5
-                            a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14
-                            a2 2 0 0 0 2-2zM8.5 11
-                            a1.5 1.5 0 1 1 0-3
-                            1.5 1.5 0 0 1 0 3zM5 19
-                            l4.5-6 3.5 4.5 2.5-3L19 19H5z"/>
-                    </svg>
-                `;
+                                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                                                                <path d="M21 19V5a2 2 0 0 0-2-2H5
+                                                                    a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14
+                                                                    a2 2 0 0 0 2-2zM8.5 11
+                                                                    a1.5 1.5 0 1 1 0-3
+                                                                    1.5 1.5 0 0 1 0 3zM5 19
+                                                                    l4.5-6 3.5 4.5 2.5-3L19 19H5z"/>
+                                                            </svg>
+                                                        `;
                             }
                         }
 
@@ -1076,9 +1082,9 @@
                         // Ikon SVG untuk tombol Upload File
                         function fileIconSVG() {
                             return `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="20">
-                    <path fill="currentColor" d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8.83a2 2 0 0 0-.59-1.41l-3.83-3.83A2 2 0 0 0 10.17 3H6zm4 2 4 4H10V4z"/>
-                </svg>`;
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="20">
+                                                            <path fill="currentColor" d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8.83a2 2 0 0 0-.59-1.41l-3.83-3.83A2 2 0 0 0 10.17 3H6zm4 2 4 4H10V4z"/>
+                                                        </svg>`;
                         }
                     </script>
 
@@ -1187,18 +1193,18 @@
                             dropdown1.className =
                                 "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 edit-dropdown-menu-1";
                             dropdown1.innerHTML = `
-                <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-t-lg text-black font-[Inter]" data-value="Selesai otomatis">Selesai otomatis</div>
-                <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-b-lg text-black font-[Inter]" data-value="Atur tenggat waktu sendiri">Atur tenggat waktu sendiri</div>
-            `;
+                                                        <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-t-lg text-black font-[Inter]" data-value="Selesai otomatis">Selesai otomatis</div>
+                                                        <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-b-lg text-black font-[Inter]" data-value="Atur tenggat waktu sendiri">Atur tenggat waktu sendiri</div>
+                                                    `;
                             // Dropdown 2 untuk edit
                             const dropdown2 = document.createElement("div");
                             dropdown2.className =
                                 "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 edit-dropdown-menu-2";
                             dropdown2.innerHTML = `
-                <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-t-lg text-black font-[Inter]" data-value="1 hari dari sekarang">1 hari dari sekarang</div>
-                <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer text-black font-[Inter]" data-value="3 hari dari sekarang">3 hari dari sekarang</div>
-                <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-b-lg text-black font-[Inter]" data-value="7 hari dari sekarang">7 hari dari sekarang</div>
-            `;
+                                                        <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-t-lg text-black font-[Inter]" data-value="1 hari dari sekarang">1 hari dari sekarang</div>
+                                                        <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer text-black font-[Inter]" data-value="3 hari dari sekarang">3 hari dari sekarang</div>
+                                                        <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-b-lg text-black font-[Inter]" data-value="7 hari dari sekarang">7 hari dari sekarang</div>
+                                                    `;
 
                             document.body.appendChild(dropdown1);
                             document.body.appendChild(dropdown2);
@@ -1826,4 +1832,51 @@
         });
     </script>
 
+    <!-- delete -->
+    <script>
+        function deletePengumuman(id) {
+            Swal.fire({
+                title: "Hapus pengumuman?",
+                text: "Semua file & gambar terkait juga akan dihapus.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#3085d6",
+                confirmButtonText: "Ya, hapus!"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/pengumuman/${id}`, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                            "X-HTTP-Method-Override": "DELETE"
+                        }
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            console.log("Response:", data);
+
+                            if (data.success) {
+                                Swal.fire({
+                                    icon: "success",
+                                    title: "Berhasil!",
+                                    text: data.message,
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    // Redirect ke halaman pengumuman
+                                    window.location.href = "{{ route('workspace.pengumuman', $workspace->id ?? $pengumuman->workspace_id) }}";
+                                });
+                            } else {
+                                Swal.fire("Gagal", data.message, "error");
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error:", error);
+                            Swal.fire("Error", "Terjadi kesalahan saat menghapus pengumuman", "error");
+                        });
+                }
+            });
+        }
+    </script>
 @endsection

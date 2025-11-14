@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attachment;
 use Illuminate\Http\Request;
 use App\Models\Pengumuman;
 use App\Models\Workspace;
@@ -9,6 +10,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class PengumumanController extends Controller
 {
@@ -53,7 +55,7 @@ class PengumumanController extends Controller
         // hitung semua komentar termasuk balasan
         $allCommentCount = $pengumuman->comments()->count();
 
-        return view('isiPengumuman', compact('pengumuman','workspace', 'commentCount', 'allCommentCount'));
+        return view('isiPengumuman', compact('pengumuman', 'workspace', 'commentCount', 'allCommentCount'));
 
     }
 
@@ -63,101 +65,101 @@ class PengumumanController extends Controller
      * 🔹 Menyimpan pengumuman baru
      */
     public function store(Request $request, $id_workspace)
-{
-    $request->validate([
-        'title' => 'required|string',
-        'description' => 'required|string',
-        'due_date' => 'nullable|date',
-        'is_private' => 'nullable|boolean',
-        'auto_due' => 'nullable|string',
-        'recipients' => 'nullable|array',
-    ]);
-
-    $user = Auth::user();
-    if (!$user) {
-        return redirect()->back()->with('error', 'User belum login!');
-    }
-
-    DB::beginTransaction();
-
-    try {
-        $pengumuman = new Pengumuman();
-        $pengumuman->id = Str::uuid();
-        $pengumuman->workspace_id = $id_workspace;
-        $pengumuman->title = $request->title;
-        $pengumuman->description = $request->description;
-        $pengumuman->created_by = $user->id;
-
-        // 🔹 Cek apakah switch Rahasia diaktifkan
-        $isPrivate = $request->boolean('is_private');
-
-        // 🔹 Kalau switch OFF → abaikan semua pilihan member dan jadikan public
-        if (!$isPrivate) {
-            $pengumuman->is_private = false;
-        } else {
-            // 🔹 Kalau switch ON → pastikan ada penerima yang dipilih
-            $pengumuman->is_private = true;
-        }
-
-        // 🔹 Logika auto due
-        switch (strtolower($request->auto_due ?? '1 hari dari sekarang')) {
-            case '1 hari dari sekarang':
-                $days = 1;
-                break;
-            case '3 hari dari sekarang':
-                $days = 3;
-                break;
-            case '7 hari dari sekarang':
-                $days = 7;
-                break;
-            default:
-                $days = null;
-                break;
-        }
-
-        if ($days !== null) {
-            $tanggal = Carbon::now()->addDays($days)->toDateString();
-            $pengumuman->auto_due = $tanggal;
-            $pengumuman->due_date = $tanggal;
-        } else {
-            $pengumuman->auto_due = null;
-            $pengumuman->due_date = $request->due_date ?? null;
-        }
-
-        $pengumuman->save();
-
-        // 🔹 Kalau private dan ada member dipilih → simpan ke tabel recipients
-        if ($pengumuman->is_private) {
-            $recipientIds = array_filter($request->input('recipients', []));
-            if (!empty($recipientIds)) {
-                $pengumuman->recipients()->attach($recipientIds);
-            }
-        } else {
-            // Kalau public, jangan simpan apa-apa di recipients
-            $pengumuman->recipients()->detach();
-        }
-
-        // 🔹 Update lampiran yang baru diupload
-        DB::table('attachments')
-            ->whereNull('attachable_id')
-            ->where('uploaded_by', $user->id)
-            ->update([
-                'attachable_id' => $pengumuman->id,
-                'attachable_type' => 'App\\Models\\Pengumuman',
-            ]);
-
-        DB::commit();
-
-        return redirect()->route('pengumuman.show', $pengumuman->id)->with('alert', [
-            'icon' => 'success',
-            'title' => 'Berhasil!',
-            'text' => 'Berhasil membuat pengumuman.'
+    {
+        $request->validate([
+            'title' => 'required|string',
+            'description' => 'required|string',
+            'due_date' => 'nullable|date',
+            'is_private' => 'nullable|boolean',
+            'auto_due' => 'nullable|string',
+            'recipients' => 'nullable|array',
         ]);
-    } catch (\Throwable $th) {
-        DB::rollBack();
-        return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $th->getMessage());
+
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->back()->with('error', 'User belum login!');
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $pengumuman = new Pengumuman();
+            $pengumuman->id = Str::uuid();
+            $pengumuman->workspace_id = $id_workspace;
+            $pengumuman->title = $request->title;
+            $pengumuman->description = $request->description;
+            $pengumuman->created_by = $user->id;
+
+            // 🔹 Cek apakah switch Rahasia diaktifkan
+            $isPrivate = $request->boolean('is_private');
+
+            // 🔹 Kalau switch OFF → abaikan semua pilihan member dan jadikan public
+            if (!$isPrivate) {
+                $pengumuman->is_private = false;
+            } else {
+                // 🔹 Kalau switch ON → pastikan ada penerima yang dipilih
+                $pengumuman->is_private = true;
+            }
+
+            // 🔹 Logika auto due
+            switch (strtolower($request->auto_due ?? '1 hari dari sekarang')) {
+                case '1 hari dari sekarang':
+                    $days = 1;
+                    break;
+                case '3 hari dari sekarang':
+                    $days = 3;
+                    break;
+                case '7 hari dari sekarang':
+                    $days = 7;
+                    break;
+                default:
+                    $days = null;
+                    break;
+            }
+
+            if ($days !== null) {
+                $tanggal = Carbon::now()->addDays($days)->toDateString();
+                $pengumuman->auto_due = $tanggal;
+                $pengumuman->due_date = $tanggal;
+            } else {
+                $pengumuman->auto_due = null;
+                $pengumuman->due_date = $request->due_date ?? null;
+            }
+
+            $pengumuman->save();
+
+            // 🔹 Kalau private dan ada member dipilih → simpan ke tabel recipients
+            if ($pengumuman->is_private) {
+                $recipientIds = array_filter($request->input('recipients', []));
+                if (!empty($recipientIds)) {
+                    $pengumuman->recipients()->attach($recipientIds);
+                }
+            } else {
+                // Kalau public, jangan simpan apa-apa di recipients
+                $pengumuman->recipients()->detach();
+            }
+
+            // 🔹 Update lampiran yang baru diupload
+            DB::table('attachments')
+                ->whereNull('attachable_id')
+                ->where('uploaded_by', $user->id)
+                ->update([
+                    'attachable_id' => $pengumuman->id,
+                    'attachable_type' => 'App\\Models\\Pengumuman',
+                ]);
+
+            DB::commit();
+
+            return redirect()->route('pengumuman.show', $pengumuman->id)->with('alert', [
+                'icon' => 'success',
+                'title' => 'Berhasil!',
+                'text' => 'Berhasil membuat pengumuman.'
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $th->getMessage());
+        }
     }
-}
 
 
     /**
@@ -307,12 +309,50 @@ class PengumumanController extends Controller
     /**
      * 🔹 Menghapus pengumuman
      */
+
     public function destroy(Pengumuman $pengumuman)
-    {
-        $pengumuman->recipients()->detach();
-        $pengumuman->delete();
-        return redirect()->back()->with('success', 'Pengumuman berhasil dihapus.');
+{
+    $workspaceId = $pengumuman->workspace_id; // Simpan ID workspace sebelum hapus
+    
+    // 1. Hapus relasi penerima
+    $pengumuman->recipients()->detach();
+
+    // 2. Ambil semua attachment milik pengumuman
+    $attachments = Attachment::where('attachable_type', 'App\\Models\\Pengumuman')
+        ->where('attachable_id', $pengumuman->id)
+        ->get();
+
+    foreach ($attachments as $file) {
+    if (Str::contains($file->file_url, 'uploads/files')) {
+        // file biasa di storage/app/public/uploads/files
+        $filePath = storage_path('app/public/uploads/files/' . basename($file->file_url));
+    } elseif (Str::contains($file->file_url, 'uploads/images')) {
+        // file image di storage/app/public/uploads/images
+        $filePath = storage_path('app/public/uploads/images/' . basename($file->file_url));
+    } else {
+        $filePath = null;
     }
+
+    if ($filePath && file_exists($filePath)) {
+        unlink($filePath);
+    }
+
+    $file->delete();
+}
+
+
+    // 3. Hapus pengumuman
+    $pengumuman->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Pengumuman berhasil dihapus.',
+        'redirect_url' => route('workspace.pengumuman', $workspaceId)
+    ]);
+}
+
+
+
 
     public function getAnggota($workspaceId)
     {
