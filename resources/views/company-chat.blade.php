@@ -4,7 +4,6 @@
 
 @section('content')
     @push('scripts')
-        {{-- Bisa pakai JavaScript yang sama atau buat terpisah --}}
         @vite('resources/js/company-chat.js')
     @endpush
 
@@ -53,6 +52,189 @@
         body.swal2-shown {
             overflow: hidden !important;
         }
+
+        /* 🔥 TAMBAHKAN: Image Modal Styles */
+        #imageModalOverlay {
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* 🔥 TAMBAHKAN: Better image thumbnail in chat */
+        .message-new img {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .message-new img:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 🔥 TAMBAHKAN: Smooth scroll behavior */
+        #chatContainer {
+            scroll-behavior: smooth;
+        }
+
+        /* 🔥 TAMBAHKAN: Active conversation highlight animation */
+        [data-conversation-id],
+        [data-member-id] {
+            transition: all 0.2s ease;
+        }
+
+        [data-conversation-id]:hover,
+        [data-member-id]:hover {
+            transform: translateX(2px);
+        }
+
+        /* 🔥 TAMBAHKAN: Unread badge animation */
+        [id^="unread-badge-"] {
+            transition: all 0.3s ease;
+        }
+
+        /* 🔥 TAMBAHKAN: Message bubble animations */
+        .message-new {
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 🔥 TAMBAHKAN: Deleted message style */
+        .deleted-message {
+            opacity: 0.7;
+        }
+
+        /* 🔥 TAMBAHKAN: Loading spinner */
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 🔥 TAMBAHKAN: File preview animations */
+        #filePreviewList > div {
+            animation: scaleIn 0.2s ease;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* 🔥 TAMBAHKAN: Reply preview style enhancement */
+        #replyPreviewContainer {
+            animation: slideDown 0.2s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 100px;
+            }
+        }
+
+        /* 🔥 TAMBAHKAN: Typing indicator animation */
+        #typing-indicator .animate-bounce {
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        /* 🔥 TAMBAHKAN: Search input focus effect */
+        input[type="text"]:focus {
+            transition: all 0.3s ease;
+        }
+
+        /* 🔥 TAMBAHKAN: Button hover effects */
+        button {
+            transition: all 0.2s ease;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        /* 🔥 TAMBAHKAN: Scroll to bottom button animation */
+        #scrollToBottom {
+            animation: fadeInUp 0.3s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 🔥 TAMBAHKAN: Drop zone style enhancement */
+        #dropZone {
+            transition: all 0.3s ease;
+        }
+
+        /* 🔥 TAMBAHKAN: Message action buttons */
+        .group:hover .opacity-0 {
+            transition: opacity 0.2s ease;
+        }
+
+        /* 🔥 TAMBAHKAN: Responsive image container */
+        .message-new img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* 🔥 TAMBAHKAN: Better mobile support */
+        @media (max-width: 768px) {
+            #imageModalOverlay {
+                padding: 1rem;
+            }
+
+            #imageModalOverlay img {
+                max-height: 70vh !important;
+            }
+        }
     </style>
 
     {{-- Main Container dengan data attributes --}}
@@ -63,25 +245,6 @@
          data-api-url="{{ url('/') }}"
          data-csrf-token="{{ csrf_token() }}"
          data-chat-scope="company">
-
-        {{-- Company Navigation (sesuaikan dengan navbar perusahaan Anda) --}}
-        <div class="bg-white border-b border-gray-200 px-6 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <a href="{{ route('company.dashboard', $company->id) }}"
-                       class="text-gray-600 hover:text-gray-800">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                        </svg>
-                    </a>
-                    <div>
-                        <h1 class="text-xl font-bold text-gray-800">{{ $company->name }}</h1>
-                        <p class="text-sm text-gray-600">Chat Perusahaan</p>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <div class="flex-1 flex overflow-hidden">
             {{-- Main Content Area --}}
@@ -192,11 +355,12 @@
                 {{-- Right Sidebar --}}
                 <div class="w-80 flex-shrink-0 bg-white rounded-xl shadow-md overflow-hidden flex flex-col">
                     <div class="px-6 py-4 border-b border-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-800">Chat Perusahaan</h3>
+                        <h3 class="text-lg font-semibold text-gray-800">Chat</h3>
                     </div>
                     <div class="px-6 py-4 border-b border-gray-200">
                         <div class="relative">
                             <input type="text" placeholder="Cari rekan kerja..."
+                                   id="searchInput"
                                 class="w-full pl-10 pr-4 py-2.5 rounded-full bg-[#F0F2F5] border-transparent focus:border-blue-500 focus:ring-blue-500 placeholder-gray-500 text-sm text-gray-800">
                             <svg class="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2"
                                 xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"

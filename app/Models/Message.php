@@ -18,13 +18,13 @@ class Message extends Model
         'conversation_id',
         'sender_id',
         'content',
-        'message_type',
+        'message_type',      // ✅ SUDAH ADA
         'reply_to_message_id',
         'is_edited',
         'is_read',
         'edited_at',
         'read_at',
-        'deleted_at'
+        'deleted_at'         // ✅ SUDAH ADA
     ];
 
     protected $casts = [
@@ -32,10 +32,33 @@ class Message extends Model
         'is_read' => 'boolean',
         'edited_at' => 'datetime',
         'read_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'deleted_at' => 'datetime',  // ✅ SUDAH ADA
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    // 🔥 TAMBAHKAN INI: Make sure these fields are always visible in JSON
+    protected $visible = [
+        'id',
+        'conversation_id',
+        'sender_id',
+        'content',
+        'message_type',      // ✅ PENTING!
+        'reply_to_message_id',
+        'is_edited',
+        'is_read',
+        'edited_at',
+        'read_at',
+        'deleted_at',        // ✅ PENTING!
+        'created_at',
+        'updated_at',
+        'sender',
+        'attachments',
+        'reply_to'
+    ];
+
+    // 🔥 TAMBAHKAN INI: Append untuk computed attributes
+    protected $appends = [];
 
     protected static function booted()
     {
@@ -57,7 +80,12 @@ class Message extends Model
     // 🔥 PENTING: Relasi dengan nama snake_case (sesuai Laravel convention)
     public function reply_to()
     {
-        return $this->belongsTo(Message::class, 'reply_to_message_id');
+        return $this->belongsTo(Message::class, 'reply_to_message_id')
+            ->select(['id', 'sender_id', 'content', 'message_type', 'deleted_at', 'created_at'])
+            ->with([
+                'sender:id,full_name,avatar',
+                'attachments'
+            ]);
     }
 
     public function replies()
@@ -78,5 +106,22 @@ class Message extends Model
 
         $fifteenMinutesAgo = now()->subMinutes(15);
         return $this->created_at >= $fifteenMinutesAgo;
+    }
+
+    // 🔥 OVERRIDE: toArray method untuk ensure fields terkirim
+    public function toArray()
+    {
+        $array = parent::toArray();
+
+        // Force include message_type and deleted_at even if null
+        if (!isset($array['message_type'])) {
+            $array['message_type'] = $this->message_type;
+        }
+
+        if (!isset($array['deleted_at'])) {
+            $array['deleted_at'] = $this->deleted_at;
+        }
+
+        return $array;
     }
 }

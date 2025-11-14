@@ -69,14 +69,31 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 <span class="text-sm">Pengumuman</span>
             </a>
 
-            {{-- Chat --}}
-            <a href="{{ url('/chat') }}"
-                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
-                      {{ Request::is('chat*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                <img src="{{ asset('images/icons/sidebar_chat.svg') }}" alt="Chat"
-                    class="w-5 h-5 {{ Request::is('chat*') ? 'filter-blue' : '' }}">
-                <span class="text-sm">Chat</span>
-            </a>
+
+            {{-- Chat Perusahaan --}}
+            @auth
+                @php
+                    $activeCompanyId = session('active_company_id');
+                    $activeCompany = $activeCompanyId ? \App\Models\Company::find($activeCompanyId) : null;
+                @endphp
+
+                @if ($activeCompany)
+                    <a href="{{ route('company.chat', $activeCompany) }}"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                  {{ Request::is('company/*/chat*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                        <img src="{{ asset('images/icons/sidebar_chat.svg') }}" alt="Chat Perusahaan"
+                            class="w-5 h-5 {{ Request::is('company/*/chat*') ? 'filter-blue' : '' }}">
+                        <span class="text-sm">Chat</span>
+                    </a>
+                @else
+                    {{-- Tampilkan disabled link jika tidak ada company aktif --}}
+                    <div class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 cursor-not-allowed"
+                        title="Pilih perusahaan terlebih dahulu">
+                        <img src="{{ asset('images/icons/sidebar_chat.svg') }}" alt="Chat Perusahaan" class="w-5 h-5">
+                        <span class="text-sm">Chat</span>
+                    </div>
+                @endif
+            @endauth
 
             {{-- Jadwal --}}
             <a href="{{ url('/jadwal') }}"
@@ -123,14 +140,16 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                     <button
                         class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
                         title="Filter">
-                        <img src="{{ asset('images/icons/sidebar_filter.svg') }}" alt="Filter" class="w-3.5 h-3.5">
+                        <img src="{{ asset('images/icons/sidebar_filter.svg') }}" alt="Filter"
+                            class="w-3.5 h-3.5">
                     </button>
 
                     {{-- Add Button --}}
                     <button
                         class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
                         title="Tambah">
-                        <img src="{{ asset('images/icons/sidebar_tambah.svg') }}" alt="Tambah" class="w-3.5 h-3.5">
+                        <img src="{{ asset('images/icons/sidebar_tambah.svg') }}" alt="Tambah"
+                            class="w-3.5 h-3.5">
                     </button>
                 </div>
             </div>

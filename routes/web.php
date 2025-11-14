@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Company;
 use App\Models\Workspace;
 use App\Models\Conversation;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\CompanyChatController;
 
 
 // 🔥🔥🔥 TAMBAHKAN INI DI SINI (sebelum route lainnya) 🔥🔥🔥
@@ -90,43 +92,59 @@ Route::middleware(['auth'])->group(function () {
         return view('workspace', ['workspace' => $workspace]);
     })->name('workspace');
 
-    // 🔥🔥🔥 --- PERBAIKAN CHAT DIMULAI DI SINI --- 🔥🔥🔥
+    // ✅ ROUTE untuk company chat
+    Route::get('/company/{company}/chat', function (Company $company) {
+        // Validasi apakah user punya akses ke company ini
+        $hasAccess = \App\Models\UserCompany::where('user_id', Auth::id())
+            ->where('company_id', $company->id)
+            ->exists();
+
+        if (!$hasAccess) {
+            abort(403, 'Anda tidak memiliki akses ke perusahaan ini');
+        }
+
+        return view('company-chat', ['company' => $company]);
+    })->name('company.chat');
 
     // LANGKAH 1: Rute untuk menampilkan HALAMAN (VIEW) chat
-    // Ini harus mengembalikan view('chat'), BUKAN controller
     Route::get('/workspace/{workspace}/chat', function (Workspace $workspace) {
         return view('chat', ['workspace' => $workspace]);
     })->name('chat');
 
     // LANGKAH 2: Grup semua rute API chat Anda di bawah prefix '/api'
     Route::prefix('api')->name('api.')->group(function () {
-
         // Rute untuk mengambil daftar chat & anggota (JSON)
         Route::get('/workspace/{workspaceId}/chat', [ChatController::class, 'index'])->name('chat.index');
-
         // Rute untuk mengambil pesan (JSON)
         Route::get('/chat/{conversationId}/messages', [ChatController::class, 'showMessages'])->name('chat.messages');
-
         // Rute untuk mengirim pesan (POST)
         Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
-
         // Rute untuk membuat percakapan baru (POST)
         Route::post('/chat/create', [ChatController::class, 'createConversation'])->name('chat.create');
-
         // Edit message
         Route::put('/chat/message/{message}', [ChatController::class, 'editMessage'])
             ->middleware('auth');
-
         // PASTIKAN ada route DELETE
         Route::delete('/chat/message/{message}', [ChatController::class, 'deleteMessage']);
-
         // Rute untuk menandai telah dibaca (POST)
         Route::post('/chat/{conversationId}/mark-as-read', [ChatController::class, 'markAsRead'])->name('chat.markAsRead');
-
         // Di Controller Chat, pastikan include avatar
         $conversations = Conversation::with(['participants.user' => function ($query) {
             $query->select('id', 'full_name', 'avatar'); // 🔥 INCLUDE AVATAR
         }])->get();
+
+
+
+        // 🆕 TAMBAHKAN: Company Chat Routes
+        Route::prefix('company')->group(function () {
+            Route::get('/{companyId}/chat-data', [CompanyChatController::class, 'getChatData']);
+            Route::get('/chat/{conversationId}/messages', [CompanyChatController::class, 'showMessages']);
+            Route::post('/chat/send', [CompanyChatController::class, 'store']);
+            Route::put('/chat/message/{message}', [CompanyChatController::class, 'editMessage']);
+            Route::delete('/chat/message/{message}', [CompanyChatController::class, 'deleteMessage']);
+            Route::post('/chat/create', [CompanyChatController::class, 'createConversation']);
+            Route::post('/chat/{conversationId}/mark-as-read', [CompanyChatController::class, 'markAsRead']);
+        });
     });
 
     // Halaman Jadwal

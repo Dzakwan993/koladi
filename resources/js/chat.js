@@ -133,7 +133,6 @@ function getFileIcon(fileType) {
     }
 }
 
-
 function getReadStatusHTML(message) {
     const isRead = message.is_read;
     if (isRead) {
