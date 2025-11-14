@@ -50,7 +50,7 @@
                     {{-- Search & Filter Section --}}
                     @include('components.pencarian-tugas')
 
-                    {{-- View Mode Toggle --}}
+                    {{-- View Mode Toggle
                     <div class="bg-white border-b px-2 py-1 flex justify-between items-center">
                         <div class="flex space-x-4 ml-6">
                             <button @click="viewMode = 'kanban'"
@@ -64,7 +64,7 @@
                                 Timeline View
                             </button>
                         </div>
-                    </div>
+                    </div> --}}
 
                     <div class="flex-1" x-show="!replyView.active">
 
