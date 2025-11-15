@@ -1546,69 +1546,144 @@
 
                             // Di method saveTaskEdit() di Alpine.js
                             async saveTaskEdit() {
-                                if (!this.currentTask) return;
+    if (!this.currentTask) return;
 
-                                try {
-                                    // Validasi
-                                    if (!this.currentTask.title?.trim()) {
-                                        this.showNotification('Judul tugas harus diisi', 'error');
-                                        return;
-                                    }
+    try {
+        // Validasi
+        if (!this.currentTask.title?.trim()) {
+            this.showNotification('Judul tugas harus diisi', 'error');
+            return;
+        }
 
-                                    // Simpan judul jika berubah
-                                    await this.saveTitleChange();
+        // ✅ PERBAIKAN: Dapatkan content CKEditor dengan multiple fallback
+        let description = '';
+        const editorId = 'editor-catatan-edit';
+        
+        console.log('🔄 Getting CKEditor content for:', editorId);
 
-                                    // Format data untuk backend
-                                    const formData = {
-                                        title: this.currentTask.title,
-                                        phase: this.currentTask.phase,
-                                        description: this.currentTask.description,
-                                        is_secret: this.currentTask.is_secret,
-                                        user_ids: this.assignedMembers.map(member => member.id),
-                                        label_ids: this.currentTask.labels.map(label => label.id),
-                                        board_column_id: this.currentTask.board_column?.id
-                                    };
+        // Method 1: Dari global taskEditors
+        if (window.taskEditors && window.taskEditors[editorId]) {
+            description = window.taskEditors[editorId].getData();
+            console.log('✅ Got description from global taskEditors');
+        }
+        // Method 2: Dari element CKEditor langsung
+        else if (document.querySelector(`#${editorId} + .ck-editor .ck-content`)) {
+            const editorElement = document.querySelector(`#${editorId} + .ck-editor .ck-content`);
+            description = editorElement.innerHTML;
+            console.log('✅ Got description from editor element');
+        }
+        // Method 3: Dari fallback textarea
+        else if (document.getElementById(editorId + '-fallback')) {
+            description = document.getElementById(editorId + '-fallback').value;
+            console.log('✅ Got description from fallback textarea');
+        }
+        // Method 4: Dari textarea biasa
+        else if (document.getElementById(editorId)) {
+            description = document.getElementById(editorId).value;
+            console.log('✅ Got description from textarea');
+        }
+        // Method 5: Gunakan existing description sebagai fallback terakhir
+        else {
+            description = this.currentTask.description || '';
+            console.log('✅ Using existing description from currentTask');
+        }
 
-                                    // Tambahkan datetime jika ada
-                                    if (this.currentTask.startDate && this.currentTask.startTime) {
-                                        formData.start_datetime = `${this.currentTask.startDate}T${this.currentTask.startTime}:00`;
-                                    } else {
-                                        formData.start_datetime = null;
-                                    }
+        console.log('📝 Final description length:', description.length);
+        console.log('📝 Description preview:', description.substring(0, 100) + '...');
 
-                                    if (this.currentTask.dueDate && this.currentTask.dueTime) {
-                                        formData.due_datetime = `${this.currentTask.dueDate}T${this.currentTask.dueTime}:00`;
-                                    } else {
-                                        formData.due_datetime = null;
-                                    }
+        // Simpan judul jika berubah
+        await this.saveTitleChange();
 
-                                    console.log('Mengupdate task dengan data:', formData);
+        // ✅ PERBAIKAN: Format data untuk backend dengan description yang sudah diproses
+        const formData = {
+            title: this.currentTask.title,
+            phase: this.currentTask.phase,
+            description: description, // ✅ GUNAKAN DESCRIPTION YANG SUDAH DIPROSES
+            is_secret: this.currentTask.is_secret,
+            user_ids: this.assignedMembers.map(member => member.id),
+            label_ids: this.currentTask.labels.map(label => label.id),
+            board_column_id: this.currentTask.board_column?.id
+        };
 
-                                    const response = await fetch(`/tasks/${this.currentTask.id}/update`, {
-                                        method: 'PUT',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'X-CSRF-TOKEN': this.getCsrfToken()
-                                        },
-                                        body: JSON.stringify(formData)
-                                    });
+        // Tambahkan datetime jika ada
+        if (this.currentTask.startDate && this.currentTask.startTime) {
+            formData.start_datetime = `${this.currentTask.startDate}T${this.currentTask.startTime}:00`;
+        } else {
+            formData.start_datetime = null;
+        }
 
-                                    const data = await response.json();
+        if (this.currentTask.dueDate && this.currentTask.dueTime) {
+            formData.due_datetime = `${this.currentTask.dueDate}T${this.currentTask.dueTime}:00`;
+        } else {
+            formData.due_datetime = null;
+        }
 
-                                    if (data.success) {
-                                        this.showNotification('Tugas berhasil diperbarui', 'success');
-                                        this.isEditMode = false;
+        // ✅ PERBAIKAN: Hapus field yang null/undefined
+        Object.keys(formData).forEach(key => {
+            if (formData[key] === null || formData[key] === undefined || formData[key] === '') {
+                delete formData[key];
+            }
+        });
 
-                                        // Refresh data
-                                        await this.loadKanbanTasks();
-                                    } else {
-                                        throw new Error(data.message || 'Gagal memperbarui tugas');
-                                    }
-                                } catch (error) {
-                                    console.error('Error updating task:', error);
-                                    this.showNotification(`Gagal memperbarui tugas: ${error.message}`, 'error');
-                                }
-                            },
+        console.log('🔄 Mengupdate task dengan data:', formData);
+        console.log('📤 Sending request to:', `/tasks/${this.currentTask.id}/update`);
+
+        const response = await fetch(`/tasks/${this.currentTask.id}/update`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': this.getCsrfToken(),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        // ✅ PERBAIKAN: Handle response error dengan lebih baik
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ HTTP Error:', response.status, errorText);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            this.showNotification('Tugas berhasil diperbarui', 'success');
+            this.isEditMode = false;
+
+            // ✅ PERBAIKAN: Update currentTask dengan data terbaru dari server
+            if (data.task) {
+                this.currentTask = {
+                    ...this.currentTask,
+                    ...data.task,
+                    description: data.task.description || description
+                };
+            }
+
+            // Refresh data
+            await this.loadKanbanTasks();
+            
+            console.log('✅ Task updated successfully');
+        } else {
+            throw new Error(data.message || 'Gagal memperbarui tugas');
+        }
+    } catch (error) {
+        console.error('❌ Error updating task:', error);
+        
+        // ✅ PERBAIKAN: Tampilkan error message yang lebih informatif
+        let errorMessage = 'Gagal memperbarui tugas';
+        if (error.message.includes('HTTP')) {
+            errorMessage += ' - Terjadi masalah koneksi';
+        } else {
+            errorMessage += `: ${error.message}`;
+        }
+        
+        this.showNotification(errorMessage, 'error');
+        
+        // ✅ PERBAIKAN: Optionally revert to non-edit mode on error
+        // this.isEditMode = false;
+    }
+},
 
                             // ✅ NEW: Method untuk menghapus checklist item
                             async removeChecklistItemFromDetail(index) {
@@ -1762,33 +1837,195 @@
 
                             // Enable edit mode
                             // Di method enableEditMode() atau saat modal dibuka
-                            enableEditMode() {
-                                this.isEditMode = true;
+                            // ✅ PERBAIKI: Method untuk enable edit mode dengan inisialisasi editor yang lebih reliable
+// ✅ PERBAIKI: Method enableEditMode dengan timing yang lebih baik
+async enableEditMode() {
+    console.log('🔄 Enabling edit mode...');
+    
+    this.isEditMode = true;
+    
+    // Tunggu Alpine.js selesai update DOM
+    await this.$nextTick();
+    
+    // Beri waktu tambahan untuk DOM rendering
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    console.log('✅ DOM should be ready, initializing editors...');
+    
+    // Inisialisasi editor
+    await this.initEditModeEditors();
+},
 
-                                // Inisialisasi CKEditor untuk edit mode
-                                this.$nextTick(() => {
-                                    setTimeout(() => {
-                                        this.initEditModeEditors();
-                                    }, 100);
-                                });
-                            },
-                            async initEditModeEditors() {
-                                try {
-                                    // Inisialisasi CKEditor untuk edit mode
-                                    if (document.getElementById('editor-catatan-edit')) {
-                                        const editor = await createEditorForTask('editor-catatan-edit', {
-                                            placeholder: 'Tulis catatan tugas di sini...',
-                                            initial: this.currentTask.description || ''
-                                        });
+// ✅ PERBAIKI: Inisialisasi editor untuk edit mode
+// ✅ PERBAIKI: Method initEditModeEditors dengan error handling yang lebih baik
+async initEditModeEditors() {
+    try {
+        console.log('🔄 Initializing edit mode editors...');
+        
+        // Target element untuk editor catatan
+        const editorElementId = 'editor-catatan-edit';
+        const editorElement = document.getElementById(editorElementId);
+        
+        console.log('🔍 Looking for editor element:', editorElementId);
+        console.log('📝 Element found:', !!editorElement);
+        
+        if (editorElement) {
+            console.log('🎯 Element details:', {
+                id: editorElement.id,
+                className: editorElement.className,
+                parent: editorElement.parentElement?.id
+            });
+            
+            // Clear element content first
+            editorElement.innerHTML = '';
+            
+            // Set placeholder text sementara
+            editorElement.innerHTML = '<p>Loading editor...</p>';
+            
+            // Initialize CKEditor dengan timeout
+            setTimeout(async () => {
+                try {
+                    await this.initializeCKEditor(editorElementId);
+                } catch (error) {
+                    console.error('❌ Failed to initialize CKEditor:', error);
+                    this.fallbackToTextarea(editorElementId);
+                }
+            }, 100);
+            
+        } else {
+            console.error('❌ Editor element not found:', editorElementId);
+            // Coba cari alternatif element
+            this.findAlternativeEditorElement();
+        }
+        
+    } catch (error) {
+        console.error('❌ Error in initEditModeEditors:', error);
+    }
+},
 
-                                        // Simpan instance untuk nanti diakses
-                                        this.editModeEditors = this.editModeEditors || {};
-                                        this.editModeEditors['catatan'] = editor;
-                                    }
-                                } catch (error) {
-                                    console.error('Error initializing edit mode editors:', error);
-                                }
-                            },
+
+
+
+// ✅ NEW: Method khusus untuk initialize CKEditor
+async initializeCKEditor(editorId) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            console.log(`🔄 Initializing CKEditor for: ${editorId}`);
+            
+            const element = document.getElementById(editorId);
+            if (!element) {
+                throw new Error(`Element ${editorId} not found`);
+            }
+            
+            // Pastikan CKEditor tersedia
+            if (typeof ClassicEditor === 'undefined') {
+                throw new Error('CKEditor ClassicEditor not loaded');
+            }
+            
+            console.log('✅ CKEditor is available, creating instance...');
+            
+            // Clear element
+            element.innerHTML = '';
+            
+            // Buat CKEditor instance
+            const editor = await ClassicEditor.create(element, {
+                toolbar: {
+                    items: [
+                        'undo', 'redo', '|',
+                        'heading', '|',
+                        'bold', 'italic', 'underline', 'strikethrough', '|',
+                        'fontColor', 'fontBackgroundColor', '|',
+                        'link', 'blockQuote', 'code', '|',
+                        'bulletedList', 'numberedList', 'outdent', 'indent', '|',
+                        'insertTable', 'imageUpload', 'mediaEmbed'
+                    ],
+                    shouldNotGroupWhenFull: true
+                },
+                heading: {
+                    options: [
+                        {
+                            model: 'paragraph',
+                            title: 'Paragraf',
+                            class: 'ck-heading_paragraph'
+                        },
+                        {
+                            model: 'heading1',
+                            view: 'h1',
+                            title: 'Heading 1',
+                            class: 'ck-heading_heading1'
+                        },
+                        {
+                            model: 'heading2',
+                            view: 'h2',
+                            title: 'Heading 2',
+                            class: 'ck-heading_heading2'
+                        },
+                        {
+                            model: 'heading3',
+                            view: 'h3',
+                            title: 'Heading 3',
+                            class: 'ck-heading_heading3'
+                        }
+                    ]
+                },
+                placeholder: 'Tulis catatan tugas di sini...'
+            });
+            
+            // Set initial data
+            if (this.currentTask?.description) {
+                editor.setData(this.currentTask.description);
+                console.log('✅ Set initial content to editor');
+            }
+            
+            // Simpan instance
+            if (typeof window.taskEditors === 'undefined') {
+                window.taskEditors = {};
+            }
+            window.taskEditors[editorId] = editor;
+            
+            console.log('✅ CKEditor initialized successfully for:', editorId);
+            resolve(editor);
+            
+        } catch (error) {
+            console.error('❌ CKEditor initialization failed:', error);
+            this.fallbackToTextarea(editorId);
+            reject(error);
+        }
+    });
+},
+
+
+// ✅ NEW: Cari element editor alternatif
+findAlternativeEditorElement() {
+    console.log('🔍 Searching for alternative editor elements...');
+    
+    const possibleSelectors = [
+        '#editor-catatan-edit',
+        '[x-model="currentTask.description"]',
+        '.modal-layer-2 textarea',
+        '#editor-catatan-edit-fallback'
+    ];
+    
+    possibleSelectors.forEach(selector => {
+        const element = document.querySelector(selector);
+        if (element) {
+            console.log(`✅ Found element with selector: ${selector}`, element);
+        }
+    });
+},
+
+// ✅ NEW: Fallback ke textarea jika CKEditor gagal
+fallbackToTextarea(editorId) {
+    const editorElement = document.getElementById(editorId);
+    if (editorElement) {
+        editorElement.innerHTML = `
+            <textarea id="${editorId}-fallback" 
+                      class="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg bg-white resize-none"
+                      x-model="currentTask.description">${this.currentTask?.description || ''}</textarea>
+        `;
+        console.log('✅ Fallback to textarea for:', editorId);
+    }
+},
 
 
 
@@ -2122,34 +2359,42 @@
 
                             // ✅ NEW: Method untuk mendapatkan content CKEditor
                             // ✅ PERBAIKI: Method untuk mendapatkan content CKEditor
-                            getCKEditorContent(editorId) {
-                                console.log('Getting content for editor:', editorId);
+                            // ✅ PERBAIKI: Method untuk mendapatkan content CKEditor dengan fallback yang lebih robust
+getCKEditorContent(editorId) {
+    console.log('Getting content for editor:', editorId);
 
-                                // Coba ambil dari instance CKEditor
-                                const editor = taskEditors[editorId];
-                                if (editor) {
-                                    const content = editor.getData();
-                                    console.log('Got content from CKEditor instance:', content);
-                                    return content;
-                                }
+    // Coba ambil dari instance CKEditor global
+    if (window.taskEditors && window.taskEditors[editorId]) {
+        const content = window.taskEditors[editorId].getData();
+        console.log('✅ Got content from CKEditor instance:', content);
+        return content;
+    }
 
-                                // Fallback: coba ambil dari textarea fallback
-                                const fallbackTextarea = document.getElementById(editorId + '-fallback');
-                                if (fallbackTextarea) {
-                                    console.log('Got content from fallback textarea:', fallbackTextarea.value);
-                                    return fallbackTextarea.value;
-                                }
+    // Coba ambil dari element CKEditor langsung
+    const editorElement = document.querySelector(`#${editorId} + .ck-editor .ck-content`);
+    if (editorElement) {
+        const content = editorElement.innerHTML;
+        console.log('✅ Got content from editor element:', content);
+        return content;
+    }
 
-                                // Fallback: coba ambil dari textarea biasa
-                                const textarea = document.querySelector(`#${editorId}`);
-                                if (textarea) {
-                                    console.log('Got content from textarea:', textarea.value);
-                                    return textarea.value;
-                                }
+    // Fallback: coba ambil dari textarea fallback
+    const fallbackTextarea = document.getElementById(editorId + '-fallback');
+    if (fallbackTextarea) {
+        console.log('✅ Got content from fallback textarea:', fallbackTextarea.value);
+        return fallbackTextarea.value;
+    }
 
-                                console.warn('No editor or textarea found for:', editorId);
-                                return '';
-                            },
+    // Fallback: coba ambil dari textarea biasa
+    const textarea = document.querySelector(`#${editorId}`);
+    if (textarea) {
+        console.log('✅ Got content from textarea:', textarea.value);
+        return textarea.value;
+    }
+
+    console.warn('❌ No editor or textarea found for:', editorId);
+    return '';
+},
 
                             // ✅ NEW: Method untuk reset CKEditor
                             resetCKEditor(editorId) {

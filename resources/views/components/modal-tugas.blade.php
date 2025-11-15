@@ -1363,6 +1363,138 @@
                  </div>
              </div>
 
+             <!-- Komentar Section -->
+             <div class="border-t pt-4 mt-6" x-data="commentSection()">
+                 <div class="space-y-4">
+
+                     <!-- Tambah Komentar -->
+                     <div class="mb-6">
+                         <label class="text-sm font-medium text-gray-700 mb-2 block">Tulis Komentar</label>
+                         <div class="flex items-start gap-3">
+                             <img src="https://i.pravatar.cc/40?img=11" alt="Avatar"
+                                 class="rounded-full w-10 h-10">
+
+                             <!-- Container untuk editor komentar utama -->
+                             <div class="flex-1" x-data="{ active: true }">
+                                 <div class="bg-white border border-gray-300 rounded-lg p-4">
+                                     <!-- Gunakan ID yang unik untuk editor komentar -->
+                                     <div id="task-main-comment-editor" class="min-h-[120px] bg-white"></div>
+
+                                     <div class="flex justify-end gap-2 mt-4">
+                                         <button
+                                             @click="active = false; destroyMainEditorForTask('task-main-comment-editor')"
+                                             class="px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded-lg hover:text-gray-800 transition">
+                                             Batal
+                                         </button>
+                                         <button @click="submitMain()"
+                                             class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                                             Kirim
+                                         </button>
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+
+                     <!-- Daftar Komentar yang sudah ada -->
+                     <template x-if="comments.length > 0">
+                         <div class="space-y-4">
+                             <template x-for="comment in comments" :key="comment.id">
+                                 <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                     <!-- Struktur komentar yang sudah ada -->
+                                     <div class="flex items-start gap-3">
+                                         <img :src="comment.author.avatar" alt=""
+                                             class="w-8 h-8 rounded-full">
+                                         <div class="flex-1">
+                                             <div class="flex justify-between items-center">
+                                                 <p class="text-sm font-semibold text-gray-800"
+                                                     x-text="comment.author.name"></p>
+                                                 <span class="text-xs text-gray-500"
+                                                     x-text="formatCommentDate(comment.createdAt)"></span>
+                                             </div>
+                                             <div class="text-sm text-gray-700 mt-1" x-html="comment.content"></div>
+
+                                             <!-- Tombol Balas dan logika balasan -->
+                                             <div class="flex items-center gap-4 mt-2">
+                                                 <button @click="toggleReply(comment)"
+                                                     class="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 transition">
+                                                     <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                         viewBox="0 0 24 24">
+                                                         <path stroke-linecap="round" stroke-linejoin="round"
+                                                             stroke-width="2"
+                                                             d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                                     </svg>
+                                                     <span>balas</span>
+                                                     <span x-show="comment.replies && comment.replies.length > 0"
+                                                         class="ml-1"
+                                                         x-text="comment.replies.length + ' balasan'"></span>
+                                                 </button>
+                                             </div>
+
+                                             <!-- Form balasan inline -->
+                                             <template
+                                                 x-if="replyView.active && replyView.parentComment?.id === comment.id">
+                                                 <div class="mt-4 pl-6 border-l-2 border-gray-200">
+                                                     <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                                         <h4 class="text-sm font-semibold text-gray-800 mb-2">
+                                                             Membalas <span x-text="comment.author.name"></span>
+                                                         </h4>
+                                                         <div
+                                                             class="border border-gray-300 rounded-lg overflow-hidden mb-3">
+                                                             <div :id="'task-reply-editor-' + comment.id"
+                                                                 class="min-h-[100px] p-3 bg-white"></div>
+                                                         </div>
+                                                         <div class="flex justify-end gap-2">
+                                                             <button @click="closeReplyView()"
+                                                                 class="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition border border-gray-300 rounded-lg">
+                                                                 Batal
+                                                             </button>
+                                                             <button @click="submitReplyFromEditor()"
+                                                                 class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                                                                 Kirim
+                                                             </button>
+                                                         </div>
+                                                     </div>
+                                                 </div>
+                                             </template>
+
+                                             <!-- Tampilkan balasan yang sudah ada -->
+                                             <template x-if="comment.replies && comment.replies.length > 0">
+                                                 <div class="mt-3 pl-6 border-l-2 border-gray-200 space-y-3">
+                                                     <template x-for="reply in comment.replies"
+                                                         :key="reply.id">
+                                                         <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                                             <div class="flex items-start gap-2">
+                                                                 <img :src="reply.author.avatar"
+                                                                     class="w-6 h-6 rounded-full">
+                                                                 <div class="flex-1">
+                                                                     <div class="flex items-center gap-2">
+                                                                         <p class="text-sm font-semibold text-gray-800"
+                                                                             x-text="reply.author.name"></p>
+                                                                         <span class="text-xs text-gray-500"
+                                                                             x-text="formatCommentDate(reply.createdAt)"></span>
+                                                                     </div>
+                                                                     <div class="text-sm text-gray-700 mt-1"
+                                                                         x-html="reply.content"></div>
+                                                                 </div>
+                                                             </div>
+                                                         </div>
+                                                     </template>
+                                                 </div>
+                                             </template>
+                                         </div>
+                                     </div>
+                                 </div>
+                             </template>
+                         </div>
+                     </template>
+
+                     <template x-if="comments.length === 0">
+                         <div class="text-center py-4 text-gray-500 text-sm">Belum ada komentar disini...</div>
+                     </template>
+                 </div>
+             </div>
+
              <!-- Tombol Aksi -->
              <div class="flex justify-end gap-3 pt-4 border-t">
                  <template x-if="!isEditMode">
@@ -1393,3 +1525,397 @@
          </div>
      </div>
  </div>
+
+ <!-- Script untuk CKEditor dan Alpine.js -->
+ <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+ <script>
+     document.addEventListener("alpine:init", () => {
+         Alpine.data('commentSection', () => ({
+             comments: [
+                 {
+                     id: 1,
+                     author: {
+                         name: 'John Doe',
+                         avatar: 'https://i.pravatar.cc/40?img=1'
+                     },
+                     content: 'Progressnya sudah berapa persen? Deadline semakin dekat nih.',
+                     createdAt: new Date('2024-01-15T10:30:00'),
+                     replies: [
+                         {
+                             id: 2,
+                             author: {
+                                 name: 'Jane Smith',
+                                 avatar: 'https://i.pravatar.cc/40?img=5'
+                             },
+                             content: 'Sudah 75% complete. Besok bisa selesai.',
+                             createdAt: new Date('2024-01-15T11:15:00')
+                         }
+                     ]
+                 },
+                 {
+                     id: 3,
+                     author: {
+                         name: 'Mike Johnson',
+                         avatar: 'https://i.pravatar.cc/40?img=3'
+                     },
+                     content: 'Jangan lupa untuk memeriksa data transaksi Q4 sebelum disubmit.',
+                     createdAt: new Date('2024-01-14T14:20:00'),
+                     replies: []
+                 }
+             ],
+             replyView: {
+                 active: false,
+                 parentComment: null
+             },
+
+             init() {
+                 // Inisialisasi CKEditor untuk komentar utama
+                 this.$nextTick(() => {
+                     this.initializeMainEditor();
+                 });
+             },
+
+             initializeMainEditor() {
+                 const editorElement = document.getElementById('task-main-comment-editor');
+                 if (editorElement && !editorElement._editor) {
+                     ClassicEditor
+                         .create(editorElement, {
+                             toolbar: {
+                                 items: [
+                                     'undo', 'redo', '|',
+                                     'heading', '|',
+                                     'bold', 'italic', 'underline', 'strikethrough', '|',
+                                     'fontColor', 'fontBackgroundColor', '|',
+                                     'link', 'blockQuote', 'code', '|',
+                                     'bulletedList', 'numberedList', 'outdent', 'indent', '|',
+                                     'insertTable', 'imageUpload', 'mediaEmbed'
+                                 ],
+                                 shouldNotGroupWhenFull: true
+                             },
+                             heading: {
+                                 options: [
+                                     {
+                                         model: 'paragraph',
+                                         title: 'Paragraf',
+                                         class: 'ck-heading_paragraph'
+                                     },
+                                     {
+                                         model: 'heading1',
+                                         view: 'h1',
+                                         title: 'Heading 1',
+                                         class: 'ck-heading_heading1'
+                                     },
+                                     {
+                                         model: 'heading2',
+                                         view: 'h2',
+                                         title: 'Heading 2',
+                                         class: 'ck-heading_heading2'
+                                     },
+                                     {
+                                         model: 'heading3',
+                                         view: 'h3',
+                                         title: 'Heading 3',
+                                         class: 'ck-heading_heading3'
+                                     }
+                                 ]
+                             },
+                             fontColor: {
+                                 colors: [
+                                     {
+                                         color: 'black',
+                                         label: 'Hitam'
+                                     },
+                                     {
+                                         color: 'red',
+                                         label: 'Merah'
+                                     },
+                                     {
+                                         color: 'blue',
+                                         label: 'Biru'
+                                     },
+                                     {
+                                         color: 'green',
+                                         label: 'Hijau'
+                                     },
+                                     {
+                                         color: 'orange',
+                                         label: 'Oranye'
+                                     },
+                                     {
+                                         color: 'purple',
+                                         label: 'Ungu'
+                                     }
+                                 ]
+                             },
+                             fontBackgroundColor: {
+                                 colors: [
+                                     {
+                                         color: 'yellow',
+                                         label: 'Kuning'
+                                     },
+                                     {
+                                         color: 'lightgreen',
+                                         label: 'Hijau Muda'
+                                     },
+                                     {
+                                         color: 'lightblue',
+                                         label: 'Biru Muda'
+                                     },
+                                     {
+                                         color: 'pink',
+                                         label: 'Merah Muda'
+                                     },
+                                     {
+                                         color: 'gray',
+                                         label: 'Abu-abu'
+                                     }
+                                 ]
+                             },
+                             image: {
+                                 toolbar: [
+                                     'imageTextAlternative', 'imageStyle:inline',
+                                     'imageStyle:block', 'imageStyle:side'
+                                 ]
+                             },
+                             table: {
+                                 contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
+                             },
+                             mediaEmbed: {
+                                 previewsInData: true
+                             },
+                             placeholder: 'Tulis komentar Anda...'
+                         })
+                         .then(editor => {
+                             editorElement._editor = editor;
+                         })
+                         .catch(error => {
+                             console.error('Error initializing main editor:', error);
+                         });
+                 }
+             },
+
+             initializeReplyEditor(commentId) {
+                 const editorId = `task-reply-editor-${commentId}`;
+                 const editorElement = document.getElementById(editorId);
+                 
+                 if (editorElement && !editorElement._editor) {
+                     ClassicEditor
+                         .create(editorElement, {
+                             toolbar: {
+                                 items: [
+                                     'undo', 'redo', '|',
+                                     'heading', '|',
+                                     'bold', 'italic', 'underline', 'strikethrough', '|',
+                                     'fontColor', 'fontBackgroundColor', '|',
+                                     'link', 'blockQuote', 'code', '|',
+                                     'bulletedList', 'numberedList', 'outdent', 'indent', '|',
+                                     'insertTable', 'imageUpload', 'mediaEmbed'
+                                 ],
+                                 shouldNotGroupWhenFull: true
+                             },
+                             heading: {
+                                 options: [
+                                     {
+                                         model: 'paragraph',
+                                         title: 'Paragraf',
+                                         class: 'ck-heading_paragraph'
+                                     },
+                                     {
+                                         model: 'heading1',
+                                         view: 'h1',
+                                         title: 'Heading 1',
+                                         class: 'ck-heading_heading1'
+                                     },
+                                     {
+                                         model: 'heading2',
+                                         view: 'h2',
+                                         title: 'Heading 2',
+                                         class: 'ck-heading_heading2'
+                                     },
+                                     {
+                                         model: 'heading3',
+                                         view: 'h3',
+                                         title: 'Heading 3',
+                                         class: 'ck-heading_heading3'
+                                     }
+                                 ]
+                             },
+                             fontColor: {
+                                 colors: [
+                                     {
+                                         color: 'black',
+                                         label: 'Hitam'
+                                     },
+                                     {
+                                         color: 'red',
+                                         label: 'Merah'
+                                     },
+                                     {
+                                         color: 'blue',
+                                         label: 'Biru'
+                                     },
+                                     {
+                                         color: 'green',
+                                         label: 'Hijau'
+                                     },
+                                     {
+                                         color: 'orange',
+                                         label: 'Oranye'
+                                     },
+                                     {
+                                         color: 'purple',
+                                         label: 'Ungu'
+                                     }
+                                 ]
+                             },
+                             fontBackgroundColor: {
+                                 colors: [
+                                     {
+                                         color: 'yellow',
+                                         label: 'Kuning'
+                                     },
+                                     {
+                                         color: 'lightgreen',
+                                         label: 'Hijau Muda'
+                                     },
+                                     {
+                                         color: 'lightblue',
+                                         label: 'Biru Muda'
+                                     },
+                                     {
+                                         color: 'pink',
+                                         label: 'Merah Muda'
+                                     },
+                                     {
+                                         color: 'gray',
+                                         label: 'Abu-abu'
+                                     }
+                                 ]
+                             },
+                             image: {
+                                 toolbar: [
+                                     'imageTextAlternative', 'imageStyle:inline',
+                                     'imageStyle:block', 'imageStyle:side'
+                                 ]
+                             },
+                             table: {
+                                 contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
+                             },
+                             mediaEmbed: {
+                                 previewsInData: true
+                             },
+                             placeholder: 'Tulis balasan Anda...'
+                         })
+                         .then(editor => {
+                             editorElement._editor = editor;
+                         })
+                         .catch(error => {
+                             console.error('Error initializing reply editor:', error);
+                         });
+                 }
+             },
+
+             toggleReply(comment) {
+                 if (this.replyView.active && this.replyView.parentComment?.id === comment.id) {
+                     this.closeReplyView();
+                 } else {
+                     this.replyView.active = true;
+                     this.replyView.parentComment = comment;
+                     
+                     this.$nextTick(() => {
+                         this.initializeReplyEditor(comment.id);
+                     });
+                 }
+             },
+
+             closeReplyView() {
+                 this.replyView.active = false;
+                 this.replyView.parentComment = null;
+             },
+
+             submitMain() {
+                 const editorElement = document.getElementById('task-main-comment-editor');
+                 if (editorElement && editorElement._editor) {
+                     const content = editorElement._editor.getData();
+                     if (content.trim()) {
+                         // Simulasikan penambahan komentar baru
+                         const newComment = {
+                             id: Date.now(),
+                             author: {
+                                 name: 'Current User',
+                                 avatar: 'https://i.pravatar.cc/40?img=11'
+                             },
+                             content: content,
+                             createdAt: new Date(),
+                             replies: []
+                         };
+                         
+                         this.comments.unshift(newComment);
+                         editorElement._editor.setData('');
+                         
+                         // Tampilkan notifikasi atau lakukan API call
+                         console.log('Komentar utama dikirim:', content);
+                     }
+                 }
+             },
+
+             submitReplyFromEditor() {
+                 if (!this.replyView.parentComment) return;
+
+                 const editorId = `task-reply-editor-${this.replyView.parentComment.id}`;
+                 const editorElement = document.getElementById(editorId);
+                 
+                 if (editorElement && editorElement._editor) {
+                     const content = editorElement._editor.getData();
+                     if (content.trim()) {
+                         // Tambahkan balasan ke komentar parent
+                         const newReply = {
+                             id: Date.now(),
+                             author: {
+                                 name: 'Current User',
+                                 avatar: 'https://i.pravatar.cc/40?img=11'
+                             },
+                             content: content,
+                             createdAt: new Date()
+                         };
+
+                         if (!this.replyView.parentComment.replies) {
+                             this.replyView.parentComment.replies = [];
+                         }
+                         
+                         this.replyView.parentComment.replies.push(newReply);
+                         editorElement._editor.setData('');
+                         this.closeReplyView();
+                         
+                         // Tampilkan notifikasi atau lakukan API call
+                         console.log('Balasan dikirim:', content);
+                     }
+                 }
+             },
+
+             formatCommentDate(date) {
+                 return new Date(date).toLocaleDateString('id-ID', {
+                     day: 'numeric',
+                     month: 'long',
+                     year: 'numeric',
+                     hour: '2-digit',
+                     minute: '2-digit'
+                 });
+             },
+
+             destroyMainEditorForTask(editorId) {
+                 const editorElement = document.getElementById(editorId);
+                 if (editorElement && editorElement._editor) {
+                     editorElement._editor.destroy()
+                         .then(() => {
+                             editorElement._editor = null;
+                             console.log('Editor destroyed successfully');
+                         })
+                         .catch(error => {
+                             console.error('Error destroying editor:', error);
+                         });
+                 }
+             }
+         }));
+     });
+ </script>
