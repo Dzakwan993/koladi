@@ -139,14 +139,6 @@ async function loadMessages(conversationId) {
     const chatInputBar = document.getElementById('chatInputBar');
     chatInputBar.style.display = 'block';
 
-    // 🔥 TAMBAHKAN: Clear unread badge SEBELUM load messages
-    const badge = document.getElementById(`unread-badge-${conversationId}`);
-    const countSpan = document.getElementById(`unread-count-${conversationId}`);
-    if (badge && countSpan) {
-        badge.style.display = 'none';
-        countSpan.textContent = '0';
-    }
-
     try {
         const response = await fetch(`${API_URL}/api/company/chat/${conversationId}/messages`);
         if (!response.ok) throw new Error('Gagal memuat pesan');
@@ -181,11 +173,14 @@ async function loadMessages(conversationId) {
         }
 
         refreshSidebarHighlight();
-
-        // 🔥 Mark as read (ini akan update backend)
         await markConversationAsRead(conversationId);
 
         scrollToBottom();
+
+        // 🔥 PERBAIKAN: Pastikan tombol hidden setelah load
+        setTimeout(() => {
+            scrollToBottomBtn.style.display = 'none';
+        }, 100);
 
     } catch (error) {
         console.error('Error loading messages:', error);
@@ -534,8 +529,12 @@ function debounce(func, wait) {
 
 function scrollToBottom() {
     chatContainer.scrollTop = chatContainer.scrollHeight;
-}
 
+    // 🔥 Sembunyikan tombol setelah scroll ke bawah
+    setTimeout(() => {
+        scrollToBottomBtn.style.display = 'none';
+    }, 300);
+}
 
 // -----------------------------------------------------------------
 // LANGKAH 3.5: Fungsi Helper RENDER HTML
@@ -566,14 +565,7 @@ function createConversationHTML(conversation) {
 
     // 🔥 PERBAIKAN KRUSIAL: Handle pesan terhapus dengan lebih robust
     if (lastMessage) {
-        console.log('🔍 Last message for sidebar:', {
-            id: lastMessage.id,
-            message_type: lastMessage.message_type,
-            deleted_at: lastMessage.deleted_at,
-            content: lastMessage.content
-        });
-
-        // 🔥 DETEKSI PESAN TERHAPUS YANG LEBIH AKURAT
+        // 🔥 PERBAIKI DETEKSI INI:
         const isDeleted = lastMessage.message_type === 'deleted' ||
             (lastMessage.deleted_at !== null && lastMessage.deleted_at !== undefined) ||
             (lastMessage.content === null && (!lastMessage.attachments || lastMessage.attachments.length === 0));
@@ -784,7 +776,49 @@ function createMessageHTML(message) {
 
     // Cek apakah pesan dihapus
     const isDeleted = message.message_type === 'deleted' ||
-        (message.deleted_at !== null && message.deleted_at !== undefined);
+        (message.deleted_at !== null && message.deleted_at !== undefined) ||
+        (message.content === null && (!message.attachments || message.attachments.length === 0));
+
+    // 🔥 JIKA DELETED, RETURN EARLY
+    if (isDeleted) {
+        const deletedText = isSender ? 'Kamu telah menghapus pesan ini' : 'Pesan ini telah dihapus';
+
+        if (isSender) {
+            return `
+            <div id="${message.id}" class="flex items-start justify-end deleted-message mb-4">
+                <div class="flex flex-col items-end max-w-[70%]">
+                    <div class="flex items-center justify-end gap-2 mb-1">
+                        <span class="text-xs text-gray-500">${time}</span>
+                        <span class="font-semibold text-gray-700 text-sm">Anda</span>
+                    </div>
+                    <div class="bg-gray-300 text-gray-600 rounded-2xl rounded-br-md px-4 py-3 shadow-sm italic">
+                        <p class="text-sm">${deletedText}</p>
+                    </div>
+                </div>
+                <div class="flex-shrink-0 ml-3">
+                    ${avatarHTML}
+                </div>
+            </div>
+        `;
+        } else {
+            return `
+            <div id="${message.id}" class="flex items-start justify-start deleted-message mb-4">
+                <div class="flex-shrink-0 mr-3">
+                    ${avatarHTML}
+                </div>
+                <div class="flex flex-col items-start max-w-[70%]">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="font-semibold text-gray-700 text-sm">${senderName}</span>
+                        <span class="text-xs text-gray-500">${time}</span>
+                    </div>
+                    <div class="bg-gray-300 text-gray-600 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm italic">
+                        <p class="text-sm">${deletedText}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        }
+    }
 
     // Attachments
     let attachmentsHTML = '';
@@ -1028,54 +1062,6 @@ function createMessageHTML(message) {
         }
     }
 
-    // Pesan yang dihapus
-    if (isDeleted) {
-        const deletedText = isSender ? 'Kamu telah menghapus pesan ini' : 'Pesan ini telah dihapus';
-
-        if (isSender) {
-            return `
-        <div id="${message.id}" class="flex items-start justify-end group message-new mb-4">
-            <div class="flex flex-col items-end max-w-[75%] min-w-0">
-                <div class="flex items-center justify-end gap-2 mb-1 w-full">
-                    ${actionButtonsHTML} <!-- 🔥 PINDAH KE KIRI -->
-                    <span class="text-xs text-gray-500 whitespace-nowrap">${time} ${editIndicator}</span>
-                    <div class="flex items-center read-status">
-                        ${getReadStatusHTML(message)}
-                    </div>
-                    <span class="font-semibold text-gray-700 text-sm whitespace-nowrap">Anda</span>
-                </div>
-
-                <div class="bg-blue-100 rounded-2xl rounded-br-md px-4 py-3 shadow-sm w-auto min-w-0 max-w-full">
-                    ${replyPreviewHTML}
-                    ${contentHTML}
-                    ${attachmentsHTML}
-                </div>
-            </div>
-            <div class="flex-shrink-0 ml-3">
-                ${avatarHTML}
-            </div>
-        </div>
-    `;
-        } else {
-            return `
-                <div id="${message.id}" class="flex items-start justify-start message-new">
-                    <div class="flex-shrink-0 mr-3">
-                        ${avatarHTML}
-                    </div>
-                    <div class="flex flex-col items-start max-w-[70%]">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="font-semibold text-gray-700 text-sm">${senderName}</span>
-                            <span class="text-xs text-gray-500">${time}</span>
-                        </div>
-                        <div class="bg-gray-300 text-gray-600 rounded-2xl rounded-bl-md px-4 py-3 shadow-sm italic w-auto min-w-0 max-w-full">
-                            <p class="text-sm" style="word-break: break-word;">${deletedText}</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-    }
-
     // Pesan normal - BUBBLE MENYESUAIKAN KONTEN
     if (isSender) {
         return `
@@ -1125,7 +1111,6 @@ function createMessageHTML(message) {
     }
 }
 
-
 function appendMessage(message) {
     const emptyState = messageList.querySelector('.flex.h-full.items-center.justify-center');
     if (emptyState) emptyState.remove();
@@ -1147,7 +1132,19 @@ function appendMessage(message) {
 
     const messageHTML = createMessageHTML(message);
     messageList.insertAdjacentHTML('beforeend', messageHTML);
-    scrollToBottom();
+
+    // 🔥 PERBAIKAN: Check apakah perlu show tombol setelah append message
+    setTimeout(() => {
+        const scrollHeight = chatContainer.scrollHeight;
+        const clientHeight = chatContainer.clientHeight;
+        const scrollTop = chatContainer.scrollTop;
+        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+        // Tampilkan tombol jika user tidak di posisi paling bawah
+        if (distanceFromBottom > 100) {
+            scrollToBottomBtn.style.display = 'flex';
+        }
+    }, 100);
 }
 
 // File Handling Functions
@@ -1871,83 +1868,90 @@ window.deleteMessage = async function (messageId) {
 
 // Copy dari file chat.js Anda yang sudah berfungsi
 function updateSidebarPreviewAfterDelete(conversationId) {
+    console.log('🔄 Updating sidebar after delete for conversation:', conversationId);
+
     const previewElement = document.getElementById(`preview-${conversationId}`);
     if (!previewElement) {
         console.log('❌ Preview element not found for conversation:', conversationId);
         return;
     }
 
-    // 🔥 PERBAIKAN: Gunakan selector yang lebih tepat untuk mencari pesan
+    // 🔥 PERBAIKAN: Cari semua pesan yang belum dihapus
     const messageElements = Array.from(document.querySelectorAll('#messageList > [id]'));
     const nonDeletedMessages = messageElements.filter(el => {
         const id = el.id;
-        // Filter hanya elemen dengan ID message (bukan separator, dll)
-        return id && id.startsWith('message-') && !el.querySelector('.bg-gray-300.text-gray-600.italic');
+        // Filter: bukan separator, bukan typing indicator, bukan deleted message
+        if (!id || id.includes('typing-indicator')) return false;
+
+        // 🔥 Cek apakah ini deleted message
+        const isDeleted = el.classList.contains('deleted-message') ||
+            el.querySelector('.bg-gray-300.text-gray-600.italic');
+
+        return !isDeleted;
     });
 
-    console.log('🔄 Updating sidebar preview:', {
+    console.log('📊 Sidebar update stats:', {
         conversationId,
         totalMessages: messageElements.length,
-        nonDeletedMessages: nonDeletedMessages.length,
-        messageElements: messageElements.map(el => el.id) // Debug: lihat ID apa saja yang ditemukan
+        nonDeletedMessages: nonDeletedMessages.length
     });
 
-    // 🔥 PERBAIKAN: Handle kasus tidak ada pesan sama sekali
+    // 🔥 Jika tidak ada pesan yang belum dihapus
     if (nonDeletedMessages.length === 0) {
         previewElement.textContent = 'Belum ada pesan';
+        console.log('✅ Updated to: "Belum ada pesan"');
         return;
     }
 
+    // Ambil pesan terakhir yang belum dihapus
     const lastMessageElement = nonDeletedMessages[nonDeletedMessages.length - 1];
 
-    // 🔥 PERBAIKAN: Handle berbagai jenis pesan dengan lebih robust
+    // Ambil konten pesan
     let lastMessageText = '';
-
-    // Coba ambil konten dari berbagai elemen yang mungkin
     const contentElement = lastMessageElement.querySelector('.message-content');
+
     if (contentElement) {
         lastMessageText = contentElement.textContent || '';
-    } else {
-        // Fallback untuk pesan yang dihapus
-        const deletedText = lastMessageElement.querySelector('.bg-gray-300.text-gray-600.italic p');
-        if (deletedText) {
-            lastMessageText = deletedText.textContent || '';
+    }
+
+    // Cek apakah own message atau bukan
+    const isOwnMessage = lastMessageElement.classList.contains('justify-end');
+
+    // Format preview
+    if (lastMessageText) {
+        const conversation = window.allConversations.find(c => c.id === conversationId);
+        const isGroup = conversation && conversation.type === 'group';
+
+        if (isGroup) {
+            const senderName = isOwnMessage ? 'Anda' :
+                (lastMessageElement.querySelector('.font-semibold.text-gray-700')?.textContent || 'User');
+            previewElement.textContent = `${senderName}: ${lastMessageText}`;
         } else {
-            // Fallback lainnya
-            const textElements = lastMessageElement.querySelectorAll('p.text-sm');
-            for (let element of textElements) {
-                if (!element.classList.contains('text-gray-500') &&
-                    !element.classList.contains('text-xs')) {
-                    lastMessageText = element.textContent || '';
-                    break;
+            const prefix = isOwnMessage ? 'Anda: ' : '';
+            previewElement.textContent = prefix + lastMessageText;
+        }
+    } else {
+        previewElement.textContent = 'Mengirim file';
+    }
+
+    console.log('✅ Preview updated to:', previewElement.textContent);
+
+    // 🔥 TAMBAHAN: Update member preview jika ini private chat
+    const conversation = window.allConversations.find(c => c.id === conversationId);
+    if (conversation && conversation.type === 'private') {
+        const otherParticipant = conversation.participants.find(p => p.user_id !== AUTH_USER_ID);
+        if (otherParticipant) {
+            const memberId = otherParticipant.user_id;
+            const memberItem = document.querySelector(`[data-member-id="${memberId}"]`);
+
+            if (memberItem) {
+                const memberPreview = memberItem.querySelector('p.text-xs');
+                if (memberPreview) {
+                    memberPreview.textContent = previewElement.textContent;
+                    console.log('✅ Member preview also updated');
                 }
             }
         }
-    }
-
-    // Handle pesan yang dihapus
-    const isDeletedMessage = lastMessageElement.classList.contains('deleted-message') ||
-        lastMessageElement.querySelector('.bg-gray-300.text-gray-600.italic');
-
-    if (isDeletedMessage) {
-        const isOwnMessage = lastMessageElement.classList.contains('justify-end');
-        if (isOwnMessage) {
-            previewElement.textContent = 'Kamu telah menghapus pesan ini';
-        } else {
-            const senderName = lastMessageElement.querySelector('.font-semibold.text-gray-700')?.textContent || 'User';
-            previewElement.textContent = `${senderName}: Pesan telah dihapus`;
-        }
-    }
-    else if (lastMessageText.includes('Mengirim')) {
-        previewElement.textContent = lastMessageText;
-    } else {
-        // Ambil info pengirim dan konten
-        const isOwnMessage = lastMessageElement.classList.contains('justify-end');
-        const senderName = isOwnMessage ? 'Anda' :
-            lastMessageElement.querySelector('.font-semibold.text-gray-700')?.textContent || 'User';
-
-        const content = lastMessageText || 'Mengirim file';
-        previewElement.textContent = isOwnMessage ? `Anda: ${content}` : `${senderName}: ${content}`;
     }
 }
 
@@ -1961,7 +1965,6 @@ function replaceMessageWithDeletedText(messageId, isOwnMessage = true) {
         return;
     }
 
-    // 🔥 PERBAIKAN: Cek lebih ketat apakah element masih valid
     if (!messageElement.parentNode || !document.body.contains(messageElement)) {
         console.warn(`❌ Element dengan ID ${messageId} tidak ada di DOM`);
         updateSidebarPreviewAfterDelete(currentConversationId);
@@ -1970,7 +1973,7 @@ function replaceMessageWithDeletedText(messageId, isOwnMessage = true) {
 
     const deletedText = isOwnMessage ? 'Kamu telah menghapus pesan ini' : 'Pesan ini telah dihapus';
     const timeElement = messageElement.querySelector('.text-xs.text-gray-500');
-    const time = timeElement ? timeElement.textContent : '';
+    const time = timeElement ? timeElement.textContent.split('(')[0].trim() : '';
 
     let senderName = 'User';
     if (!isOwnMessage) {
@@ -1980,10 +1983,21 @@ function replaceMessageWithDeletedText(messageId, isOwnMessage = true) {
         }
     }
 
-    const initials = getInitials(isOwnMessage ? 'Anda' : senderName);
+    // 🔥 PERBAIKAN: Ambil avatar yang sudah ada
+    const existingAvatar = messageElement.querySelector('img[alt], .w-8.h-8.rounded-full');
+    let avatarHTML = '';
+
+    if (existingAvatar && existingAvatar.tagName === 'IMG') {
+        avatarHTML = existingAvatar.outerHTML;
+    } else if (existingAvatar) {
+        avatarHTML = existingAvatar.outerHTML;
+    } else {
+        const initials = getInitials(isOwnMessage ? 'Anda' : senderName);
+        avatarHTML = `<div class="w-8 h-8 rounded-full ${isOwnMessage ? 'bg-blue-200 text-blue-800' : 'bg-gray-200 text-gray-800'} flex items-center justify-center font-bold text-xs">${initials}</div>`;
+    }
 
     const replacementHTML = isOwnMessage ? `
-        <div id="${messageId}" class="flex items-start justify-end deleted-message">
+        <div id="${messageId}" class="flex items-start justify-end deleted-message mb-4">
             <div class="flex flex-col items-end max-w-[70%]">
                 <div class="flex items-center justify-end gap-2 mb-1">
                     <span class="text-xs text-gray-500">${time}</span>
@@ -1994,17 +2008,13 @@ function replaceMessageWithDeletedText(messageId, isOwnMessage = true) {
                 </div>
             </div>
             <div class="flex-shrink-0 ml-3">
-                <div class="w-8 h-8 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center font-bold text-xs">
-                    ${initials}
-                </div>
+                ${avatarHTML}
             </div>
         </div>
     ` : `
-        <div id="${messageId}" class="flex items-start justify-start deleted-message">
+        <div id="${messageId}" class="flex items-start justify-start deleted-message mb-4">
             <div class="flex-shrink-0 mr-3">
-                <div class="w-8 h-8 rounded-full bg-gray-200 text-gray-800 flex items-center justify-center font-bold text-xs">
-                    ${initials}
-                </div>
+                ${avatarHTML}
             </div>
             <div class="flex flex-col items-start max-w-[70%]">
                 <div class="flex items-center gap-2 mb-1">
@@ -2019,15 +2029,42 @@ function replaceMessageWithDeletedText(messageId, isOwnMessage = true) {
     `;
 
     try {
-        // 🔥 PERBAIKAN: Langsung replace tanpa animasi yang kompleks
-        messageElement.outerHTML = replacementHTML;
+        messageElement.style.transition = 'opacity 0.3s ease';
+        messageElement.style.opacity = '0';
 
-        // Update sidebar
-        updateSidebarPreviewAfterDelete(currentConversationId);
+        setTimeout(() => {
+            if (messageElement.parentNode && document.body.contains(messageElement)) {
+                messageElement.outerHTML = replacementHTML;
+
+                const newElement = document.getElementById(messageId);
+                if (newElement) {
+                    newElement.style.opacity = '0';
+                    setTimeout(() => {
+                        newElement.style.transition = 'opacity 0.3s ease';
+                        newElement.style.opacity = '1';
+                    }, 50);
+                }
+
+                // 🔥 AUTO SCROLL setelah animasi
+                setTimeout(() => {
+                    const scrollTop = chatContainer.scrollTop;
+                    const scrollHeight = chatContainer.scrollHeight;
+                    const clientHeight = chatContainer.clientHeight;
+                    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+                    // Hanya scroll jika user sudah di bawah (dalam 200px dari bottom)
+                    if (distanceFromBottom < 200) {
+                        scrollToBottom();
+                    }
+                }, 400);
+            }
+
+            // 🔥 UPDATE SIDEBAR - langsung setelah replace
+            updateSidebarPreviewAfterDelete(currentConversationId);
+        }, 300);
 
     } catch (error) {
         console.error('❌ Error in replaceMessageWithDeletedText:', error);
-        // Tetap update sidebar meski ada error
         updateSidebarPreviewAfterDelete(currentConversationId);
     }
 }
@@ -2413,10 +2450,29 @@ function handleNewMessage(message) {
 function setupInputListeners() {
     messageInput.addEventListener('input', updateSendButton);
     sendMessageForm.addEventListener('submit', handleSendMessage);
-    scrollToBottomBtn.addEventListener('click', scrollToBottom);
+
+    // 🔥 PERBAIKAN: Scroll to bottom button
+    scrollToBottomBtn.addEventListener('click', function () {
+        scrollToBottom();
+        // Sembunyikan tombol setelah diklik
+        setTimeout(() => {
+            scrollToBottomBtn.style.display = 'none';
+        }, 300);
+    });
+
+    // 🔥 PERBAIKAN KRUSIAL: Logic tampil/hilang panah scroll
     chatContainer.addEventListener('scroll', function () {
-        const isAtBottom = chatContainer.scrollHeight - chatContainer.scrollTop <= chatContainer.clientHeight + 100;
-        scrollToBottomBtn.style.display = isAtBottom ? 'none' : 'block';
+        const scrollTop = chatContainer.scrollTop;
+        const scrollHeight = chatContainer.scrollHeight;
+        const clientHeight = chatContainer.clientHeight;
+
+        // Hitung jarak dari bawah
+        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+        // 🔥 Tampilkan tombol hanya jika user tidak di posisi paling bawah
+        const shouldShow = distanceFromBottom > 100;
+
+        scrollToBottomBtn.style.display = shouldShow ? 'flex' : 'none';
     });
 
     messageInput.addEventListener('keypress', function (e) {
@@ -2448,7 +2504,7 @@ function setupInputListeners() {
     });
 
     // 🔥 PERBAIKAN: Tambahkan search dengan debounce
-    const searchInput = document.querySelector('input[placeholder="Cari rekan tim..."]');
+const searchInput = document.querySelector('#searchInput');
     if (searchInput) {
         const debouncedSearch = debounce(searchUsers, 300);
         searchInput.addEventListener('input', (e) => {

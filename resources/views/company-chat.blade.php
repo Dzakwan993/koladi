@@ -62,6 +62,7 @@
             from {
                 opacity: 0;
             }
+
             to {
                 opacity: 1;
             }
@@ -79,6 +80,10 @@
 
         /* 🔥 TAMBAHKAN: Smooth scroll behavior */
         #chatContainer {
+            position: relative;
+            /* 🔥 INI PENTING! */
+            height: 100%;
+            overflow-y: auto;
             scroll-behavior: smooth;
         }
 
@@ -108,6 +113,7 @@
                 opacity: 0;
                 transform: translateY(10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -128,13 +134,14 @@
             from {
                 transform: rotate(0deg);
             }
+
             to {
                 transform: rotate(360deg);
             }
         }
 
         /* 🔥 TAMBAHKAN: File preview animations */
-        #filePreviewList > div {
+        #filePreviewList>div {
             animation: scaleIn 0.2s ease;
         }
 
@@ -143,6 +150,7 @@
                 opacity: 0;
                 transform: scale(0.9);
             }
+
             to {
                 opacity: 1;
                 transform: scale(1);
@@ -159,6 +167,7 @@
                 opacity: 0;
                 max-height: 0;
             }
+
             to {
                 opacity: 1;
                 max-height: 100px;
@@ -171,9 +180,12 @@
         }
 
         @keyframes bounce {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translateY(0);
             }
+
             50% {
                 transform: translateY(-5px);
             }
@@ -193,16 +205,12 @@
             transform: scale(0.95);
         }
 
-        /* 🔥 TAMBAHKAN: Scroll to bottom button animation */
-        #scrollToBottom {
-            animation: fadeInUp 0.3s ease;
-        }
-
         @keyframes fadeInUp {
             from {
                 opacity: 0;
                 transform: translateY(10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -238,20 +246,17 @@
     </style>
 
     {{-- Main Container dengan data attributes --}}
-    <div id="chat-page-container"
-         class="h-full bg-[#E9EFFD] flex flex-col"
-         data-company-id="{{ $company->id }}"
-         data-auth-user-id="{{ Auth::id() }}"
-         data-api-url="{{ url('/') }}"
-         data-csrf-token="{{ csrf_token() }}"
-         data-chat-scope="company">
+    <div id="chat-page-container" class="h-full bg-[#E9EFFD] flex flex-col" data-company-id="{{ $company->id }}"
+        data-auth-user-id="{{ Auth::id() }}" data-api-url="{{ url('/') }}" data-csrf-token="{{ csrf_token() }}"
+        data-chat-scope="company">
 
         <div class="flex-1 flex overflow-hidden">
             {{-- Main Content Area --}}
             <div class="flex-1 flex p-6 gap-6 overflow-hidden">
 
                 {{-- Central Chat Window --}}
-                <div class="flex-1 flex flex-col bg-white rounded-xl shadow-md overflow-hidden min-w-0">
+                <div class="flex-1 flex flex-col bg-white rounded-xl shadow-md overflow-hidden min-w-0 relative">
+
 
                     <div class="bg-[#9BB7F6] px-6 py-4 border-b border-gray-200 flex items-center justify-center shadow-sm">
                         <h2 id="chatHeaderTitle" class="text-lg font-semibold text-gray-800">Pilih Percakapan</h2>
@@ -259,23 +264,22 @@
 
                     {{-- Messages Container --}}
                     <div class="flex-1 overflow-y-auto px-6 py-4 bg-[#F8F9FB] relative" id="chatContainer">
-                        {{-- Scroll to bottom button --}}
-                        <button id="scrollToBottom"
-                            class="absolute bottom-4 right-10 bg-white rounded-full p-2.5 shadow-lg border border-gray-200 hover:bg-gray-50 transition z-10"
-                            style="display: none;">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                                stroke="currentColor" class="w-5 h-5 text-gray-600">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                            </svg>
-                        </button>
-
-                        {{-- Messages will be loaded here by JavaScript --}}
                         <div id="messageList" class="flex flex-col gap-4">
                             <div class="flex h-full items-center justify-center">
                                 <p class="text-gray-500">Silakan pilih percakapan di sebelah kanan.</p>
                             </div>
                         </div>
                     </div>
+
+                    {{-- Scroll to bottom button --}}
+                    <button id="scrollToBottom"
+                        class="absolute right-6 bottom-[100px] bg-white rounded-full p-2.5 shadow-lg border border-gray-200 hover:bg-gray-50 transition z-20"
+                        style="display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="w-5 h-5 text-gray-600">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </button>
 
                     {{-- Chat Input Bar --}}
                     <div id="chatInputBar" class="border-t border-gray-200 px-6 py-4 bg-white" style="display: none;">
@@ -359,8 +363,7 @@
                     </div>
                     <div class="px-6 py-4 border-b border-gray-200">
                         <div class="relative">
-                            <input type="text" placeholder="Cari rekan kerja..."
-                                   id="searchInput"
+                            <input type="text" placeholder="Cari rekan kerja..." id="searchInput"
                                 class="w-full pl-10 pr-4 py-2.5 rounded-full bg-[#F0F2F5] border-transparent focus:border-blue-500 focus:ring-blue-500 placeholder-gray-500 text-sm text-gray-800">
                             <svg class="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2"
                                 xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"

@@ -62,10 +62,9 @@ class CompanyChatController extends Controller
             ['last_read_at' => now()]
         );
 
-        // 🔥 LOAD private conversations (untuk store di JS, tapi tidak ditampilkan)
         $otherConversations = Conversation::where('company_id', $companyId)
             ->where('scope', 'company')
-            ->where('type', 'private') // 🔥 Hanya private
+            ->where('type', 'private')
             ->where('id', '!=', $mainCompanyGroup->id)
             ->whereHas('participants', fn($q) => $q->where('user_id', $userId))
             ->with(['participants.user'])
@@ -98,12 +97,11 @@ class CompanyChatController extends Controller
 
         return response()->json([
             'main_group' => $mainCompanyGroup,
-            'conversations' => $otherConversations, // 🔥 Tetap kirim (untuk store di JS)
+            'conversations' => $otherConversations,
             'members' => $members,
         ]);
     }
 
-    // 🆕 TAMBAHKAN: Show Messages
     public function showMessages(string $conversationId)
     {
         $userId = Auth::id();
@@ -150,7 +148,6 @@ class CompanyChatController extends Controller
         return response()->json($messages->toArray());
     }
 
-    // 🆕 TAMBAHKAN: Send Message
     public function store(Request $request)
     {
         $request->validate([
@@ -235,7 +232,6 @@ class CompanyChatController extends Controller
         }
     }
 
-    // 🆕 TAMBAHKAN: Edit Message
     public function editMessage(Request $request, Message $message)
     {
         $userId = Auth::id();
@@ -282,7 +278,28 @@ class CompanyChatController extends Controller
         }
     }
 
-    // 🆕 TAMBAHKAN: Delete Message
+    // 🔥 TAMBAHKAN: Helper function untuk update last message
+    private function updateConversationLastMessage($conversationId)
+    {
+        // Cari pesan terbaru yang belum dihapus
+        $lastMessage = Message::where('conversation_id', $conversationId)
+            ->whereNull('deleted_at')
+            ->with(['sender', 'attachments'])
+            ->orderBy('created_at', 'DESC')
+            ->first();
+
+        // Jika tidak ada pesan, set last_message menjadi null
+        if (!$lastMessage) {
+            Conversation::where('id', $conversationId)
+                ->update(['last_message_id' => null]);
+            return;
+        }
+
+        // Update last_message_id di conversation
+        Conversation::where('id', $conversationId)
+            ->update(['last_message_id' => $lastMessage->id]);
+    }
+
     public function deleteMessage(Message $message)
     {
         $userId = Auth::id();
@@ -297,26 +314,33 @@ class CompanyChatController extends Controller
             $conversationId = $message->conversation_id;
             $messageId = $message->id;
 
+            // 🔥 Hapus file dari storage terlebih dahulu
             $attachments = Attachment::where('attachable_type', Message::class)
                 ->where('attachable_id', $messageId)
                 ->get();
 
             foreach ($attachments as $attachment) {
                 if ($attachment->file_url) {
+                    // Extract relative path dari URL
                     $urlParts = parse_url($attachment->file_url);
                     $path = isset($urlParts['path']) ? ltrim($urlParts['path'], '/') : '';
+
+                    // Hapus prefix /storage/ untuk mendapatkan path sebenarnya
                     $path = str_replace('storage/', '', $path);
 
                     if (Storage::disk('public')->exists($path)) {
                         Storage::disk('public')->delete($path);
+                        Log::info("Deleted file: {$path}");
                     }
                 }
             }
 
+            // Hapus records attachments
             Attachment::where('attachable_type', Message::class)
                 ->where('attachable_id', $messageId)
                 ->delete();
 
+            // 🔥 Update message dengan DB::table untuk menghindari mass assignment issue
             DB::table('messages')
                 ->where('id', $messageId)
                 ->update([
@@ -326,11 +350,16 @@ class CompanyChatController extends Controller
                     'updated_at' => now()
                 ]);
 
+            // 🔥 PENTING: Update last_message di conversation
+            $this->updateConversationLastMessage($conversationId);
+
             DB::commit();
 
+            // 🔥 Reload message untuk broadcast
             $message->refresh();
             $message->load(['sender']);
 
+            // Broadcast dengan data yang benar
             event(new MessageDeleted($message));
 
             return response()->json([
@@ -340,15 +369,16 @@ class CompanyChatController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error deleting message: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
 
             return response()->json([
                 'success' => false,
                 'error' => 'Gagal menghapus pesan',
+                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
             ], 500);
         }
     }
 
-    // 🆕 TAMBAHKAN: Create Private Conversation
     public function createConversation(Request $request)
     {
         $request->validate([
@@ -434,7 +464,6 @@ class CompanyChatController extends Controller
         }
     }
 
-    // 🆕 TAMBAHKAN: Mark as Read
     public function markAsRead(string $conversationId)
     {
         $userId = Auth::id();
