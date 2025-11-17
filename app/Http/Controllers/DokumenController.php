@@ -46,7 +46,6 @@ class DokumenController extends Controller
 
         // Ambil files yang tidak ada dalam folder (root files)
         $rootFiles = File::where('workspace_id', $workspace->id)
-            ->whereNull('folder_id')
             ->where(function ($query) use ($userId) {
                 $query->where('is_private', false)
                     ->orWhere('uploaded_by', $userId);
