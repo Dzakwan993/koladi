@@ -64,6 +64,6 @@
             };
         };
     </script>
-    <script src="//unpkg.com/alpinejs" defer></script>
+    @include('components.sweet-alert')
 </body>
 </html>

@@ -1,63 +1,77 @@
 {{-- Modal Buat Folder --}}
-        <div x-show="showCreateFolderModal" x-cloak 
-            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div class="bg-white rounded-lg w-full max-w-md" @click.outside="showCreateFolderModal = false">
-                {{-- Header Modal --}}
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800"
-                        x-text="currentFolder ? 'Buat Sub Folder' : 'Buat Folder'"></h3>
-                </div>
+<div x-show="showCreateFolderModal" x-cloak 
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg w-full max-w-md" @click.outside="showCreateFolderModal = false">
+        {{-- Header Modal --}}
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800"
+                x-text="currentFolder ? 'Buat Sub Folder' : 'Buat Folder'"></h3>
+        </div>
 
-                {{-- Content Modal --}}
-                <div class="px-6 py-4">
-                    <p class="text-sm text-gray-600 mb-4"
-                        x-text="currentFolder ? 'Masukkan nama sub folder' : 'Masukkan nama folder'"></p>
-                    <input type="text" x-model="newFolderName"
-                        :placeholder="currentFolder ? 'Nama sub folder' : 'Nama folder'"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition mb-4"
-                        @keyup.enter="createFolder()">
+        {{-- FORM: kirim langsung ke controller --}}
+        <form method="POST" action="{{ route('folder.store') }}" @submit="showCreateFolderModal = false">
+            @csrf
+            <input type="hidden" name="workspace_id" :value="currentWorkspaceId">
+            <input type="hidden" name="parent_id" :value="currentFolder ? currentFolder.id : null">
 
-                    {{-- Switch untuk Folder Rahasia --}}
-                    <div class="flex items-center justify-between py-2">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                                <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-gray-700">Folder Rahasia</p>
-                                <p class="text-xs text-gray-500">Hanya yang berhak dapat melihat</p>
-                            </div>
+            {{-- Content Modal --}}
+            <div class="px-6 py-4">
+                <p class="text-sm text-gray-600 mb-4"
+                    x-text="currentFolder ? 'Masukkan nama sub folder' : 'Masukkan nama folder'"></p>
+
+                <input type="text" name="name"
+                    x-model="newFolderName"
+                    :placeholder="currentFolder ? 'Nama sub folder' : 'Nama folder'"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition mb-4"
+                    required>
+
+                {{-- Switch untuk Folder Rahasia --}}
+                <div class="flex items-center justify-between py-2">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
                         </div>
-                        <button type="button" @click="isSecretFolder = !isSecretFolder"
-                            :class="isSecretFolder ? 'bg-blue-600' : 'bg-gray-200'"
-                            class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                            <span class="sr-only">Folder Rahasia</span>
-                            <span :class="isSecretFolder ? 'translate-x-5' : 'translate-x-0'"
-                                class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
-                        </button>
+                        <div>
+                            <p class="text-sm font-medium text-gray-700">Folder Rahasia</p>
+                            <p class="text-xs text-gray-500">Hanya yang berhak dapat melihat</p>
+                        </div>
                     </div>
-                </div>
 
-                {{-- Footer Modal --}}
-                <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-                    <button @click="showCreateFolderModal = false; newFolderName = ''; isSecretFolder = false"
-                        class="px-4 py-2 text-sm text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 transition">
-                        Batal
-                    </button>
-                    <button @click="createFolder()" :disabled="!newFolderName.trim()"
-                        :class="!newFolderName.trim() ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
-                        class="px-4 py-2 text-sm text-white rounded-lg transition">
-                        Simpan
+                    <input type="hidden" name="is_private" :value="isSecretFolder ? 1 : 0">
+                    <button type="button" @click="isSecretFolder = !isSecretFolder"
+                        :class="isSecretFolder ? 'bg-blue-600' : 'bg-gray-200'"
+                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        <span class="sr-only">Folder Rahasia</span>
+                        <span :class="isSecretFolder ? 'translate-x-5' : 'translate-x-0'"
+                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
                     </button>
                 </div>
             </div>
-        </div>
 
+            {{-- Footer Modal --}}
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+                <button type="button"
+                    @click="showCreateFolderModal = false; newFolderName = ''; isSecretFolder = false"
+                    class="px-4 py-2 text-sm text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 transition">
+                    Batal
+                </button>
 
+                <button type="submit"
+                    :disabled="!newFolderName.trim()"
+                    :class="!newFolderName.trim() ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+                    class="px-4 py-2 text-sm text-white rounded-lg transition">
+                    Simpan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+   
 
 
         {{-- Modal Pindah Berkas --}}

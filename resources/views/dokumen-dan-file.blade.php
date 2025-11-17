@@ -11,7 +11,7 @@
 <div x-data="documentSearch()" 
          x-init="$store.workspace = { selectedMenu: 'dokumen' };
             // Inisialisasi data dari backend
-            initData(@js($folders), @js($rootFiles));"  class="bg-[#f3f6fc] min-h-screen">
+            initData(@js($folders), @js($rootFiles), @js($workspace)); $nextTick(() => restoreFolderFromUrl());"  class="bg-[#f3f6fc] min-h-screen">
 
         {{-- Workspace Navigation --}}
         @include('components.workspace-nav', ['active' => 'dokumen'])
@@ -29,6 +29,7 @@
                 @include('components.dokumen-grid')
                 @include('components.dokumen-search-info')
                 @include('components.dokumen-selection-header')
+                <!-- 2 components di bawah ini dipanggil set berbarengan -->
                 @include('components.dokumen-file-header')
                 @include('components.dokumen-file-content')
                 @include('components.balas-komentar')

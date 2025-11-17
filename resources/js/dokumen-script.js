@@ -11,6 +11,8 @@ export default function documentSearch() {
                 showEditFolderModal: false,
                 showDeleteFolderModal: false,
                 openAddMemberModal: false,
+                currentWorkspaceId: null,
+                currentWorkspace: null,
                 newFolderName: '',
                 isSecretFolder: false,
                 editFolderName: '',
@@ -61,20 +63,36 @@ export default function documentSearch() {
                 },                
 
                 // Function untuk inisialisasi data
-                initData(foldersData, rootFilesData) {
+                initData(foldersData, rootFilesData, workspace) {
                     // Simpan data dari backend
                     this.backendFolders = foldersData;
                     this.backendRootFiles = rootFilesData;
+                    this.currentWorkspace = workspace;
+                    this.currentWorkspaceId = workspace.id; // penting buat fetch()
                     
                     // Convert data Laravel Collection ke format yang diharapkan Alpine
                     this.processBackendData();
                 },
+
+                closeFile() {
+                    this.currentFile = null;
+                    // this.replyView.active = false;
+
+                    // Update URL biar balik ke default tanpa reload
+                    history.pushState({}, '', '#default');
+                },
+
+                getRootFolders() {
+                return this.folders.filter(f => f.parent_id === null);
+                },
+
 
                 processBackendData() {
                     
                     // Process folders
                     this.folders = this.backendFolders.map(folder => ({
                         id: folder.id,
+                        parent_id: folder.parent_id,  
                         name: folder.name,
                         type: 'Folder',
                         icon: this.getFolderIcon(),
@@ -89,6 +107,16 @@ export default function documentSearch() {
                         files: folder.files ? this.processFiles(folder.files) : [],
                         filesCount: folder.files_count || 0
                     }));
+
+                    // Step 2: sambungkan folder-child
+                    this.folders.forEach(folder => {
+                        if (folder.parent_id) {
+                            const parent = this.folders.find(f => f.id === folder.parent_id);
+                            if (parent) {
+                                parent.subFolders.push(folder);
+                            }
+                        }
+                    });
 
 
                     // Process root files
@@ -112,6 +140,8 @@ export default function documentSearch() {
                     this.codeFiles       = processedFiles.filter(f => f.type === 'Code');
                     this.unknownFiles    = processedFiles.filter(f => f.type === 'Unknown');
                 },
+
+
 
                 processFiles(files) {
                     return (files || []).map(file => {
@@ -239,33 +269,79 @@ export default function documentSearch() {
                     this.filteredDocuments = [];
                 },
 
-                // Folder Functions
-                createFolder() {
-                    if (!this.newFolderName.trim()) return;
+                //  Folder Functions
+                // async createFolder() {
+                //     if (!this.newFolderName.trim()) return;
 
-                    const newFolder = {
-                        id: 'folder-' + Date.now(),
-                        name: this.newFolderName.trim(),
-                        type: 'Folder',
-                        icon: this.getFolderIcon(),
-                        isSecret: this.isSecretFolder,
-                        creator: this.getCurrentUser(),
-                        createdAt: new Date().toISOString(),
-                        recipients: [],
-                        subFolders: [],
-                        files: []
-                    };
+                //     try {
+                //         const token = document.querySelector('meta[name="csrf-token"]').content;
 
-                    if (this.currentFolder) {
-                        this.currentFolder.subFolders.push(newFolder);
-                    } else {
-                        this.folders.push(newFolder);
-                    }
+                //         const response = await fetch('/folder', {
+                //             method: 'POST',
+                //             headers: {
+                //                 'Content-Type': 'application/json',
+                //                 'X-CSRF-TOKEN': token,
+                //             },
+                //             body: JSON.stringify({
+                //                 workspace_id: this.currentWorkspaceId, // pastikan variabel ini ada (<- keknya ini ngambil dari sesssion deh)
+                //                 name: this.newFolderName.trim(),
+                //                 is_private: this.isSecretFolder, // sesuaikan nama field dengan StoreFolderRequest
+                //             }),
+                //         });
 
-                    this.showCreateFolderModal = false;
-                    this.newFolderName = '';
-                    this.isSecretFolder = false;
-                },
+                //         if (!response.ok) {
+                //             const errText = await response.text();
+                //             throw new Error(`Gagal membuat folder: ${errText}`);
+                //         }
+
+                //         const result = await response.json();
+                //         const newFolder = result.data; // sesuai response dari controller
+
+                //         // Tambahkan ke UI
+                //         if (this.currentFolder) {
+                //             this.currentFolder.subFolders.push(newFolder);
+                //         } else {
+                //             this.folders = [...this.folders, newFolder];
+                //         }
+
+                //         // Reset form/modal
+                //         this.showCreateFolderModal = false;
+                //         this.newFolderName = '';
+                //         this.isSecretFolder = false;
+
+                //         Swal.fire({
+                //             icon: 'success',
+                //             title: 'Folder berhasil dibuat!',
+                //             text: 'Data akan diperbarui...',
+                //             showConfirmButton: false,
+                //             timer: 1200,
+                //             timerProgressBar: true,
+                //             background: '#f7faff',
+                //             color: '#2b2b2b',
+                //             customClass: {
+                //                 popup: 'swal-custom-popup',
+                //                 title: 'swal-custom-title',
+                //                 htmlContainer: 'swal-custom-text'
+                //             }
+                //         }).then(() => {
+                //             // reload setelah SweetAlert ditutup
+                //             window.location.reload();
+                //         });
+
+                //     } catch (error) {
+                //         console.error('Error saat membuat folder:', error);
+                //         Swal.fire({
+                //             icon: 'error',
+                //             title: 'Gagal!',
+                //             text: 'Terjadi kesalahan saat membuat folder.',
+                //             showConfirmButton: true,
+                //             confirmButtonText: 'OK',
+                //             background: '#f7faff',
+                //             color: '#2b2b2b'
+                //         });
+                //     }
+                // },
+
 
                 // File Upload Functions
                 uploadFileToFolder(event) {
@@ -344,7 +420,17 @@ export default function documentSearch() {
 
                 // Folder Navigation
                 openFolder(folder) {
+                    console.log('openFolder dipanggil');
                     this.currentFile = null;
+
+                    // update URL hash
+                    history.pushState(
+                        { folderName: folder.name },
+                        '',
+                        `#${folder.name}`
+                    );
+
+                    localStorage.setItem('lastFolder', folder.name);
 
                     if (!this.currentFolder) {
                         this.folderHistory = [];
@@ -358,7 +444,41 @@ export default function documentSearch() {
                     this.currentFolder = folder;
                     this.updateBreadcrumbs();
                 },
+                
+                restoreFolderFromUrl() {
+                    console.log('restoreFolder() dipanggil');
 
+                    const hash = window.location.hash;
+                    console.log('[2] hash sekarang:', hash);
+
+                    let folderName = null;
+
+                    // 1. Prioritaskan hash jika ada
+                    if (hash && hash.length > 1) {
+                        folderName = decodeURIComponent(hash.substring(1));
+                        console.log('[3] Folder dari hash:', folderName);
+                    }
+
+                    // 2. Kalau hash kosong → ambil dari localStorage
+                    if (!folderName) {
+                        folderName = localStorage.getItem('lastFolder');
+                        console.log('[3] Folder dari localStorage:', folderName);
+                    }
+
+                    // 3. Jika tetap tidak ada folderName → berhenti
+                    if (!folderName) return;
+
+                    // 4. Cari folder berdasarkan nama
+                    const folder = this.folders.find(f => f.name === folderName);
+                    if (folder) {
+                        this.currentFolder = folder;
+                        console.log('[4] currentFolder di-set ke:', this.currentFolder);
+
+                        // pastikan URL juga sinkron
+                        history.replaceState({}, '', `#${folderName}`);
+                    }
+                },
+                
                 navigateToFolder(folder) {
                     const folderIndex = this.breadcrumbs.findIndex(f => f.id === folder.id);
                     if (folderIndex > -1) {
@@ -430,7 +550,9 @@ export default function documentSearch() {
                         comments: file.comments || this.getDefaultComments()
                     };
 
-                    this.fileBreadcrumbs = [...this.breadcrumbs];
+                    // 🔹 Tambahkan ke history supaya tombol "Back browser" bisa tahu state
+                    console.log('📂 openFile jalan, file:', file.id);
+                    history.pushState({ fileId: file.id }, '', `#file-${file.id}`);
                 },
 
                 // Comment Functions
@@ -619,6 +741,10 @@ export default function documentSearch() {
 
                 // Helper Functions
                 getDisplayedDocuments() {
+                    console.log('isi folder', this.folders);
+                    console.log('subFolders length =', this.currentFolder.subFolders.length);
+                    console.log('isi subFolders =', JSON.parse(JSON.stringify(this.currentFolder.subFolders)));
+
                     if (this.searchQuery && this.filteredDocuments.length > 0) {
                         return this.filteredDocuments;
                     }
@@ -878,7 +1004,22 @@ window.documentCommentSection = function() {
                     });
                 }, 300);
             });
+
+            window.addEventListener('popstate', (event) => {
+                if (event.state && event.state.fileId) {
+                    // Kalau popstate punya fileId, tampilkan lagi file-nya
+                    const file = this.getAllFiles().find(f => f.id === event.state.fileId);
+                    if (file) this.currentFile = file;
+                } else {
+                    // Kalau tidak ada state (berarti balik ke default view)
+                    this.currentFile = null;
+                    this.replyView.active = false;
+                }
+            });
+
         },
+
+    
 
         toggleReply(comment) {
             if (this.replyView.active && this.replyView.parentComment?.id === comment.id) {

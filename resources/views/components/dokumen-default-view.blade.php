@@ -3,7 +3,7 @@
     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-3 items-start">
 
         {{-- Folder --}}
-        <template x-for="folder in folders" :key="folder.id">
+        <template x-for="folder in getRootFolders()" :key="folder.id">
             <div 
                 @click="selectMode ? toggleDocumentSelection(folder) : openFolder(folder)"
                 :class="{

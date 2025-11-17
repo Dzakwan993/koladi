@@ -13,7 +13,7 @@
                                     class="text-gray-500 hover:text-gray-700 transition" x-text="crumb.name"></button>
                             </div>
                         </template>
-                        <{{-- Current folder (bukan bagian dari breadcrumb yang bisa diklik) --}} <template x-if="currentFolder">
+                        {{-- Current folder (bukan bagian dari breadcrumb yang bisa diklik) --}} <template x-if="currentFolder">
                             <div class="flex items-center gap-2">
                                 <span class="text-gray-400">›</span>
                                 <span class="text-gray-700 font-medium" x-text="currentFolder.name"></span>

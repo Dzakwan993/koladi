@@ -6,6 +6,7 @@ use App\Models\Workspace;
 use App\Models\Folder;
 use App\Models\File;
 use Illuminate\Http\Request;
+use App\Http\Requests\StoreFolderRequest;
 
 class DokumenController extends Controller
 {
@@ -57,28 +58,26 @@ class DokumenController extends Controller
         return view('dokumen-dan-file', compact('workspace', 'folders', 'rootFiles'));
     }
 
-    // public function showFolder(Workspace $workspace, Folder $folder)
-    // {
-    //     // Cek apakah user punya akses
-    //     $this->authorize('view', $workspace);
-        
-    //     // Cek apakah folder private dan bukan milik user
-    //     if ($folder->is_private && $folder->created_by !== auth()->id()) {
-    //         abort(403, 'You do not have access to this folder.');
-    //     }
 
-    //     $userId = auth()->id();
+    public function store(StoreFolderRequest $request)
+    {
+        $validated = $request->validated();
 
-    //     // Ambil files dalam folder
-    //     $files = File::where('folder_id', $folder->id)
-    //         ->where(function ($query) use ($userId) {
-    //             $query->where('is_private', false)
-    //                 ->orWhere('uploaded_by', $userId);
-    //         })
-    //         ->with('uploader')
-    //         ->orderBy('uploaded_at', 'desc')
-    //         ->get();
+        Folder::create([
+            'workspace_id' => $validated['workspace_id'],
+            'name' => $validated['name'],
+            'is_private' => $validated['is_private'] ?? false,
+            'created_by' => auth()->id(),
+            'parent_id' => $validated['parent_id'] ?? null,
+        ]);
 
-    //     return view('dokumen-folder-detail', compact('workspace', 'folder', 'files'));
-    // }
+        return redirect()->back()->with('alert', [
+            'icon' => 'success',
+            'title' => 'Folder berhasil dibuat!',
+            'text' => 'Data folder baru sudah tersimpan.',
+        ])
+          ->with('alert_once', true);;
+    }
+
+    
 }

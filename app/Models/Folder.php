@@ -17,6 +17,7 @@ class Folder extends Model
         'name',
         'is_private',
         'created_by',
+        'parent_id', 
     ];
 
     public function workspace()
@@ -32,5 +33,17 @@ class Folder extends Model
     public function files()
     {
         return $this->hasMany(File::class);
+    }
+
+    // Relasi ke folder induk
+    public function parent()
+    {
+        return $this->belongsTo(Folder::class, 'parent_id');
+    }
+
+    // Relasi ke subfolder
+    public function children()
+    {
+        return $this->hasMany(Folder::class, 'parent_id');
     }
 }

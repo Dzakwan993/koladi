@@ -1,14 +1,8 @@
-{{-- Breadcrumb dan Info File --}}
+    {{-- Breadcrumb dan Info File --}}
 <div x-show="currentFile && !replyView.active" class="mb-6 flex-shrink-0">
     {{-- Breadcrumb --}}
     <div class="flex items-center gap-2 text-sm text-gray-500 mb-4">
-        <button @click="goBackToFolder()" class="text-gray-500 hover:text-gray-700 transition flex items-center gap-1">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Kembali
-        </button>
-        <span class="text-gray-400">|</span>
+        
         <button @click="goToRoot()" class="text-gray-500 hover:text-gray-700 transition">
             Dokumen
         </button>

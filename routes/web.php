@@ -180,6 +180,8 @@ Route::middleware(['auth'])->group(function () {
 
     // ✅ Documents & Files
     Route::get('/dokumen-dan-file/{workspace}', [DokumenController::class, 'index'])->name('dokumen-dan-file');
+    Route::post('/folder', [DokumenController::class, 'store'])->name('folder.store');
+
 
     // ✅ Leave Management
     Route::get('/cutikaryawan', function () {

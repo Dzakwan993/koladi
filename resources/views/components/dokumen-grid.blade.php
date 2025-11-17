@@ -1,7 +1,7 @@
 {{-- Grid Dokumen di Dalam Folder --}}
                 <template x-if="currentFolder">
                     <div
-                        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 overflow-y-auto flex-1 pb-4">
+                         class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-6 gap-y-3 items-start pb-4">
                         {{-- Tampilkan hasil pencarian atau dokumen biasa --}}
                         <template x-for="document in getDisplayedDocuments()" :key="document.id">
                             <div @click="selectMode ? toggleDocumentSelection(document) : (document.type === 'Folder' ? openFolder(document) : openFile(document))"
@@ -67,4 +67,5 @@
                             <p class="text-xs">Tambahkan file atau folder baru</p>
                         </div>
                     </div>
+                    
                 </template>
