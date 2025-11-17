@@ -62,7 +62,6 @@ async function loadCompanyConversations() {
         if (!response.ok) throw new Error('Gagal memuat percakapan perusahaan');
 
         const data = await response.json();
-        console.log('Company Chat Data:', data);
 
         window.allConversations = [
             data.main_group,
@@ -175,12 +174,8 @@ async function loadMessages(conversationId) {
         refreshSidebarHighlight();
         await markConversationAsRead(conversationId);
 
-        scrollToBottom();
-
-        // 🔥 PERBAIKAN: Pastikan tombol hidden setelah load
-        setTimeout(() => {
-            scrollToBottomBtn.style.display = 'none';
-        }, 100);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+        scrollToBottomBtn.style.display = 'none';
 
     } catch (error) {
         console.error('Error loading messages:', error);
@@ -207,7 +202,6 @@ window.startChatWithUser = async function (userId, userName) {
         );
 
         if (existingChat) {
-            console.log('✅ Private chat exists, opening:', existingChat.id);
             await loadMessages(existingChat.id);
             return;
         }
@@ -303,9 +297,13 @@ async function handleSendMessage(e) {
         }
 
         const result = await response.json();
-        console.log('✅ Message sent:', result.data.id);
 
         updateSidebarOnNewMessage(result.data, false);
+
+        // 🔥 Smart scroll setelah kirim pesan
+        setTimeout(() => {
+            smartScrollToBottom();
+        }, 200);
 
     } catch (error) {
         console.error('❌ Error sending message:', error);
@@ -321,6 +319,32 @@ async function handleSendMessage(e) {
         sendButton.disabled = false;
         messageInput.disabled = false;
         uploadButton.disabled = false;
+    }
+}
+
+// -----------------------------------------------------------------
+// 🔥 SMART SCROLL FUNCTION
+// -----------------------------------------------------------------
+function smartScrollToBottom() {
+    const scrollHeight = chatContainer.scrollHeight;
+    const clientHeight = chatContainer.clientHeight;
+    const scrollTop = chatContainer.scrollTop;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+
+    // 🔥 HANYA scroll jika user sudah dekat dengan bawah (dalam 200px)
+    if (distanceFromBottom < 200) {
+        chatContainer.scrollTo({
+            top: scrollHeight,
+            behavior: 'smooth'
+        });
+
+        // Sembunyikan tombol scroll setelah scroll
+        setTimeout(() => {
+            scrollToBottomBtn.style.display = 'none';
+        }, 300);
+    } else {
+        // 🔥 Jika user sedang scroll ke atas, tampilkan tombol scroll
+        scrollToBottomBtn.style.display = 'flex';
     }
 }
 
@@ -371,9 +395,6 @@ function formatTime(dateTimeString) {
 
 function getAvatarUrl(user) {
     if (!user) return null;
-
-    console.log('🔍 User data for avatar:', user); // Debug
-
     // Jika user punya avatar, generate URL yang benar
     if (user.avatar) {
         // Cek apakah avatar sudah full URL atau relative path
@@ -672,58 +693,55 @@ function createMemberHTML(member) {
         ? `<img src="${memberAvatar}" alt="${member.full_name}" class="w-10 h-10 rounded-full object-cover border border-gray-200">`
         : `<div class="w-10 h-10 rounded-full bg-gray-200 text-gray-800 flex items-center justify-center font-bold text-sm">${initials}</div>`;
 
-    // 🔥 FIX: Cari private conversation dengan member ini
+    // 🔥 CARI private conversation dengan member ini
     const privateChat = window.allConversations.find(conv =>
         conv.type === 'private' &&
-        conv.participants.some(p => p.user_id === member.id)
+        conv.participants.some(p => p.user_id == member.id) // 🔥 Gunakan == bukan ===
     );
 
-    // 🔥 FIX: Tampilkan preview pesan jika ada
+    // 🔥 SET default values
     let previewText = 'Mulai percakapan';
     let unreadCount = 0;
 
-    if (privateChat) {
+    // 🔥 JIKA ADA private chat, ambil preview dari last_message
+    if (privateChat && privateChat.last_message) {
         const lastMessage = privateChat.last_message;
 
-        if (lastMessage) {
-            const isDeleted = lastMessage.message_type === 'deleted' ||
-                (lastMessage.deleted_at !== null && lastMessage.deleted_at !== undefined);
+        const isDeleted = lastMessage.message_type === 'deleted' ||
+            lastMessage.deleted_at !== null;
 
-            if (isDeleted) {
-                if (lastMessage.sender_id === AUTH_USER_ID) {
-                    previewText = 'Kamu telah menghapus pesan ini';
-                } else {
-                    previewText = 'Pesan telah dihapus';
-                }
-            } else {
-                const senderPrefix = lastMessage.sender_id === AUTH_USER_ID ? 'Anda: ' : `${member.full_name.split(' ')[0]}: `;
+        if (isDeleted) {
+            previewText = lastMessage.sender_id == AUTH_USER_ID
+                ? 'Kamu telah menghapus pesan ini'
+                : 'Pesan telah dihapus';
+        } else {
+            const senderPrefix = lastMessage.sender_id == AUTH_USER_ID ? 'Anda: ' : '';
 
-                if (lastMessage.attachments && lastMessage.attachments.length > 0) {
-                    if (lastMessage.content && lastMessage.content.trim() !== '') {
-                        previewText = senderPrefix + lastMessage.content;
-                    } else {
-                        const fileType = lastMessage.attachments[0].file_type;
-                        if (fileType.startsWith('image/')) {
-                            previewText = senderPrefix + '📷 Gambar';
-                        } else if (fileType.startsWith('video/')) {
-                            previewText = senderPrefix + '🎬 Video';
-                        } else if (fileType === 'application/pdf') {
-                            previewText = senderPrefix + '📄 PDF';
-                        } else {
-                            previewText = senderPrefix + `📎 ${lastMessage.attachments.length} file`;
-                        }
-                    }
-                } else {
+            if (lastMessage.attachments && lastMessage.attachments.length > 0) {
+                if (lastMessage.content && lastMessage.content.trim() !== '') {
                     previewText = senderPrefix + lastMessage.content;
+                } else {
+                    const fileType = lastMessage.attachments[0].file_type;
+                    if (fileType.startsWith('image/')) {
+                        previewText = senderPrefix + '📷 Gambar';
+                    } else if (fileType.startsWith('video/')) {
+                        previewText = senderPrefix + '🎬 Video';
+                    } else if (fileType === 'application/pdf') {
+                        previewText = senderPrefix + '📄 PDF';
+                    } else {
+                        previewText = senderPrefix + `📎 ${lastMessage.attachments.length} file`;
+                    }
                 }
+            } else if (lastMessage.content) {
+                previewText = senderPrefix + lastMessage.content;
             }
         }
 
-        // 🔥 FIX: Hitung unread count
+        // 🔥 Ambil unread count
         unreadCount = privateChat.unread_count || 0;
     }
 
-    // 🔥 FIX: Cek apakah conversation ini yang sedang aktif
+    // 🔥 CEK apakah ini conversation yang sedang aktif
     const isActive = privateChat && currentConversationId === privateChat.id;
     const activeClasses = isActive
         ? 'bg-blue-100 border-l-4 border-blue-500'
@@ -740,27 +758,18 @@ function createMemberHTML(member) {
             </div>
             <div class="ml-3 flex-1 min-w-0">
                 <h4 class="text-sm font-semibold truncate ${isActive ? 'text-blue-700' : 'text-gray-800'}">${member.full_name}</h4>
-                <p class="text-xs truncate ${isActive ? 'text-blue-600' : 'text-gray-500'}">${previewText}</p>
+                <p id="preview-member-${member.id}" class="text-xs truncate ${isActive ? 'text-blue-600' : 'text-gray-500'}">${previewText}</p>
             </div>
-            ${unreadCount > 0 ? `
-                <div id="unread-badge-member-${member.id}" class="ml-2 flex-shrink-0">
-                    <div class="min-w-[18px] h-[18px] rounded-full bg-blue-500 flex items-center justify-center">
-                        <span id="unread-count-member-${member.id}" class="text-[10px] font-semibold text-white px-1">${unreadCount}</span>
-                    </div>
+            <div id="unread-badge-member-${member.id}" class="ml-2 flex-shrink-0" style="${unreadCount > 0 ? 'display: block;' : 'display: none;'}">
+                <div class="min-w-[18px] h-[18px] rounded-full bg-blue-500 flex items-center justify-center">
+                    <span id="unread-count-member-${member.id}" class="text-[10px] font-semibold text-white px-1">${unreadCount}</span>
                 </div>
-            ` : ''}
+            </div>
         </div>
     </div>`;
 }
 
 function createMessageHTML(message) {
-    console.log('🔍 Creating message HTML:', {
-        id: message.id,
-        hasReplyId: !!message.reply_to_message_id,
-        replyTo: message.replyTo,
-        replyToExists: !!message.replyTo
-    });
-
     const isSender = message.sender_id === AUTH_USER_ID;
     const senderName = isSender ? 'Anda' : (message.sender ? message.sender.full_name : 'User');
     const initials = getInitials(senderName);
@@ -897,13 +906,9 @@ function createMessageHTML(message) {
         attachmentsHTML += '</div>';
     }
 
-    // 🔥 PERBAIKAN KRUSIAL: Reply preview dengan pengecekan yang lebih ketat
     let replyPreviewHTML = '';
     if (message.reply_to_message_id) {
-        console.log('🔍 Processing reply preview for message:', message.id);
-        console.log('🔍 Reply data:', message.reply_to); // 🔥 UBAH DARI replyTo
 
-        // ✅ SAFETY CHECK: Pastikan reply_to ada dan valid
         if (message.reply_to && typeof message.reply_to === 'object') { // 🔥 UBAH
             const repliedMessage = message.reply_to; // 🔥 UBAH
             const repliedSenderName = repliedMessage.sender_id === AUTH_USER_ID ?
@@ -967,14 +972,7 @@ function createMessageHTML(message) {
                 </div>
             </div>
         `;
-
-            console.log('✅ Reply preview created successfully');
         } else {
-            console.warn('⚠️ Reply data is missing or invalid:', {
-                reply_to_message_id: message.reply_to_message_id,
-                reply_to: message.reply_to // 🔥 UBAH
-            });
-
             replyPreviewHTML = `
             <div class="reply-info mb-2 p-2 bg-gray-50 rounded-lg border-l-4 border-gray-300">
                 <div class="flex items-start gap-2">
@@ -1135,15 +1133,7 @@ function appendMessage(message) {
 
     // 🔥 PERBAIKAN: Check apakah perlu show tombol setelah append message
     setTimeout(() => {
-        const scrollHeight = chatContainer.scrollHeight;
-        const clientHeight = chatContainer.clientHeight;
-        const scrollTop = chatContainer.scrollTop;
-        const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-
-        // Tampilkan tombol jika user tidak di posisi paling bawah
-        if (distanceFromBottom > 100) {
-            scrollToBottomBtn.style.display = 'flex';
-        }
+        smartScrollToBottom();
     }, 100);
 }
 
@@ -1272,8 +1262,6 @@ async function markConversationAsRead(conversationId) {
         });
 
         if (response.ok) {
-            console.log('✅ Marked as read:', conversationId);
-
             // 🔥 DOUBLE CHECK: Clear badge setelah backend confirm
             const badge = document.getElementById(`unread-badge-${conversationId}`);
             const countSpan = document.getElementById(`unread-count-${conversationId}`);
@@ -1281,12 +1269,27 @@ async function markConversationAsRead(conversationId) {
                 badge.style.display = 'none';
                 countSpan.textContent = '0';
             }
+
+            // 🔥 TAMBAHKAN: Clear badge di member juga
+            const conversation = window.allConversations.find(c => c.id === conversationId);
+            if (conversation && conversation.type === 'private') {
+                const otherParticipant = conversation.participants.find(p => p.user_id != AUTH_USER_ID);
+                if (otherParticipant) {
+                    const memberId = otherParticipant.user_id;
+                    const memberBadge = document.getElementById(`unread-badge-member-${memberId}`);
+                    const memberCount = document.getElementById(`unread-count-member-${memberId}`);
+
+                    if (memberBadge && memberCount) {
+                        memberBadge.style.display = 'none';
+                        memberCount.textContent = '0';
+                    }
+                }
+            }
         }
     } catch (error) {
         console.error('Gagal menandai telah dibaca:', error);
     }
 }
-
 // 🆕 Search function untuk company
 async function searchUsers(searchTerm) {
     if (!searchTerm.trim()) {
@@ -1384,16 +1387,6 @@ window.openImageModal = function (imageUrl, fileName) {
             <!-- Modal Content -->
             <div class="relative max-w-7xl max-h-[90vh] flex flex-col items-center"
                  onclick="event.stopPropagation()">
-
-                <!-- Close Button -->
-                <button onclick="closeImageModal()"
-                        class="absolute -top-12 right-0 text-white hover:text-gray-300 transition z-10">
-                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-
                 <!-- Image Container -->
                 <div class="relative bg-white rounded-lg shadow-2xl overflow-hidden max-h-[80vh]">
                     <img src="${imageUrl}"
@@ -1471,8 +1464,6 @@ window.closeImageModal = function () {
 }
 // Message Actions Functions
 window.startReplyMessage = function (messageId) {
-    console.log('🔁 Starting reply to message:', messageId);
-
     const messageElement = document.getElementById(messageId);
     if (!messageElement) {
         console.error('❌ Message element not found:', messageId);
@@ -1526,27 +1517,20 @@ window.startReplyMessage = function (messageId) {
             messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
     }
-
-    console.log('✅ Reply mode activated for message:', messageId);
 }
 
 // 🆕 Fungsi untuk membatalkan reply
 window.cancelReply = function () {
-    console.log('❌ Canceling reply');
-
     currentReplyToMessage = null;
     const replyPreviewContainer = document.getElementById('replyPreviewContainer');
 
     if (replyPreviewContainer) {
         replyPreviewContainer.style.display = 'none';
-        console.log('✅ Reply preview hidden');
     }
 }
 
 // 🆕 Fungsi untuk memulai edit
 window.startEditMessage = function (messageId) {
-    console.log('✏️ Starting edit for message:', messageId);
-
     const messageElement = document.getElementById(messageId);
     if (!messageElement) {
         console.error('❌ Message element not found:', messageId);
@@ -1573,9 +1557,6 @@ window.startEditMessage = function (messageId) {
             }
         }
     }
-
-    console.log('📝 Original message content:', messageContent);
-
     // Hapus reply mode jika aktif
     cancelReply();
 
@@ -1681,11 +1662,8 @@ window.cancelEdit = function () {
 
 // 🆕 Fungsi untuk scroll ke pesan yang di-reply
 window.scrollToMessage = function (messageId) {
-    console.log('📜 Scrolling to message:', messageId);
-
     const messageElement = document.getElementById(messageId);
     if (!messageElement) {
-        console.log('⚠️ Pesan tidak ditemukan:', messageId);
 
         // 🆕 Tampilkan notifikasi jika pesan tidak ditemukan
         const Toast = Swal.mixin({
@@ -1735,20 +1713,15 @@ window.scrollToMessage = function (messageId) {
 }
 
 window.deleteMessage = async function (messageId) {
-    console.log('🗑️ Attempting to delete message:', messageId);
-
     if (!messageId || messageId.startsWith('temp-')) {
-        console.error('Invalid message ID:', messageId);
         return;
     }
 
-    // 🔥 PERBAIKAN: Track pending deletes
     if (!window.pendingDeletes) {
         window.pendingDeletes = new Set();
     }
 
     if (window.pendingDeletes.has(messageId)) {
-        console.log('⏳ Delete already in progress for:', messageId);
         return;
     }
 
@@ -1789,15 +1762,11 @@ window.deleteMessage = async function (messageId) {
     window.scrollTo(0, scrollY);
 
     if (!willDelete) {
-        console.log('User cancelled deletion');
         window.pendingDeletes.delete(messageId);
         return;
     }
 
     try {
-        console.log('📤 Sending DELETE request...');
-
-        // 🔥 PERBAIKAN: Optimistic update - langsung update UI
         const messageElement = document.getElementById(messageId);
         const isOwnMessage = messageElement && messageElement.classList.contains('justify-end');
 
@@ -1814,9 +1783,6 @@ window.deleteMessage = async function (messageId) {
             },
             credentials: 'include'
         });
-
-        console.log('📥 Response status:', response.status);
-
         if (response.status === 404) {
             throw new Error('Pesan tidak ditemukan (404)');
         }
@@ -1832,13 +1798,8 @@ window.deleteMessage = async function (messageId) {
         }
 
         const result = await response.json();
-        console.log('✅ Delete result:', result);
 
         if (result.success) {
-            console.log('🎉 Delete successful');
-            // UI sudah di-update secara optimistic, tidak perlu update lagi
-
-            // Success notification
             await Swal.fire({
                 title: 'Berhasil!',
                 text: 'Pesan berhasil dihapus',
@@ -1866,13 +1827,9 @@ window.deleteMessage = async function (messageId) {
     }
 }
 
-// Copy dari file chat.js Anda yang sudah berfungsi
 function updateSidebarPreviewAfterDelete(conversationId) {
-    console.log('🔄 Updating sidebar after delete for conversation:', conversationId);
-
     const previewElement = document.getElementById(`preview-${conversationId}`);
     if (!previewElement) {
-        console.log('❌ Preview element not found for conversation:', conversationId);
         return;
     }
 
@@ -1890,16 +1847,8 @@ function updateSidebarPreviewAfterDelete(conversationId) {
         return !isDeleted;
     });
 
-    console.log('📊 Sidebar update stats:', {
-        conversationId,
-        totalMessages: messageElements.length,
-        nonDeletedMessages: nonDeletedMessages.length
-    });
-
-    // 🔥 Jika tidak ada pesan yang belum dihapus
     if (nonDeletedMessages.length === 0) {
         previewElement.textContent = 'Belum ada pesan';
-        console.log('✅ Updated to: "Belum ada pesan"');
         return;
     }
 
@@ -1934,8 +1883,6 @@ function updateSidebarPreviewAfterDelete(conversationId) {
         previewElement.textContent = 'Mengirim file';
     }
 
-    console.log('✅ Preview updated to:', previewElement.textContent);
-
     // 🔥 TAMBAHAN: Update member preview jika ini private chat
     const conversation = window.allConversations.find(c => c.id === conversationId);
     if (conversation && conversation.type === 'private') {
@@ -1948,7 +1895,6 @@ function updateSidebarPreviewAfterDelete(conversationId) {
                 const memberPreview = memberItem.querySelector('p.text-xs');
                 if (memberPreview) {
                     memberPreview.textContent = previewElement.textContent;
-                    console.log('✅ Member preview also updated');
                 }
             }
         }
@@ -1956,8 +1902,6 @@ function updateSidebarPreviewAfterDelete(conversationId) {
 }
 
 function replaceMessageWithDeletedText(messageId, isOwnMessage = true) {
-    console.log('🔄 Replacing message with deleted text:', messageId);
-
     const messageElement = document.getElementById(messageId);
     if (!messageElement) {
         console.warn(`❌ Element dengan ID ${messageId} tidak ditemukan`);
@@ -2047,15 +1991,7 @@ function replaceMessageWithDeletedText(messageId, isOwnMessage = true) {
 
                 // 🔥 AUTO SCROLL setelah animasi
                 setTimeout(() => {
-                    const scrollTop = chatContainer.scrollTop;
-                    const scrollHeight = chatContainer.scrollHeight;
-                    const clientHeight = chatContainer.clientHeight;
-                    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-
-                    // Hanya scroll jika user sudah di bawah (dalam 200px dari bottom)
-                    if (distanceFromBottom < 200) {
-                        scrollToBottom();
-                    }
+                    smartScrollToBottom();
                 }, 400);
             }
 
@@ -2173,6 +2109,7 @@ function updateSidebarOnNewMessage(message, incrementUnread) {
         }
     }
 
+    // Update unread badge
     // Update unread badge
     if (incrementUnread) {
         const badge = document.getElementById(`unread-badge-${conversationId}`);
@@ -2292,7 +2229,7 @@ function showTypingIndicator(userId, userName) {
         `;
 
     messageList.insertAdjacentHTML('beforeend', indicatorHTML);
-    scrollToBottom();
+    smartScrollToBottom(); // 🔥 GANTI
 }
 
 function hideTypingIndicator() {
@@ -2324,9 +2261,6 @@ function handleUserStopTyping(data) {
 
 // 🆕 Fungsi untuk handle message edited
 function handleMessageEdited(message) {
-    console.log('✏️ Handling edited message:', message.id);
-
-    // 🔥 FIX: Convert reply_to ke replyTo
     if (message.reply_to) {
         message.replyTo = message.reply_to;
     }
@@ -2360,31 +2294,23 @@ function handleMessageEdited(message) {
 }
 
 function handleMessageDeleted(data) {
-    console.log('🗑️ Message deleted event:', data);
-
     const messageId = data.message_id || data.id;
     const senderId = data.sender_id;
     const conversationId = data.conversation_id;
-
-    console.log('🔍 Looking for message element:', messageId);
-
     // 🔥 PERBAIKAN: Cek apakah pesan ini sedang dalam proses delete
     if (window.pendingDeletes && window.pendingDeletes.has(messageId)) {
-        console.log('⏳ Skip - message already being deleted:', messageId);
         return;
     }
 
     // Cek apakah elemen masih ada di DOM
     const messageElement = document.getElementById(messageId);
     if (!messageElement) {
-        console.log('⚠️ Message element not found in DOM, mungkin sudah dihapus:', messageId);
         updateSidebarPreviewAfterDelete(conversationId);
         return;
     }
 
     // Cek apakah elemen masih punya parent (masih di DOM)
     if (!messageElement.parentNode) {
-        console.log('⚠️ Message element has no parent node:', messageId);
         updateSidebarPreviewAfterDelete(conversationId);
         return;
     }
@@ -2398,28 +2324,17 @@ function handleMessageDeleted(data) {
 }
 
 function handleNewMessage(message) {
-    console.log('📨 ===== NEW MESSAGE EVENT =====');
-    console.log('📨 Raw message data:', message);
-    console.log('📨 reply_to data:', message.reply_to);
-    console.log('📨 reply_to_message_id:', message.reply_to_message_id);
-    console.log('📨 ==============================');
-
-    // 🔥 MAPPING: Convert reply_to ke replyTo untuk kompatibilitas dengan createMessageHTML
     if (message.reply_to) {
         message.replyTo = message.reply_to;
-        console.log('✅ Mapped reply_to to replyTo:', message.replyTo);
     } else if (message.reply_to_message_id) {
-        console.warn('⚠️ Message has reply_to_message_id but no reply_to data!');
     }
 
     const isOwnMessage = message.sender_id === AUTH_USER_ID;
 
     if (isOwnMessage) {
-        console.log('📤 Own message from broadcast:', message.id);
 
         const existingMessage = document.getElementById(message.id);
         if (existingMessage) {
-            console.log('✅ Message already exists, updating read status only');
             const statusElement = existingMessage.querySelector('.read-status');
             if (statusElement) {
                 statusElement.innerHTML = getReadStatusHTML(message);
@@ -2428,7 +2343,6 @@ function handleNewMessage(message) {
         }
 
         if (message.conversation_id === currentConversationId) {
-            console.log('✅ Displaying own message in current conversation');
             appendMessage(message);
         }
 
@@ -2504,7 +2418,7 @@ function setupInputListeners() {
     });
 
     // 🔥 PERBAIKAN: Tambahkan search dengan debounce
-const searchInput = document.querySelector('#searchInput');
+    const searchInput = document.querySelector('#searchInput');
     if (searchInput) {
         const debouncedSearch = debounce(searchUsers, 300);
         searchInput.addEventListener('input', (e) => {
@@ -2514,7 +2428,7 @@ const searchInput = document.querySelector('#searchInput');
         // Clear search ketika dikosongkan
         searchInput.addEventListener('blur', (e) => {
             if (!e.target.value.trim()) {
-                setTimeout(() => loadConversations(), 100);
+                setTimeout(() => loadCompanyConversations(), 100); // ✅ BENAR
             }
         });
     }
@@ -2525,8 +2439,6 @@ const searchInput = document.querySelector('#searchInput');
 
         if (!isTyping) {
             isTyping = true;
-            // Broadcast typing event
-            console.log('⌨️ Sending typing event...');
             window.Echo.private(`conversation.${currentConversationId}`)
                 .whisper('typing', {
                     user_id: AUTH_USER_ID,
@@ -2537,8 +2449,6 @@ const searchInput = document.querySelector('#searchInput');
         clearTimeout(typingTimeout);
         typingTimeout = setTimeout(() => {
             isTyping = false;
-            // Broadcast stop typing
-            console.log('⏹️ Sending stop typing event...');
             window.Echo.private(`conversation.${currentConversationId}`)
                 .whisper('stop-typing', {
                     user_id: AUTH_USER_ID
@@ -2560,26 +2470,19 @@ function setupEchoListeners() {
         console.error('❌ Laravel Echo not configured (Echo is undefined).');
         return;
     }
-
-    console.log('🚀 Setting up Echo listeners...');
-    console.log('📋 All conversations:', window.allConversations);
-
     // Hentikan listener lama
     window.allConversations.forEach(conversation => {
         const channelName = `conversation.${conversation.id}`;
-        console.log(`🔌 Leaving old channel: private-${channelName}`);
         Echo.leave(channelName);
     });
 
     // Dengarkan di setiap channel percakapan
     window.allConversations.forEach(conversation => {
         const channelName = `conversation.${conversation.id}`;
-        console.log(`🔔 Subscribing to: private-${channelName}`);
 
         const channel = Echo.private(channelName);
 
         channel.subscribed(() => {
-            console.log(`✅ Successfully subscribed to: private-${channelName}`);
         });
 
         channel.error((error) => {
@@ -2588,13 +2491,6 @@ function setupEchoListeners() {
 
         // 🔥 Listen untuk NewMessageSent event
         channel.listen('.NewMessageSent', (e) => {
-            console.log('📨 ===== NEW MESSAGE EVENT =====');
-            console.log('📨 Channel:', channelName);
-            console.log('📨 Raw event:', e);
-            console.log('📨 Message data:', e.message);
-            console.log('📨 Current conversation:', currentConversationId);
-            console.log('📨 ==============================');
-
             if (e.message) {
                 handleNewMessage(e.message);
             } else {
@@ -2604,11 +2500,6 @@ function setupEchoListeners() {
 
         // 🔥 Event untuk message deleted
         channel.listen('.MessageDeleted', (e) => {
-            console.log('🗑️ ===== DELETE MESSAGE EVENT =====');
-            console.log('🗑️ Channel:', channelName);
-            console.log('🗑️ Raw event:', e);
-            console.log('🗑️ ==================================');
-
             if (e.message_id || e.id) {
                 handleMessageDeleted(e);
             }
@@ -2616,29 +2507,19 @@ function setupEchoListeners() {
 
         // 🔥 PERBAIKAN: Tambahkan typing indicators
         channel.listenForWhisper('typing', (data) => {
-            console.log('⌨️ Typing event received:', data);
             handleUserTyping(data);
         });
 
         channel.listenForWhisper('stop-typing', (data) => {
-            console.log('⏹️ Stop typing event received:', data);
             handleUserStopTyping(data);
         });
 
         channel.listen('.MessageEdited', (e) => {
-            console.log('✏️ ===== MESSAGE EDITED EVENT =====');
-            console.log('✏️ Channel:', channelName);
-            console.log('✏️ Raw event:', e);
-            console.log('✏️ =================================');
-
             if (e.message) {
                 handleMessageEdited(e.message);
             }
         });
     });
-
-    console.log('✅ Echo listeners setup complete!');
-    console.log('📡 Active channels:', Object.keys(window.Echo.connector.channels));
 }
 
 function refreshSidebarHighlight() {

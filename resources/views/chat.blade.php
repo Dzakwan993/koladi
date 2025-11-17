@@ -8,7 +8,7 @@
     @endpush
 
     <style>
-        /* Custom Scrollbar (dari kode Anda, sudah bagus) */
+        /* Custom Scrollbar */
         #chatContainer::-webkit-scrollbar,
         .chat-list-scroll::-webkit-scrollbar {
             width: 6px;
@@ -17,7 +17,6 @@
         #chatContainer::-webkit-scrollbar-track,
         .chat-list-scroll::-webkit-scrollbar-track {
             background: #F0F2F5;
-            /* Ubah warna track scrollbar agar sesuai background chat */
         }
 
         #chatContainer::-webkit-scrollbar-thumb,
@@ -35,7 +34,7 @@
             scrollbar-gutter: stable;
         }
 
-        /* 🔥 FIX LAYOUT SHIFT - SweetAlert Modal */
+        /* SweetAlert Modal Fix */
         .swal2-container {
             backdrop-filter: blur(2px);
             background: rgba(0, 0, 0, 0.4) !important;
@@ -53,11 +52,186 @@
         body.swal2-shown {
             overflow: hidden !important;
         }
+
+        /* 🔥 Image Modal Styles */
+        #imageModalOverlay {
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* 🔥 Better image thumbnail in chat */
+        .message-new img {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .message-new img:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 🔥 Smooth scroll behavior */
+        #chatContainer {
+            position: relative;
+            height: 100%;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        /* 🔥 Active conversation highlight animation */
+        [data-conversation-id],
+        [data-member-id] {
+            transition: all 0.2s ease;
+        }
+
+        [data-conversation-id]:hover,
+        [data-member-id]:hover {
+            transform: translateX(2px);
+        }
+
+        /* 🔥 Unread badge animation */
+        [id^="unread-badge-"] {
+            transition: all 0.3s ease;
+        }
+
+        /* 🔥 Message bubble animations */
+        .message-new {
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 🔥 Deleted message style */
+        .deleted-message {
+            opacity: 0.7;
+        }
+
+        /* 🔥 Loading spinner */
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* 🔥 File preview animations */
+        #filePreviewList>div {
+            animation: scaleIn 0.2s ease;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* 🔥 Reply preview style enhancement */
+        #replyPreviewContainer {
+            animation: slideDown 0.2s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 100px;
+            }
+        }
+
+        /* 🔥 Typing indicator animation */
+        #typing-indicator .animate-bounce {
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
+        }
+
+        /* 🔥 Search input focus effect */
+        input[type="text"]:focus {
+            transition: all 0.3s ease;
+        }
+
+        /* 🔥 Button hover effects */
+        button {
+            transition: all 0.2s ease;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        /* 🔥 Drop zone style enhancement */
+        #dropZone {
+            transition: all 0.3s ease;
+        }
+
+        /* 🔥 Message action buttons */
+        .group:hover .opacity-0 {
+            transition: opacity 0.2s ease;
+        }
+
+        /* 🔥 Responsive image container */
+        .message-new img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* 🔥 Better mobile support */
+        @media (max-width: 768px) {
+            #imageModalOverlay {
+                padding: 1rem;
+            }
+
+            #imageModalOverlay img {
+                max-height: 70vh !important;
+            }
+        }
     </style>
 
-    {{-- Menjadi seperti ini (tambahkan id dan data- attributes) --}}
-    <div id="chat-page-container"class="h-full bg-[#E9EFFD] flex flex-col" data-workspace-id="{{ $workspace->id }}"
-        data-auth-user-id="{{ Auth::id() }}" data-api-url="{{ url('/') }}" data-csrf-token="{{ csrf_token() }}">
+    {{-- Main Container dengan data attributes --}}
+    <div id="chat-page-container" class="h-full bg-[#E9EFFD] flex flex-col"
+         data-workspace-id="{{ $workspace->id }}"
+         data-auth-user-id="{{ Auth::id() }}"
+         data-api-url="{{ url('/') }}"
+         data-csrf-token="{{ csrf_token() }}"
+         data-chat-scope="workspace">
+
         {{-- Workspace Nav --}}
         @include('components.workspace-nav')
 
@@ -66,7 +240,7 @@
             <div class="flex-1 flex p-6 gap-6 overflow-hidden">
 
                 {{-- Central Chat Window --}}
-                <div class="flex-1 flex flex-col bg-white rounded-xl shadow-md overflow-hidden min-w-0">
+                <div class="flex-1 flex flex-col bg-white rounded-xl shadow-md overflow-hidden min-w-0 relative">
 
                     <div class="bg-[#9BB7F6] px-6 py-4 border-b border-gray-200 flex items-center justify-center shadow-sm">
                         <h2 id="chatHeaderTitle" class="text-lg font-semibold text-gray-800">Pilih Percakapan</h2>
@@ -74,17 +248,6 @@
 
                     {{-- Messages Container --}}
                     <div class="flex-1 overflow-y-auto px-6 py-4 bg-[#F8F9FB] relative" id="chatContainer">
-                        {{-- Scroll to bottom button --}}
-                        <button id="scrollToBottom"
-                            class="absolute bottom-4 right-10 bg-white rounded-full p-2.5 shadow-lg border border-gray-200 hover:bg-gray-50 transition z-10"
-                            style="display: none;">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                                stroke="currentColor" class="w-5 h-5 text-gray-600">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                            </svg>
-                        </button>
-
-                        {{-- Pesan akan di-load di sini oleh JavaScript --}}
                         <div id="messageList" class="flex flex-col gap-4">
                             <div class="flex h-full items-center justify-center">
                                 <p class="text-gray-500">Silakan pilih percakapan di sebelah kanan.</p>
@@ -92,14 +255,25 @@
                         </div>
                     </div>
 
+                    {{-- Scroll to bottom button --}}
+                    <button id="scrollToBottom"
+                        class="absolute right-6 bottom-[100px] bg-white rounded-full p-2.5 shadow-lg border border-gray-200 hover:bg-gray-50 transition z-20"
+                        style="display: none;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" class="w-5 h-5 text-gray-600">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        </svg>
+                    </button>
+
                     {{-- Chat Input Bar --}}
                     <div id="chatInputBar" class="border-t border-gray-200 px-6 py-4 bg-white" style="display: none;">
 
-                        {{-- Preview File yang Dipilih --}}
+                        {{-- File Preview Container --}}
                         <div id="filePreviewContainer" class="mb-3" style="display: none;">
                             <div id="filePreviewList" class="flex flex-wrap gap-2"></div>
                         </div>
 
+                        {{-- Reply Preview Container --}}
                         <div id="replyPreviewContainer" class="mb-3 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-3"
                             style="display: none;">
                             <div class="flex justify-between items-start">
@@ -119,10 +293,10 @@
 
                         <form id="sendMessageForm" class="flex items-center bg-[#E9EFFD] rounded-full px-5 py-3">
 
-                            {{-- Input File Hidden --}}
+                            {{-- Hidden File Input --}}
                             <input type="file" id="fileInput" multiple accept="*/*" style="display: none;">
 
-                            {{-- Tombol Plus untuk Upload File --}}
+                            {{-- Upload Button --}}
                             <button type="button" id="uploadButton"
                                 class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500 text-white mr-3 hover:bg-blue-600 transition">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
@@ -131,12 +305,12 @@
                                 </svg>
                             </button>
 
-                            {{-- Input Teks --}}
+                            {{-- Text Input --}}
                             <input type="text" id="messageInput" placeholder="Ketik pesan disini..."
                                 class="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 placeholder-gray-500 text-sm text-gray-800"
                                 autocomplete="off" />
 
-                            {{-- Tombol Send --}}
+                            {{-- Send Button --}}
                             <button type="submit" id="sendButton"
                                 class="flex items-center justify-center w-8 h-8 rounded-full bg-blue-500 text-white ml-2 hover:bg-blue-600 transition"
                                 style="display: none;">
@@ -148,7 +322,7 @@
                             </button>
                         </form>
 
-                        {{-- Drop Zone Overlay (untuk drag & drop) --}}
+                        {{-- Drop Zone Overlay --}}
                         <div id="dropZone"
                             class="absolute inset-0 bg-blue-50 bg-opacity-90 border-4 border-dashed border-blue-400 rounded-xl flex items-center justify-center"
                             style="display: none; z-index: 1000;">
@@ -173,7 +347,7 @@
                     </div>
                     <div class="px-6 py-4 border-b border-gray-200">
                         <div class="relative">
-                            <input type="text" placeholder="Cari rekan tim..."
+                            <input type="text" placeholder="Cari rekan tim..." id="searchInput"
                                 class="w-full pl-10 pr-4 py-2.5 rounded-full bg-[#F0F2F5] border-transparent focus:border-blue-500 focus:ring-blue-500 placeholder-gray-500 text-sm text-gray-800">
                             <svg class="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2"
                                 xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"

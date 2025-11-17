@@ -17,16 +17,14 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\CompanyChatController;
 
 
-// 🔥🔥🔥 TAMBAHKAN INI DI SINI (sebelum route lainnya) 🔥🔥🔥
+// 🔥 TAMBAHKAN INI DI SINI (sebelum route lainnya) 🔥
 Broadcast::routes(['middleware' => ['web', 'auth']]);
 
-// ✅ TAMBAHKAN INI - Route Landing Page
+// ✅ Route Landing Page
 Route::get('/', function () {
-    // Jika sudah login, redirect ke dashboard
     if (Auth::check()) {
         return redirect()->route('dashboard');
     }
-    // Jika belum login, redirect ke halaman masuk
     return redirect()->route('masuk');
 });
 
@@ -48,13 +46,13 @@ Route::post('/invite/send', [InvitationController::class, 'send'])->name('invite
 Route::get('/invite/accept/{token}', [InvitationController::class, 'accept'])->name('invite.accept');
 
 
-// ✅ UBAH: Pindahkan route hak-akses ke dalam middleware auth
+// ✅ Route dengan middleware auth
 Route::middleware(['auth'])->group(function () {
 
-    // Dashboard - GUNAKAN INI SAJA
+    // Dashboard
     Route::get('/dashboard', [CompanyController::class, 'dashboard'])->name('dashboard');
 
-    // 🆕 TAMBAHKAN INI - Route halaman member removed
+    // 🆕 Route halaman member removed
     Route::get('/member-removed', [CompanyController::class, 'memberRemoved'])->name('member.removed');
 
     // Halaman Dashboard Awal Tambah Anggota
@@ -92,9 +90,8 @@ Route::middleware(['auth'])->group(function () {
         return view('workspace', ['workspace' => $workspace]);
     })->name('workspace');
 
-    // ✅ ROUTE untuk company chat
+    // ✅ ROUTE untuk company chat (HALAMAN VIEW)
     Route::get('/company/{company}/chat', function (Company $company) {
-        // Validasi apakah user punya akses ke company ini
         $hasAccess = \App\Models\UserCompany::where('user_id', Auth::id())
             ->where('company_id', $company->id)
             ->exists();
@@ -106,46 +103,80 @@ Route::middleware(['auth'])->group(function () {
         return view('company-chat', ['company' => $company]);
     })->name('company.chat');
 
-    // LANGKAH 1: Rute untuk menampilkan HALAMAN (VIEW) chat
+    // ✅ ROUTE untuk workspace chat (HALAMAN VIEW)
     Route::get('/workspace/{workspace}/chat', function (Workspace $workspace) {
         return view('chat', ['workspace' => $workspace]);
     })->name('chat');
 
-    // LANGKAH 2: Grup semua rute API chat Anda di bawah prefix '/api'
+    // ========================================
+    // 🔥 API ROUTES - WORKSPACE & COMPANY CHAT
+    // ========================================
     Route::prefix('api')->name('api.')->group(function () {
-        // Rute untuk mengambil daftar chat & anggota (JSON)
-        Route::get('/workspace/{workspaceId}/chat', [ChatController::class, 'index'])->name('chat.index');
-        // Rute untuk mengambil pesan (JSON)
-        Route::get('/chat/{conversationId}/messages', [ChatController::class, 'showMessages'])->name('chat.messages');
-        // Rute untuk mengirim pesan (POST)
-        Route::post('/chat/send', [ChatController::class, 'store'])->name('chat.store');
-        // Rute untuk membuat percakapan baru (POST)
-        Route::post('/chat/create', [ChatController::class, 'createConversation'])->name('chat.create');
-        // Edit message
-        Route::put('/chat/message/{message}', [ChatController::class, 'editMessage'])
-            ->middleware('auth');
-        // PASTIKAN ada route DELETE
-        Route::delete('/chat/message/{message}', [ChatController::class, 'deleteMessage']);
-        // Rute untuk menandai telah dibaca (POST)
-        Route::post('/chat/{conversationId}/mark-as-read', [ChatController::class, 'markAsRead'])->name('chat.markAsRead');
-        // Di Controller Chat, pastikan include avatar
-        $conversations = Conversation::with(['participants.user' => function ($query) {
-            $query->select('id', 'full_name', 'avatar'); // 🔥 INCLUDE AVATAR
-        }])->get();
 
+        // ========================================
+        // WORKSPACE CHAT API ROUTES
+        // ========================================
+        Route::prefix('workspace')->group(function () {
+            // 🔥 TAMBAHKAN INI - Route untuk load chat data
+            Route::get('/{workspaceId}/chat-data', [ChatController::class, 'getChatData']);
 
+            // Route lainnya (DEPRECATED - gunakan chat-data di atas)
+            Route::get('/{workspaceId}/chat', [ChatController::class, 'index'])->name('chat.index');
+        });
 
-        // 🆕 TAMBAHKAN: Company Chat Routes
+        // ========================================
+        // GENERAL CHAT API ROUTES (untuk workspace & company)
+        // ========================================
+        Route::prefix('chat')->group(function () {
+            // Get messages
+            Route::get('/{conversationId}/messages', [ChatController::class, 'showMessages'])->name('chat.messages');
+
+            // Send message
+            Route::post('/send', [ChatController::class, 'store'])->name('chat.store');
+
+            // Create conversation
+            Route::post('/create', [ChatController::class, 'createConversation'])->name('chat.create');
+
+            // Edit message
+            Route::put('/message/{message}', [ChatController::class, 'editMessage']);
+
+            // Delete message
+            Route::delete('/message/{message}', [ChatController::class, 'deleteMessage']);
+
+            // Mark as read
+            Route::post('/{conversationId}/mark-as-read', [ChatController::class, 'markAsRead'])->name('chat.markAsRead');
+        });
+
+        // ========================================
+        // COMPANY CHAT API ROUTES
+        // ========================================
         Route::prefix('company')->group(function () {
+            // Get chat data
             Route::get('/{companyId}/chat-data', [CompanyChatController::class, 'getChatData']);
+
+            // Get messages
             Route::get('/chat/{conversationId}/messages', [CompanyChatController::class, 'showMessages']);
+
+            // Send message
             Route::post('/chat/send', [CompanyChatController::class, 'store']);
+
+            // Edit message
             Route::put('/chat/message/{message}', [CompanyChatController::class, 'editMessage']);
+
+            // Delete message
             Route::delete('/chat/message/{message}', [CompanyChatController::class, 'deleteMessage']);
+
+            // Create conversation
             Route::post('/chat/create', [CompanyChatController::class, 'createConversation']);
+
+            // Mark as read
             Route::post('/chat/{conversationId}/mark-as-read', [CompanyChatController::class, 'markAsRead']);
         });
     });
+
+    // ========================================
+    // OTHER ROUTES
+    // ========================================
 
     // Halaman Jadwal
     Route::get('/jadwal', function () {
@@ -212,7 +243,7 @@ Route::middleware(['auth'])->group(function () {
         return view('dokumen-dan-file');
     })->name('dokumen-dan-file');
 
-    // ✅ WORKSPACE ROUTES - DIPINDAHKAN KE DALAM AUTH GROUP
+    // ✅ WORKSPACE ROUTES
     Route::get('/kelola-workspace', [WorkspaceController::class, 'index'])->name('kelola-workspace');
     Route::post('/workspace', [WorkspaceController::class, 'store'])->name('workspace.store');
     Route::put('/workspace/{id}', [WorkspaceController::class, 'update'])->name('workspace.update');
@@ -231,7 +262,6 @@ Route::middleware(['auth'])->group(function () {
         return view('cutimanajer');
     })->name('cutimanajer');
 
-
     // Halaman Insight
     Route::get('/insight', function () {
         return view('insight');
@@ -247,7 +277,6 @@ Route::middleware(['auth'])->group(function () {
         return view('mindmap');
     })->name('mindmap');
 
-
     // Halaman Pembayaran
     Route::get('/pembayaran', function () {
         return view('pembayaran');
@@ -256,7 +285,7 @@ Route::middleware(['auth'])->group(function () {
     // Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 
-    // ✅ TAMBAHKAN: Route untuk hak akses (pindahkan ke dalam middleware)
+    // ✅ Route untuk hak akses
     Route::get('/hak-akses', [UserController::class, 'hakAkses'])->name('hakAkses');
     Route::post('/update-user-roles', [UserController::class, 'updateUserRoles'])->name('user.updateRoles');
 });

@@ -68,7 +68,31 @@ class CompanyChatController extends Controller
             ->where('id', '!=', $mainCompanyGroup->id)
             ->whereHas('participants', fn($q) => $q->where('user_id', $userId))
             ->with(['participants.user'])
-            ->get();
+            ->get()
+            ->map(function ($conversation) use ($userId) {
+                // 🔥 Calculate unread count
+                $participantData = $conversation->participants->where('user_id', $userId)->first();
+                $lastReadAt = $participantData ? $participantData->last_read_at : null;
+
+                if ($lastReadAt) {
+                    $conversation->unread_count = Message::where('conversation_id', $conversation->id)
+                        ->where('sender_id', '!=', $userId)
+                        ->where('created_at', '>', $lastReadAt)
+                        ->count();
+                } else {
+                    $conversation->unread_count = $conversation->messages()
+                        ->where('sender_id', '!=', $userId)
+                        ->count();
+                }
+
+                // 🔥 Load last message
+                $conversation->last_message = $conversation->messages()
+                    ->with(['sender', 'attachments'])
+                    ->orderBy('created_at', 'DESC')
+                    ->first();
+
+                return $conversation;
+            });
 
         // Calculate unread for main group
         $participantData = $mainCompanyGroup->participants->where('user_id', $userId)->first();

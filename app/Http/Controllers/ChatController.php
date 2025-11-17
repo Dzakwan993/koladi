@@ -18,79 +18,105 @@ use Illuminate\Support\Facades\Storage;
 
 class ChatController extends Controller
 {
-    public function index(string $workspaceId)
+    /**
+     * 🔥 NEW: Endpoint khusus untuk load chat data (separasi dari index)
+     */
+    public function getChatData(string $workspaceId)
     {
         $userId = Auth::id();
         $workspace = Workspace::findOrFail($workspaceId);
 
-        // ✅ PERBAIKAN: Approach yang lebih aman dengan double-check
+        // Main group conversation
         $mainGroup = Conversation::where('workspace_id', $workspaceId)
             ->where('type', 'group')
             ->first();
 
-        // Jika tidak ada, buat baru
         if (!$mainGroup) {
             $mainGroup = Conversation::create([
                 'workspace_id' => $workspaceId,
                 'type' => 'group',
                 'name' => $workspace->name,
-                'created_by' => $workspace->created_by // ✅ PERBAIKAN: gunakan created_by, bukan user_id
+                'created_by' => $workspace->created_by
             ]);
 
             Log::info("Created new main conversation for workspace {$workspaceId} with name '{$workspace->name}'");
-        }
-        // ✅ DOUBLE SAFETY: Jika sudah ada, sync nama jika berbeda
-        else if ($mainGroup->name !== $workspace->name) {
+        } else if ($mainGroup->name !== $workspace->name) {
             $mainGroup->update(['name' => $workspace->name]);
             Log::info("Synced conversation name from '{$mainGroup->name}' to '{$workspace->name}' for workspace {$workspaceId}");
         }
 
-        $mainGroupParticipant = ConversationParticipant::firstOrCreate(
-            [
-                'conversation_id' => $mainGroup->id,
-                'user_id' => $userId
-            ],
+        ConversationParticipant::firstOrCreate(
+            ['conversation_id' => $mainGroup->id, 'user_id' => $userId],
             ['last_read_at' => now()]
         );
 
+        // Other conversations
         $otherConversations = Conversation::where('workspace_id', $workspaceId)
             ->where('id', '!=', $mainGroup->id)
             ->whereHas('participants', fn($q) => $q->where('user_id', $userId))
             ->with(['participants.user'])
-            ->get();
+            ->get()
+            ->map(function ($conversation) use ($userId) {
+                // Calculate unread count
+                $participantData = $conversation->participants->where('user_id', $userId)->first();
+                $lastReadAt = $participantData ? $participantData->last_read_at : null;
 
-        $allConversations = $otherConversations->push($mainGroup);
+                if ($lastReadAt) {
+                    $conversation->unread_count = Message::where('conversation_id', $conversation->id)
+                        ->where('sender_id', '!=', $userId)
+                        ->where('created_at', '>', $lastReadAt)
+                        ->count();
+                } else {
+                    $conversation->unread_count = $conversation->messages()
+                        ->where('sender_id', '!=', $userId)
+                        ->count();
+                }
 
-        foreach ($allConversations as $conversation) {
-            $participantData = $conversation->participants->where('user_id', $userId)->first();
-            $lastReadAt = $participantData ? $participantData->last_read_at : null;
+                // Load last message
+                $conversation->last_message = $conversation->messages()
+                    ->with(['sender', 'attachments'])
+                    ->orderBy('created_at', 'DESC')
+                    ->first();
 
-            if ($lastReadAt) {
-                $conversation->unread_count = Message::where('conversation_id', $conversation->id)
-                    ->where('sender_id', '!=', $userId)
-                    ->where('created_at', '>', $lastReadAt)
-                    ->count();
-            } else {
-                $conversation->unread_count = $conversation->messages()
-                    ->where('sender_id', '!=', $userId)
-                    ->count();
-            }
+                return $conversation;
+            });
 
-            $conversation->last_message = $conversation->messages()
-                ->with('sender', 'attachments')
-                ->orderBy('created_at', 'DESC')
-                ->first();
+        // Calculate unread for main group
+        $participantData = $mainGroup->participants->where('user_id', $userId)->first();
+        $lastReadAt = $participantData ? $participantData->last_read_at : null;
+
+        if ($lastReadAt) {
+            $mainGroup->unread_count = Message::where('conversation_id', $mainGroup->id)
+                ->where('sender_id', '!=', $userId)
+                ->where('created_at', '>', $lastReadAt)
+                ->count();
+        } else {
+            $mainGroup->unread_count = $mainGroup->messages()
+                ->where('sender_id', '!=', $userId)
+                ->count();
         }
 
+        $mainGroup->last_message = $mainGroup->messages()
+            ->with('sender', 'attachments')
+            ->orderBy('created_at', 'DESC')
+            ->first();
+
+        // Get members
         $members = $workspace->users()
             ->where('users.id', '!=', $userId)
             ->get();
 
         return response()->json([
-            'main_group' => $allConversations->find($mainGroup->id),
-            'conversations' => $allConversations->where('id', '!=', $mainGroup->id)->values(),
+            'main_group' => $mainGroup,
+            'conversations' => $otherConversations,
             'members' => $members,
         ]);
+    }
+
+    public function index(string $workspaceId)
+    {
+        $workspace = Workspace::findOrFail($workspaceId);
+        return view('chat', compact('workspace'));
     }
 
     /**
@@ -108,12 +134,11 @@ class ChatController extends Controller
             return response()->json(['error' => 'Akses ditolak'], 403);
         }
 
-        // 🔥 PERBAIKAN: Gunakan reply_to (snake_case), bukan replyTo
         $messages = Message::where('conversation_id', $conversationId)
             ->with([
                 'sender:id,full_name,avatar',
                 'attachments',
-                'reply_to' => function ($query) {  // 🔥 UBAH DARI replyTo ke reply_to
+                'reply_to' => function ($query) {
                     $query->select('id', 'sender_id', 'content', 'message_type', 'deleted_at', 'created_at')
                         ->with([
                             'sender:id,full_name,avatar',
@@ -124,7 +149,6 @@ class ChatController extends Controller
             ->orderBy('created_at', 'asc')
             ->get();
 
-        // 🔥 DEBUG
         $messagesWithReply = $messages->filter(fn($msg) => !is_null($msg->reply_to_message_id));
 
         Log::info('📤 Sending messages to frontend', [
@@ -134,9 +158,9 @@ class ChatController extends Controller
             'sample_reply_data' => $messagesWithReply->first() ? [
                 'id' => $messagesWithReply->first()->id,
                 'reply_to_message_id' => $messagesWithReply->first()->reply_to_message_id,
-                'has_reply_to' => !is_null($messagesWithReply->first()->reply_to),  // 🔥 UBAH
-                'reply_to_content' => $messagesWithReply->first()->reply_to?->content,  // 🔥 UBAH
-                'reply_to_sender' => $messagesWithReply->first()->reply_to?->sender?->full_name  // 🔥 UBAH
+                'has_reply_to' => !is_null($messagesWithReply->first()->reply_to),
+                'reply_to_content' => $messagesWithReply->first()->reply_to?->content,
+                'reply_to_sender' => $messagesWithReply->first()->reply_to?->sender?->full_name
             ] : null
         ]);
 
@@ -160,7 +184,7 @@ class ChatController extends Controller
     }
 
     /**
-     * 🆕 Edit message - PERBAIKAN VERSION
+     * Edit message
      */
     public function editMessage(Request $request, Message $message)
     {
@@ -185,11 +209,10 @@ class ChatController extends Controller
                 'edited_at' => now()
             ]);
 
-            // 🔥 PERBAIKAN: Load dengan reply_to
             $message->load([
                 'sender',
                 'attachments',
-                'reply_to' => function ($query) {  // 🔥 reply_to
+                'reply_to' => function ($query) {
                     $query->with('sender', 'attachments');
                 }
             ]);
@@ -210,7 +233,7 @@ class ChatController extends Controller
     }
 
     /**
-     * Send message dengan support reply - PERBAIKAN VERSION
+     * Send message dengan support reply
      */
     public function store(Request $request)
     {
@@ -267,11 +290,10 @@ class ChatController extends Controller
                 }
             }
 
-            // 🔥 PERBAIKAN KRUSIAL: Load relasi dengan nama yang benar
             $message->load([
                 'sender:id,full_name,avatar',
                 'attachments',
-                'reply_to' => function ($query) { // 🔥 GUNAKAN reply_to, bukan replyTo
+                'reply_to' => function ($query) {
                     $query->select('id', 'sender_id', 'content', 'message_type', 'deleted_at', 'created_at')
                         ->with([
                             'sender:id,full_name,avatar',
@@ -280,7 +302,6 @@ class ChatController extends Controller
                 }
             ]);
 
-            // 🔥 DEBUG: Verifikasi sebelum broadcast
             Log::info('📤 Broadcasting message', [
                 'message_id' => $message->id,
                 'reply_to_message_id' => $message->reply_to_message_id,
@@ -291,7 +312,6 @@ class ChatController extends Controller
 
             DB::commit();
 
-            // 🔥 Event akan otomatis load relasi dari constructor
             event(new NewMessageSent($message));
 
             return response()->json([
@@ -310,21 +330,18 @@ class ChatController extends Controller
 
     private function updateConversationLastMessage($conversationId)
     {
-        // Cari pesan terbaru yang belum dihapus
         $lastMessage = Message::where('conversation_id', $conversationId)
             ->whereNull('deleted_at')
             ->with(['sender', 'attachments'])
             ->orderBy('created_at', 'DESC')
             ->first();
 
-        // Jika tidak ada pesan, set last_message menjadi null
         if (!$lastMessage) {
             Conversation::where('id', $conversationId)
                 ->update(['last_message_id' => null]);
             return;
         }
 
-        // Update last_message_id di conversation
         Conversation::where('id', $conversationId)
             ->update(['last_message_id' => $lastMessage->id]);
     }
@@ -343,18 +360,15 @@ class ChatController extends Controller
             $conversationId = $message->conversation_id;
             $messageId = $message->id;
 
-            // 🔥 Hapus file dari storage terlebih dahulu
             $attachments = Attachment::where('attachable_type', Message::class)
                 ->where('attachable_id', $messageId)
                 ->get();
 
             foreach ($attachments as $attachment) {
                 if ($attachment->file_url) {
-                    // Extract relative path dari URL
                     $urlParts = parse_url($attachment->file_url);
                     $path = isset($urlParts['path']) ? ltrim($urlParts['path'], '/') : '';
 
-                    // Hapus prefix /storage/ untuk mendapatkan path sebenarnya
                     $path = str_replace('storage/', '', $path);
 
                     if (Storage::disk('public')->exists($path)) {
@@ -364,12 +378,10 @@ class ChatController extends Controller
                 }
             }
 
-            // Hapus records attachments
             Attachment::where('attachable_type', Message::class)
                 ->where('attachable_id', $messageId)
                 ->delete();
 
-            // 🔥 Update message dengan DB::table untuk menghindari mass assignment issue
             DB::table('messages')
                 ->where('id', $messageId)
                 ->update([
@@ -379,16 +391,13 @@ class ChatController extends Controller
                     'updated_at' => now()
                 ]);
 
-            // Update last_message di conversation
             $this->updateConversationLastMessage($conversationId);
 
             DB::commit();
 
-            // 🔥 Reload message untuk broadcast
             $message->refresh();
             $message->load(['sender']);
 
-            // Broadcast dengan data yang benar
             event(new MessageDeleted($message));
 
             return response()->json([
