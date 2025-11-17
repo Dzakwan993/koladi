@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\MindMapController;
+use App\Http\Controllers\NodeController;
 use Illuminate\Support\Facades\Auth;
 
 use Illuminate\Support\Facades\Route;
@@ -213,6 +215,16 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/update-user-roles', [UserController::class, 'updateUserRoles'])->name('user.updateRoles');
     Route::post('/workspace/{workspaceId}/update-user-roles', [WorkspaceController::class, 'updateUserRoles'])->name('workspace.updateUserRoles');
     Route::get('/workspace/{workspaceId}/user-role', [UserController::class, 'getWorkspaceUserRole']);
+
+
+    // mindmap routes
+    Route::get('/mindmap', [MindmapController::class, 'index'])->name('mindmap.index');
     
+    // API untuk AJAX
+    Route::get('/api/mindmap/data', [MindmapController::class, 'getData']);
+    Route::post('/api/mindmap/nodes', [MindmapController::class, 'storeNode']);
+    Route::put('/api/mindmap/nodes/{id}', [MindmapController::class, 'updateNode']);
+    Route::put('/api/mindmap/nodes/{id}/position', [MindmapController::class, 'updatePosition']);
+    Route::delete('/api/mindmap/nodes/{id}', [MindmapController::class, 'deleteNode']);
 });
 
