@@ -1,16 +1,18 @@
 <?php
 
+use App\Models\Workspace;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\CompanyController;
-use App\Http\Controllers\WorkspaceController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\WorkspaceController;
+use App\Http\Middleware\CheckWorkspaceAccess;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Auth\GoogleController;
-use App\Http\Controllers\TaskController;
-use App\Models\Workspace;
 
 // ✅ Route Landing Page
 Route::get('/', function () {
@@ -159,26 +161,28 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/tasks/update-column', [TaskController::class, 'updateTaskColumn'])->name('tasks.update-column');
     });
 
-    // ✅ Calendar & Schedule Routes
-    Route::get('/jadwal', function () {
-        return view('jadwal');
-    })->name('jadwal');
+    // ✅ Calendar & Schedule Routes - GANTI YANG LAMA DENGAN INI
+    Route::middleware(['auth'])->prefix('workspace/{workspaceId}')->group(function () {
+        // Halaman utama jadwal/calendar
+        Route::get('/jadwal', [CalendarController::class, 'index'])->name('jadwal');
 
-    Route::get('/buatJadwal', function () {
-        return view('buatJadwal');
-    })->name('buatJadwal');
+        // API untuk get events (untuk FullCalendar AJAX)
+        Route::get('/calendar/events', [CalendarController::class, 'getEvents'])->name('calendar.events');
 
-    Route::get('/isiJadwalOnline', function () {
-        return view('isiJadwalOnline');
-    })->name('isiJadwalOnline');
+        // Form create event
+        Route::get('/buatJadwal', [CalendarController::class, 'create'])->name('buatJadwal');
+        Route::post('/buatJadwal', [CalendarController::class, 'store'])->name('calendar.store');
 
-    Route::get('/isiJadwalOffline', function () {
-        return view('isiJadwalOffline');
-    })->name('isiJadwalOffline');
+        // Detail & Edit event
+        Route::get('/jadwal/{id}', [CalendarController::class, 'show'])->name('calendar.show');
+        Route::get('/jadwal/{id}/edit', [CalendarController::class, 'edit'])->name('calendar.edit');
+        Route::put('/jadwal/{id}', [CalendarController::class, 'update'])->name('calendar.update');
+        Route::delete('/jadwal/{id}', [CalendarController::class, 'destroy'])->name('calendar.destroy');
 
-    Route::get('/isiJadwalTidakAdaRapat', function () {
-        return view('isiJadwalTidakAdaRapat');
-    })->name('isiJadwalTidakAdaRapat');
+        // Update participant status (accept/decline invitation)
+        Route::post('/jadwal/{id}/participant-status', [CalendarController::class, 'updateParticipantStatus'])
+            ->name('calendar.participant.status');
+    });
 
     Route::get('/notulensi', function () {
         return view('notulensi');

@@ -39,7 +39,7 @@ class Workspace extends Model
                 ['name' => 'Selesai', 'position' => 3],
                 ['name' => 'Batal', 'position' => 4],
             ];
-            
+
             foreach ($defaultColumns as $column) {
                 BoardColumn::create([
                     'id' => Str::uuid()->toString(),
@@ -49,13 +49,10 @@ class Workspace extends Model
                     'created_by' => $workspace->created_by,
                 ]);
             }
-
-            // ❌ HAPUS BAGIAN INI: Creator TIDAK otomatis ditambahkan sebagai member workspace
-            // SuperAdmin, Admin, Manager yang membuat workspace tidak menjadi member workspace
         });
     }
 
-    // Relasi
+    // ===== RELASI =====
     public function company()
     {
         return $this->belongsTo(Company::class, 'company_id');
@@ -77,14 +74,90 @@ class Workspace extends Model
         return $this->hasMany(UserWorkspace::class, 'workspace_id');
     }
 
+    /**
+     * ✅ FIX: Relationship untuk mendapatkan members (users) dari workspace
+     * Tanpa filter status_active di sini karena menyebabkan ambiguous column
+     */
+    public function members()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'user_workspaces',
+            'workspace_id',
+            'user_id'
+        )
+            ->withPivot('roles_id', 'status_active', 'join_date')
+            ->using(UserWorkspace::class) // ✅ Gunakan pivot model
+            ->withTimestamps();
+    }
+
+    /**
+     * ✅ FIX: Relationship untuk members yang aktif saja
+     * Gunakan method terpisah dengan wherePivot yang benar
+     */
+    public function activeMembers()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'user_workspaces',
+            'workspace_id',
+            'user_id'
+        )
+            ->withPivot('roles_id', 'status_active', 'join_date')
+            ->wherePivot('status_active', true)
+            ->withTimestamps();
+    }
+
     public function tasks()
     {
         return $this->hasMany(Task::class, 'workspace_id');
     }
 
-    // Scope
+    public function calendarEvents()
+    {
+        return $this->hasMany(CalendarEvent::class, 'workspace_id');
+    }
+
+    // ===== SCOPES =====
     public function scopeActive($query)
     {
         return $query->whereNull('deleted_at');
+    }
+
+    /**
+     * ✅ Scope untuk filter workspace yang bisa diakses user tertentu
+     */
+    public function scopeAccessibleBy($query, $userId)
+    {
+        return $query->whereHas('userWorkspaces', function ($q) use ($userId) {
+            $q->where('user_id', $userId)
+                ->where('status_active', true);
+        });
+    }
+
+    // ===== HELPER METHODS =====
+
+    /**
+     * ✅ Cek apakah user adalah member dari workspace ini
+     */
+    public function hasMember($userId)
+    {
+        return $this->userWorkspaces()
+            ->where('user_id', $userId)
+            ->where('status_active', true)
+            ->exists();
+    }
+
+    /**
+     * ✅ Get role user di workspace ini
+     */
+    public function getMemberRole($userId)
+    {
+        $userWorkspace = $this->userWorkspaces()
+            ->where('user_id', $userId)
+            ->with('role')
+            ->first();
+
+        return $userWorkspace?->role;
     }
 }

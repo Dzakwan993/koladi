@@ -19,7 +19,14 @@ class UserWorkspace extends Model
         'user_id',
         'workspace_id',
         'roles_id',
-        'status_active'
+        'status_active',
+        'join_date' // ✅ Tambahkan ini
+    ];
+
+    // ✅ TAMBAHAN BARU: Tambahkan cast untuk kolom
+    protected $casts = [
+        'status_active' => 'boolean',
+        'join_date' => 'datetime'
     ];
 
     protected static function boot()
@@ -28,6 +35,8 @@ class UserWorkspace extends Model
 
         static::creating(function ($model) {
             $model->id = $model->id ?: Str::uuid()->toString();
+            // ✅ TAMBAHAN BARU: Auto set join_date jika belum ada
+            $model->join_date = $model->join_date ?: now();
         });
     }
 
@@ -53,5 +62,11 @@ class UserWorkspace extends Model
     public function scopeActive($query)
     {
         return $query->where('status_active', true);
+    }
+
+    // ✅ TAMBAHAN BARU: Scope untuk anggota inactive
+    public function scopeInactive($query)
+    {
+        return $query->where('status_active', false);
     }
 }
