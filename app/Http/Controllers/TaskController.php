@@ -14,6 +14,7 @@ use App\Models\Task;
 use App\Models\TaskAssignment;
 use App\Models\Label;
 use App\Models\Color;
+use App\Models\Comment;
 use App\Models\User;
 use App\Models\Checklist;
 use App\Models\Attachment;
@@ -2087,6 +2088,142 @@ public function updateTaskLabels(Request $request, $taskId)
         return response()->json([
             'success' => false,
             'message' => 'Gagal mengupdate label tugas: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+// ✅ NEW: Comment methods for tasks
+// Di TaskController - perbaiki method storeTaskComment
+public function storeTaskComment(Request $request, $taskId)
+{
+    $validator = Validator::make($request->all(), [
+        'content' => 'required|string|min:1',
+        'parent_comment_id' => 'nullable|exists:comments,id',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validasi gagal',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    try {
+        $task = Task::findOrFail($taskId);
+        $user = Auth::user();
+
+        // Validasi akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
+        }
+
+        // Buat komentar baru
+        $comment = Comment::create([
+            'id' => Str::uuid()->toString(),
+            'user_id' => $user->id,
+            'content' => $request->content,
+            'commentable_id' => $taskId,
+            'commentable_type' => 'App\\Models\\Task',
+            'parent_comment_id' => $request->parent_comment_id,
+        ]);
+
+        // Load relasi user dan replies
+        $comment->load(['user', 'replies.user']);
+
+        // Format response
+        $commentData = [
+            'id' => $comment->id,
+            'author' => [
+                'name' => $comment->user->full_name ?? 'Anonim',
+                'avatar' => $comment->user->avatar ?? 'https://i.pravatar.cc/40?img=0',
+            ],
+            'content' => $comment->content,
+            'createdAt' => $comment->created_at->toISOString(),
+            'replies' => $comment->replies->map(function ($reply) {
+                return [
+                    'id' => $reply->id,
+                    'author' => [
+                        'name' => $reply->user->full_name ?? 'Anonim',
+                        'avatar' => $reply->user->avatar ?? 'https://i.pravatar.cc/40?img=0',
+                    ],
+                    'content' => $reply->content,
+                    'createdAt' => $reply->created_at->toISOString(),
+                ];
+            }),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Komentar berhasil disimpan',
+            'comment' => $commentData,
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error storing task comment: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menyimpan komentar: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+// Perbaiki juga method getTaskComments
+public function getTaskComments($taskId)
+{
+    try {
+        $task = Task::findOrFail($taskId);
+        $user = Auth::user();
+
+        // Validasi akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
+        }
+
+        $comments = Comment::with(['user', 'replies.user'])
+            ->where('commentable_id', $taskId)
+            ->where('commentable_type', 'App\\Models\\Task')
+            ->whereNull('parent_comment_id')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($comment) {
+                return [
+                    'id' => $comment->id,
+                    'author' => [
+                        'name' => $comment->user->full_name ?? 'Anonim',
+                        'avatar' => $comment->user->avatar ?? 'https://i.pravatar.cc/40?img=0',
+                    ],
+                    'content' => $comment->content,
+                    'createdAt' => $comment->created_at->toISOString(),
+                    'replies' => $comment->replies->map(function ($reply) {
+                        return [
+                            'id' => $reply->id,
+                            'author' => [
+                                'name' => $reply->user->full_name ?? 'Anonim',
+                                'avatar' => $reply->user->avatar ?? 'https://i.pravatar.cc/40?img=0',
+                            ],
+                            'content' => $reply->content,
+                            'createdAt' => $reply->created_at->toISOString(),
+                        ];
+                    }),
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'comments' => $comments
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error getting task comments: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil komentar'
         ], 500);
     }
 }

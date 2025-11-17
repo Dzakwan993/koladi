@@ -171,9 +171,9 @@ class Task extends Model
 
     // Relasi ke Comments
     public function comments()
-    {
-        return $this->morphMany(Comment::class, 'commentable')->orderBy('created_at', 'desc');
-    }
+{
+    return $this->morphMany(Comment::class, 'commentable')->orderBy('created_at', 'desc');
+}
 
     // Relasi ke Labels
     public function labels()

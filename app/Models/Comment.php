@@ -28,7 +28,7 @@ class Comment extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    // Relasi ke model yang bisa dikomentari (Task)
+    // Relasi ke model yang bisa dikomentari
     public function commentable()
     {
         return $this->morphTo();
@@ -37,11 +37,17 @@ class Comment extends Model
     // Relasi untuk reply
     public function replies()
     {
-        return $this->hasMany(Comment::class, 'parent_comment_id')->orderBy('created_at', 'asc');
+        return $this->hasMany(Comment::class, 'parent_comment_id')->orderBy('created_at');
     }
 
     public function parent()
     {
         return $this->belongsTo(Comment::class, 'parent_comment_id');
+    }
+
+    // Accessor untuk formatted date
+    public function getFormattedCreatedAtAttribute()
+    {
+        return $this->created_at->format('d M Y H:i');
     }
 }
