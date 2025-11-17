@@ -10,6 +10,7 @@ class File extends Model
 {
     use HasFactory;
 
+    public $timestamps = false;
     protected $table = 'files';
     public $incrementing = false;
     protected $keyType = 'string';
@@ -19,8 +20,13 @@ class File extends Model
         'folder_id',
         'workspace_id',
         'file_url',
+        'file_name',
+        'file_path',
+        'file_size',
+        'file_type',
         'is_private',
-        'uploaded_by'
+        'uploaded_by',
+        'uploaded_at',
     ];
 
     protected $casts = [

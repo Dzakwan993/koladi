@@ -7,6 +7,7 @@ use App\Models\Folder;
 use App\Models\File;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreFolderRequest;
+use App\Http\Requests\StoreFileRequest;
 
 class DokumenController extends Controller
 {
@@ -78,5 +79,62 @@ class DokumenController extends Controller
           ->with('alert_once', true);;
     }
 
-    
+    public function storeFile(StoreFileRequest $request)
+        {
+            $validated = $request->validated();
+            $uploadedBy = auth()->id();
+
+            $uploaded = $request->file('file');
+
+            // --------- [1] Ambil nama awal ---------
+            $originalName = pathinfo($uploaded->getClientOriginalName(), PATHINFO_FILENAME);
+            $extension = $uploaded->getClientOriginalExtension();
+
+            $workspaceId = $validated['workspace_id'];
+            $folderId = $validated['folder_id'] ?? null;
+
+            // --------- [2] Generate nama unik ---------
+            $newName = $originalName;
+            $counter = 1;
+
+            while (
+                File::where('workspace_id', $workspaceId)
+                    ->where('folder_id', $folderId)
+                    ->where('file_name', $newName . '.' . $extension)
+                    ->exists()
+            ) {
+                $newName = $originalName . '(' . $counter . ')';
+                $counter++;
+            }
+
+            $finalName = $newName . '.' . $extension;
+
+            // --------- [3] Simpan fisik dengan nama final ---------
+            $path = $uploaded->storeAs(
+                'workspace_files',
+                $finalName
+            );
+
+            // --------- [4] Simpan ke database ---------
+            $fileModel = File::create([
+                'workspace_id' => $workspaceId,
+                'folder_id' => $folderId,
+                'uploaded_by' => $uploadedBy,
+                'file_name' => $finalName,
+                'file_path' => $path,
+                'file_size' => $uploaded->getSize(),
+                'file_type' => $extension,
+                'file_url' => asset('storage/' . $path),
+                'is_private' => false,
+                'uploaded_at' => now(),
+            ]);
+
+            return redirect()->back()->with('alert', [
+                'icon' => 'success',
+                'title' => 'File berhasil diunggah!',
+                'text' => 'File ' . $fileModel->file_name . ' sudah tersimpan.',
+            ])->with('alert_once', true);
+        }
+
+
 }

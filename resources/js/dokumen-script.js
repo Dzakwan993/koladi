@@ -59,7 +59,7 @@ export default function documentSearch() {
                         ...this.audioFiles,
                         ...this.codeFiles,
                         ...this.unknownFiles,
-                    ];
+                    ].filter(file => file.folder_id === null);
                 },                
 
                 // Function untuk inisialisasi data
@@ -158,6 +158,7 @@ export default function documentSearch() {
 
                         return {
                             id: file.id,
+                            folder_id: file.folder_id ?? null,   // ⬅⬅ TAMBAHKAN INI
                             // gunakan displayName agar di Blade x-text="file.name" muncul
                             name: displayName,
                             type: type,
