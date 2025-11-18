@@ -158,9 +158,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/update-column', [TaskController::class, 'updateTaskColumn'])->name('tasks.update-column');
         Route::post('/tasks/update-column', [TaskController::class, 'updateTaskColumn'])->name('tasks.update-column');
 
-         Route::get('/{taskId}/comments', [TaskController::class, 'getTaskComments'])->name('tasks.comments.get');
-    Route::post('/{taskId}/comments', [TaskController::class, 'storeTaskComment'])->name('tasks.comments.store');
+        Route::get('/{taskId}/comments', [TaskController::class, 'getTaskComments'])->name('tasks.comments.get');
+        Route::post('/{taskId}/comments', [TaskController::class, 'storeTaskComment'])->name('tasks.comments.store');
 
+        Route::get('/workspace/{workspaceId}/timeline', [TaskController::class, 'getTimelineData'])->name('tasks.timeline');
+        Route::get('/tasks/workspace/{workspaceId}/timeline', [TaskController::class, 'getTimelineData'])->name('tasks.timeline');
     });
 
     // ✅ Calendar & Schedule Routes

@@ -1050,6 +1050,99 @@
                         max-height: 200px;
                         overflow-y: auto;
                     }
+
+
+                    /* Tambahkan di section style */
+                    /* Phase Progress Colors */
+                    .phase-planning {
+                        background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+                    }
+
+                    .phase-analysis {
+                        background: linear-gradient(135deg, #10b981, #047857) !important;
+                    }
+
+                    .phase-design {
+                        background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+                    }
+
+                    .phase-development {
+                        background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+                    }
+
+                    .phase-testing {
+                        background: linear-gradient(135deg, #ec4899, #db2777) !important;
+                    }
+
+                    .phase-deployment {
+                        background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+                    }
+
+                    /* Progress percentage colors */
+                    .text-progress-high {
+                        color: #10b981;
+                    }
+
+                    .text-progress-medium {
+                        color: #3b82f6;
+                    }
+
+                    .text-progress-low {
+                        color: #f59e0b;
+                    }
+
+                    .text-progress-none {
+                        color: #ef4444;
+                    }
+
+
+                    /* Tambahkan di section style */
+                    /* Shimmer Animation */
+                    @keyframes shimmer {
+                        0% {
+                            transform: translateX(-100%);
+                        }
+
+                        100% {
+                            transform: translateX(100%);
+                        }
+                    }
+
+                    .animate-shimmer {
+                        animation: shimmer 2s infinite;
+                    }
+
+                    /* Phase Color Classes */
+                    .phase-planning {
+                        background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+                    }
+
+                    .phase-analysis {
+                        background: linear-gradient(135deg, #10b981, #047857) !important;
+                    }
+
+                    .phase-design {
+                        background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+                    }
+
+                    .phase-development {
+                        background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+                    }
+
+                    .phase-testing {
+                        background: linear-gradient(135deg, #ec4899, #db2777) !important;
+                    }
+
+                    .phase-deployment {
+                        background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+                    }
+
+                    /* Smooth transitions */
+                    .transition-all {
+                        transition-property: all;
+                        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+                        transition-duration: 300ms;
+                    }
                 </style>
 
                 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -1150,6 +1243,9 @@
                                 url: '',
                                 file: null
                             },
+
+                            timelineData: [],
+                            loadingTimeline: false,
 
 
                             currentColumnId: null,
@@ -3319,6 +3415,7 @@
                                     // Load data
                                     this.loadBoardColumns();
                                     this.loadKanbanTasks(); // ✅ GUNAKAN YANG BARU
+                                    this.loadTimelineData();
                                     this.loadWorkspaceMembers();
                                     this.loadLabels();
                                     this.loadColors();
@@ -4258,6 +4355,200 @@
                                 }
                             },
 
+
+                            async loadTimelineData() {
+                                this.loadingTimeline = true;
+                                try {
+                                    const workspaceId = this.getCurrentWorkspaceId();
+                                    if (!workspaceId) return;
+
+                                    const response = await fetch(`/tasks/workspace/${workspaceId}/timeline`);
+                                    const data = await response.json();
+
+                                    if (data.success) {
+                                        this.timelineData = data.timeline_data;
+                                        console.log('Timeline data loaded:', this.timelineData);
+                                    } else {
+                                        console.error('Gagal memuat timeline data:', data.message);
+                                    }
+                                } catch (error) {
+                                    console.error('Error loading timeline data:', error);
+                                } finally {
+                                    this.loadingTimeline = false;
+                                }
+                            },
+
+                            // Update method getProjectPhases() untuk menggunakan data real
+                            getProjectPhases() {
+                                if (this.timelineData && this.timelineData.length > 0) {
+                                    return this.timelineData.map(phase => ({
+                                        id: phase.id,
+                                        name: phase.name,
+                                        normalized_name: phase.normalized_name,
+                                        total_tasks: phase.total_tasks,
+                                        completed_tasks: phase.completed_tasks,
+                                        progress_percentage: phase.progress_percentage,
+                                        description: `${phase.completed_tasks} dari ${phase.total_tasks} tugas selesai`
+                                    }));
+                                }
+
+                                // Fallback dummy data jika tidak ada data real
+                                return [{
+                                        id: 1,
+                                        name: 'Perencanaan',
+                                        description: '0 dari 0 tugas selesai',
+                                        total_tasks: 0,
+                                        completed_tasks: 0,
+                                        progress_percentage: 0
+                                    },
+                                    {
+                                        id: 2,
+                                        name: 'Analisis',
+                                        description: '0 dari 0 tugas selesai',
+                                        total_tasks: 0,
+                                        completed_tasks: 0,
+                                        progress_percentage: 0
+                                    }
+                                    // ... tambahkan phase lainnya sesuai kebutuhan
+                                ];
+                            },
+
+                            // 🔧 PERBAIKI: Method getTasksByPhaseId
+                            getTasksByPhaseId(phaseId) {
+                                if (this.timelineData && this.timelineData.length > 0) {
+                                    const phase = this.timelineData.find(p => p.id === phaseId);
+                                    return phase ? phase.tasks : [];
+                                }
+
+                                // Fallback ke data dummy dengan normalize yang benar
+                                const phaseMap = {
+                                    1: 'Perencanaan',
+                                    2: 'Analisis',
+                                    3: 'Desain',
+                                    4: 'Development',
+                                    5: 'Testing',
+                                    6: 'Deployment'
+                                };
+
+                                const phaseName = phaseMap[phaseId];
+                                return this.tasks.filter(task => {
+                                    if (!task.phase) return false;
+
+                                    // 🔧 PERBAIKI: Gunakan JavaScript string methods, bukan PHP functions
+                                    const taskPhase = task.phase.toLowerCase().trim().replace(/\s+/g, ' ');
+                                    const targetPhase = phaseName.toLowerCase().trim().replace(/\s+/g, ' ');
+                                    return taskPhase === targetPhase;
+                                });
+                            },
+
+                            // Update method showPhaseTasks() untuk menggunakan data real
+                            showPhaseTasks(phaseId) {
+                                let phase;
+                                let phaseTasks = [];
+
+                                if (this.timelineData && this.timelineData.length > 0) {
+                                    phase = this.timelineData.find(p => p.id === phaseId);
+                                    if (phase) {
+                                        phaseTasks = phase.tasks;
+                                    }
+                                } else {
+                                    // Fallback logic
+                                    const phaseMap = {
+                                        1: 'Perencanaan',
+                                        2: 'Analisis',
+                                        3: 'Desain',
+                                        4: 'Development',
+                                        5: 'Testing',
+                                        6: 'Deployment'
+                                    };
+                                    const phaseName = phaseMap[phaseId];
+                                    phaseTasks = this.tasks.filter(task => {
+                                        const taskPhase = task.phase ? strtolower(trim(preg_replace('/\s+/', ' ', task
+                                            .phase))) : '';
+                                        const targetPhase = strtolower(trim(preg_replace('/\s+/', ' ', phaseName)));
+                                        return taskPhase === targetPhase;
+                                    });
+
+                                    phase = {
+                                        name: phaseName,
+                                        description: `Phase ${phaseName}`,
+                                        total_tasks: phaseTasks.length,
+                                        completed_tasks: phaseTasks.filter(task => task.status === 'done').length,
+                                        progress_percentage: phaseTasks.length > 0 ?
+                                            Math.round((phaseTasks.filter(task => task.status === 'done').length / phaseTasks
+                                                .length) * 100) : 0
+                                    };
+                                }
+
+                                if (!phase) return;
+
+                                this.selectedPhase = phaseId;
+                                this.phaseModal = {
+                                    open: true,
+                                    title: phase.name,
+                                    description: phase.description ||
+                                        `${phase.completed_tasks} dari ${phase.total_tasks} tugas selesai`,
+                                    tasks: phaseTasks,
+                                    stats: {
+                                        total: phase.total_tasks,
+                                        completed: phase.completed_tasks,
+                                        in_progress: phaseTasks.filter(task => task.status === 'inprogress').length,
+                                        todo: phaseTasks.filter(task => task.status === 'todo').length,
+                                        progress: phase.progress_percentage
+                                    }
+                                };
+                            },
+
+
+                            // Tambahkan method ini di dalam kanbanApp() di Alpine.js
+
+                            // Method untuk menghitung progress keseluruhan
+                            getOverallProgress() {
+                                if (!this.timelineData || this.timelineData.length === 0) return 0;
+
+                                const totalTasks = this.timelineData.reduce((sum, phase) => sum + phase.total_tasks, 0);
+                                const completedTasks = this.timelineData.reduce((sum, phase) => sum + phase.completed_tasks, 0);
+
+                                return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+                            },
+
+                            // Method untuk mendapatkan jumlah tugas in progress
+                            getInProgressTasks(phaseId) {
+                                const phase = this.timelineData.find(p => p.id === phaseId);
+                                if (!phase || !phase.tasks) return 0;
+
+                                return phase.tasks.filter(task => task.status === 'inprogress').length;
+                            },
+
+                            // Method untuk mendapatkan jumlah tugas todo
+                            getTodoTasks(phaseId) {
+                                const phase = this.timelineData.find(p => p.id === phaseId);
+                                if (!phase || !phase.tasks) return 0;
+
+                                return phase.tasks.filter(task => task.status === 'todo').length;
+                            },
+
+                            // Method untuk mendapatkan deskripsi phase
+                            getPhaseDescription(phase) {
+                                const completed = phase.completed_tasks || 0;
+                                const total = phase.total_tasks || 0;
+                                const inProgress = this.getInProgressTasks(phase.id);
+                                const todo = this.getTodoTasks(phase.id);
+
+                                let description = `${completed} selesai`;
+
+                                if (inProgress > 0) {
+                                    description += `, ${inProgress} dalam progress`;
+                                }
+
+                                if (todo > 0) {
+                                    description += `, ${todo} belum mulai`;
+                                }
+
+                                return description;
+                            },
+
+                            
 
 
 

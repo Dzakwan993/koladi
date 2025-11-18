@@ -2229,6 +2229,122 @@ public function getTaskComments($taskId)
 }
 
 
+// Tambahkan method ini di TaskController.php
+public function getTimelineData($workspaceId)
+{
+    try {
+        $user = Auth::user();
+
+        // Validasi akses workspace
+        if (!$this->canAccessWorkspace($workspaceId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke workspace ini'
+            ], 403);
+        }
+
+        // Ambil semua tasks dari workspace
+        $tasks = Task::where('workspace_id', $workspaceId)
+            ->with(['assignments.user', 'boardColumn'])
+            ->get();
+
+        // Jika tidak ada tasks
+        if ($tasks->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'timeline_data' => [],
+                'total_phases' => 0,
+                'total_tasks' => 0,
+                'completed_tasks' => 0,
+                'message' => 'Tidak ada tugas di workspace ini'
+            ]);
+        }
+
+        // Group tasks by phase (case-insensitive dan trim whitespace)
+        $phaseGroups = [];
+        
+        foreach ($tasks as $task) {
+            if (!$task->phase) continue;
+            
+            // Normalize phase name: lowercase, trim, remove extra spaces
+            $normalizedPhase = strtolower(trim(preg_replace('/\s+/', ' ', $task->phase)));
+            
+            if (!isset($phaseGroups[$normalizedPhase])) {
+                $phaseGroups[$normalizedPhase] = [
+                    'original_name' => $task->phase,
+                    'normalized_name' => $normalizedPhase,
+                    'tasks' => [],
+                    'total_tasks' => 0,
+                    'completed_tasks' => 0,
+                    'progress_percentage' => 0
+                ];
+            }
+            
+            $phaseGroups[$normalizedPhase]['tasks'][] = $task;
+            $phaseGroups[$normalizedPhase]['total_tasks']++;
+            
+            // Hitung tugas yang selesai (hanya status 'done')
+            if ($task->status === 'done') {
+                $phaseGroups[$normalizedPhase]['completed_tasks']++;
+            }
+        }
+
+        // Hitung progress percentage untuk setiap phase
+        foreach ($phaseGroups as &$phase) {
+            $phase['progress_percentage'] = $phase['total_tasks'] > 0 
+                ? round(($phase['completed_tasks'] / $phase['total_tasks']) * 100) 
+                : 0;
+        }
+
+        // Format response
+        $timelineData = [];
+        $phaseId = 1;
+        
+        foreach ($phaseGroups as $phase) {
+            $timelineData[] = [
+                'id' => $phaseId++,
+                'name' => $phase['original_name'],
+                'normalized_name' => $phase['normalized_name'],
+                'total_tasks' => $phase['total_tasks'],
+                'completed_tasks' => $phase['completed_tasks'],
+                'progress_percentage' => $phase['progress_percentage'],
+                'tasks' => array_map(function($task) {
+                    return [
+                        'id' => $task->id,
+                        'title' => $task->title,
+                        'status' => $task->status,
+                        'is_done' => $task->status === 'done',
+                        'start_datetime' => $task->start_datetime,
+                        'due_datetime' => $task->due_datetime,
+                        'assignees' => $task->assignments->map(function($assignment) {
+                            return [
+                                'name' => $assignment->user->full_name,
+                                'avatar' => $assignment->user->avatar ?: 'https://i.pravatar.cc/32?img=' . rand(1, 70)
+                            ];
+                        })->toArray()
+                    ];
+                }, $phase['tasks'])
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'timeline_data' => $timelineData,
+            'total_phases' => count($timelineData),
+            'total_tasks' => $tasks->count(),
+            'completed_tasks' => $tasks->where('status', 'done')->count()
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error getting timeline data: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil data timeline: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
 
 
 }
