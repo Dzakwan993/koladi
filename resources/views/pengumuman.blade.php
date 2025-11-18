@@ -2,8 +2,6 @@
 
 @section('title', 'Workspace')
 
-
-
 @section('content')
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @include('components.sweet-alert')
@@ -52,7 +50,6 @@
                                                         '&background=random&color=fff'
                                                         : asset('images/dk.jpg'));
                                             @endphp
-
                                             <div @if ($canAccess) onclick="window.location='{{ route('pengumuman.show', $p->id) }}'"
                                                 class="cursor-pointer bg-[#e9effd] hover:bg-[#dce6fc] transition-colors rounded-xl shadow-sm p-4 flex justify-between items-start"
                                             @else class="bg-[#e9effd] rounded-xl shadow-sm p-4 flex justify-between items-start opacity-70"

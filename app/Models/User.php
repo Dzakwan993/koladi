@@ -65,16 +65,12 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
-    public function userWorkspaces()
-{
-    return $this->hasMany(\App\Models\UserWorkspace::class, 'user_id', 'id');
-}
-public function getAvatarUrlAttribute()
-{
-    return $this->avatar
-        ? asset('storage/' . $this->avatar) // path avatar di storage
-        : asset('images/dk.jpg');          // default jika tidak ada
-}
+    public function getAvatarUrlAttribute()
+    {
+        return $this->avatar
+            ? asset('storage/' . $this->avatar) // path avatar di storage
+            : asset('images/dk.jpg');          // default jika tidak ada
+    }
 
 
     public function role()
@@ -125,7 +121,7 @@ public function getAvatarUrlAttribute()
     {
         return $this->userCompanies()
             ->where('company_id', $companyId)
-            ->whereHas('role', function($q) use ($roleNames) {
+            ->whereHas('role', function ($q) use ($roleNames) {
                 $q->whereIn('name', $roleNames);
             })
             ->exists();
@@ -141,6 +137,4 @@ public function getAvatarUrlAttribute()
 
         return $this->hasCompanyRole($companyId, $allowed);
     }
-
-
 }

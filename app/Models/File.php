@@ -8,19 +8,6 @@ use Illuminate\Support\Str;
 
 class File extends Model
 {
-<<<<<<< HEAD
-    protected $fillable = [
-    'id',
-    'folder_id',
-    'workspace_id',
-    'file_url',
-    'is_private',
-    'uploaded_by',
-    'uploaded_at',
-];
-
-}
-=======
     use HasFactory;
 
     protected $table = 'files';
@@ -68,4 +55,3 @@ class File extends Model
         return $this->belongsTo(User::class, 'uploaded_by');
     }
 }
->>>>>>> main

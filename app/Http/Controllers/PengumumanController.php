@@ -313,7 +313,7 @@ class PengumumanController extends Controller
     public function destroy(Pengumuman $pengumuman)
 {
     $workspaceId = $pengumuman->workspace_id; // Simpan ID workspace sebelum hapus
-    
+
     // 1. Hapus relasi penerima
     $pengumuman->recipients()->detach();
 

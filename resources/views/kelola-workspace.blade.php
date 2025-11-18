@@ -334,8 +334,7 @@
             <div x-show="hqOpen" x-collapse>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     @forelse($workspaces['HQ'] ?? [] as $workspace)
-                    {{-- <a href="{{ url('/workspace') }}" --}}
-                        <a href="{{ route('workspace.show', $workspace->id) }}"
+                        <a href="{{ url('/workspace') }}"
                             class="block bg-white rounded-xl border border-gray-200 p-4 relative group hover:shadow-md transition-shadow duration-200">
                             <div class="flex justify-between items-start">
                                 <h3 class="font-semibold text-gray-800">{{ $workspace->name }}</h3>
@@ -424,7 +423,8 @@
             <div x-show="timOpen" x-collapse>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     @forelse($workspaces['Tim'] ?? [] as $workspace)
-                        <a href="{{ url('/workspace') }}"
+                        <!-- ✅ PERBAIKAN: Link ke workspace spesifik -->
+                        <a href="{{ route('workspace.detail', $workspace->id) }}"
                             class="block bg-white rounded-xl border border-gray-200 p-4 relative group hover:shadow-md transition-shadow duration-200">
                             <div class="flex justify-between items-start">
                                 <h3 class="font-semibold text-gray-800">{{ $workspace->name }}</h3>
@@ -518,7 +518,8 @@
             <div x-show="proyekOpen" x-collapse>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     @forelse($workspaces['Proyek'] ?? [] as $workspace)
-                        <a href="{{ url('/workspace') }}"
+                        <!-- ✅ PERBAIKAN: Link ke workspace spesifik -->
+                        <a href="{{ route('workspace.detail', $workspace->id) }}"
                             class="block bg-white rounded-xl border border-gray-200 p-4 relative group hover:shadow-md transition-shadow duration-200">
                             <div class="flex justify-between items-start">
                                 <h3 class="font-semibold text-gray-800">{{ $workspace->name }}</h3>

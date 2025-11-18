@@ -82,36 +82,6 @@ Route::middleware(['auth'])->group(function () {
         return view('workspace', compact('workspace'));
     })->name('workspace.show');
 
-    // Halaman Jadwal
-    Route::get('/jadwal', function () {
-        return view('jadwal');
-    })->name('jadwal');
-
-    // Halaman buat jadwal
-    Route::get('/buatJadwal', function () {
-        return view('buatJadwal');
-    })->name('buatJadwal');
-
-    // isiJadwalOnline
-    Route::get('/isiJadwalOnline', function () {
-        return view('isiJadwalOnline');
-    })->name('isiJadwalOnline');
-
-    // isiJadwalOffline
-    Route::get('/isiJadwalOffline', function () {
-        return view('isiJadwalOffline');
-    })->name('isiJadwalOffline');
-
-    // isiJadwalTidakAdaRapat
-    Route::get('/isiJadwalTidakAdaRapat', function () {
-        return view('isiJadwalTidakAdaRapat');
-    })->name('isiJadwalTidakAdaRapat');
-
-    // notulensi
-    Route::get('/notulensi', function () {
-        return view('notulensi');
-    })->name('notulensi');
-
     // pengumuman
     Route::middleware(['auth'])->group(function () {
         Route::post('/workspace/{id}/pengumuman/store', [PengumumanController::class, 'store'])
@@ -292,14 +262,10 @@ Route::middleware(['auth'])->group(function () {
         return view('notulensi');
     })->name('notulensi');
 
-    // ✅ Announcement Routes
-    Route::get('/pengumuman', function () {
-        return view('pengumuman');
-    })->name('pengumuman');
-
-    Route::get('/isiPengunguman', function () {
-        return view('isiPengunguman');
-    })->name('isiPengunguman');
+    // // ✅ Announcement Routes
+    // Route::get('/pengumuman', function () {
+    //     return view('pengumuman');
+    // })->name('pengumuman');
 
     // ✅ Statistics Routes
     Route::get('/statistik', function () {
@@ -315,34 +281,18 @@ Route::middleware(['auth'])->group(function () {
         return view('dokumen-dan-file');
     })->name('dokumen-dan-file');
 
-    // ✅ Leave Management
-    Route::get('/cutikaryawan', function () {
-        return view('cutikaryawan');
-    })->name('cutikaryawan');
-
-    Route::get('/cutimanajer', function () {
-        return view('cutimanajer');
-    })->name('cutimanajer');
 
     // ✅ Communication Routes
     Route::get('/chat', function () {
         return view('chat');
     })->name('chat');
 
-    // ✅ Insight & Mindmap Routes
-    Route::get('/insight', function () {
-        return view('insight');
-    })->name('insight');
-
-    Route::get('/isi-insight', function () {
-        return view('isi-insight');
-    })->name('isi-insight');
 
     Route::get('/mindmap', function () {
         return view('mindmap');
     })->name('mindmap');
 
-    // ✅ Payment Route
+    // ✅ Payment Rout
     Route::get('/pembayaran', function () {
         return view('pembayaran');
     })->name('pembayaran');
