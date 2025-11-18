@@ -2,6 +2,10 @@
 
 @section('title', 'Mind Map')
 
+<style>
+    [x-cloak] { display: none !important; }
+</style>
+
 @section('content')
 <div class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen" x-data="mindmapApp()">
     <!-- Workspace Nav untuk Mind Map -->
@@ -1173,9 +1177,7 @@ function mindmapApp() {
 
 @push('styles')
 <style>
-[x-cloak] {
-    display: none !important;
-}
+
 
 .line-clamp-2 {
     display: -webkit-box;

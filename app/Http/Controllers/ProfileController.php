@@ -11,7 +11,7 @@ use App\Models\User;
 
 class ProfileController extends Controller
 {
-    public function edit()
+    public function index()
     {
         return view('profile');
     }

@@ -98,11 +98,12 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
             </a>
 
             {{-- Laporan Kinerja --}}
+             {{-- Laporan Kinerja --}}
             <a href="{{ url('/statistik') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
-                      {{ Request::is('laporan*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                      {{ Request::is('statistik*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
                 <img src="/images/icons/sidebar_laporan-kinerja.svg" alt="Laporan Kinerja"
-                    class="w-5 h-5 {{ Request::is('laporan*') ? 'filter-blue' : '' }}"> <span class="text-sm">Laporan
+                    class="w-5 h-5 {{ Request::is('statistik*') ? 'filter-blue' : '' }}"> <span class="text-sm">Laporan
                     Kinerja</span>
             </a>
 
@@ -139,7 +140,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
             {{-- Workspace List --}}
             <div class="mt-3 space-y-1">
 
-                {{-- HQ --}}
+                {{-- HQ
                 <div>
                     <button @click="openHQ = !openHQ"
                         class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-lg transition">
@@ -162,7 +163,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                             <span>Mencari Cinta HQ</span>
                         </a>
                     </div>
-                </div>
+                </div> --}}
 
                 {{-- TIM --}}
                 <div>
@@ -184,7 +185,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                             class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition
                             {{ Request::is('workspace') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
                             <span class="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                            <span>Div. Marketing</span>
+                            <span>Koladi</span>
                         </a>
                         <a href="{{ url('/workspace/pelayanan') }}"
                             class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition

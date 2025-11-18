@@ -12,20 +12,28 @@
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Anggota Perusahaan</h1>
                 </div>
-                <button onClick="openInviteModal(event)"
-                    class="bg-[#225AD6] hover:bg-blue-600 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-semibold transition flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm">
-                    <img src="{{ asset('images/icons/add-user.svg') }}" alt="Schedule" class="w-5 h-5 sm:w-6 sm:h-6" />
-                    Undang
-                </button>
+
+                {{-- ✅ Tombol Undang - Hanya tampil untuk SuperAdmin, Admin, Manager --}}
+                @if($canInvite ?? false)
+                    <button onClick="openInviteModal(event)"
+                        class="bg-[#225AD6] hover:bg-blue-600 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-semibold transition flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm">
+                        <img src="{{ asset('images/icons/add-user.svg') }}" alt="Schedule" class="w-5 h-5 sm:w-6 sm:h-6" />
+                        Undang
+                    </button>
+                @else
+                    {{-- ❌ Jika tidak punya izin, tampilkan pesan atau hide button --}}
+                    <div class="text-xs text-gray-500 italic">
+                        Anda tidak memiliki izin untuk mengundang anggota
+                    </div>
+                @endif
             </div>
 
             {{-- Content Area - Scrollable --}}
             <div class="flex-1 overflow-y-auto flex flex-col gap-2 sm:gap-2.5 md:gap-3">
-
                 {{-- Anggota terdaftar --}}
                 @forelse($members ?? [] as $member)
                     <div
-                        class="border-2 border-gray-200 bg-white rounded-lg p-3 flex items-center justify-between shadow-sm">
+                        class="border-2 border-gray-200 bg-white rounded-lg p-3 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
                         <div class="flex items-center gap-3">
                             @php
                                 if ($member->avatar && Str::startsWith($member->avatar, ['http://', 'https://'])) {
@@ -41,19 +49,24 @@
                             @endphp
 
                             <img src="{{ $avatarUrl }}" alt="{{ $member->full_name ?? 'User' }}"
-                                class="w-10 h-10 rounded-full object-cover">
+                                class="w-10 h-10 rounded-full object-cover ring-2 ring-gray-200">
 
                             <div>
                                 <div class="font-semibold text-base text-gray-900 flex items-center gap-2">
                                     {{ $member->full_name ?? 'Unknown' }}
                                     @if (!empty($member->role_name))
-                                        <span
-                                            class="px-2 py-0.5 text-xs font-medium rounded-full
-                                            {{ $member->role_name === 'SuperAdmin'
-                                                ? 'bg-purple-100 text-purple-700'
-                                                : ($member->role_name === 'Admin'
-                                                    ? 'bg-blue-100 text-blue-700'
-                                                    : 'bg-gray-100 text-gray-700') }}">
+                                        @php
+                                            $roleColors = [
+                                                'SuperAdmin' => 'bg-[#102A63] text-white',
+                                                'Super Admin' => 'bg-[#102A63] text-white',
+                                                'Admin' => 'bg-[#225AD6] text-white',
+                                                'Administrator' => 'bg-[#225AD6] text-white',
+                                                'Manager' => 'bg-[#0FA875] text-white',
+                                                'Member' => 'bg-[#E4BA13] text-white'
+                                            ];
+                                            $roleClass = $roleColors[$member->role_name] ?? 'bg-gray-100 text-gray-700';
+                                        @endphp
+                                        <span class="px-2.5 py-0.5 text-xs font-semibold rounded-bl-xl rounded-tr-xl {{ $roleClass }}">
                                             {{ $member->role_name }}
                                         </span>
                                     @endif
@@ -61,11 +74,23 @@
                                 <div class="text-xs text-gray-500">{{ $member->email ?? 'No email' }}</div>
                             </div>
                         </div>
-                        <button onclick="openDeleteModal(event, '{{ $member->id }}', 'member')"
-                            class="bg-[#E26767] hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition">
-                            Hapus
-                        </button>
 
+                        {{-- ✅ Tombol Hapus - Hanya tampil jika punya permission --}}
+                        @if($member->can_delete ?? false)
+                            <button onclick="openDeleteModal(event, '{{ $member->id }}', 'member')"
+                                class="bg-[#E26767] hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                                Hapus
+                            </button>
+                        @else
+                            {{-- ❌ Tidak punya izin hapus - tampilkan icon lock atau hide button --}}
+                            <div class="text-gray-400 px-3 py-2 text-xs flex items-center gap-1" title="Anda tidak memiliki izin untuk menghapus anggota ini">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                </svg>
+                                <span class="hidden sm:inline">Terkunci</span>
+                            </div>
+                        @endif
                     </div>
                 @empty
                     <div class="text-center py-8 text-gray-500">Belum ada anggota terdaftar.</div>
@@ -110,31 +135,50 @@
                                             class="px-2.5 py-1 text-xs font-semibold bg-yellow-200 text-yellow-800 rounded-full">
                                             Menunggu
                                         </span>
-                                        <button onclick="openDeleteModal(event, '{{ $invite->id }}', 'invite')"
-                                            class="text-red-600 hover:text-red-800 p-1.5 hover:bg-red-50 rounded transition"
-                                            title="Batalkan undangan">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M6 18L18 6M6 6l12 12"></path>
-                                            </svg>
-                                        </button>
+
+                                        {{-- ✅ Tombol Batalkan - Hanya tampil jika punya izin undang --}}
+                                        @if($canInvite ?? false)
+                                            <button onclick="openDeleteModal(event, '{{ $invite->id }}', 'invite')"
+                                                class="text-red-600 hover:text-red-800 p-1.5 hover:bg-red-50 rounded transition"
+                                                title="Batalkan undangan">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach
                         </div>
                     </div>
                 @endif
-
             </div>
         </div>
     </div>
+
     @include('components.delete-member-modal')
-    @include('components.invite-member-modal')
+
+    {{-- ✅ Modal Undang - Hanya include jika punya izin --}}
+    @if($canInvite ?? false)
+        @include('components.invite-member-modal')
+    @endif
 
     <script>
+        // Jika tidak punya izin undang, disable fungsi
+        @if(!($canInvite ?? false))
+            function openInviteModal(event) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Akses Ditolak',
+                    text: 'Anda tidak memiliki izin untuk mengundang anggota. Hanya SuperAdmin, Admin, dan Manager yang dapat mengundang.',
+                    confirmButtonColor: '#E26767',
+                });
+            }
+        @endif
+
         function cancelInvite(inviteId) {
             if (confirm('Apakah Anda yakin ingin membatalkan undangan ini?')) {
-                // Implementasi AJAX untuk batalkan undangan
                 fetch(`/invitation/${inviteId}/cancel`, {
                         method: 'POST',
                         headers: {

@@ -88,10 +88,59 @@ public function getAvatarUrlAttribute()
         return $this->hasMany(UserCompany::class, 'user_id');
     }
 
+    // relasi ke userWorkspaces
+    public function userWorkspaces()
+    {
+        return $this->hasMany(UserWorkspace::class, 'user_id');
+    }
 
     public function getRoleName($companyId)
     {
         $userCompany = $this->userCompanies->where('company_id', $companyId)->first();
         return $userCompany && $userCompany->role ? $userCompany->role->name : null;
     }
+
+    // /**
+    //  * Ambil role user dalam company (id)
+    //  */
+    // public function getRoleId($companyId)
+    // {
+    //     return $this->userCompanies()
+    //         ->where('company_id', $companyId)
+    //         ->value('roles_id');
+    // }
+
+
+    /**
+     * Cek apakah user punya role tertentu
+     */
+    public function hasCompanyRole($companyId, $roles = [])
+    {
+        $roleName = $this->getRoleName($companyId);
+        return in_array($roleName, (array) $roles);
+    }
+
+    // App\Models\User.php
+    public function hasRoleInCompany(array $roleNames, $companyId)
+    {
+        return $this->userCompanies()
+            ->where('company_id', $companyId)
+            ->whereHas('role', function($q) use ($roleNames) {
+                $q->whereIn('name', $roleNames);
+            })
+            ->exists();
+    }
+
+    /**
+     * Cek apakah user boleh manage workspace roles
+     * -> hanya Super Admin & Admin
+     */
+    public function canManageWorkspaceRoles($companyId)
+    {
+        $allowed = ['Super Admin', 'SuperAdmin', 'Admin'];
+
+        return $this->hasCompanyRole($companyId, $allowed);
+    }
+
+
 }

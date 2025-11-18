@@ -8,7 +8,7 @@
     <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-600">
         <a href="{{ url('/workspace') }}" class="text-gray-500 hover:text-gray-800">Ruang Kerja</a>
         <span class="text-gray-400">›</span>
-        <a href="#" class="text-gray-800 font-medium">Div. Marketing</a>
+        <a href="#" class="text-gray-800 font-medium">Koladi</a>
 
         @if($active)
             <span class="text-gray-400 hidden sm:inline">›</span>

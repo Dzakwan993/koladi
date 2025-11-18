@@ -53,7 +53,17 @@
     {{-- semua script tambahan dari fitur lain masuk di sini --}}
     @stack('scripts')
 
+    <!-- Fungsi untuk menyimpan context di global scope -->
+    <script>
+        window.roleContext = { type: 'company', workspaceId: null };
 
+        window.setRoleContext = function (ctx) {
+            window.roleContext = {
+                type: ctx?.type || 'company',
+                workspaceId: ctx?.workspaceId || null,
+            };
+        };
+    </script>
     <script src="//unpkg.com/alpinejs" defer></script>
 </body>
 </html>
