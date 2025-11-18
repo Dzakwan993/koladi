@@ -98,14 +98,15 @@ class CalendarController extends Controller
                 ->pluck('user')
                 ->filter();
 
-            $workspace->availableUsers = $companyUsers;
+            $members = $companyUsers; // ✅ Gunakan nama variabel yang sama dengan view
         } else {
-            $workspace->availableUsers = $activeUsers;
+            $members = $activeUsers; // ✅ Gunakan nama variabel yang sama dengan view
         }
 
-        return view('buatJadwal', [
+        return view('buatJadwal', [ // ✅ Ganti nama view
             'workspaceId' => $workspaceId,
-            'workspace' => $workspace
+            'workspace' => $workspace,
+            'members' => $members // ✅ Pass variabel members
         ]);
     }
 
@@ -179,9 +180,6 @@ class CalendarController extends Controller
     /**
      * Menampilkan form edit event
      */
-    /**
-     * Menampilkan form edit event
-     */
     public function edit($workspaceId, $id)
     {
         $event = CalendarEvent::with('participants')->findOrFail($id);
@@ -212,12 +210,12 @@ class CalendarController extends Controller
                 ->pluck('user')
                 ->filter();
 
-            $workspace->availableUsers = $companyUsers;
+            $members = $companyUsers;
         } else {
-            $workspace->availableUsers = $activeUsers;
+            $members = $activeUsers;
         }
 
-        return view('workspace.calendar.edit', compact('event', 'workspace', 'workspaceId'));
+        return view('editJadwal', compact('event', 'workspace', 'workspaceId', 'members'));
     }
 
     /**

@@ -43,7 +43,7 @@ class File extends Model
         return $this->belongsTo(Folder::class, 'folder_id');
     }
 
-    // Relasi ke Workspace
+    // Relasi ke Workspace 
     public function workspace()
     {
         return $this->belongsTo(Workspace::class, 'workspace_id');
