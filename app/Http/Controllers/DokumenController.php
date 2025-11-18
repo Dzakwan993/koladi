@@ -111,8 +111,9 @@ class DokumenController extends Controller
 
             // --------- [3] Simpan fisik dengan nama final ---------
             $path = $uploaded->storeAs(
-                'workspace_files',
-                $finalName
+                'files',
+                $finalName,
+                'public' // ⬅️ Tambahkan disk public
             );
 
             // --------- [4] Simpan ke database ---------

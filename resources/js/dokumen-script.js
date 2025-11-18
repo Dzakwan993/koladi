@@ -98,7 +98,7 @@ export default function documentSearch() {
                         icon: this.getFolderIcon(),
                         isSecret: folder.is_private || false,
                         creator: {
-                            name: folder.creator?.name || 'Unknown',
+                            name: folder.creator?.name || 'bij',
                             avatar: folder.creator?.avatar || 'https://i.pravatar.cc/32?img=8'
                         },
                         createdAt: folder.created_at,
@@ -146,6 +146,7 @@ export default function documentSearch() {
                 processFiles(files) {
                     return (files || []).map(file => {
                         // Ambil nama dari properti yang ada, atau ekstrak dari URL
+                        console.log("Isi file URL kamu adlah:", file.file_url);
                         const originalName = file.name || file.file_name || null;
                         const extractedName = file.file_url
                             ? file.file_url.split('/').pop()
@@ -163,10 +164,11 @@ export default function documentSearch() {
                             name: displayName,
                             type: type,
                             icon: this.getFileIcon(type),
-                            size: this.formatFileSize(file.size || 0),
+                            size: this.formatFileSize(file.file_size || 0),
+                            file_url: file.file_url,   // ⬅⬅ WAJIB
                             creator: {
                                 // perhatikan properti uploader: kamu pakai full_name di data
-                                name: file.uploader?.full_name || file.uploader?.name || 'Unknown',
+                                name: file.uploader?.full_name || file.uploader?.name || 'Zaki',
                                 avatar: file.uploader?.avatar || 'https://i.pravatar.cc/32?img=8'
                             },
                             createdAt: file.created_at || file.uploaded_at,
@@ -465,12 +467,13 @@ export default function documentSearch() {
                 openFile(file) {
                     this.currentFolder = null;
                     const fileFolder = file.folder || this.currentFolder;
-
+                    console.log('Gw Pembuat', file.creator.name);
                     this.currentFile = {
                         ...file,
                         folder: fileFolder,
                         folderPath: [...this.breadcrumbs],
                         creator: file.creator || this.getCurrentUser(),
+
                         createdAt: file.createdAt || new Date().toISOString(),
                         size: file.size || this.formatFileSize(file.size || 1024 * 1024),
                         recipients: file.recipients || this.getDefaultRecipients(),
@@ -523,11 +526,19 @@ export default function documentSearch() {
                     }
                 },
 
-                // File Operations
+                // Download file
                 downloadFile(file) {
-                    console.log('Download file:', file.name);
-                    // Implement download logic
+                    console.log('Fungsi downlaod dipanggil!');
+                    console.log('Isi File_URL', file.file_url);
+                    if (!file || !file.file_url) {
+                        console.error("File URL tidak ditemukan");
+                        return;
+                    }
+
+                    // Buka tab baru untuk preview
+                    window.open(file.file_url, "_blank");
                 },
+
 
                 openEditFile(file) {
                     this.editingFile = file;

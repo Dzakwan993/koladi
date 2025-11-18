@@ -63,7 +63,7 @@
             <div class="flex items-center gap-2">
                 <img :src="currentFile.creatorAvatar || 'https://i.pravatar.cc/32?img=8'" alt="Profile" class="w-6 h-6 rounded-full">
                 <div>
-                    <p class="text-xs font-medium text-gray-700" x-text="currentFile.creator || 'Admin'"></p>
+                    <p class="text-xs font-medium text-gray-700" x-text="currentFile.creator.name || 'Admin'"></p>
                     <p class="text-xs text-gray-500" x-text="formatDate(currentFile.createdAt)"></p>
                 </div>
             </div>
