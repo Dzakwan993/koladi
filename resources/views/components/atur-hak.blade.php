@@ -56,7 +56,7 @@
         'usersCount' => $usersInCompany->count()
     ]) . ");";
     echo "</script>";
-    
+
     \Log::info('=== BLADE TEMPLATE END ===');
 @endphp
 
@@ -181,9 +181,9 @@
                                             class="dropdown-menu absolute mt-2 w-36 sm:w-40 bg-white border border-gray-200 rounded-lg shadow-xl hidden z-[70]">
                                             @foreach ($availableRoles as $index => $role)
                                                 <button onclick="selectRole(this, '{{ $role->id }}')"
-                                                    class="block w-full text-left px-3 sm:px-4 py-2 text-sm sm:text-base hover:bg-blue-50 
-                                    {{ $loop->first ? 'rounded-t-lg' : '' }} 
-                                    {{ $loop->last ? 'rounded-b-lg' : '' }} 
+                                                    class="block w-full text-left px-3 sm:px-4 py-2 text-sm sm:text-base hover:bg-blue-50
+                                    {{ $loop->first ? 'rounded-t-lg' : '' }}
+                                    {{ $loop->last ? 'rounded-b-lg' : '' }}
                                     font-medium">
                                                     {{ $role->name }}
                                                 </button>
@@ -320,7 +320,7 @@
                         'Member': '#E4BA13'
                     };
                     const roleColor = colorMap[roleName] || '#E4BA13';
-                    
+
                     // ✅ PERBAIKAN: Role yang tidak bisa diubah di workspace
                     const isUnchangeableRole = roleName === 'SuperAdmin' || roleName === 'Administrator' || roleName === 'AdminSistem';
 
@@ -360,7 +360,7 @@
 
                         <div class="dropdown-menu absolute mt-2 w-36 sm:w-40 bg-white border border-gray-200 rounded-lg shadow-xl hidden z-[70]">
                             ${
-                                workspaceRoles.length > 0 
+                                workspaceRoles.length > 0
                                 ? workspaceRoles.map(r => `
                                     <button onclick="selectRole(this, '${r.id}')"
                                         class="block w-full text-left px-3 sm:px-4 py-2 text-sm sm:text-base hover:bg-blue-50 font-medium">
