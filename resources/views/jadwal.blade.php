@@ -3,9 +3,14 @@
 @section('title', 'Jadwal')
 
 @section('content')
+    {{-- Font Awesome untuk Icons --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    {{-- Google Fonts --}}
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    {{-- FullCalendar CSS --}}
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
     <div class="bg-[#f3f6fc] min-h-screen">
         @include('components.workspace-nav')
-
         <!-- Card putih besar sebagai parent -->
         <div class="card bg-white rounded-[8px] shadow-xl flex flex-col gap-5 p-6 m-6 mx-10 h-[900px] responsive-container">
 
@@ -56,12 +61,6 @@
                 </div>
             </div>
         </div>
-
-        {{-- font --}}
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-        {{-- FullCalendar CSS --}}
-        <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
 
         {{-- Custom CSS --}}
         <style>
@@ -309,9 +308,70 @@
                     height: 28px !important;
                 }
             }
-        </style>
 
-        {{-- FullCalendar JS --}}
+            /* Avatar Overlap Styles */
+            .schedule-item .flex.-space-x-2>* {
+                transition: transform 0.2s ease;
+            }
+
+            .schedule-item:hover .flex.-space-x-2>* {
+                transform: translateX(4px);
+            }
+
+            .schedule-item:hover .flex.-space-x-2>*:first-child {
+                transform: translateX(0);
+            }
+
+            /* Avatar Image Styles */
+            .schedule-item img[alt] {
+                object-fit: cover;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            }
+
+            /* Meeting Icon Animation */
+            .schedule-item .fa-video,
+            .schedule-item .fa-users {
+                transition: color 0.2s ease;
+            }
+
+            .schedule-item:hover .fa-video {
+                color: #1d4ed8;
+            }
+
+            .schedule-item:hover .fa-users {
+                color: #374151;
+            }
+
+            /* External Link Icon Animation */
+            .schedule-item .fa-external-link-alt {
+                transition: transform 0.2s ease;
+            }
+
+            .schedule-item:hover .fa-external-link-alt {
+                transform: translateX(2px) translateY(-2px);
+            }
+
+            /* Responsive Avatar Display */
+            @media (max-width: 768px) {
+
+                .schedule-item .flex.-space-x-2>img,
+                .schedule-item .flex.-space-x-2>div {
+                    width: 32px !important;
+                    height: 32px !important;
+                }
+            }
+
+            @media (max-width: 480px) {
+
+                .schedule-item .flex.-space-x-2>img,
+                .schedule-item .flex.-space-x-2>div {
+                    width: 24px !important;
+                    height: 24px !important;
+                    font-size: 10px !important;
+                }
+            }
+        </style>
+        {{-- Load FullCalendar JS --}}
         <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
@@ -319,6 +379,8 @@
                 let calendarEl = document.getElementById('calendar');
                 let calendar = null;
                 let allEvents = [];
+
+                console.log('Initializing calendar for workspace:', workspaceId);
 
                 // ✅ Initialize Calendar
                 calendar = new FullCalendar.Calendar(calendarEl, {
@@ -332,12 +394,39 @@
                         right: 'next'
                     },
 
-                    // ✅ Load events via AJAX
+                    // ✅ FIXED: Load events via AJAX dengan format datetime yang benar
                     events: function(info, successCallback, failureCallback) {
-                        fetch(
-                                `/workspace/${workspaceId}/calendar/events?start=${info.startStr}&end=${info.endStr}`)
-                            .then(response => response.json())
+                        // Format tanggal untuk PostgreSQL: YYYY-MM-DD HH:MM:SS
+                        const startDate = info.start.toISOString().split('T')[0] + ' 00:00:00';
+                        const endDate = info.end.toISOString().split('T')[0] + ' 23:59:59';
+
+                        const url =
+                            `/workspace/${workspaceId}/calendar/events?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`;
+
+                        console.log('Fetching events from:', url);
+
+                        fetch(url)
+                            .then(response => {
+                                console.log('Response status:', response.status);
+
+                                if (!response.ok) {
+                                    return response.text().then(text => {
+                                        console.error('Error response:', text);
+                                        throw new Error(`Server error: ${response.status}`);
+                                    });
+                                }
+
+                                return response.json();
+                            })
                             .then(data => {
+                                console.log('Events received:', data);
+
+                                // Pastikan data adalah array
+                                if (!Array.isArray(data)) {
+                                    console.warn('Data is not an array:', data);
+                                    data = [];
+                                }
+
                                 allEvents = data;
                                 successCallback(data);
 
@@ -347,6 +436,18 @@
                             .catch(error => {
                                 console.error('Error loading events:', error);
                                 failureCallback(error);
+
+                                // Tampilkan pesan error
+                                const scheduleList = document.getElementById('scheduleList');
+                                if (scheduleList) {
+                                    scheduleList.innerHTML = `
+                            <div class="text-center text-red-500 py-8">
+                                <i class="fas fa-exclamation-triangle text-4xl mb-2"></i>
+                                <p class="font-semibold">Gagal memuat jadwal</p>
+                                <p class="text-sm mt-2">${error.message}</p>
+                            </div>
+                        `;
+                                }
                             });
                     },
 
@@ -362,18 +463,22 @@
                             const eventDate = event.start.split('T')[0];
                             return eventDate === clickedDate;
                         });
+
+                        console.log('Date clicked:', clickedDate, 'Filtered events:', filteredEvents
+                        .length);
                         renderScheduleList(filteredEvents);
                     },
 
                     // ✅ Handle click pada event
                     eventClick: function(info) {
                         info.jsEvent.preventDefault();
-                        window.location.href = `/workspace/${workspaceId}/jadwal/${info.event.id}`;
+                        const eventUrl = `/workspace/${workspaceId}/jadwal/${info.event.id}`;
+                        console.log('Event clicked, navigating to:', eventUrl);
+                        window.location.href = eventUrl;
                     },
 
                     // ✅ Custom marker untuk tanggal dengan events
                     dayCellDidMount: function(info) {
-                        // Tunggu sampai events dimuat
                         setTimeout(() => {
                             const eventsOnDate = calendar.getEvents().filter(event => {
                                 const eventDate = new Date(event.start);
@@ -399,6 +504,7 @@
                 });
 
                 calendar.render();
+                console.log('Calendar rendered');
 
                 // ✅ Function to render schedule list
                 function renderScheduleList(events) {
@@ -409,31 +515,37 @@
                         loading.remove();
                     }
 
+                    console.log('Rendering schedule list with', events.length, 'events');
+
                     if (!events || events.length === 0) {
                         scheduleList.innerHTML = `
-                            <div class="text-center text-gray-500 py-8">
-                                <i class="fas fa-calendar-times text-4xl mb-2"></i>
-                                <p>Tidak ada jadwal untuk ditampilkan</p>
-                            </div>
-                        `;
+                <div class="text-center text-gray-500 py-8">
+                    <i class="fas fa-calendar-times text-4xl mb-2"></i>
+                    <p>Tidak ada jadwal untuk ditampilkan</p>
+                </div>
+            `;
                         return;
                     }
 
                     // Group events by date
                     const groupedEvents = {};
                     events.forEach(event => {
-                        const date = new Date(event.start);
-                        const dateKey = date.toLocaleDateString('id-ID', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                        });
+                        try {
+                            const date = new Date(event.start);
+                            const dateKey = date.toLocaleDateString('id-ID', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            });
 
-                        if (!groupedEvents[dateKey]) {
-                            groupedEvents[dateKey] = [];
+                            if (!groupedEvents[dateKey]) {
+                                groupedEvents[dateKey] = [];
+                            }
+                            groupedEvents[dateKey].push(event);
+                        } catch (e) {
+                            console.error('Error processing event:', event, e);
                         }
-                        groupedEvents[dateKey].push(event);
                     });
 
                     let html = '';
@@ -444,51 +556,97 @@
                         }
 
                         groupedEvents[dateKey].forEach(event => {
-                            const startTime = new Date(event.start).toLocaleTimeString('id-ID', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            });
-                            const endTime = new Date(event.end).toLocaleTimeString('id-ID', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            });
+                            try {
+                                const startTime = new Date(event.start).toLocaleTimeString('id-ID', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                });
+                                const endTime = new Date(event.end).toLocaleTimeString('id-ID', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                });
 
-                            const icon = event.extendedProps.is_online ?
-                                '{{ asset('images/icons/Zoom.png') }}' :
-                                '{{ asset('images/icons/Meeting.png') }}';
+                                // ✅ Icon berdasarkan jenis meeting
+                                const isOnline = event.extendedProps?.is_online || false;
+                                const hasMeetingLink = event.extendedProps?.meeting_link && event
+                                    .extendedProps.meeting_link.trim() !== '';
 
-                            const bgColor = event.extendedProps.is_creator ?
-                                'bg-[#bbcff9]' :
-                                'bg-[#d4e4ff]';
+                                // Gunakan icon camera jika ada meeting link
+                                const icon = (isOnline && hasMeetingLink) ?
+                                    '<i class="fas fa-video text-blue-600 w-6 text-center text-xl"></i>' :
+                                    '<i class="fas fa-users text-gray-600 w-6 text-center text-xl"></i>';
 
-                            html += `
-                                <a href="/workspace/${workspaceId}/jadwal/${event.id}"
-                                    class="${bgColor} rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition schedule-item">
+                                const bgColor = event.extendedProps?.is_creator ?
+                                    'bg-[#bbcff9]' :
+                                    'bg-[#d4e4ff]';
 
-                                    <div class="flex flex-col items-start w-[120px] date-section">
-                                        <span class="font-semibold text-[14px]">${dateKey.split(',')[0]}</span>
-                                        <span class="font-semibold text-[14px]">${dateKey.split(',')[1]?.trim()}</span>
-                                    </div>
+                                // ✅ Get participants untuk avatar display
+                                const participants = event.extendedProps?.participants || [];
+                                const participantsCount = event.extendedProps?.participants_count || 0;
+                                const remainingCount = Math.max(0, participantsCount - participants
+                                    .length);
 
-                                    <div class="flex flex-col flex-1 px-4 content-section">
-                                        <div class="flex items-center gap-2">
-                                            <img src="${icon}" class="w-6 h-6" alt="Meeting Icon">
-                                            <span class="font-semibold text-[#090909] text-base">${event.title}</span>
-                                        </div>
+                                // Build avatar HTML
+                                let avatarsHtml = '<div class="flex items-center -space-x-2">';
 
-                                        <div class="flex items-center gap-2 mt-1">
-                                            <i class="fas fa-clock text-[#102a63] w-6 text-center"></i>
-                                            <span class="text-sm font-medium text-[#102a63]">${startTime} - ${endTime}</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="badge-section">
-                                        <span class="bg-yellow-400 text-[#6B7280] text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-sm">
-                                            ${event.extendedProps.participants_count}
-                                        </span>
-                                    </div>
-                                </a>
+                                participants.forEach((participant, index) => {
+                                    if (index < 3) { // Hanya tampilkan 3 avatar pertama
+                                        avatarsHtml += `
+                                <img src="${participant.avatar}"
+                                     alt="${participant.name}"
+                                     title="${participant.name}"
+                                     class="w-8 h-8 rounded-full border-2 border-white object-cover">
                             `;
+                                    }
+                                });
+
+                                // Jika ada lebih dari 3 participants, tampilkan badge +N
+                                if (remainingCount > 0) {
+                                    avatarsHtml += `
+                            <div class="w-8 h-8 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center">
+                                <span class="text-xs font-semibold text-gray-700">+${remainingCount}</span>
+                            </div>
+                        `;
+                                }
+
+                                avatarsHtml += '</div>';
+
+                                html += `
+                        <a href="/workspace/${workspaceId}/jadwal/${event.id}"
+                            class="${bgColor} rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition schedule-item">
+
+                            <div class="flex flex-col items-start w-[120px] date-section">
+                                <span class="font-semibold text-[14px]">${dateKey.split(',')[0]}</span>
+                                <span class="font-semibold text-[14px]">${dateKey.split(',')[1]?.trim()}</span>
+                            </div>
+
+                            <div class="flex flex-col flex-1 px-4 content-section">
+                                <div class="flex items-center gap-2 mb-2">
+                                    ${icon}
+                                    <span class="font-semibold text-[#090909] text-base">${event.title}</span>
+                                    ${hasMeetingLink ? '<i class="fas fa-external-link-alt text-blue-500 text-xs ml-2" title="Meeting Online"></i>' : ''}
+                                </div>
+
+                                <div class="flex items-center gap-3">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-clock text-[#102a63] w-6 text-center"></i>
+                                        <span class="text-sm font-medium text-[#102a63]">${startTime} - ${endTime}</span>
+                                    </div>
+
+                                    ${avatarsHtml}
+                                </div>
+                            </div>
+
+                            <div class="badge-section">
+                                <span class="bg-yellow-400 text-[#6B7280] text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-sm">
+                                    ${participantsCount}
+                                </span>
+                            </div>
+                        </a>
+                    `;
+                            } catch (e) {
+                                console.error('Error rendering event:', event, e);
+                            }
                         });
                     });
 

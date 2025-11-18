@@ -132,7 +132,7 @@
 
                     <div x-data="{
                         openPopup: false,
-                        selectedParticipants: {{ json_encode(old('participants', [])) }},
+                        selectedParticipants: {{ json_encode(old('participants', [Auth::id()])) }},
                         searchQuery: '',
                         allMembers: {{ json_encode($members->toArray()) }},
                         get filteredMembers() {

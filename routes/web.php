@@ -161,28 +161,69 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/tasks/update-column', [TaskController::class, 'updateTaskColumn'])->name('tasks.update-column');
     });
 
-    // ✅ Calendar & Schedule Routes - GANTI YANG LAMA DENGAN INI
+    // ✅ GANTI bagian Calendar Routes di web.php dengan ini:
+
     Route::middleware(['auth'])->prefix('workspace/{workspaceId}')->group(function () {
-        // Halaman utama jadwal/calendar
+        // 1️⃣ Halaman utama jadwal/calendar
         Route::get('/jadwal', [CalendarController::class, 'index'])->name('jadwal');
 
-        // API untuk get events (untuk FullCalendar AJAX)
+        // 2️⃣ API untuk get events (untuk FullCalendar AJAX)
         Route::get('/calendar/events', [CalendarController::class, 'getEvents'])->name('calendar.events');
 
-        // Form create event
-        Route::get('/buatJadwal', [CalendarController::class, 'create'])->name('buatJadwal');
-        Route::post('/buatJadwal', [CalendarController::class, 'store'])->name('calendar.store');
+        // 3️⃣ ⚠️ PENTING: Route untuk CREATE harus di ATAS route {id}
+        Route::get('/jadwal/buat', [CalendarController::class, 'create'])->name('buatJadwal');
+        Route::post('/jadwal/buat', [CalendarController::class, 'store'])->name('calendar.store');
 
-        // Detail & Edit event
-        Route::get('/jadwal/{id}', [CalendarController::class, 'show'])->name('calendar.show');
-        Route::get('/jadwal/{id}/edit', [CalendarController::class, 'edit'])->name('calendar.edit');
-        Route::put('/jadwal/{id}', [CalendarController::class, 'update'])->name('calendar.update');
-        Route::delete('/jadwal/{id}', [CalendarController::class, 'destroy'])->name('calendar.destroy');
-
-        // Update participant status (accept/decline invitation)
+        // 4️⃣ Update participant status (sebelum route {id}/edit)
         Route::post('/jadwal/{id}/participant-status', [CalendarController::class, 'updateParticipantStatus'])
             ->name('calendar.participant.status');
+
+        // 5️⃣ Edit route (sebelum route show)
+        Route::get('/jadwal/{id}/edit', [CalendarController::class, 'edit'])->name('calendar.edit');
+        Route::put('/jadwal/{id}', [CalendarController::class, 'update'])->name('calendar.update');
+
+        // 6️⃣ Delete route
+        Route::delete('/jadwal/{id}', [CalendarController::class, 'destroy'])->name('calendar.destroy');
+
+        // 7️⃣ ⚠️ Route dengan {id} wildcard HARUS PALING BAWAH
+        Route::get('/jadwal/{id}', [CalendarController::class, 'show'])->name('calendar.show');
     });
+    // Tambahkan route ini SEMENTARA di web.php untuk debugging:
+
+    Route::get('/debug/events/{workspaceId}', function ($workspaceId) {
+        $user = Auth::user();
+
+        $events = \App\Models\CalendarEvent::where('workspace_id', $workspaceId)
+            ->whereNull('deleted_at')
+            ->with(['creator', 'participants.user'])
+            ->get();
+
+        return response()->json([
+            'total_events' => $events->count(),
+            'events' => $events->map(function ($event) {
+                return [
+                    'id' => $event->id,
+                    'title' => $event->title,
+                    'start' => $event->start_datetime,
+                    'end' => $event->end_datetime,
+                    'creator' => $event->creator ? [
+                        'id' => $event->creator->id,
+                        'name' => $event->creator->full_name
+                    ] : null,
+                    'participants_count' => $event->participants->count(),
+                    'participants' => $event->participants->map(function ($p) {
+                        return [
+                            'user_id' => $p->user_id,
+                            'user_name' => $p->user ? $p->user->full_name : 'Unknown',
+                            'status' => $p->status
+                        ];
+                    })
+                ];
+            })
+        ]);
+    })->middleware('auth');
+
+    // Akses: http://127.0.0.1:8000/debug/events/{your-workspace-id}
 
     Route::get('/notulensi', function () {
         return view('notulensi');
