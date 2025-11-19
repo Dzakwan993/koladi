@@ -2,22 +2,46 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CalendarEvent;
-use App\Models\CalendarParticipant;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use App\Models\User;
+use App\Models\Workspace;
+use App\Models\UserCompany;
+use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use App\Models\CalendarEvent;
+use App\Models\UserWorkspace;
+use Illuminate\Support\Facades\DB;
+use App\Models\CalendarParticipant;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class CalendarController extends Controller
 {
-    /**
-     * Menampilkan halaman calendar dengan events
-     */
+
+    private function getAvatarUrl($user)
+    {
+        if (!$user) {
+            return 'https://ui-avatars.com/api/?name=User&background=3B82F6&color=fff&bold=true&size=128';
+        }
+
+        // Jika avatar adalah URL penuh
+        if ($user->avatar && Str::startsWith($user->avatar, ['http://', 'https://'])) {
+            return $user->avatar;
+        }
+
+        // Jika avatar adalah path storage
+        if ($user->avatar) {
+            return asset('storage/' . $user->avatar);
+        }
+
+        // Default avatar dengan inisial
+        $name = $user->full_name ?? $user->name ?? 'User';
+        return 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=3B82F6&color=fff&bold=true&size=128';
+    }
+
     public function index($workspaceId)
     {
-        $workspace = \App\Models\Workspace::findOrFail($workspaceId);
+        $workspace = Workspace::findOrFail($workspaceId);
         $user = Auth::user();
         $activeCompanyId = session('active_company_id');
 
@@ -29,7 +53,7 @@ class CalendarController extends Controller
         $isCompanyAdmin = in_array($userCompany?->role?->name ?? 'Member', ['SuperAdmin', 'Administrator', 'Admin', 'Manager']);
 
         if (!$isCompanyAdmin) {
-            $userWorkspace = \App\Models\UserWorkspace::where('user_id', $user->id)
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
                 ->where('workspace_id', $workspaceId)
                 ->where('status_active', true)
                 ->firstOrFail();
@@ -41,12 +65,9 @@ class CalendarController extends Controller
         ]);
     }
 
-    /**
-     * Menampilkan form create event
-     */
     public function create($workspaceId)
     {
-        $workspace = \App\Models\Workspace::findOrFail($workspaceId);
+        $workspace = Workspace::findOrFail($workspaceId);
 
         $workspace->load(['userWorkspaces' => function ($query) {
             $query->where('status_active', true)->with('user');
@@ -56,7 +77,7 @@ class CalendarController extends Controller
 
         if ($activeUsers->isEmpty()) {
             $companyId = $workspace->company_id;
-            $companyUsers = \App\Models\UserCompany::where('company_id', $companyId)
+            $companyUsers = UserCompany::where('company_id', $companyId)
                 ->whereNull('deleted_at')
                 ->with('user')
                 ->get()
@@ -68,6 +89,12 @@ class CalendarController extends Controller
             $members = $activeUsers;
         }
 
+        // Add avatar URL to each member
+        $members = $members->map(function ($member) {
+            $member->avatar_url = $this->getAvatarUrl($member);
+            return $member;
+        });
+
         return view('buatJadwal', [
             'workspaceId' => $workspaceId,
             'workspace' => $workspace,
@@ -76,11 +103,10 @@ class CalendarController extends Controller
     }
 
     /**
-     * Menyimpan event baru - FIXED VERSION
+     * Menyimpan event baru
      */
     public function store(Request $request, $workspaceId)
     {
-        // Validasi input
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -96,17 +122,14 @@ class CalendarController extends Controller
 
         DB::beginTransaction();
         try {
-            // Normalisasi nilai boolean
             $isPrivate = filter_var($validated['is_private'] ?? false, FILTER_VALIDATE_BOOLEAN);
             $isOnlineMeeting = filter_var($validated['is_online_meeting'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
-            // Normalisasi recurrence
             $recurrence = $validated['recurrence'] ?? 'Jangan Ulangi';
             if ($recurrence === 'Jangan Ulangi') {
                 $recurrence = null;
             }
 
-            // Buat event
             $event = CalendarEvent::create([
                 'workspace_id' => $workspaceId,
                 'created_by' => Auth::id(),
@@ -120,14 +143,12 @@ class CalendarController extends Controller
                 'meeting_link' => $validated['meeting_link'] ?? null,
             ]);
 
-            // Tambahkan creator sebagai participant dengan status accepted
             CalendarParticipant::create([
                 'event_id' => $event->id,
                 'user_id' => Auth::id(),
                 'status' => 'accepted',
             ]);
 
-            // Tambahkan participants lainnya
             if (!empty($validated['participants'])) {
                 foreach ($validated['participants'] as $userId) {
                     if ($userId !== Auth::id()) {
@@ -144,7 +165,7 @@ class CalendarController extends Controller
 
             return redirect()
                 ->route('jadwal', ['workspaceId' => $workspaceId])
-                ->with('success', 'Jadwal berhasil dibuat');
+                ->with('success', 'Jadwal berhasil dibuat!');
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Error creating calendar event: ' . $e->getMessage());
@@ -156,7 +177,7 @@ class CalendarController extends Controller
     }
 
     /**
-     * Get events untuk API (untuk FullCalendar) - COMPLETELY FIXED VERSION
+     * Get events untuk API (untuk FullCalendar)
      */
     public function getEvents(Request $request, $workspaceId)
     {
@@ -165,13 +186,11 @@ class CalendarController extends Controller
             $end = $request->get('end');
             $user = Auth::user();
 
-            // ✅ FIX: Parse datetime string dari FullCalendar ke format yang benar
             $startDate = null;
             $endDate = null;
 
             if ($start) {
                 try {
-                    // Parse berbagai format datetime yang mungkin dikirim FullCalendar
                     $startDate = Carbon::parse($start)->toDateTimeString();
                 } catch (\Exception $e) {
                     Log::warning('Failed to parse start date: ' . $start);
@@ -186,20 +205,9 @@ class CalendarController extends Controller
                 }
             }
 
-            // Log untuk debugging
-            Log::info('Fetching events', [
-                'workspace_id' => $workspaceId,
-                'user_id' => $user->id,
-                'start_raw' => $start,
-                'end_raw' => $end,
-                'start_parsed' => $startDate,
-                'end_parsed' => $endDate
-            ]);
-
             $query = CalendarEvent::where('workspace_id', $workspaceId)
                 ->whereNull('deleted_at');
 
-            // Filter by date range jika ada DAN berhasil di-parse
             if ($startDate && $endDate) {
                 $query->where(function ($q) use ($startDate, $endDate) {
                     $q->whereBetween('start_datetime', [$startDate, $endDate])
@@ -211,7 +219,6 @@ class CalendarController extends Controller
                 });
             }
 
-            // Filter berdasarkan access
             $query->where(function ($q) use ($user) {
                 $q->where('is_private', false)
                     ->orWhere('created_by', $user->id)
@@ -220,22 +227,16 @@ class CalendarController extends Controller
                     });
             });
 
-            // ✅ PENTING: Eager load relations SEBELUM get()
             $events = $query->with(['creator', 'participants.user'])
                 ->orderBy('start_datetime', 'asc')
                 ->get();
 
-            Log::info('Events found', ['count' => $events->count()]);
-
-            // ✅ FIX: Cek apakah events kosong
             if ($events->isEmpty()) {
                 return response()->json([]);
             }
 
-            // Format untuk FullCalendar
             $formattedEvents = $events->map(function ($event) use ($user) {
                 try {
-                    // ✅ FIX: Pastikan datetime di-parse dengan benar
                     $startDate = $event->start_datetime instanceof Carbon
                         ? $event->start_datetime
                         : Carbon::parse($event->start_datetime);
@@ -244,14 +245,11 @@ class CalendarController extends Controller
                         ? $event->end_datetime
                         : Carbon::parse($event->end_datetime);
 
-                    // ✅ Get participants dengan avatar (limit 3 untuk display)
                     $participants = $event->participants->take(3)->map(function ($participant) {
                         return [
                             'id' => $participant->user_id,
                             'name' => $participant->user->full_name ?? 'Unknown',
-                            'avatar' => $participant->user->avatar
-                                ? asset('storage/' . $participant->user->avatar)
-                                : asset('images/default-avatar.png'),
+                            'avatar' => $this->getAvatarUrl($participant->user),
                             'status' => $participant->status
                         ];
                     });
@@ -270,9 +268,7 @@ class CalendarController extends Controller
                             'participants_count' => $event->participants->count(),
                             'participants' => $participants,
                             'creator_name' => $event->creator->full_name ?? 'Unknown',
-                            'creator_avatar' => $event->creator && $event->creator->avatar
-                                ? asset('storage/' . $event->creator->avatar)
-                                : asset('images/default-avatar.png'),
+                            'creator_avatar' => $this->getAvatarUrl($event->creator),
                             'is_creator' => $event->created_by === $user->id,
                         ]
                     ];
@@ -283,7 +279,7 @@ class CalendarController extends Controller
                     ]);
                     return null;
                 }
-            })->filter(); // ✅ Remove null values
+            })->filter();
 
             return response()->json($formattedEvents->values()->all());
         } catch (\Exception $e) {
@@ -312,7 +308,7 @@ class CalendarController extends Controller
         $isParticipant = $event->participants->where('user_id', $user->id)->isNotEmpty();
         $isCreator = $event->created_by === $user->id;
 
-        $hasWorkspaceAccess = \App\Models\UserWorkspace::where('user_id', $user->id)
+        $hasWorkspaceAccess = UserWorkspace::where('user_id', $user->id)
             ->where('workspace_id', $workspaceId)
             ->where('status_active', true)
             ->exists();
@@ -321,7 +317,14 @@ class CalendarController extends Controller
             abort(403, 'Anda tidak memiliki akses ke jadwal ini');
         }
 
-        return view('workspace.calendar.show', compact('event', 'isParticipant', 'workspaceId'));
+        // Add avatar URL to participants
+        $event->participants->each(function ($participant) {
+            $participant->user->avatar_url = $this->getAvatarUrl($participant->user);
+        });
+
+        $event->creator->avatar_url = $this->getAvatarUrl($event->creator);
+
+        return view('detailJadwal', compact('event', 'isParticipant', 'isCreator', 'workspaceId'));
     }
 
     /**
@@ -335,7 +338,7 @@ class CalendarController extends Controller
             abort(403, 'Anda tidak memiliki akses untuk mengedit jadwal ini');
         }
 
-        $workspace = \App\Models\Workspace::findOrFail($workspaceId);
+        $workspace = Workspace::findOrFail($workspaceId);
 
         $workspace->load(['userWorkspaces' => function ($query) {
             $query->where('status_active', true)->with('user');
@@ -345,7 +348,7 @@ class CalendarController extends Controller
 
         if ($activeUsers->isEmpty()) {
             $companyId = $workspace->company_id;
-            $companyUsers = \App\Models\UserCompany::where('company_id', $companyId)
+            $companyUsers = UserCompany::where('company_id', $companyId)
                 ->whereNull('deleted_at')
                 ->with('user')
                 ->get()

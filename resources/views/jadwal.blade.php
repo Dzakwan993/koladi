@@ -12,25 +12,19 @@
 
     <div class="bg-[#f3f6fc] min-h-screen">
         @include('components.workspace-nav')
-
-        <!-- Card putih besar sebagai parent -->
-        <div class="card bg-white rounded-[8px] shadow-xl flex flex-col gap-5 p-6 m-6 mx-10 h-[900px] responsive-container">
-
+        <div class="card bg-white rounded-[8px] shadow-xl flex flex-col gap-5 p-6 m-6 mx-10 responsive-container">
             <!-- Bagian atas: kalender + notulen sejajar -->
             <div class="flex flex-row gap-5 items-center justify-center responsive-top">
-
                 <!-- Card kalender -->
                 <div
                     class="card bg-white rounded-[8px] shadow-xl p-4 flex flex-col items-center justify-center w-full max-w-lg h-full calendar-card">
                     <div id="calendar" class="w-full h-full"></div>
                 </div>
-
                 <div class="flex flex-col right-section">
                     <a href="{{ route('buatJadwal', ['workspaceId' => $workspaceId]) }}"
                         class="bg-[#225ad6] rounded-[8px] shadow-xl flex items-center justify-center p-5 w-[400px] h-[40px] text-[#ffffff] font-semibold hover:bg-[#1a46a0] transition mb-4 buat-jadwal-btn">
                         Buat Jadwal
                     </a>
-
                     <div
                         class="card bg-[#bbcff9] rounded-[8px] shadow-xl flex flex-col items-center justify-center p-6 w-[400px] h-[300px] notulen-card">
                         <img src="{{ asset('images/icons/Notulen.png') }}" alt="Notulen Icon">
