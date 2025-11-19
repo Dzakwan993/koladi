@@ -27,7 +27,7 @@ class CommentController extends Controller
         $comment = Comment::create([
             'id' => (string) Str::uuid(),
             'user_id' => Auth::id(),
-            'content' => $request->content,
+            'content' => $request->input('content'),
             'commentable_id' => $request->commentable_id,
             'commentable_type' => $request->commentable_type,
             'parent_comment_id' => $request->parent_comment_id ?? null,
@@ -87,4 +87,6 @@ class CommentController extends Controller
 
         return response()->json(['comments' => $comments]);
     }
+
+    
 }

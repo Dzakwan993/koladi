@@ -24,10 +24,27 @@
 
                 <!-- === CARD PENGUMUMAN (TIDAK DIUBAH) === -->
                 <div class="max-w-5xl mx-auto mt-6">
+                    @php
+                        $creator = $pengumuman->creator ?? null;
+
+                        // Cek avatar file
+                        $avatarPath = $creator && $creator->avatar ? 'storage/' . $creator->avatar : null;
+                        $hasAvatarFile = $avatarPath && file_exists(public_path($avatarPath));
+
+                        // Pilih URL avatar final
+                        $avatarUrl = $hasAvatarFile
+                            ? asset($avatarPath)
+                            : ($creator && $creator->full_name
+                                ? 'https://ui-avatars.com/api/?name=' .
+                                    urlencode($creator->full_name) .
+                                    '&background=random&color=fff'
+                                : asset('images/dk.jpg'));
+                    @endphp
+
                     <div class="bg-[#e9effd] rounded-xl p-5 mb-6 shadow-md">
                         <div class="flex items-start justify-between mb-4">
                             <div class="flex items-start gap-3">
-                                <img src="{{ $pengumuman->creator->avatar_url ?? asset('images/dk.jpg') }}" alt="Avatar"
+                                <img src="{{ $avatarUrl }}" alt="Avatar"
                                     class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
                                 <div>
                                     <h1 class="text-xl font-semibold text-black mb-1">
@@ -46,7 +63,7 @@
                                     @if ($pengumuman->due_date)
                                         <span
                                             class="bg-[#102a63] text-white text-xs font-medium px-2 py-1 flex rounded-md items-center gap-1 w-[90px] h-[28px] mt-2">
-                                            <img src="{{ asset('images/icons/clock.svg') }}" alt="Clock" class="w-5 h-5">
+                                            <img src="{{ asset('images/icons/Clock.svg') }}" alt="Clock" class="w-5 h-5">
                                             {{ \Carbon\Carbon::parse($pengumuman->due_date)->translatedFormat('d M') }}
                                         </span>
                                     @endif
@@ -68,24 +85,22 @@
                                     <h3 class="text-center font-semibold text-gray-800 mb-2">Aksi</h3>
 
 
-                                    <button onclick="
-                                        @if($pengumuman->created_by == Auth::id())
-                                            openEditModal('{{ $pengumuman->id }}');
+                                    <button
+                                        onclick="
+                                        @if ($pengumuman->created_by == Auth::id()) openEditModal('{{ $pengumuman->id }}');
                                         @else
-                                            alert('Anda tidak memiliki akses untuk ini!');
-                                        @endif
+                                            alert('Anda tidak memiliki akses untuk ini!'); @endif
                                     "
                                         class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
                                         <img src="{{ asset('images/icons/Pencil.svg') }}" alt="Edit" class="w-6 h-6">
                                         <span class="text-gray-700 text-base">Edit</span>
                                     </button>
                                     <hr class="border-gray-300 my-2">
-                                    <button onclick="
-                                        @if($pengumuman->created_by == Auth::id())
-                                            deletePengumuman('{{ $pengumuman->id }}');
+                                    <button
+                                        onclick="
+                                        @if ($pengumuman->created_by == Auth::id()) deletePengumuman('{{ $pengumuman->id }}');
                                         @else
-                                            alert('Anda tidak memiliki akses untuk ini!');
-                                        @endif
+                                            alert('Anda tidak memiliki akses untuk ini!'); @endif
                                     "
                                         class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
                                         <img src="{{ asset('images/icons/Trash.svg') }}" alt="Hapus" class="w-6 h-6">
@@ -110,8 +125,8 @@
 
                         <!-- Input Komentar Utama (placeholder -> CKEditor) -->
                         <div class="flex items-start gap-3 mb-6">
-                            <img src="{{ $pengumuman->creator->avatar_url ?? asset('images/dk.jpg') }}" alt="Avatar"
-                                class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
+                            <img src="{{ $avatarUrl }}" alt="Avatar"
+                     class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
 
                             <!-- gunakan x-data lokal hanya untuk toggle active -->
                             <div class="flex-1" x-data="{ active: false }" x-cloak>
@@ -148,7 +163,7 @@
                                 <template x-for="comment in comments" :key="comment.id">
                                     <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                         <div class="flex items-start gap-3">
-                                            <img :src="comment.author.avatar" alt=""
+                                            <img x-bind:src="'{{ $avatarUrl }}'"
                                                 class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
                                             <div class="flex-1">
                                                 <div class="flex justify-between items-center">
@@ -206,7 +221,7 @@
                                                         <template x-for="reply in comment.replies" :key="reply.id">
                                                             <div class="bg-white rounded-lg p-3 border border-gray-200">
                                                                 <div class="flex items-start gap-2">
-                                                                    <img :src="reply.author.avatar"
+                                                                    <img x-bind:src="'{{ $avatarUrl }}'"
                                                                         class="rounded-full w-6 h-6 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
                                                                     <div>
                                                                         <div class="flex items-center gap-2">
@@ -237,14 +252,14 @@
                         <hr class="border-gray-200 my-6">
                         <div class="flex items-center gap-2 text-sm text-gray-600">
                             <!-- <span>Pengumuman ini diterima oleh 3 anggota</span>
-                                                                                                            <div class="flex -space-x-2">
-                                                                                                                <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
-                                                                                                                    class="rounded-full w-8 h-8 border-2 border-white">
-                                                                                                                <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
-                                                                                                                    class="rounded-full w-8 h-8 border-2 border-white">
-                                                                                                                <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
-                                                                                                                    class="rounded-full w-8 h-8 border-2 border-white">
-                                                                                                            </div> -->
+                                                                                                                    <div class="flex -space-x-2">
+                                                                                                                        <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
+                                                                                                                            class="rounded-full w-8 h-8 border-2 border-white">
+                                                                                                                        <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
+                                                                                                                            class="rounded-full w-8 h-8 border-2 border-white">
+                                                                                                                        <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
+                                                                                                                            class="rounded-full w-8 h-8 border-2 border-white">
+                                                                                                                    </div> -->
                         </div>
 
                     </div>
@@ -261,7 +276,7 @@
         // Generate UUID v4
         // =========================
         function generateUUID() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 const r = Math.random() * 16 | 0;
                 const v = c === 'x' ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
@@ -283,12 +298,28 @@
                 ];
 
                 const config = {
-                    toolbar: { items: toolbarItems, shouldNotGroupWhenFull: true },
+                    toolbar: {
+                        items: toolbarItems,
+                        shouldNotGroupWhenFull: true
+                    },
                     heading: {
-                        options: [
-                            { model: 'paragraph', title: 'Paragraf', class: 'ck-heading_paragraph' },
-                            { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
-                            { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' }
+                        options: [{
+                                model: 'paragraph',
+                                title: 'Paragraf',
+                                class: 'ck-heading_paragraph'
+                            },
+                            {
+                                model: 'heading1',
+                                view: 'h1',
+                                title: 'Heading 1',
+                                class: 'ck-heading_heading1'
+                            },
+                            {
+                                model: 'heading2',
+                                view: 'h2',
+                                title: 'Heading 2',
+                                class: 'ck-heading_heading2'
+                            }
                         ]
                     },
                     placeholder: el.dataset.placeholder || ''
@@ -315,7 +346,8 @@
                 return editor;
             } catch (err) {
                 console.warn('CKEditor create failed, fallback to textarea for', el.id, err);
-                el.innerHTML = `<textarea id="${el.id}-fallback" class="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg bg-white resize-none"></textarea>`;
+                el.innerHTML =
+                    `<textarea id="${el.id}-fallback" class="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg bg-white resize-none"></textarea>`;
                 return null;
             }
         }
@@ -338,7 +370,7 @@
 
         function destroyMainEditor(id = 'main-editor') {
             const inst = editors[id];
-            if (inst) inst.destroy().catch(() => { });
+            if (inst) inst.destroy().catch(() => {});
             delete editors[id];
             const ta = document.getElementById(id + '-fallback');
             if (ta) ta.remove();
@@ -364,7 +396,7 @@
         function destroyReplyEditorFor(commentId) {
             const key = `reply-${commentId}`;
             const inst = editors[key];
-            if (inst) inst.destroy().catch(() => { });
+            if (inst) inst.destroy().catch(() => {});
             delete editors[key];
             const ta = document.getElementById(`reply-editor-${commentId}-fallback`);
             if (ta) ta.remove();
@@ -390,12 +422,20 @@
         document.addEventListener('alpine:init', () => {
             Alpine.data('commentSection', () => ({
                 comments: [],
-                replyView: { active: false, parentComment: null },
+                replyView: {
+                    active: false,
+                    parentComment: null
+                },
 
                 async init() {
                     const pengumumanId = "{{ $pengumuman->id }}";
                     try {
-                        const res = await fetch(`/comments/${pengumumanId}`, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
+                        const res = await fetch(`/comments/${pengumumanId}`, {
+                            credentials: 'same-origin',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
                         if (!res.ok) throw new Error('Gagal memuat komentar: ' + res.status);
                         const data = await res.json();
                         this.comments = data.comments || [];
@@ -408,7 +448,10 @@
 
                 async submitMain() {
                     const content = getEditorDataSafe('main-editor').trim();
-                    if (!content) { alert('Komentar tidak boleh kosong!'); return; }
+                    if (!content) {
+                        alert('Komentar tidak boleh kosong!');
+                        return;
+                    }
 
                     // Gunakan UUID yang sudah di-generate saat init editor
                     const preGeneratedId = window.currentMainCommentId;
@@ -431,15 +474,25 @@
                             })
                         });
 
-                        if (!res.ok) { const text = await res.text(); console.error('Server error', res.status, text); alert('Gagal mengirim komentar. Refresh halaman.'); return; }
+                        if (!res.ok) {
+                            const text = await res.text();
+                            console.error('Server error', res.status, text);
+                            alert('Gagal mengirim komentar. Refresh halaman.');
+                            return;
+                        }
 
                         const data = await res.json();
                         if (data.success) {
                             this.comments.unshift(data.comment);
                             destroyMainEditor('main-editor');
                             await initMainEditor('main-editor');
-                        } else { alert(data.message || 'Gagal menambahkan komentar.'); }
-                    } catch (err) { console.error(err); alert('Gagal mengirim komentar (network).'); }
+                        } else {
+                            alert(data.message || 'Gagal menambahkan komentar.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Gagal mengirim komentar (network).');
+                    }
                 },
 
                 async submitReplyFromEditor() {
@@ -447,7 +500,10 @@
                     const parent = this.replyView.parentComment;
                     const key = `reply-${parent.id}`;
                     const content = getEditorDataSafe(key).trim();
-                    if (!content) { alert('Balasan tidak boleh kosong!'); return; }
+                    if (!content) {
+                        alert('Balasan tidak boleh kosong!');
+                        return;
+                    }
 
                     // Gunakan UUID yang sudah di-generate saat init editor
                     const preGeneratedId = window[`currentReplyId_${parent.id}`];
@@ -471,27 +527,42 @@
                             })
                         });
 
-                        if (!res.ok) { const text = await res.text(); console.error('Server error', res.status, text); alert('Gagal mengirim balasan.'); return; }
+                        if (!res.ok) {
+                            const text = await res.text();
+                            console.error('Server error', res.status, text);
+                            alert('Gagal mengirim balasan.');
+                            return;
+                        }
 
                         const data = await res.json();
                         if (data.success) {
                             if (!parent.replies) parent.replies = [];
                             parent.replies.push(data.comment);
                             this.closeReplyView();
-                        } else { alert(data.message || 'Gagal menambahkan balasan.'); }
-                    } catch (err) { console.error(err); alert('Gagal mengirim balasan (network).'); }
+                        } else {
+                            alert(data.message || 'Gagal menambahkan balasan.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Gagal mengirim balasan (network).');
+                    }
                 },
 
                 toggleReply(comment) {
-                    if (this.replyView.active && this.replyView.parentComment?.id === comment.id) { this.closeReplyView(); return; }
-                    if (this.replyView.active && this.replyView.parentComment) destroyReplyEditorFor(this.replyView.parentComment.id);
+                    if (this.replyView.active && this.replyView.parentComment?.id === comment.id) {
+                        this.closeReplyView();
+                        return;
+                    }
+                    if (this.replyView.active && this.replyView.parentComment) destroyReplyEditorFor(
+                        this.replyView.parentComment.id);
                     this.replyView.active = true;
                     this.replyView.parentComment = comment;
                     setTimeout(() => initReplyEditorFor(comment.id), 150);
                 },
 
                 closeReplyView() {
-                    if (this.replyView.parentComment) destroyReplyEditorFor(this.replyView.parentComment.id);
+                    if (this.replyView.parentComment) destroyReplyEditorFor(this.replyView.parentComment
+                        .id);
                     this.replyView.active = false;
                     this.replyView.parentComment = null;
                 },
@@ -499,7 +570,13 @@
                 formatCommentDate(dateString) {
                     if (!dateString) return '';
                     const d = new Date(dateString);
-                    return d.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    return d.toLocaleString('id-ID', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
                 }
             }));
         });
@@ -509,11 +586,19 @@
         // =========================
         window.addEventListener('submit-main-comment', () => {
             const root = document.querySelector('[x-data="commentSection"]');
-            if (root && root.__x) { const data = root.__x.$data; if (typeof data.submitMain === 'function') data.submitMain(); }
+            if (root && root.__x) {
+                const data = root.__x.$data;
+                if (typeof data.submitMain === 'function') data.submitMain();
+            }
         });
 
         window.addEventListener('beforeunload', () => {
-            Object.keys(editors).forEach(k => { try { editors[k]?.destroy?.(); } catch (e) { } delete editors[k]; });
+            Object.keys(editors).forEach(k => {
+                try {
+                    editors[k]?.destroy?.();
+                } catch (e) {}
+                delete editors[k];
+            });
         });
 
         // =========================
@@ -524,8 +609,11 @@
             const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
 
             const btn = document.createElement('button');
-            btn.type = 'button'; btn.className = 'ck ck-button'; btn.title = 'Upload Image';
-            btn.innerHTML = `
+            btn.type = 'button';
+            btn.className = 'ck ck-button';
+            btn.title = 'Upload Image';
+            btn.innerHTML =
+                `
                                                                                                                                     <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
                                                                                                                                         ${imageIconSVG()}
                                                                                                                                     </span>
@@ -536,9 +624,12 @@
 
             btn.addEventListener('click', () => {
                 const input = document.createElement('input');
-                input.type = 'file'; input.accept = 'image/*'; input.click();
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.click();
                 input.addEventListener('change', async (e) => {
-                    const file = e.target.files[0]; if (!file) return;
+                    const file = e.target.files[0];
+                    if (!file) return;
                     const formData = new FormData();
                     formData.append('upload', file);
 
@@ -549,19 +640,29 @@
                     try {
                         const res = await fetch('/upload-image', {
                             method: 'POST',
-                            headers: { 'X-CSRF-TOKEN': csrfToken },
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken
+                            },
                             body: formData
                         });
                         const data = await res.json();
                         if (res.ok && data.url) {
                             editor.model.change(writer => {
-                                const insertPos = editor.model.document.selection.getFirstPosition();
-                                const imageElement = writer.createElement('imageBlock', { src: data.url });
+                                const insertPos = editor.model.document.selection
+                                    .getFirstPosition();
+                                const imageElement = writer.createElement('imageBlock', {
+                                    src: data.url
+                                });
                                 editor.model.insertContent(imageElement, insertPos);
                             });
                         } else alert('Upload gagal.');
-                    } catch (err) { console.error(err); alert('Terjadi kesalahan upload image.'); }
-                }, { once: true });
+                    } catch (err) {
+                        console.error(err);
+                        alert('Terjadi kesalahan upload image.');
+                    }
+                }, {
+                    once: true
+                });
             });
 
             itemsContainer.appendChild(btn);
@@ -586,10 +687,13 @@
             const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
 
             const btn = document.createElement('button');
-            btn.type = 'button'; btn.className = 'ck ck-button'; btn.title = 'Upload File';
+            btn.type = 'button';
+            btn.className = 'ck ck-button';
+            btn.title = 'Upload File';
             btn.innerHTML =
                 ` <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">${fileIconSVG()}</span>`;
-            btn.style.marginLeft = '6px'; btn.style.cursor = 'pointer';
+            btn.style.marginLeft = '6px';
+            btn.style.cursor = 'pointer';
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
             btn.addEventListener('click', () => {
@@ -599,7 +703,8 @@
                 input.click();
 
                 input.addEventListener('change', async (e) => {
-                    const file = e.target.files[0]; if (!file) return;
+                    const file = e.target.files[0];
+                    if (!file) return;
                     const formData = new FormData();
                     formData.append('upload', file);
 
@@ -610,21 +715,31 @@
                     try {
                         const res = await fetch('/upload', {
                             method: 'POST',
-                            headers: { 'X-CSRF-TOKEN': csrfToken },
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken
+                            },
                             body: formData
                         });
                         const data = await res.json();
                         if (res.ok && data.url) {
                             editor.model.change(writer => {
-                                const insertPos = editor.model.document.selection.getFirstPosition();
+                                const insertPos = editor.model.document.selection
+                                    .getFirstPosition();
                                 const paragraph = writer.createElement('paragraph');
-                                const textNode = writer.createText(file.name, { linkHref: data.url });
+                                const textNode = writer.createText(file.name, {
+                                    linkHref: data.url
+                                });
                                 writer.append(textNode, paragraph);
                                 editor.model.insertContent(paragraph, insertPos);
                             });
                         } else alert('Upload file gagal.');
-                    } catch (err) { console.error(err); alert('Terjadi kesalahan upload file.'); }
-                }, { once: true });
+                    } catch (err) {
+                        console.error(err);
+                        alert('Terjadi kesalahan upload file.');
+                    }
+                }, {
+                    once: true
+                });
             });
 
             itemsContainer.appendChild(btn);
@@ -779,8 +894,7 @@
                         class="w-full border border-[#6B7280] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600 font-[Inter] text-[14px] placeholder:text-[#6B7280] pl-5" />
 
                     <!-- Deskripsi -->
-                    <div class="flex flex-col" x-data
-                        x-init="createEditorFor('edit-catatan-editor', { placeholder: 'Masukkan catatan anda disini...' })">
+                    <div class="flex flex-col" x-data x-init="createEditorFor('edit-catatan-editor', { placeholder: 'Masukkan catatan anda disini...' })">
                         <label class="block text-sm font-inter font-semibold text-black mb-1 mt-5">
                             Deskripsi <span class="text-red-500">*</span>
                         </label>
@@ -815,22 +929,22 @@
                                     },
                                     heading: {
                                         options: [{
-                                            model: 'paragraph',
-                                            title: 'Paragraf',
-                                            class: 'ck-heading_paragraph'
-                                        },
-                                        {
-                                            model: 'heading1',
-                                            view: 'h1',
-                                            title: 'Heading 1',
-                                            class: 'ck-heading_heading1'
-                                        },
-                                        {
-                                            model: 'heading2',
-                                            view: 'h2',
-                                            title: 'Heading 2',
-                                            class: 'ck-heading_heading2'
-                                        }
+                                                model: 'paragraph',
+                                                title: 'Paragraf',
+                                                class: 'ck-heading_paragraph'
+                                            },
+                                            {
+                                                model: 'heading1',
+                                                view: 'h1',
+                                                title: 'Heading 1',
+                                                class: 'ck-heading_heading1'
+                                            },
+                                            {
+                                                model: 'heading2',
+                                                view: 'h2',
+                                                title: 'Heading 2',
+                                                class: 'ck-heading_heading2'
+                                            }
                                         ]
                                     },
                                     fontFamily: {
@@ -844,21 +958,21 @@
                                     fontColor: {
                                         columns: 5,
                                         colors: [{
-                                            color: '#000000',
-                                            label: 'Black'
-                                        },
-                                        {
-                                            color: '#102a63',
-                                            label: 'Dark Blue'
-                                        },
-                                        {
-                                            color: '#6B7280',
-                                            label: 'Gray'
-                                        },
-                                        {
-                                            color: '#FFFFFF',
-                                            label: 'White'
-                                        }
+                                                color: '#000000',
+                                                label: 'Black'
+                                            },
+                                            {
+                                                color: '#102a63',
+                                                label: 'Dark Blue'
+                                            },
+                                            {
+                                                color: '#6B7280',
+                                                label: 'Gray'
+                                            },
+                                            {
+                                                color: '#FFFFFF',
+                                                label: 'White'
+                                            }
                                         ]
                                     },
                                     simpleUpload: {
@@ -936,15 +1050,20 @@
                                         try {
                                             const res = await fetch('/upload-image', {
                                                 method: 'POST',
-                                                headers: { 'X-CSRF-TOKEN': csrfToken || '{{ csrf_token() }}' },
+                                                headers: {
+                                                    'X-CSRF-TOKEN': csrfToken || '{{ csrf_token() }}'
+                                                },
                                                 body: formData
                                             });
 
                                             const data = await res.json();
                                             if (res.ok && data.url) {
                                                 editor.model.change(writer => {
-                                                    const insertPos = editor.model.document.selection.getFirstPosition();
-                                                    const imageElement = writer.createElement('imageBlock', { src: data.url });
+                                                    const insertPos = editor.model.document.selection
+                                                        .getFirstPosition();
+                                                    const imageElement = writer.createElement('imageBlock', {
+                                                        src: data.url
+                                                    });
                                                     editor.model.insertContent(imageElement, insertPos);
                                                 });
                                             } else {
@@ -961,7 +1080,9 @@
                                                                         </span>
                                                                     `;
                                         }
-                                    }, { once: true });
+                                    }, {
+                                        once: true
+                                    });
                                 });
 
                                 itemsContainer.appendChild(btn);
@@ -1040,11 +1161,14 @@
 
                                             if (res.ok && data.url) {
                                                 editor.model.change(writer => {
-                                                    const insertPos = editor.model.document.selection.getFirstPosition();
+                                                    const insertPos = editor.model.document.selection
+                                                        .getFirstPosition();
 
                                                     // Tambahkan elemen paragraf dengan text berwarna biru & underline
                                                     const linkElement = writer.createElement('paragraph');
-                                                    const textNode = writer.createText(file.name, { linkHref: data.url });
+                                                    const textNode = writer.createText(file.name, {
+                                                        linkHref: data.url
+                                                    });
                                                     writer.append(textNode, linkElement);
                                                     editor.model.insertContent(linkElement, insertPos);
                                                 });
@@ -1287,15 +1411,18 @@
                                     e.stopPropagation();
                                     const value = opt.getAttribute("data-value"); // ✅ ambil nilai dari option
                                     chipText2.textContent = value;
-                                    document.getElementById("editAutoDue").value = value; // ✅ simpan ke input hidden
+                                    document.getElementById("editAutoDue").value =
+                                        value; // ✅ simpan ke input hidden
                                     dropdown2.classList.add("hidden");
                                 });
                             });
 
                             // Close dropdowns when clicking outside
                             document.addEventListener("click", (e) => {
-                                const isClickInsideDropdown1 = dropdown1.contains(e.target) || chipContainer1.contains(e.target);
-                                const isClickInsideDropdown2 = dropdown2.contains(e.target) || chipContainer2.contains(e.target);
+                                const isClickInsideDropdown1 = dropdown1.contains(e.target) || chipContainer1.contains(e
+                                    .target);
+                                const isClickInsideDropdown2 = dropdown2.contains(e.target) || chipContainer2.contains(e
+                                    .target);
 
                                 if (!isClickInsideDropdown1) {
                                     dropdown1.classList.add("hidden");
@@ -1413,7 +1540,8 @@
                             <input type="hidden" name="is_private" value="0">
 
                             <!-- Checkbox utama -->
-                            <input type="checkbox" name="is_private" id="editSwitchRahasia" class="sr-only" value="1">
+                            <input type="checkbox" name="is_private" id="editSwitchRahasia" class="sr-only"
+                                value="1">
                             <div id="editSwitchBg"
                                 class="relative w-11 h-6 bg-gray-300 rounded-full transition-colors duration-300">
                                 <span id="editSwitchCircle"
@@ -1427,7 +1555,7 @@
                             const editSwitchBg = document.getElementById('editSwitchBg');
                             const editSwitchCircle = document.getElementById('editSwitchCircle');
 
-                            editSwitchRahasia.addEventListener('change', function () {
+                            editSwitchRahasia.addEventListener('change', function() {
                                 if (this.checked) {
                                     editSwitchBg.classList.remove('bg-gray-300');
                                     editSwitchBg.classList.add('bg-blue-600');
@@ -1491,7 +1619,7 @@
                 })
                 .catch(error => {
                     console.error('Fetch error (edit-data):', error);
-                    closeEditModal();  // kalau mau tetap ditutup
+                    closeEditModal(); // kalau mau tetap ditutup
                 });
         }
 
@@ -1611,7 +1739,7 @@
 
         // 🔵🔵🔵 BAGIAN PERBAIKAN ADA DI SINI 🔵🔵🔵
         // Event listener untuk form submit
-        document.getElementById('pengumumanEditForm').addEventListener('submit', function (e) {
+        document.getElementById('pengumumanEditForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
             // Cegah multiple submit
@@ -1682,13 +1810,14 @@
 
             // 🟦 PERBAIKAN FETCH — TIDAK AKAN ERROR "<DOCTYPE>" LAGI
             fetch(`/pengumuman/${pengumumanId}`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'X-HTTP-Method-Override': 'PUT'
-                },
-                body: formData
-            })
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
+                            'content'),
+                        'X-HTTP-Method-Override': 'PUT'
+                    },
+                    body: formData
+                })
                 .then(async response => {
                     // Jika server mengembalikan HTML → langsung lempar error
                     const text = await response.text();
@@ -1780,7 +1909,8 @@
                         if (!res.ok) throw new Error('Gagal mengambil data anggota');
 
                         this.members = await res.json();
-                        console.log('✅ Data anggota edit berhasil di-load:', this.members.length, 'anggota');
+                        console.log('✅ Data anggota edit berhasil di-load:', this.members.length,
+                            'anggota');
                     } catch (err) {
                         console.error('Gagal memuat anggota:', err);
                         this.members = [];
@@ -1846,12 +1976,12 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     fetch(`/pengumuman/${id}`, {
-                        method: "POST",
-                        headers: {
-                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-                            "X-HTTP-Method-Override": "DELETE"
-                        }
-                    })
+                            method: "POST",
+                            headers: {
+                                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                                "X-HTTP-Method-Override": "DELETE"
+                            }
+                        })
                         .then(res => res.json())
                         .then(data => {
                             console.log("Response:", data);
@@ -1865,7 +1995,8 @@
                                     showConfirmButton: false
                                 }).then(() => {
                                     // Redirect ke halaman pengumuman
-                                    window.location.href = "{{ route('workspace.pengumuman', $workspace->id ?? $pengumuman->workspace_id) }}";
+                                    window.location.href =
+                                        "{{ route('workspace.pengumuman', $workspace->id ?? $pengumuman->workspace_id) }}";
                                 });
                             } else {
                                 Swal.fire("Gagal", data.message, "error");

@@ -1,0 +1,256 @@
+[33mcommit 7e13a1beca008e508752d2538c746c334992bdc9[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mbackend-pengunguman[m[33m, [m[1;31morigin/backend-pengunguman[m[33m)[m
+Merge: 0aa301e 7057dd6
+Author: risigustiar28 <risigustiar1234@gmail.com>
+Date:   Tue Nov 18 09:01:20 2025 +0700
+
+    Merge branch 'main' into backend-pengunguman
+
+[33mcommit 0aa301e0dbecb27e94346bd1b6510cf6ecc47120[m
+Author: risigustiar28 <risigustiar1234@gmail.com>
+Date:   Sat Nov 15 00:17:20 2025 +0700
+
+    done semuanya hapus juga done
+
+[33mcommit 40bb0d0f4d9470dc8101da7868ef0f0923303e9c[m
+Author: risigustiar28 <risigustiar1234@gmail.com>
+Date:   Fri Nov 14 14:22:58 2025 +0700
+
+    Done pengumuman, komentar pengumuman, file, image semua done privasi juga done, tinggal perbaikan sedikit dan hapus
+
+[33mcommit 998f2ec4b1b5e554324af237c5538971788f518a[m
+Author: risigustiar28 <risigustiar1234@gmail.com>
+Date:   Thu Nov 13 17:08:54 2025 +0700
+
+    Buat pengumuman file image dll
+
+[33mcommit 6b18be82a72f6ff668b6c1b703252a5556f6b997[m
+Author: risigustiar28 <risigustiar1234@gmail.com>
+Date:   Sat Nov 8 10:12:03 2025 +0700
+
+    hitung komentar tapi belum tampilan
+
+[33mcommit 6ed5dd1e8a5eaaa7c3425d259bcae430543052ff[m
+Author: risi gustiar <risigustiar1234@gmail.com>
+Date:   Sat Nov 8 08:01:28 2025 +0700
+
+    pop up
+
+[33mcommit 7057dd64b7df1c3df042260c69765593b3cbebb0[m
+Author: RendiSinaga <rendysinagaa10@gmail.com>
+Date:   Wed Nov 5 23:33:13 2025 +0700
+
+    nambah viewserviceprovider
+
+[33mcommit adf84d33c360f26c72426cab831b29c4ad7013e5[m
+Merge: 9107474 cc333d4
+Author: Naufal Fadhilah Ardhani <naufal201080@gmail.com>
+Date:   Wed Nov 5 14:28:00 2025 +0700
+
+    Merge branch 'backend--atur-role'
+
+[33mcommit cc333d48b0140a740cb01028e08b570ed0289c09[m[33m ([m[1;31morigin/backend--atur-role[m[33m)[m
+Author: Naufal Fadhilah Ardhani <naufal201080@gmail.com>
+Date:   Wed Nov 5 14:23:19 2025 +0700
+
+    Hapus file gk perlu
+
+[33mcommit b89e04b8c501afbe05606e9d1c8f6bae13212434[m
+Author: Naufal Fadhilah Ardhani <naufal201080@gmail.com>
+Date:   Wed Nov 5 12:02:16 2025 +0700
+
+    Membuat content Modal agar dinamis isinya sesuai workspace / nama
+
+[33mcommit 2e79b68c6e14015906b9e4a2723a10449cda73fa[m
+Author: risi gustiar <risigustiar1234@gmail.com>
+Date:   Mon Nov 3 19:03:07 2025 +0700
+
+    done avatar
+
+[33mcommit 3b0a6e6d5bb3f84901acec60f694a8936983f530[m
+Author: Naufal Fadhilah Ardhani <naufal201080@gmail.com>
+Date:   Mon Nov 3 15:49:14 2025 +0700
+
+    Admin hanya bisa atur role menjadi manager dan member
+
+[33mcommit ed40bd5a8fa7a18aee728c39abb5f8e6d7515e2c[m
+Author: Naufal Fadhilah Ardhani <naufal201080@gmail.com>
+Date:   Mon Nov 3 15:03:40 2025 +0700
+
+    Sudah berhasil atur Role per workspace dan per compamy
+
+[33mcommit 0f206e8edc2d153f3433571f5c093ba618e99069[m
+Author: risi gustiar <risigustiar1234@gmail.com>
+Date:   Sat Nov 1 11:39:44 2025 +0700
+
+    yang udah jadi privasi berdasarkan workspaces, dan privasi
+
+[33mcommit e9a3e36d015e436cf357f37f92da50763e675451[m
+Merge: 5a3c174 0d8e231
+Author: risi gustiar <risigustiar1234@gmail.com>
+Date:   Wed Oct 29 08:23:27 2025 +0700
+
+    Backend tarik dari main
+
+[33mcommit 91074743e0ccfda115410492add67c10e341a741[m
+Author: RendiSinaga <rendysinagaa10@gmail.com>
+Date:   Tue Oct 28 14:52:10 2025 +0700
+
+    perbaikan
+
+[33mcommit 5a3c1742ca5ab6fb5eea55833c3dc975596f10ec[m
+Author: risi gustiar <risigustiar1234@gmail.com>
+Date:   Tue Oct 28 01:38:16 2025 +0700
+
+    Save perubahan routes sebelum merge main
+
+[33mcommit 1a3359a8275268900248febc416f5d1da1efd79b[m
+Author: risi gustiar <risigustiar1234@gmail.com>
+Date:   Mon Oct 27 23:37:50 2025 +0700
+
+    pengumuman
+
+[33mcommit 0d8e2314e0663f0333026154bf439d92abb53406[m
+Author: RendiSinaga <rendysinagaa10@gmail.com>
+Date:   Mon Oct 27 22:36:49 2025 +0700
+
+    perbaikan sidebar
+
+[33mcommit c683df9923ced36b875bf5e30d2940176215435a[m
+Author: RendiSinaga <rendysinagaa10@gmail.com>
+Date:   Mon Oct 27 21:31:04 2025 +0700
+
+     knban tugas
+
+[33mcommit c95702fa39445911f5c169f5b1c8e2f34e2623ad[m
+Merge: 17fdfab 4a66d28
+Author: RendiSinaga <rendysinagaa10@gmail.com>
+Date:   Mon Oct 27 21:13:42 2025 +0700
+
+    kelola workspace
+
+[33mcommit 4a66d2836a61199891a851fb9a86a3112c54f52f[m[33m ([m[1;31morigin/backend-kelola-workspace[m[33m)[m
+Author: RendiSinaga <rendysinagaa10@gmail.com>
+Date:   Mon Oct 27 21:03:21 2025 +0700
+
+    workspace
+
+[33mcommit 17fdfab6385f3416da7e0787da938d470c70cb7a[m
+Merge: 564846c 2185a09
+Author: RendiSinaga <rendysinagaa10@gmail.com>
+Date:   Mon Oct 27 20:52:39 2025 +0700
+
+    Merge branch 'timeline'
+
+[33mcommit 564846cce24af3ae9d085696ad78fd0e2bd51def[m
+Merge: 9df996f e739318
+Author: RendiSinaga <rendysinagaa10@gmail.com>
+Date:   Mon Oct 27 20:47:05 2025 +0700
+
+    Merge branch 'mindmap'
+
+[33mcommit e73931867b3a038527706a893292c2e6687ce7a3[m[33m ([m[1;31morigin/mindmap[m[33m)[m
+Author: RendiSinaga <rendysinagaa10@gmail.com>
+Date:   Mon Oct 27 20:45:24 2025 +0700
+
+    perbaikan
+
+[33mcommit 9df996f055bf70b53b1400f20ada767f7115cddf[m
+Author: RendiSinaga <rendysinagaa10@gmail.com>
+Date:   Mon Oct 27 20:28:09 2025 +0700
+
+    atur akses
+
+[33mcommit e55fff1febbf54d171e509759941b306812a6d05[m
+Merge: e44c5c2 8e0a9a7
+Author: RendiSinaga <rendysinagaa10@gmail.com>
+Date:   Mon Oct 27 20:27:33 2025 +0700
+
+    Merge branch 'backend--atur-role-umum'
+
+[33mcommit 1a065b1b2746525a7a526f4797881ee682534cf9[m
+Author: risi gustiar <risigustiar1234@gmail.com>
+Date:   Mon Oct 27 20:14:34 2025 +0700
+
+    Backend Pengumuman, isi pengumuman, komentar, balas komentar, upload file, privasi pengumuman, buat pengumuman
+
+[33mcommit 48202738de29aea12a3ae74a117cb4cb36ae9cd1[m
+Author: Dzakwan993 <mdzakwan315@gmail.com>
+Date:   Mon Oct 27 20:11:07 2025 +0700
+
+    hapus sementara tombol export dan ubah tombol insight jadi mindmap
+
+[33mcommit 2185a096c34190de9e9146b3e39f7b51b060dc91[m[33m ([m[1;31morigin/timeline[m[33m)[m
+Author: Dzakwan993 <mdzakwan315@gmail.com>
+Date:   Sun Oct 26 09:36:52 2025 +0700
+
+    misahin file dokumen-dan-file jadi beberapa file
+
+[33mcommit 1e21b07b752a887e55d058432d6c620cfe0f1445[m
+Author: Dzakwan993 <mdzakwan315@gmail.com>
+Date:   Sun Oct 26 08:38:59 2025 +0700
+
+    timeline 100% dan misahin file kanban-tugas jadi beberapa file
+
+[33mcommit 1049ec65ed2242401f23eea10a181f1576410016[m
+Author: Dzakwan993 <mdzakwan315@gmail.com>
+Date:   Sat Oct 25 11:05:06 2025 +0700
+
+    kelola workspace udah selesai, tinggal bagian kelola hak akses worskpace aja
+
+[33mcommit b78be097be46046663b625b77804f15d6e13a330[m
+Author: Dzakwan993 <mdzakwan315@gmail.com>
+Date:   Sat Oct 25 00:44:36 2025 +0700
+
+    mindmap 90%, tinggal bagian export diimprove
+
+[33mcommit e44c5c2751abeac5f04cd7d4a6a73b974337c942[m
+Merge: 38a6905 adca0a2
+Author: RendiSinaga <rendysinagaa10@gmail.com>
+Date:   Fri Oct 24 20:03:49 2025 +0700
+
+    Merge branch 'backend--undang-anggota'
+
+[33mcommit 38a69051aa0e24dfa051b83dd19875d30040efb8[m[33m ([m[1;31morigin/pembayaran[m[33m)[m
+Author: RendiSinaga <rendysinagaa10@gmail.com>
+Date:   Fri Oct 24 19:46:08 2025 +0700
+
+    Pembayaran Selesai
+
+[33mcommit 8e0a9a778ea2209c40c27c37bf0fe8d6d625e193[m[33m ([m[1;31morigin/backend--atur-role-umum[m[33m)[m
+Author: Naufal Fadhilah Ardhani <naufal201080@gmail.com>
+Date:   Fri Oct 24 13:49:29 2025 +0700
+
+    Sudah selesai
+
+[33mcommit 4f64340d8079198c4486cfee4c04e942e839c1ea[m
+Author: Dzakwan993 <mdzakwan315@gmail.com>
+Date:   Thu Oct 23 18:07:56 2025 +0700
+
+    mindmap 80%
+
+[33mcommit adca0a21d44ea7cf02e6028671973b47ae33ee8c[m
+Author: RendiSinaga <rendysinagaa10@gmail.com>
+Date:   Thu Oct 23 17:26:19 2025 +0700
+
+    undangan dan profile selesai
+
+[33mcommit 51dadaaf7abf40181c9a9bfc33ea30676b35b51c[m
+Author: Dzakwan993 <mdzakwan315@gmail.com>
+Date:   Thu Oct 23 16:50:32 2025 +0700
+
+    timeline 60%
+
+[33mcommit 638edbf56e040bd149ff8bfbec551536f7971dbc[m
+Author: Dzakwan993 <mdzakwan315@gmail.com>
+Date:   Wed Oct 22 23:58:07 2025 +0700
+
+    mindmap 40%
+
+[33mcommit f8dc0cccc173a2478eaf7d683959f7379f5abfe9[m
+Author: Dzakwan993 <mdzakwan315@gmail.com>
+Date:   Wed Oct 22 20:49:32 2025 +0700
+
+    kelola anggota
+
+[33mcommit 47b9719f7203f0b28ae4fa214999fdd8bd2502e1[m
+Author:
