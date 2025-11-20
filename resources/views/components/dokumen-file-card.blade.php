@@ -17,9 +17,41 @@
         </div>
     </div>
 
-    <img :src="file.icon" :alt="file.type" class="w-14 h-14 mb-3">
+    <!-- =========================== -->
+    <!-- PREVIEW / ICON              -->
+    <!-- =========================== -->
+    <div class="w-14 h-14 mb-3 flex items-center justify-center overflow-hidden">
+
+        <!-- IMAGE THUMBNAIL -->
+        <template x-if="file.type === 'Image'">
+            <img 
+                :src="file.file_url" 
+                alt="Image"
+                class="w-full h-full object-cover rounded">
+        </template>
+
+        <!-- VIDEO THUMBNAIL -->
+        <template x-if="file.type === 'Video'">
+            <video 
+                :src="file.file_url"
+                class="w-full h-full object-cover rounded"
+                muted
+            ></video>
+        </template>
+
+        <!-- DEFAULT ICON -->
+        <template x-if="file.type !== 'Image' && file.type !== 'Video'">
+            <img 
+                :src="file.icon" 
+                :alt="file.type" 
+                class="w-14 h-14">
+        </template>
+
+    </div>
+
+    <!-- Nama File -->
     <span class="text-xs text-gray-600 truncate w-full" x-text="file.name"></span>
 
-     <!-- Tambahan: Tampilkan type -->
+    <!-- Tipe File -->
     <span class="text-xs text-gray-400 mt-1" x-text="file.type"></span>
 </div>

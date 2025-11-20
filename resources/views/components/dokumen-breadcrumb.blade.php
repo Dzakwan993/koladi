@@ -51,7 +51,7 @@
                                     class="w-6 h-6 rounded-full">
                                 <div>
                                     <p class="text-xs font-medium text-gray-700"
-                                        x-text="currentFolder.creator || 'Admin'"></p>
+                                        x-text="currentFolder.creator.name || 'Admin'"></p>
                                     <p class="text-xs text-gray-500" x-text="formatDate(currentFolder.createdAt)"></p>
                                 </div>
                             </div>

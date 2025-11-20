@@ -5,6 +5,7 @@
         <h3 class="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Preview File</h3>
 
         {{-- Preview berdasarkan tipe file --}}
+        {{-- Jenis File PDF --}}
         <template x-if="currentFile.type === 'PDF'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6 md:p-8 text-center">
                 <img src="{{ asset('images/icons/pdf.svg') }}" alt="PDF" class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-3 sm:mb-4">
@@ -16,6 +17,7 @@
             </div>
         </template>
 
+        {{-- Jenis File Word --}}
         <template x-if="currentFile.type === 'Word'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                 <img src="{{ asset('images/icons/microsoft-word.svg') }}" alt="Word" class="w-16 h-16 mx-auto mb-4">
@@ -27,6 +29,7 @@
             </div>
         </template>
 
+        {{-- Jenis File Excel --}}
         <template x-if="currentFile.type === 'Excel'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                 <img src="{{ asset('images/icons/excel.svg') }}" alt="Excel" class="w-16 h-16 mx-auto mb-4">
@@ -37,6 +40,130 @@
                 </button>
             </div>
         </template>
+
+        {{-- Jenis File Powerpoint --}}
+        <template x-if="currentFile.type === 'PowerPoint'">
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+                <img src="{{ asset('images/icons/powerpoint.svg') }}" alt="PowerPoint" class="w-16 h-16 mx-auto mb-4">
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+
+                <button @click="downloadFile(currentFile)"
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    Download PowerPoint
+                </button>
+            </div>
+        </template>
+
+        {{-- Jenis File Text --}}
+        <template x-if="currentFile.type === 'Text'">
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+                <img src="{{ asset('images/icons/text-file.svg') }}" alt="Text" class="w-16 h-16 mx-auto mb-4">
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+
+                <button @click="downloadFile(currentFile)"
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    Download Text File
+                </button>
+            </div>
+        </template>
+
+        {{-- Jenis File Gambar --}}
+        <template x-if="currentFile.type === 'Image'">
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+
+                <img :src="currentFile.file_url"
+                    alt="Image"
+                    class="mx-auto rounded-lg shadow mb-4"
+                    style="max-width: 100%; max-height: 180px; object-fit: contain;">
+
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+
+                <button @click="downloadFile(currentFile)"
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    Download Image
+                </button>
+            </div>
+        </template>
+
+
+
+        {{-- Jenis File Video --}}
+        <template x-if="currentFile.type === 'Video'">
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+                <video controls class="max-h-96 mx-auto rounded-lg shadow mb-4">
+                    <source :src="currentFile.file_url">
+                </video>
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+
+                <button @click="downloadFile(currentFile)"
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    Download Video
+                </button>
+            </div>
+        </template>
+
+        {{-- Jenis File Audio --}}
+        <template x-if="currentFile.type === 'Audio'">
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+                <img src="{{ asset('images/icons/audio.svg') }}" alt="Audio" class="w-16 h-16 mx-auto mb-4">
+
+                <audio controls class="mx-auto mb-4 w-full">
+                    <source :src="currentFile.file_url">
+                </audio>
+
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+
+                <button @click="downloadFile(currentFile)"
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    Download Audio
+                </button>
+            </div>
+        </template>
+
+        {{-- Jenis File ZIP --}}
+        <template x-if="currentFile.type === 'Zip'">
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+                <img src="{{ asset('images/icons/zip.svg') }}" alt="Zip" class="w-16 h-16 mx-auto mb-4">
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+
+                <button @click="downloadFile(currentFile)"
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    Download Archive
+                </button>
+            </div>
+        </template>
+
+        {{-- Jenis File code --}}
+        <template x-if="currentFile.type === 'Code'">
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+                <img src="{{ asset('images/icons/code.svg') }}" alt="Code" class="w-16 h-16 mx-auto mb-4">
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+
+                <button @click="downloadFile(currentFile)"
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    Download Code File
+                </button>
+            </div>
+        </template>
+
+        {{-- Unknown File Type --}}
+        <template x-if="currentFile.type === 'Unknown'">
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+                <img src="{{ asset('images/icons/file-unknown.svg') }}" alt="Unknown" class="w-16 h-16 mx-auto mb-4">
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+
+                <button @click="downloadFile(currentFile)"
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    Download File
+                </button>
+            </div>
+        </template>
+
+
+
+
+
+
     </div>
 
     {{-- Komentar Section --}}

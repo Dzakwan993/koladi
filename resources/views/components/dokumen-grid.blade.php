@@ -28,8 +28,35 @@
                                     </div>
                                 </div>
 
-                                <img :src="document.icon" :alt="document.type"
-                                    class="w-8 h-8 sm:w-10 sm:h-10 mb-1 sm:mb-2">
+                                <!-- PREVIEW -->
+                                <div class="w-8 h-8 sm:w-10 sm:h-10 mb-1 sm:mb-2 flex items-center justify-center overflow-hidden rounded">
+
+                                    <!-- IMAGE PREVIEW -->
+                                    <template x-if="document.type === 'Image'">
+                                        <img 
+                                            :src="document.file_url"
+                                            class="w-full h-full object-cover"
+                                            alt="image preview">
+                                    </template>
+
+                                    <!-- VIDEO PREVIEW -->
+                                    <template x-if="document.type === 'Video'">
+                                        <video 
+                                            :src="document.file_url"
+                                            class="w-full h-full object-cover"
+                                            muted
+                                        ></video>
+                                    </template>
+
+                                    <!-- DEFAULT ICON (folder, pdf, docx, dll) -->
+                                    <template x-if="document.type !== 'Image' && document.type !== 'Video'">
+                                        <img 
+                                            :src="document.icon"
+                                            :alt="document.type"
+                                            class="w-8 h-8 sm:w-10 sm:h-10">
+                                    </template>
+
+                                </div>
                                 <span class="text-xs font-medium text-gray-700 truncate w-full"
                                     x-text="document.name"></span>
 

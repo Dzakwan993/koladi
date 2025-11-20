@@ -64,6 +64,9 @@ export default function documentSearch() {
 
                 // Function untuk inisialisasi data
                 initData(foldersData, rootFilesData, workspace) {
+                    console.log("DEBUG backend folders:", JSON.parse(JSON.stringify(foldersData)));
+                    console.log("DEBUG root files:", JSON.parse(JSON.stringify(rootFilesData)));
+
                     // Simpan data dari backend
                     this.backendFolders = foldersData;
                     this.backendRootFiles = rootFilesData;
@@ -98,7 +101,7 @@ export default function documentSearch() {
                         icon: this.getFolderIcon(),
                         isSecret: folder.is_private || false,
                         creator: {
-                            name: folder.creator?.name || 'bij',
+                            name: folder.creator?.full_name || 'kiki',
                             avatar: folder.creator?.avatar || 'https://i.pravatar.cc/32?img=8'
                         },
                         createdAt: folder.created_at,

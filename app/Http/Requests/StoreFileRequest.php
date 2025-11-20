@@ -18,7 +18,7 @@ class StoreFileRequest extends FormRequest
         return [
             'workspace_id' => ['required', 'exists:workspaces,id'],
             'folder_id' => ['nullable', 'exists:folders,id'],
-            'file' => ['required', 'file', 'max:20480'], // 20 MB
+            // 'file' => ['required', 'file', 'max:20480'], // 20 MB
         ];
     }
 
