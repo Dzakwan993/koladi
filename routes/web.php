@@ -161,8 +161,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/tasks/update-column', [TaskController::class, 'updateTaskColumn'])->name('tasks.update-column');
     });
 
-    // ✅ GANTI bagian Calendar Routes di web.php dengan ini:
-
+    // Jadwal / Calendar Routes
     Route::middleware(['auth'])->prefix('workspace/{workspaceId}')->group(function () {
         // 1️⃣ Halaman utama jadwal/calendar
         Route::get('/jadwal', [CalendarController::class, 'index'])->name('jadwal');
@@ -188,40 +187,6 @@ Route::middleware(['auth'])->group(function () {
         // 7️⃣ ⚠️ Route dengan {id} wildcard HARUS PALING BAWAH
         Route::get('/jadwal/{id}', [CalendarController::class, 'show'])->name('calendar.show');
     });
-    // Tambahkan route ini SEMENTARA di web.php untuk debugging:
-
-    Route::get('/debug/events/{workspaceId}', function ($workspaceId) {
-        $user = Auth::user();
-
-        $events = \App\Models\CalendarEvent::where('workspace_id', $workspaceId)
-            ->whereNull('deleted_at')
-            ->with(['creator', 'participants.user'])
-            ->get();
-
-        return response()->json([
-            'total_events' => $events->count(),
-            'events' => $events->map(function ($event) {
-                return [
-                    'id' => $event->id,
-                    'title' => $event->title,
-                    'start' => $event->start_datetime,
-                    'end' => $event->end_datetime,
-                    'creator' => $event->creator ? [
-                        'id' => $event->creator->id,
-                        'name' => $event->creator->full_name
-                    ] : null,
-                    'participants_count' => $event->participants->count(),
-                    'participants' => $event->participants->map(function ($p) {
-                        return [
-                            'user_id' => $p->user_id,
-                            'user_name' => $p->user ? $p->user->full_name : 'Unknown',
-                            'status' => $p->status
-                        ];
-                    })
-                ];
-            })
-        ]);
-    })->middleware('auth');
 
     // Akses: http://127.0.0.1:8000/debug/events/{your-workspace-id}
 

@@ -270,6 +270,9 @@ class CalendarController extends Controller
                             'creator_name' => $event->creator->full_name ?? 'Unknown',
                             'creator_avatar' => $this->getAvatarUrl($event->creator),
                             'is_creator' => $event->created_by === $user->id,
+                            // ✅ TAMBAHAN: Kirim start_date dan end_date untuk cek multi-day
+                            'start_date' => $startDate->format('Y-m-d'),
+                            'end_date' => $endDate->format('Y-m-d'),
                         ]
                     ];
                 } catch (\Exception $e) {
@@ -332,7 +335,7 @@ class CalendarController extends Controller
      */
     public function edit($workspaceId, $id)
     {
-        $event = CalendarEvent::with('participants')->findOrFail($id);
+        $event = CalendarEvent::with('participants.user')->findOrFail($id);
 
         if ($event->created_by !== Auth::id()) {
             abort(403, 'Anda tidak memiliki akses untuk mengedit jadwal ini');
@@ -359,6 +362,17 @@ class CalendarController extends Controller
         } else {
             $members = $activeUsers;
         }
+
+        // ✅ FIX: Add avatar URL to each member
+        $members = $members->map(function ($member) {
+            $member->avatar_url = $this->getAvatarUrl($member);
+            return $member;
+        });
+
+        // ✅ FIX: Add avatar URL to each participant's user
+        $event->participants->each(function ($participant) {
+            $participant->user->avatar_url = $this->getAvatarUrl($participant->user);
+        });
 
         return view('editJadwal', compact('event', 'workspace', 'workspaceId', 'members'));
     }
@@ -428,8 +442,8 @@ class CalendarController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('calendar.show', ['workspaceId' => $workspaceId, 'id' => $event->id])
-                ->with('success', 'Jadwal berhasil diupdate');
+                ->route('jadwal', ['workspaceId' => $workspaceId]) // ✅ UBAH ke halaman jadwal
+                ->with('success', 'Jadwal berhasil diperbarui!'); // ✅ Pesan berhasil
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Error updating event: ' . $e->getMessage());

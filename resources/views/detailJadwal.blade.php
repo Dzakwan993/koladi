@@ -25,37 +25,49 @@
                     </div>
 
                     <!-- Tombol Action (Edit/Delete untuk creator) -->
-                    @if($isCreator)
-                    <div class="relative" x-data="{ open: false }">
-                        <button @click="open = !open" class="text-[#6B7280] hover:text-gray-800">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                            </svg>
-                        </button>
-
-                        <!-- Dropdown Menu -->
-                        <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
-                            <a href="{{ route('calendar.edit', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}"
-                               class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    @if ($isCreator)
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" class="text-[#6B7280] hover:text-gray-800">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                                 </svg>
-                                Edit Jadwal
-                            </a>
-                            <form action="{{ route('calendar.destroy', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}" method="POST">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit"
-                                        onclick="return confirm('Apakah Anda yakin ingin menghapus jadwal ini?')"
-                                        class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                            </button>
+
+                            <!-- Dropdown Menu -->
+                            <!-- Bagian dropdown menu di detail jadwal - GANTI FORM HAPUS DENGAN SWEETALERT -->
+                            <div x-show="open" @click.away="open = false" x-transition x-cloak
+                                class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
+                                <a href="{{ route('calendar.edit', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}"
+                                    class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Edit Jadwal
+                                </a>
+
+                                <!-- ✅ TOMBOL HAPUS DENGAN SWEETALERT -->
+                                <button type="button" onclick="confirmDelete()"
+                                    class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
                                     Hapus Jadwal
                                 </button>
-                            </form>
+
+                                <!-- ✅ FORM HIDDEN UNTUK DELETE -->
+                                <form id="deleteForm"
+                                    action="{{ route('calendar.destroy', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}"
+                                    method="POST" style="display: none;">
+                                    @csrf
+                                    @method('DELETE')
+                                </form>
+                            </div>
+
                         </div>
-                    </div>
                     @endif
                 </header>
 
@@ -63,40 +75,64 @@
 
                 <!-- Informasi Jadwal -->
                 <div class="flex flex-col gap-4 text-sm">
-                    <!-- Waktu -->
+                    <!-- ✅ WAKTU - DENGAN DETEKSI MULTI-DAY -->
                     <div class="flex items-start gap-4">
                         <img src="{{ asset('images/icons/jampasir.svg') }}" alt="Icon Waktu" class="w-5 h-5 mt-1">
                         <div>
                             <h2 class="font-semibold text-black text-[16px]">Kapan</h2>
+                            @php
+                                $startDate = \Carbon\Carbon::parse($event->start_datetime);
+                                $endDate = \Carbon\Carbon::parse($event->end_datetime);
+                                $isMultiDay = $startDate->format('Y-m-d') !== $endDate->format('Y-m-d');
+                            @endphp
+
                             <p class="font-medium text-[14px] text-[#6B7280]">
-                                {{ \Carbon\Carbon::parse($event->start_datetime)->translatedFormat('l, d M Y, H:i') }} -
-                                {{ \Carbon\Carbon::parse($event->end_datetime)->translatedFormat('H:i') }}
-                                @if($event->recurrence)
+                                @if ($isMultiDay)
+                                    {{-- Multi-day: Tampilkan tanggal lengkap --}}
+                                    {{ $startDate->translatedFormat('l, d M Y, H:i') }} -
+                                    {{ $endDate->translatedFormat('l, d M Y, H:i') }}
+                                @else
+                                    {{-- Single-day: Tampilkan tanggal sekali, jam range --}}
+                                    {{ $startDate->translatedFormat('l, d M Y') }},
+                                    {{ $startDate->format('H:i') }} - {{ $endDate->format('H:i') }}
+                                @endif
+
+                                @if ($event->recurrence)
                                     <br><span class="text-blue-600">({{ $event->recurrence }})</span>
                                 @endif
                             </p>
                         </div>
                     </div>
 
-                    <!-- Peserta -->
+                    <!-- ✅ PESERTA - AVATAR SAJA -->
                     <div class="flex items-start gap-4">
                         <img src="{{ asset('images/icons/bj1.svg') }}" alt="Icon Peserta" class="w-5 h-5 mt-1">
                         <div class="w-full">
                             <h2 class="font-semibold text-black text-[16px] mb-2">Peserta</h2>
                             <div class="flex flex-wrap items-center gap-2">
-                                @foreach($event->participants as $participant)
-                                    <div class="flex items-center gap-2 bg-gray-50 rounded-full px-3 py-1">
+                                @foreach ($event->participants as $participant)
+                                    <div class="relative group">
                                         <img src="{{ $participant->user->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($participant->user->full_name) . '&background=3B82F6&color=fff&bold=true&size=128' }}"
-                                             alt="{{ $participant->user->full_name }}"
-                                             class="w-6 h-6 rounded-full object-cover">
-                                        <span class="text-sm text-gray-700">{{ $participant->user->full_name }}</span>
-                                        <span class="text-xs px-2 py-1 rounded-full
-                                            @if($participant->status === 'accepted') bg-green-100 text-green-800
-                                            @elseif($participant->status === 'declined') bg-red-100 text-red-800
-                                            @else bg-yellow-100 text-yellow-800 @endif">
-                                            {{ $participant->status === 'accepted' ? 'Diterima' :
-                                               ($participant->status === 'declined' ? 'Ditolak' : 'Menunggu') }}
-                                        </span>
+                                            alt="{{ $participant->user->full_name }}"
+                                            title="{{ $participant->user->full_name }}"
+                                            class="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hover:border-blue-500 transition cursor-pointer">
+
+                                        <!-- Tooltip on Hover -->
+                                        <div
+                                            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                            {{ $participant->user->full_name }}
+                                            <span
+                                                class="
+                                                @if ($participant->status === 'accepted') text-green-400
+                                                @elseif($participant->status === 'declined') text-red-400
+                                                @else text-yellow-400 @endif">
+                                                ({{ $participant->status === 'accepted'
+                                                    ? 'Diterima'
+                                                    : ($participant->status === 'declined'
+                                                        ? 'Ditolak'
+                                                        : 'Menunggu') }})
+                                            </span>
+                                        </div>
                                     </div>
                                 @endforeach
                             </div>
@@ -104,45 +140,56 @@
                     </div>
 
                     <!-- Status Peserta (jika bukan creator) -->
-                    @if(!$isCreator && $isParticipant)
-                    <div class="flex items-start gap-4">
-                        <img src="{{ asset('images/icons/status.svg') }}" alt="Icon Status" class="w-5 h-5 mt-1">
-                        <div>
-                            <h2 class="font-semibold text-black text-[16px]">Status Anda</h2>
-                            @php
-                                $userParticipant = $event->participants->where('user_id', Auth::id())->first();
-                            @endphp
-                            @if($userParticipant && $userParticipant->status === 'pending')
-                            <div class="flex gap-2 mt-2">
-                                <form action="{{ route('calendar.participant.status', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}" method="POST">
-                                    @csrf
-                                    <input type="hidden" name="status" value="accepted">
-                                    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition-colors">
-                                        Terima Undangan
-                                    </button>
-                                </form>
-                                <form action="{{ route('calendar.participant.status', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}" method="POST">
-                                    @csrf
-                                    <input type="hidden" name="status" value="declined">
-                                    <button type="submit" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors">
-                                        Tolak Undangan
-                                    </button>
-                                </form>
-                            </div>
-                            @else
-                            <p class="font-medium text-[14px]
-                                @if($userParticipant->status === 'accepted') text-green-600
+                    @if (!$isCreator && $isParticipant)
+                        <div class="flex items-start gap-4">
+                            <img src="{{ asset('images/icons/status.svg') }}" alt="Icon Status" class="w-5 h-5 mt-1">
+                            <div>
+                                <h2 class="font-semibold text-black text-[16px]">Status Anda</h2>
+                                @php
+                                    $userParticipant = $event->participants->where('user_id', Auth::id())->first();
+                                @endphp
+                                @if ($userParticipant && $userParticipant->status === 'pending')
+                                    <div class="flex gap-2 mt-2">
+                                        <form
+                                            action="{{ route('calendar.participant.status', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}"
+                                            method="POST">
+                                            @csrf
+                                            <input type="hidden" name="status" value="accepted">
+                                            <button type="submit"
+                                                class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition-colors">
+                                                Terima Undangan
+                                            </button>
+                                        </form>
+                                        <form
+                                            action="{{ route('calendar.participant.status', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}"
+                                            method="POST">
+                                            @csrf
+                                            <input type="hidden" name="status" value="declined">
+                                            <button type="submit"
+                                                class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors">
+                                                Tolak Undangan
+                                            </button>
+                                        </form>
+                                    </div>
+                                @else
+                                    <p
+                                        class="font-medium text-[14px]
+                                @if ($userParticipant->status === 'accepted') text-green-600
                                 @elseif($userParticipant->status === 'declined') text-red-600
                                 @else text-yellow-600 @endif">
-                                Anda telah
-                                @if($userParticipant->status === 'accepted') <span class="font-semibold">menerima</span>
-                                @elseif($userParticipant->status === 'declined') <span class="font-semibold">menolak</span>
-                                @else <span class="font-semibold">belum merespons</span> @endif
-                                undangan ini
-                            </p>
-                            @endif
+                                        Anda telah
+                                        @if ($userParticipant->status === 'accepted')
+                                            <span class="font-semibold">menerima</span>
+                                        @elseif($userParticipant->status === 'declined')
+                                            <span class="font-semibold">menolak</span>
+                                        @else
+                                            <span class="font-semibold">belum merespons</span>
+                                        @endif
+                                        undangan ini
+                                    </p>
+                                @endif
+                            </div>
                         </div>
-                    </div>
                     @endif
 
                     <!-- Mode Rapat -->
@@ -152,26 +199,28 @@
                             <h2 class="font-semibold text-black text-[16px]">
                                 Rapat dilakukan dengan {{ $event->is_online_meeting ? 'online' : 'offline' }}
                             </h2>
-                            @if($event->is_online_meeting && $event->meeting_link)
-                            <button @click="openPopup = true"
-                                class="mt-2 bg-[#2563eb] text-white font-semibold py-2 px-4 rounded-lg text-sm hover:bg-blue-700 transition-colors flex items-center gap-2">
-                                <img src="{{ asset('images/icons/ZoomPutih.svg') }}" alt="Zoom Icon" class="w-5 h-5">
-                                <span>Gabung rapat</span>
-                            </button>
+                            @if ($event->is_online_meeting && $event->meeting_link)
+                                <button @click="openPopup = true"
+                                    class="mt-2 bg-[#2563eb] text-white font-semibold py-2 px-4 rounded-lg text-sm hover:bg-blue-700 transition-colors flex items-center gap-2">
+                                    <img src="{{ asset('images/icons/ZoomPutih.svg') }}" alt="Zoom Icon"
+                                        class="w-5 h-5">
+                                    <span>Gabung rapat</span>
+                                </button>
                             @endif
                         </div>
                     </div>
+
                     <!-- Catatan -->
-                    @if($event->description)
-                    <div class="flex items-start gap-4">
-                        <img src="{{ asset('images/icons/Edit.svg') }}" alt="Icon Catatan" class="w-5 h-5 mt-1">
-                        <div>
-                            <h2 class="font-semibold text-black text-[16px]">Catatan</h2>
-                            <div class="prose max-w-none mt-1 text-[#6B7280] font-medium text-[14px]">
-                                {!! $event->description !!}
+                    @if ($event->description)
+                        <div class="flex items-start gap-4">
+                            <img src="{{ asset('images/icons/Edit.svg') }}" alt="Icon Catatan" class="w-5 h-5 mt-1">
+                            <div>
+                                <h2 class="font-semibold text-black text-[16px]">Catatan</h2>
+                                <div class="prose max-w-none mt-1 text-[#6B7280] font-medium text-[14px]">
+                                    {!! $event->description !!}
+                                </div>
                             </div>
                         </div>
-                    </div>
                     @endif
                 </div>
 
@@ -183,12 +232,13 @@
                     <div class="flex items-start gap-3">
                         <!-- Avatar User -->
                         <img src="{{ Auth::user()->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->full_name) . '&background=3B82F6&color=fff&bold=true&size=128' }}"
-                             alt="User Avatar" class="h-10 w-10 rounded-full flex-shrink-0">
+                            alt="User Avatar" class="h-10 w-10 rounded-full flex-shrink-0 object-cover">
 
                         <!-- Form Input -->
                         <div class="flex flex-col w-full">
                             <!-- Toolbar (opsional) -->
-                            <div class="flex items-center gap-1 border border-b-0 rounded-t-md bg-gray-50 px-2 py-1 text-sm overflow-x-auto">
+                            <div
+                                class="flex items-center gap-1 border border-b-0 rounded-t-md bg-gray-50 px-2 py-1 text-sm overflow-x-auto">
                                 <!-- Tombol formatting sederhana -->
                                 <button type="button" class="hover:bg-gray-200 rounded p-1" title="Bold">
                                     <strong>B</strong>
@@ -222,41 +272,67 @@
             </div>
 
             <!-- POPUP Konfirmasi Gabung Rapat -->
-            @if($event->is_online_meeting && $event->meeting_link)
-            <div x-show="openPopup" x-transition
-                class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-                <div @click.away="openPopup = false"
-                    class="bg-[#f3f6fc] rounded-2xl shadow-lg p-8 w-full max-w-sm text-center">
+            @if ($event->is_online_meeting && $event->meeting_link)
+                <div x-show="openPopup" x-transition x-cloak
+                    class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+                    <div @click.away="openPopup = false"
+                        class="bg-[#f3f6fc] rounded-2xl shadow-lg p-8 w-full max-w-sm text-center">
 
-                    <img src="{{ asset('images/icons/teamimage.svg') }}" alt="Ilustrasi rapat" class="w-48 mx-auto mb-6">
+                        <img src="{{ asset('images/icons/teamimage.svg') }}" alt="Ilustrasi rapat"
+                            class="w-48 mx-auto mb-6">
 
-                    <h2 class="text-xl font-medium text-black mb-4">
-                        Apakah anda ingin bergabung dengan rapat?
-                    </h2>
+                        <h2 class="text-xl font-medium text-black mb-4">
+                            Apakah anda ingin bergabung dengan rapat?
+                        </h2>
 
-                    <p class="text-sm text-gray-600 mb-6">
-                        Anda akan diarahkan ke link rapat eksternal
-                    </p>
+                        <p class="text-sm text-gray-600 mb-6">
+                            Anda akan diarahkan ke link rapat eksternal
+                        </p>
 
-                    <div class="flex justify-center gap-4">
-                        <button @click="openPopup = false"
-                            class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors text-sm">
-                            Batal
-                        </button>
+                        <div class="flex justify-center gap-4">
+                            <button @click="openPopup = false"
+                                class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors text-sm">
+                                Batal
+                            </button>
 
-                        <a href="{{ $event->meeting_link }}" target="_blank"
-                           @click="openPopup = false"
-                           class="bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-6 rounded-lg transition-colors text-sm">
-                            Gabung Rapat
-                        </a>
+                            <a href="{{ $event->meeting_link }}" target="_blank" @click="openPopup = false"
+                                class="bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-6 rounded-lg transition-colors text-sm">
+                                Gabung Rapat
+                            </a>
+                        </div>
                     </div>
                 </div>
-            </div>
             @endif
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script>
+        function confirmDelete() {
+            Swal.fire({
+                title: 'Hapus Jadwal?',
+                text: "Jadwal yang dihapus tidak dapat dikembalikan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Submit form delete
+                    document.getElementById('deleteForm').submit();
+                }
+            });
+        }
+    </script>
+
     <style>
+        [x-cloak] {
+            display: none !important;
+        }
+
         .prose ul {
             list-style-type: disc;
             padding-left: 1.5rem;

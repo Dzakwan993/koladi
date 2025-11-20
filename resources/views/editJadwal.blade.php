@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Buat Jadwal')
+@section('title', 'Edit Jadwal')
 
 @section('content')
     <div class="bg-[#e9effd] min-h-screen">
@@ -8,19 +8,20 @@
 
         <div class="min-h-screen flex justify-center pt-4 md:pt-8 pb-8 bg-[#f3f6fc] px-3 md:px-6">
             <!-- Form -->
-            <form action="{{ route('calendar.store', ['workspaceId' => $workspaceId]) }}" method="POST" id="scheduleForm"
+            <form action="{{ route('calendar.update', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}" method="POST" id="scheduleForm"
                 class="bg-white rounded-xl shadow-xl p-4 md:p-6 w-full max-w-4xl flex flex-col gap-4 md:gap-5 h-fit">
                 @csrf
+                @method('PUT')
 
                 <!-- Judul -->
-                <h2 class="text-lg md:text-xl font-inter font-bold text-[#102a63] border-b-2 border-black pb-3">Buat Jadwal</h2>
+                <h2 class="text-lg md:text-xl font-inter font-bold text-[#102a63] border-b-2 border-black pb-3">Edit Jadwal</h2>
 
                 <!-- Nama Jadwal -->
                 <div class="flex flex-col font-inter">
                     <label class="mb-2 font-medium text-sm md:text-base text-gray-700">
                         Nama Jadwal <span class="text-red-500">*</span>
                     </label>
-                    <input type="text" name="title" value="{{ old('title') }}"
+                    <input type="text" name="title" value="{{ old('title', $event->title) }}"
                         placeholder="Masukkan nama jadwal..."
                         class="border rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 font-inter text-sm placeholder-gray-400 border-gray-300 transition"
                         required />
@@ -37,10 +38,12 @@
                             Mulai <span class="text-red-500">*</span>
                         </label>
                         <div class="flex gap-2">
-                            <input type="date" name="start_date" id="start_date" value="{{ old('start_date') }}"
+                            <input type="date" name="start_date" id="start_date"
+                                value="{{ old('start_date', \Carbon\Carbon::parse($event->start_datetime)->format('Y-m-d')) }}"
                                 class="border rounded-lg p-2.5 flex-1 font-inter text-sm text-gray-700 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                                 required />
-                            <input type="time" name="start_time" id="start_time" value="{{ old('start_time') }}"
+                            <input type="time" name="start_time" id="start_time"
+                                value="{{ old('start_time', \Carbon\Carbon::parse($event->start_datetime)->format('H:i')) }}"
                                 class="border rounded-lg p-2.5 w-32 font-inter text-sm text-gray-700 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                                 required />
                         </div>
@@ -52,10 +55,12 @@
                             Akhir <span class="text-red-500">*</span>
                         </label>
                         <div class="flex gap-2">
-                            <input type="date" name="end_date" id="end_date" value="{{ old('end_date') }}"
+                            <input type="date" name="end_date" id="end_date"
+                                value="{{ old('end_date', \Carbon\Carbon::parse($event->end_datetime)->format('Y-m-d')) }}"
                                 class="border rounded-lg p-2.5 flex-1 font-inter text-sm text-gray-700 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                                 required />
-                            <input type="time" name="end_time" id="end_time" value="{{ old('end_time') }}"
+                            <input type="time" name="end_time" id="end_time"
+                                value="{{ old('end_time', \Carbon\Carbon::parse($event->end_datetime)->format('H:i')) }}"
                                 class="border rounded-lg p-2.5 w-32 font-inter text-sm text-gray-700 border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
                                 required />
                         </div>
@@ -75,7 +80,7 @@
                     <div x-data="{
                         open: false,
                         options: ['Jangan Ulangi', 'Setiap hari', 'Setiap minggu', 'Setiap kuartal', 'Setiap tahun', 'Setiap hari kerja (Sen - Jum)'],
-                        selected: '{{ old('recurrence', 'Jangan Ulangi') }}'
+                        selected: '{{ old('recurrence', $event->recurrence ?? 'Jangan Ulangi') }}'
                     }" class="relative w-full md:w-1/3 pengulangan-dropdown">
                         <input type="hidden" name="recurrence" x-model="selected">
                         <button type="button" @click="open = !open" @click.away="open = false" id="pengulangan-btn"
@@ -116,11 +121,21 @@
                     <label class="mb-1 font-medium text-sm md:text-base text-black">Peserta <span
                             class="text-red-500">*</span></label>
 
+                    @php
+                        $selectedParticipantIds = old('participants', $event->participants->pluck('user_id')->toArray());
+                    @endphp
+
                     <div x-data="{
                         openPopup: false,
-                        selectedParticipants: {{ json_encode(old('participants', [Auth::id()])) }},
+                        selectedParticipants: {{ json_encode($selectedParticipantIds) }},
                         searchQuery: '',
-                        allMembers: {{ json_encode($members->toArray()) }},
+                        allMembers: {{ json_encode($members->map(function($m) {
+                            return [
+                                'id' => $m->id,
+                                'full_name' => $m->full_name,
+                                'avatar_url' => $m->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($m->full_name) . '&background=3B82F6&color=fff&bold=true&size=128'
+                            ];
+                        })->toArray()) }},
                         get filteredMembers() {
                             if (!this.searchQuery) return this.allMembers;
                             return this.allMembers.filter(member =>
@@ -155,7 +170,7 @@
                         <div class="flex items-center gap-2 flex-wrap">
                             <template x-for="participant in displayedParticipants" :key="participant.id">
                                 <div class="relative">
-                                    <img :src="participant.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(participant.full_name) + '&background=3B82F6&color=fff&bold=true&size=128'"
+                                    <img :src="participant.avatar_url"
                                         :alt="participant.full_name"
                                         class="rounded-full border-2 border-gray-200 w-10 h-10 object-cover"
                                         :title="participant.full_name"
@@ -163,7 +178,7 @@
                                 </div>
                             </template>
 
-                            <!-- ✅ PERBAIKAN: Tambah @click.prevent untuk menghindari auto-open -->
+                            <!-- Tombol tambah peserta -->
                             <button @click.prevent="openPopup = true" type="button"
                                 class="w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center transition-colors">
                                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -177,7 +192,7 @@
                             <input type="hidden" name="participants[]" :value="participantId">
                         </template>
 
-                        <!-- ✅ POPUP TAMBAH PESERTA - FIXED -->
+                        <!-- POPUP TAMBAH PESERTA -->
                         <div x-show="openPopup"
                             @click.self="openPopup = false"
                             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 popup-wrapper p-4"
@@ -206,7 +221,7 @@
                                     <template x-for="member in filteredMembers" :key="member.id">
                                         <div class="flex items-center justify-between py-1">
                                             <div class="flex items-center gap-2">
-                                                <img :src="member.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(member.full_name) + '&background=3B82F6&color=fff&bold=true&size=128'"
+                                                <img :src="member.avatar_url"
                                                     class="w-8 h-8 rounded-full object-cover border border-gray-200"
                                                     :alt="member.full_name"
                                                     onerror="this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent(this.alt) + '&background=3B82F6&color=fff&bold=true&size=128'" />
@@ -239,7 +254,7 @@
                 <!-- Privasi & Rapat -->
                 <div class="flex flex-col gap-4">
                     <!-- Privasi -->
-                    <div class="flex flex-col gap-2" x-data="{ isPrivate: {{ old('is_private', 0) }} }">
+                    <div class="flex flex-col gap-2" x-data="{ isPrivate: {{ old('is_private', $event->is_private ? 1 : 0) }} }">
                         <label class="mb-1 font-medium text-sm md:text-base text-black font-inter">Privasi</label>
                         <div class="flex items-center gap-3">
                             <input type="hidden" name="is_private" :value="isPrivate ? 1 : 0">
@@ -256,7 +271,7 @@
                     </div>
 
                     <!-- Rapat -->
-                    <div class="flex flex-col gap-2" x-data="{ isOnlineMeeting: {{ old('is_online_meeting', 0) }} }">
+                    <div class="flex flex-col gap-2" x-data="{ isOnlineMeeting: {{ old('is_online_meeting', $event->is_online_meeting ? 1 : 0) }} }">
                         <span class="font-medium text-sm md:text-base text-black font-inter">Apakah anda akan mengadakan
                             rapat?</span>
                         <div class="flex items-center gap-3">
@@ -274,7 +289,7 @@
                         <!-- Link Rapat (Conditional) -->
                         <div x-show="isOnlineMeeting" x-transition class="flex flex-col mt-2">
                             <label class="mb-1 font-medium font-inter text-sm md:text-base">Link Rapat (Opsional)</label>
-                            <input type="url" name="meeting_link" value="{{ old('meeting_link') }}"
+                            <input type="url" name="meeting_link" value="{{ old('meeting_link', $event->meeting_link) }}"
                                 placeholder="Masukkan link rapat anda..."
                                 class="border rounded-md pl-5 py-2 focus:outline-none font-inter text-sm placeholder-[#6B7280] border-[#6B7280]" />
                             <span class="text-xs text-gray-400 font-inter mt-1">Opsional - isi jika rapat dilakukan
@@ -295,13 +310,13 @@
                     <div id="catatan-editor"></div>
                 </div>
 
-                <!-- Tombol Kirim & Batal -->
+                <!-- Tombol Update & Batal -->
                 <div class="flex gap-3 pt-2">
                     <button type="submit"
                         class="bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition text-sm md:text-base font-semibold shadow-md hover:shadow-lg flex-1 md:flex-none">
-                        Kirim
+                        Update
                     </button>
-                    <a href="{{ route('jadwal', ['workspaceId' => $workspaceId]) }}"
+                    <a href="{{ route('calendar.show', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}"
                         class="border-2 border-blue-600 text-blue-600 px-6 py-2.5 rounded-lg hover:bg-blue-50 transition flex items-center justify-center text-sm md:text-base font-semibold flex-1 md:flex-none">
                         Batal
                     </a>
@@ -322,24 +337,11 @@
             document.getElementById('start_date').min = today;
             document.getElementById('end_date').min = today;
 
-            const now = new Date();
-            const startTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            const endTime = `${String(now.getHours() + 1).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-            if (!document.getElementById('start_time').value) {
-                document.getElementById('start_time').value = startTime;
-            }
-            if (!document.getElementById('end_time').value) {
-                document.getElementById('end_time').value = endTime;
-            }
-
             document.getElementById('start_date').addEventListener('change', function() {
-                if (!document.getElementById('end_date').value) {
-                    document.getElementById('end_date').value = this.value;
-                }
                 document.getElementById('end_date').min = this.value;
             });
 
+            // Initialize CKEditor dengan data existing
             ClassicEditor
                 .create(document.getElementById('catatan-editor'), {
                     toolbar: ['heading', '|', 'bold', 'italic', 'underline', '|', 'link', 'bulletedList', 'numberedList', '|', 'blockQuote', 'insertTable', '|', 'undo', 'redo'],
@@ -355,9 +357,11 @@
                 })
                 .then(editor => {
                     catatanEditor = editor;
-                    @if (old('description'))
-                        editor.setData({!! json_encode(old('description')) !!});
-                    @endif
+                    // Set existing content
+                    const existingContent = {!! json_encode(old('description', $event->description)) !!};
+                    if (existingContent) {
+                        editor.setData(existingContent);
+                    }
                 })
                 .catch(error => console.error('CKEditor error:', error));
 

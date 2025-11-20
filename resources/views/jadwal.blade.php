@@ -349,8 +349,48 @@
         }
     </style>
 
-    {{-- ✅ PENTING: Load FullCalendar JS SEBELUM script kita --}}
+    {{-- SweetAlert2 CDN --}}
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    {{-- FullCalendar JS --}}
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+    {{-- ✅ SWEETALERT NOTIFICATIONS --}}
+    @if (session('success'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: "{{ session('success') }}",
+                    confirmButtonColor: '#2563eb',
+                    confirmButtonText: 'OK',
+                    timer: 3000,
+                    timerProgressBar: true,
+                    showClass: {
+                        popup: 'animate__animated animate__fadeInDown'
+                    },
+                    hideClass: {
+                        popup: 'animate__animated animate__fadeOutUp'
+                    }
+                });
+            });
+        </script>
+    @endif
+
+    @if (session('error'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal!',
+                    text: "{{ session('error') }}",
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: 'OK'
+                });
+            });
+        </script>
+    @endif
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -475,7 +515,6 @@
             calendar.render();
             console.log('✅ Calendar rendered');
 
-            // ✅ PERBAIKAN FUNCTION RENDER SCHEDULE LIST
             function renderScheduleList(events) {
                 const scheduleList = document.getElementById('scheduleList');
                 const loading = document.getElementById('loadingSchedule');
@@ -494,7 +533,6 @@
                     return;
                 }
 
-                // Group events by date
                 const groupedEvents = {};
                 events.forEach(event => {
                     try {
@@ -524,65 +562,86 @@
 
                     groupedEvents[dateKey].forEach(event => {
                         try {
-                            const startTime = new Date(event.start).toLocaleTimeString('id-ID', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            });
-                            const endTime = new Date(event.end).toLocaleTimeString('id-ID', {
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            });
+                            const startDate = new Date(event.start);
+                            const endDate = new Date(event.end);
 
-                            // ✅ Cek apakah ada meeting link (HANYA tampilkan icon jika ada link)
+                            const startDateStr = event.extendedProps?.start_date || startDate.toISOString().split('T')[0];
+                            const endDateStr = event.extendedProps?.end_date || endDate.toISOString().split('T')[0];
+                            const isMultiDay = startDateStr !== endDateStr;
+
+                            let timeDisplay = '';
+
+                            if (isMultiDay) {
+                                const startFormatted = startDate.toLocaleDateString('id-ID', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric'
+                                }) + ' ' + startDate.toLocaleTimeString('id-ID', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                });
+
+                                const endFormatted = endDate.toLocaleDateString('id-ID', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric'
+                                }) + ' ' + endDate.toLocaleTimeString('id-ID', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                });
+
+                                timeDisplay = `${startFormatted} - ${endFormatted}`;
+                            } else {
+                                const startTime = startDate.toLocaleTimeString('id-ID', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                });
+                                const endTime = endDate.toLocaleTimeString('id-ID', {
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                });
+                                timeDisplay = `${startTime} - ${endTime}`;
+                            }
+
                             const hasMeetingLink = event.extendedProps?.meeting_link &&
                                 event.extendedProps.meeting_link.trim() !== '';
 
-                            // ✅ Icon camera hanya muncul jika ada meeting link
                             const iconHtml = hasMeetingLink ?
                                 '<i class="fas fa-video text-gray-700 mr-2"></i>' : '';
 
                             const bgColor = event.extendedProps?.is_creator ? 'bg-[#bbcff9]' :
                                 'bg-[#d4e4ff]';
 
-                            // ✅ Avatar creator (pembuat jadwal)
                             const creatorAvatar = event.extendedProps?.creator_avatar ||
                                 '/images/default-avatar.png';
                             const creatorName = event.extendedProps?.creator_name || 'Unknown';
 
-                            // ✅ Total participants
                             const participantsCount = event.extendedProps?.participants_count || 0;
 
                             html += `
                             <a href="/workspace/${workspaceId}/jadwal/${event.id}"
                                 class="${bgColor} rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition schedule-item">
 
-                                <!-- Tanggal -->
                                 <div class="flex flex-col items-start w-[140px] date-section">
                                     <span class="font-semibold text-[14px]">${dateKey.split(',')[0]}</span>
                                     <span class="font-semibold text-[14px]">${dateKey.split(',')[1]?.trim()}</span>
                                 </div>
 
-                                <!-- Content -->
                                 <div class="flex flex-col flex-1 px-4 content-section">
-                                    <!-- Judul + Icon Camera (jika ada link) -->
                                     <div class="flex items-center gap-2 mb-2">
                                         ${iconHtml}
                                         <span class="font-semibold text-[#090909] text-base">${event.title || 'Untitled'}</span>
                                     </div>
 
-                                    <!-- Jam + Avatar Creator -->
                                     <div class="flex items-center gap-3">
-                                                                                <!-- Avatar Pembuat -->
                                         <img src="${creatorAvatar}"
                                              alt="${creatorName}"
                                              title="${creatorName}"
                                              class="w-6 h-6 rounded-full border-2 border-white object-cover">
-                                        <span class="text-sm font-medium text-[#102a63]">${startTime} - ${endTime}</span>
-
+                                        <span class="text-sm font-semibold text-[#102A63]">${timeDisplay}</span>
                                     </div>
                                 </div>
 
-                                <!-- Badge Jumlah Peserta -->
                                 <div class="badge-section">
                                     <span class="bg-yellow-400 text-[#6B7280] text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow-sm">
                                         ${participantsCount}
