@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CalendarController;
@@ -188,12 +189,19 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/jadwal/{id}', [CalendarController::class, 'show'])->name('calendar.show');
     });
 
-    // Akses: http://127.0.0.1:8000/debug/events/{your-workspace-id}
+    // Comments Routes
+    Route::get('/comments/{commentableId}', [CommentController::class, 'index']);
+    Route::post('/comments', [CommentController::class, 'store'])->name('comments.store');
+    Route::put('/comments/{id}', [CommentController::class, 'update']);
+    Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
 
-    Route::get('/notulensi', function () {
-        return view('notulensi');
-    })->name('notulensi');
+    // Upload routes untuk attachments
+    Route::post('/upload', [App\Http\Controllers\AttachmentController::class, 'upload'])->name('upload.file');
+    Route::post('/upload-image', [App\Http\Controllers\AttachmentController::class, 'uploadImage'])->name('upload.image');
 
+    // Route untuk Notulensi
+    Route::get('/workspace/{workspaceId}/notulensi', [CalendarController::class, 'notulensi'])
+        ->name('notulensi');
     // ✅ Announcement Routes
     Route::get('/pengumuman', function () {
         return view('pengumuman');

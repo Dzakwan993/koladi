@@ -703,7 +703,7 @@ private function mapColumnToStatus($columnName)
     $mapping = [
         'To Do List' => 'todo',
         'Dikerjakan' => 'inprogress',
-        'Selesai' => 'done', 
+        'Selesai' => 'done',
         'Batal' => 'cancel'
     ];
 
@@ -711,7 +711,7 @@ private function mapColumnToStatus($columnName)
     if (array_key_exists($columnName, $mapping)) {
         return $mapping[$columnName];
     }
-    
+
     // Untuk kolom custom, gunakan nama kolom sebagai status
     // Konversi ke lowercase dan replace spasi dengan underscore
     return strtolower(str_replace(' ', '_', $columnName));
@@ -1659,7 +1659,7 @@ private function mapColumnToStatus($columnName)
         }
     }
 
-   
+
 
     // Helper method untuk menghitung progress
     private function calculateTaskProgress($task)
@@ -1742,7 +1742,7 @@ public function updateTaskDetail(Request $request, $taskId)
         if ($request->has('start_datetime')) {
             $taskData['start_datetime'] = $request->start_datetime;
         }
-        
+
         if ($request->has('due_datetime')) {
             $taskData['due_datetime'] = $request->due_datetime;
         }

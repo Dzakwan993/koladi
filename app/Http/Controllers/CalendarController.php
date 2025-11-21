@@ -24,19 +24,110 @@ class CalendarController extends Controller
             return 'https://ui-avatars.com/api/?name=User&background=3B82F6&color=fff&bold=true&size=128';
         }
 
-        // Jika avatar adalah URL penuh
         if ($user->avatar && Str::startsWith($user->avatar, ['http://', 'https://'])) {
             return $user->avatar;
         }
 
-        // Jika avatar adalah path storage
         if ($user->avatar) {
             return asset('storage/' . $user->avatar);
         }
 
-        // Default avatar dengan inisial
         $name = $user->full_name ?? $user->name ?? 'User';
         return 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=3B82F6&color=fff&bold=true&size=128';
+    }
+
+    // ✅ Helper: Check permission untuk buat jadwal
+    private function canCreateSchedule($workspaceId)
+    {
+        $user = Auth::user();
+        $workspace = Workspace::findOrFail($workspaceId);
+        $companyId = $workspace->company_id;
+
+        // Ambil role user di company
+        $userCompany = UserCompany::where('user_id', $user->id)
+            ->where('company_id', $companyId)
+            ->with('role')
+            ->first();
+
+        $companyRole = $userCompany?->role?->name ?? 'Member';
+
+        // ✅ SuperAdmin, Admin, Manager di COMPANY = bisa buat jadwal di SEMUA workspace
+        if (in_array($companyRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
+            return true;
+        }
+
+        // ✅ Jika role di company adalah Member, CEK ROLE DI WORKSPACE
+        if ($companyRole === 'Member') {
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                ->where('workspace_id', $workspaceId)
+                ->where('status_active', true)
+                ->with('role')
+                ->first();
+
+            // ❌ Jika bukan anggota workspace = TIDAK BISA buat jadwal
+            if (!$userWorkspace) {
+                return false;
+            }
+
+            $workspaceRole = $userWorkspace->role?->name ?? 'Member';
+
+            // ✅ Hanya Manager di workspace yang bisa buat jadwal
+            // ❌ Member di workspace TIDAK BISA buat jadwal
+            return $workspaceRole === 'Manager';
+        }
+
+        // ❌ Default: tidak bisa buat jadwal
+        return false;
+    }
+
+    /**
+     * ✅ BARU: Halaman Notulensi Rapat
+     */
+    public function notulensi($workspaceId)
+    {
+        $workspace = Workspace::findOrFail($workspaceId);
+        $user = Auth::user();
+        $activeCompanyId = session('active_company_id');
+
+        $userCompany = $user->userCompanies()
+            ->where('company_id', $activeCompanyId)
+            ->with('role')
+            ->first();
+
+        $isCompanyAdmin = in_array($userCompany?->role?->name ?? 'Member', ['SuperAdmin', 'Administrator', 'Admin', 'Manager']);
+
+        if (!$isCompanyAdmin) {
+            $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                ->where('workspace_id', $workspaceId)
+                ->where('status_active', true)
+                ->firstOrFail();
+        }
+
+        // ✅ Ambil jadwal yang:
+        // 1. Rapat Online (is_online_meeting = true)
+        // 2. Ada komentar (whereHas comments)
+        $notulensis = CalendarEvent::where('workspace_id', $workspaceId)
+            ->whereNull('deleted_at')
+            ->where('is_online_meeting', true) // Hanya rapat online
+            ->whereHas('comments') // ✅ FIX: Hanya yang ada komentar
+            ->withCount('comments') // Hitung jumlah komentar
+            ->with(['creator', 'participants.user'])
+            ->orderBy('start_datetime', 'desc')
+            ->get();
+
+        // Set avatar URL untuk setiap notulensi
+        $notulensis->each(function ($notulensi) {
+            $notulensi->creator->avatar_url = $this->getAvatarUrl($notulensi->creator);
+            $notulensi->participants->each(function ($participant) {
+                $participant->user->avatar_url = $this->getAvatarUrl($participant->user);
+            });
+        });
+
+        return view('notulensi', [
+            'workspaceId' => $workspaceId,
+            'workspace' => $workspace,
+            'notulensis' => $notulensis
+        ]);
     }
 
     public function index($workspaceId)
@@ -59,14 +150,24 @@ class CalendarController extends Controller
                 ->firstOrFail();
         }
 
+        // ✅ Check permission untuk buat jadwal
+        $canCreateSchedule = $this->canCreateSchedule($workspaceId);
+
         return view('jadwal', [
             'workspaceId' => $workspaceId,
-            'workspace' => $workspace
+            'workspace' => $workspace,
+            'canCreateSchedule' => $canCreateSchedule // Pass ke view
         ]);
     }
 
     public function create($workspaceId)
     {
+        // ✅ Check permission
+        if (!$this->canCreateSchedule($workspaceId)) {
+            return redirect()->route('jadwal', ['workspaceId' => $workspaceId])
+                ->with('error', 'Anda tidak memiliki izin untuk membuat jadwal.');
+        }
+
         $workspace = Workspace::findOrFail($workspaceId);
 
         $workspace->load(['userWorkspaces' => function ($query) {
@@ -89,7 +190,6 @@ class CalendarController extends Controller
             $members = $activeUsers;
         }
 
-        // Add avatar URL to each member
         $members = $members->map(function ($member) {
             $member->avatar_url = $this->getAvatarUrl($member);
             return $member;
@@ -103,10 +203,15 @@ class CalendarController extends Controller
     }
 
     /**
-     * Menyimpan event baru
+     * ✅ FIXED: Semua peserta langsung accepted (tidak ada status pending)
      */
     public function store(Request $request, $workspaceId)
     {
+        // ✅ Check permission
+        if (!$this->canCreateSchedule($workspaceId)) {
+            return back()->with('error', 'Anda tidak memiliki izin untuk membuat jadwal.');
+        }
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -130,32 +235,37 @@ class CalendarController extends Controller
                 $recurrence = null;
             }
 
+            $startDatetime = Carbon::parse($validated['start_datetime'], 'Asia/Jakarta');
+            $endDatetime = Carbon::parse($validated['end_datetime'], 'Asia/Jakarta');
+
             $event = CalendarEvent::create([
                 'workspace_id' => $workspaceId,
                 'created_by' => Auth::id(),
                 'title' => $validated['title'],
                 'description' => $validated['description'] ?? null,
-                'start_datetime' => $validated['start_datetime'],
-                'end_datetime' => $validated['end_datetime'],
+                'start_datetime' => $startDatetime,
+                'end_datetime' => $endDatetime,
                 'recurrence' => $recurrence,
                 'is_private' => $isPrivate,
                 'is_online_meeting' => $isOnlineMeeting,
                 'meeting_link' => $validated['meeting_link'] ?? null,
             ]);
 
+            // ✅ Creator langsung accepted
             CalendarParticipant::create([
                 'event_id' => $event->id,
                 'user_id' => Auth::id(),
                 'status' => 'accepted',
             ]);
 
+            // ✅ SEMUA PESERTA LANGSUNG ACCEPTED (tidak ada pending)
             if (!empty($validated['participants'])) {
                 foreach ($validated['participants'] as $userId) {
                     if ($userId !== Auth::id()) {
                         CalendarParticipant::create([
                             'event_id' => $event->id,
                             'user_id' => $userId,
-                            'status' => 'pending',
+                            'status' => 'accepted', // ✅ Langsung accepted
                         ]);
                     }
                 }
@@ -228,6 +338,7 @@ class CalendarController extends Controller
             });
 
             $events = $query->with(['creator', 'participants.user'])
+                ->withCount('comments')
                 ->orderBy('start_datetime', 'asc')
                 ->get();
 
@@ -238,12 +349,12 @@ class CalendarController extends Controller
             $formattedEvents = $events->map(function ($event) use ($user) {
                 try {
                     $startDate = $event->start_datetime instanceof Carbon
-                        ? $event->start_datetime
-                        : Carbon::parse($event->start_datetime);
+                        ? $event->start_datetime->setTimezone('Asia/Jakarta')
+                        : Carbon::parse($event->start_datetime)->setTimezone('Asia/Jakarta');
 
                     $endDate = $event->end_datetime instanceof Carbon
-                        ? $event->end_datetime
-                        : Carbon::parse($event->end_datetime);
+                        ? $event->end_datetime->setTimezone('Asia/Jakarta')
+                        : Carbon::parse($event->end_datetime)->setTimezone('Asia/Jakarta');
 
                     $participants = $event->participants->take(3)->map(function ($participant) {
                         return [
@@ -270,9 +381,9 @@ class CalendarController extends Controller
                             'creator_name' => $event->creator->full_name ?? 'Unknown',
                             'creator_avatar' => $this->getAvatarUrl($event->creator),
                             'is_creator' => $event->created_by === $user->id,
-                            // ✅ TAMBAHAN: Kirim start_date dan end_date untuk cek multi-day
                             'start_date' => $startDate->format('Y-m-d'),
                             'end_date' => $endDate->format('Y-m-d'),
+                            'comments_count' => $event->comments_count ?? 0,
                         ]
                     ];
                 } catch (\Exception $e) {
@@ -303,6 +414,8 @@ class CalendarController extends Controller
      */
     public function show($workspaceId, $id)
     {
+        Carbon::setLocale('id'); // Tambahkan ini
+        
         $event = CalendarEvent::with(['creator', 'participants.user'])
             ->where('workspace_id', $workspaceId)
             ->findOrFail($id);
@@ -320,7 +433,6 @@ class CalendarController extends Controller
             abort(403, 'Anda tidak memiliki akses ke jadwal ini');
         }
 
-        // Add avatar URL to participants
         $event->participants->each(function ($participant) {
             $participant->user->avatar_url = $this->getAvatarUrl($participant->user);
         });
@@ -330,9 +442,6 @@ class CalendarController extends Controller
         return view('detailJadwal', compact('event', 'isParticipant', 'isCreator', 'workspaceId'));
     }
 
-    /**
-     * Menampilkan form edit event
-     */
     public function edit($workspaceId, $id)
     {
         $event = CalendarEvent::with('participants.user')->findOrFail($id);
@@ -363,13 +472,11 @@ class CalendarController extends Controller
             $members = $activeUsers;
         }
 
-        // ✅ FIX: Add avatar URL to each member
         $members = $members->map(function ($member) {
             $member->avatar_url = $this->getAvatarUrl($member);
             return $member;
         });
 
-        // ✅ FIX: Add avatar URL to each participant's user
         $event->participants->each(function ($participant) {
             $participant->user->avatar_url = $this->getAvatarUrl($participant->user);
         });
@@ -378,7 +485,7 @@ class CalendarController extends Controller
     }
 
     /**
-     * Update event
+     * ✅ FIXED: Update juga langsung accepted semua peserta
      */
     public function update(Request $request, $workspaceId, $id)
     {
@@ -411,11 +518,14 @@ class CalendarController extends Controller
                 $recurrence = null;
             }
 
+            $startDatetime = Carbon::parse($validated['start_datetime'], 'Asia/Jakarta');
+            $endDatetime = Carbon::parse($validated['end_datetime'], 'Asia/Jakarta');
+
             $event->update([
                 'title' => $validated['title'],
                 'description' => $validated['description'] ?? null,
-                'start_datetime' => $validated['start_datetime'],
-                'end_datetime' => $validated['end_datetime'],
+                'start_datetime' => $startDatetime,
+                'end_datetime' => $endDatetime,
                 'recurrence' => $recurrence,
                 'is_private' => $isPrivate,
                 'is_online_meeting' => $isOnlineMeeting,
@@ -427,13 +537,14 @@ class CalendarController extends Controller
                     ->where('user_id', '!=', $event->created_by)
                     ->delete();
 
+                // ✅ Semua peserta baru langsung accepted
                 foreach ($validated['participants'] as $userId) {
                     if ($userId !== $event->created_by) {
                         CalendarParticipant::firstOrCreate([
                             'event_id' => $event->id,
                             'user_id' => $userId,
                         ], [
-                            'status' => 'pending',
+                            'status' => 'accepted', // ✅ Langsung accepted
                         ]);
                     }
                 }
@@ -442,8 +553,8 @@ class CalendarController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('jadwal', ['workspaceId' => $workspaceId]) // ✅ UBAH ke halaman jadwal
-                ->with('success', 'Jadwal berhasil diperbarui!'); // ✅ Pesan berhasil
+                ->route('jadwal', ['workspaceId' => $workspaceId])
+                ->with('success', 'Jadwal berhasil diperbarui!');
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Error updating event: ' . $e->getMessage());
@@ -454,9 +565,6 @@ class CalendarController extends Controller
         }
     }
 
-    /**
-     * Soft delete event
-     */
     public function destroy($workspaceId, $id)
     {
         $event = CalendarEvent::where('workspace_id', $workspaceId)->findOrFail($id);
@@ -473,22 +581,11 @@ class CalendarController extends Controller
     }
 
     /**
-     * Update status participant (accept/decline)
+     * ❌ METHOD INI TIDAK DIPERLUKAN LAGI (karena tidak ada status pending)
      */
     public function updateParticipantStatus(Request $request, $workspaceId, $eventId)
     {
-        $validated = $request->validate([
-            'status' => 'required|in:accepted,declined',
-        ]);
-
-        $participant = CalendarParticipant::where('event_id', $eventId)
-            ->where('user_id', Auth::id())
-            ->firstOrFail();
-
-        $participant->update([
-            'status' => $validated['status'],
-        ]);
-
-        return back()->with('success', 'Status berhasil diupdate');
+        // Method ini bisa dihapus atau dibiarkan kosong
+        return back()->with('info', 'Fitur status undangan sudah tidak digunakan');
     }
 }

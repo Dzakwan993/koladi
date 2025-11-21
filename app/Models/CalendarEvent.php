@@ -1,7 +1,5 @@
 <?php
 
-// File: app/Models/CalendarEvent.php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -60,6 +58,22 @@ class CalendarEvent extends Model
     public function participants()
     {
         return $this->hasMany(CalendarParticipant::class, 'event_id');
+    }
+
+    /**
+     * 🔹 TAMBAHAN: Relasi ke comments (polymorphic)
+     */
+    public function comments()
+    {
+        return $this->morphMany(Comment::class, 'commentable')->latest();
+    }
+
+    /**
+     * 🔹 TAMBAHAN: Relasi ke attachments (polymorphic)
+     */
+    public function attachments()
+    {
+        return $this->morphMany(Attachment::class, 'attachable')->latest();
     }
 
     /**

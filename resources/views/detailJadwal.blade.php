@@ -3,10 +3,18 @@
 @section('title', 'Detail Jadwal')
 
 @section('content')
-    <div class="bg-[#e9effd] min-h-screen">
+
+    <!-- Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Alpine.js & CKEditor -->
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+
+    <div class="bg-[#e9effd] min-h-screen font-[Inter,sans-serif] text-black relative" x-data="commentSection">
         @include('components.workspace-nav', ['active' => 'jadwal'])
 
-        <div x-data="{ openPopup: false }" class="min-h-screen flex justify-center items-start pt-10 bg-[#f3f6fc] px-4">
+        <div class="min-h-screen flex justify-center items-start pt-10 bg-[#f3f6fc] px-4">
             <div class="bg-white rounded-[8px] shadow-xl p-6 md:p-8 w-full max-w-3xl flex flex-col gap-6">
 
                 <!-- Header -->
@@ -35,8 +43,6 @@
                                 </svg>
                             </button>
 
-                            <!-- Dropdown Menu -->
-                            <!-- Bagian dropdown menu di detail jadwal - GANTI FORM HAPUS DENGAN SWEETALERT -->
                             <div x-show="open" @click.away="open = false" x-transition x-cloak
                                 class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10">
                                 <a href="{{ route('calendar.edit', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}"
@@ -48,7 +54,6 @@
                                     Edit Jadwal
                                 </a>
 
-                                <!-- ✅ TOMBOL HAPUS DENGAN SWEETALERT -->
                                 <button type="button" onclick="confirmDelete()"
                                     class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,7 +63,6 @@
                                     Hapus Jadwal
                                 </button>
 
-                                <!-- ✅ FORM HIDDEN UNTUK DELETE -->
                                 <form id="deleteForm"
                                     action="{{ route('calendar.destroy', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}"
                                     method="POST" style="display: none;">
@@ -75,7 +79,7 @@
 
                 <!-- Informasi Jadwal -->
                 <div class="flex flex-col gap-4 text-sm">
-                    <!-- ✅ WAKTU - DENGAN DETEKSI MULTI-DAY -->
+                    <!-- Waktu -->
                     <div class="flex items-start gap-4">
                         <img src="{{ asset('images/icons/jampasir.svg') }}" alt="Icon Waktu" class="w-5 h-5 mt-1">
                         <div>
@@ -88,11 +92,9 @@
 
                             <p class="font-medium text-[14px] text-[#6B7280]">
                                 @if ($isMultiDay)
-                                    {{-- Multi-day: Tampilkan tanggal lengkap --}}
                                     {{ $startDate->translatedFormat('l, d M Y, H:i') }} -
                                     {{ $endDate->translatedFormat('l, d M Y, H:i') }}
                                 @else
-                                    {{-- Single-day: Tampilkan tanggal sekali, jam range --}}
                                     {{ $startDate->translatedFormat('l, d M Y') }},
                                     {{ $startDate->format('H:i') }} - {{ $endDate->format('H:i') }}
                                 @endif
@@ -104,7 +106,7 @@
                         </div>
                     </div>
 
-                    <!-- ✅ PESERTA - AVATAR SAJA -->
+                    <!-- Peserta -->
                     <div class="flex items-start gap-4">
                         <img src="{{ asset('images/icons/bj1.svg') }}" alt="Icon Peserta" class="w-5 h-5 mt-1">
                         <div class="w-full">
@@ -117,21 +119,10 @@
                                             title="{{ $participant->user->full_name }}"
                                             class="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hover:border-blue-500 transition cursor-pointer">
 
-                                        <!-- Tooltip on Hover -->
+                                        <!-- ✅ Tooltip hanya nama, tidak ada status -->
                                         <div
                                             class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                                             {{ $participant->user->full_name }}
-                                            <span
-                                                class="
-                                                @if ($participant->status === 'accepted') text-green-400
-                                                @elseif($participant->status === 'declined') text-red-400
-                                                @else text-yellow-400 @endif">
-                                                ({{ $participant->status === 'accepted'
-                                                    ? 'Diterima'
-                                                    : ($participant->status === 'declined'
-                                                        ? 'Ditolak'
-                                                        : 'Menunggu') }})
-                                            </span>
                                         </div>
                                     </div>
                                 @endforeach
@@ -139,61 +130,10 @@
                         </div>
                     </div>
 
-                    <!-- Status Peserta (jika bukan creator) -->
-                    @if (!$isCreator && $isParticipant)
-                        <div class="flex items-start gap-4">
-                            <img src="{{ asset('images/icons/status.svg') }}" alt="Icon Status" class="w-5 h-5 mt-1">
-                            <div>
-                                <h2 class="font-semibold text-black text-[16px]">Status Anda</h2>
-                                @php
-                                    $userParticipant = $event->participants->where('user_id', Auth::id())->first();
-                                @endphp
-                                @if ($userParticipant && $userParticipant->status === 'pending')
-                                    <div class="flex gap-2 mt-2">
-                                        <form
-                                            action="{{ route('calendar.participant.status', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}"
-                                            method="POST">
-                                            @csrf
-                                            <input type="hidden" name="status" value="accepted">
-                                            <button type="submit"
-                                                class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition-colors">
-                                                Terima Undangan
-                                            </button>
-                                        </form>
-                                        <form
-                                            action="{{ route('calendar.participant.status', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}"
-                                            method="POST">
-                                            @csrf
-                                            <input type="hidden" name="status" value="declined">
-                                            <button type="submit"
-                                                class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors">
-                                                Tolak Undangan
-                                            </button>
-                                        </form>
-                                    </div>
-                                @else
-                                    <p
-                                        class="font-medium text-[14px]
-                                @if ($userParticipant->status === 'accepted') text-green-600
-                                @elseif($userParticipant->status === 'declined') text-red-600
-                                @else text-yellow-600 @endif">
-                                        Anda telah
-                                        @if ($userParticipant->status === 'accepted')
-                                            <span class="font-semibold">menerima</span>
-                                        @elseif($userParticipant->status === 'declined')
-                                            <span class="font-semibold">menolak</span>
-                                        @else
-                                            <span class="font-semibold">belum merespons</span>
-                                        @endif
-                                        undangan ini
-                                    </p>
-                                @endif
-                            </div>
-                        </div>
-                    @endif
+                    {{-- ❌ HAPUS SECTION STATUS PESERTA - TIDAK DIPERLUKAN LAGI --}}
 
                     <!-- Mode Rapat -->
-                    <div class="flex items-start gap-4">
+                    <div class="flex items-start gap-4" x-data="{ openPopup: false }">
                         <img src="{{ asset('images/icons/hbj1.svg') }}" alt="Icon Rapat" class="w-5 h-5 mt-1">
                         <div>
                             <h2 class="font-semibold text-black text-[16px]">
@@ -206,6 +146,38 @@
                                         class="w-5 h-5">
                                     <span>Gabung rapat</span>
                                 </button>
+
+                                <!-- POPUP Konfirmasi Gabung Rapat -->
+                                <div x-show="openPopup" x-transition x-cloak
+                                    class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+                                    <div @click.away="openPopup = false"
+                                        class="bg-[#f3f6fc] rounded-2xl shadow-lg p-8 w-full max-w-sm text-center">
+
+                                        <img src="{{ asset('images/icons/teamimage.svg') }}" alt="Ilustrasi rapat"
+                                            class="w-48 mx-auto mb-6">
+
+                                        <h2 class="text-xl font-medium text-black mb-4">
+                                            Apakah anda ingin bergabung dengan rapat?
+                                        </h2>
+
+                                        <p class="text-sm text-gray-600 mb-6">
+                                            Anda akan diarahkan ke link rapat eksternal
+                                        </p>
+
+                                        <div class="flex justify-center gap-4">
+                                            <button @click="openPopup = false"
+                                                class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors text-sm">
+                                                Batal
+                                            </button>
+
+                                            <a href="{{ $event->meeting_link }}" target="_blank"
+                                                @click="openPopup = false"
+                                                class="bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-6 rounded-lg transition-colors text-sm">
+                                                Gabung Rapat
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
                             @endif
                         </div>
                     </div>
@@ -216,7 +188,7 @@
                             <img src="{{ asset('images/icons/Edit.svg') }}" alt="Icon Catatan" class="w-5 h-5 mt-1">
                             <div>
                                 <h2 class="font-semibold text-black text-[16px]">Catatan</h2>
-                                <div class="prose max-w-none mt-1 text-[#6B7280] font-medium text-[14px]">
+                                <div class="prose max-w-none mt-1 text-[#6B7280] font-medium text-[14px] deskripsi-jadwal">
                                     {!! $event->description !!}
                                 </div>
                             </div>
@@ -224,90 +196,577 @@
                     @endif
                 </div>
 
-                <!-- Komentar Section -->
+                <!-- Section Komentar -->
                 <div class="mt-6">
-                    <h2 class="font-semibold text-black text-[16px] font-inter mb-4">Komentar</h2>
+                    <h3 class="text-base font-semibold text-black mb-4">Komentar</h3>
 
-                    <!-- Form Komentar -->
-                    <div class="flex items-start gap-3">
-                        <!-- Avatar User -->
-                        <img src="{{ Auth::user()->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode(Auth::user()->full_name) . '&background=3B82F6&color=fff&bold=true&size=128' }}"
-                            alt="User Avatar" class="h-10 w-10 rounded-full flex-shrink-0 object-cover">
+                    <!-- Input Komentar Utama -->
+                    @php
+                        $user = Auth::user();
+                        $avatarPath = $user->avatar ? 'storage/' . $user->avatar : null;
+                        $hasAvatarFile = $avatarPath && file_exists(public_path($avatarPath));
+                        $avatarUrl = $hasAvatarFile
+                            ? asset($avatarPath)
+                            : ($user->full_name
+                                ? 'https://ui-avatars.com/api/?name=' .
+                                    urlencode($user->full_name) .
+                                    '&background=random&color=fff'
+                                : asset('images/dk.jpg'));
+                    @endphp
 
-                        <!-- Form Input -->
-                        <div class="flex flex-col w-full">
-                            <!-- Toolbar (opsional) -->
-                            <div
-                                class="flex items-center gap-1 border border-b-0 rounded-t-md bg-gray-50 px-2 py-1 text-sm overflow-x-auto">
-                                <!-- Tombol formatting sederhana -->
-                                <button type="button" class="hover:bg-gray-200 rounded p-1" title="Bold">
-                                    <strong>B</strong>
-                                </button>
-                                <button type="button" class="hover:bg-gray-200 rounded p-1" title="Italic">
-                                    <em>I</em>
-                                </button>
-                                <button type="button" class="hover:bg-gray-200 rounded p-1" title="List">
-                                    • List
-                                </button>
-                            </div>
+                    <div class="flex items-start gap-3 mb-6">
+                        <img src="{{ $avatarUrl }}" alt="Avatar"
+                            class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
 
-                            <!-- Textarea -->
-                            <textarea name="comment" placeholder="Tulis komentar anda disini..."
-                                class="border rounded-b-md p-3 h-24 resize-none font-inter text-[14px] placeholder-[#6B7280] border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                        <div class="flex-1" x-data="{ active: false }" x-cloak>
+                            <template x-if="!active">
+                                <input type="text" placeholder="Tambahkan komentar baru..."
+                                    @focus="active = true; $nextTick(() => initMainEditor('main-editor'))"
+                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-[#102a63] text-sm bg-white cursor-text">
+                            </template>
 
-                            <!-- Tombol Action -->
-                            <div class="flex gap-2 mt-2">
-                                <button type="button"
-                                    class="bg-blue-600 text-white w-20 h-8 rounded-md hover:bg-blue-700 transition text-sm font-medium">
-                                    Kirim
-                                </button>
-                                <button type="button"
-                                    class="border border-blue-600 text-blue-600 w-20 h-8 rounded-md hover:bg-blue-50 transition text-sm font-medium">
-                                    Batal
-                                </button>
-                            </div>
+                            <template x-if="active">
+                                <div class="bg-white border border-gray-300 rounded-lg p-4">
+                                    <div id="main-editor" class="min-h-[140px] bg-white"></div>
+
+                                    <div class="flex justify-end gap-2 mt-4">
+                                        <button @click="active = false; destroyMainEditor('main-editor')"
+                                            class="px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded-lg hover:text-gray-800 transition">
+                                            Batal
+                                        </button>
+
+                                        <button @click="submitMain(); active = false;"
+                                            class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                                            Kirim
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
+
+                    <!-- Daftar Komentar -->
+                    <template x-if="comments.length > 0">
+                        <div class="space-y-4">
+                            <template x-for="comment in comments" :key="comment.id">
+                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                    <div class="flex items-start gap-3">
+                                        <img x-bind:src="comment.author.avatar"
+                                            class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
+                                        <div class="flex-1">
+                                            <div class="flex justify-between items-center">
+                                                <p class="text-sm font-semibold text-gray-800"
+                                                    x-text="comment.author.name"></p>
+                                                <span class="text-xs text-gray-500"
+                                                    x-text="formatCommentDate(comment.createdAt)"></span>
+                                            </div>
+
+                                            <div class="text-sm text-gray-700 mt-1 comment-text" x-html="comment.content">
+                                            </div>
+
+                                            <!-- Tombol Balas -->
+                                            <div class="flex items-center gap-4 mt-2">
+                                                <button @click="toggleReply(comment)"
+                                                    class="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 transition">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                                    </svg>
+                                                    <span>balas</span>
+                                                </button>
+                                            </div>
+
+                                            <!-- FORM BALAS -->
+                                            <template
+                                                x-if="replyView.active && replyView.parentComment?.id === comment.id">
+                                                <div class="mt-4 pl-6 border-l-2 border-gray-200">
+                                                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                                        <h4 class="text-sm font-semibold text-gray-800 mb-2">Membalas
+                                                            <span x-text="comment.author.name"></span>
+                                                        </h4>
+
+                                                        <div
+                                                            class="border border-gray-300 rounded-lg overflow-hidden mb-3">
+                                                            <div :id="'reply-editor-' + comment.id"
+                                                                class="min-h-[120px] p-3 bg-white"></div>
+                                                        </div>
+
+                                                        <div class="flex justify-end gap-2">
+                                                            <button @click="closeReplyView()"
+                                                                class="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition border border-gray-300 rounded-lg">Batal</button>
+                                                            <button @click="submitReplyFromEditor()"
+                                                                class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">Kirim</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+
+                                            <!-- Balasan -->
+                                            <template x-if="comment.replies && comment.replies.length > 0">
+                                                <div class="mt-3 pl-6 border-l-2 border-gray-200 space-y-3">
+                                                    <template x-for="reply in comment.replies" :key="reply.id">
+                                                        <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                                            <div class="flex items-start gap-2">
+                                                                <img x-bind:src="reply.author.avatar"
+                                                                    class="rounded-full w-6 h-6 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
+                                                                <div>
+                                                                    <div class="flex items-center gap-2">
+                                                                        <p class="text-sm font-semibold text-gray-800"
+                                                                            x-text="reply.author.name"></p>
+                                                                        <span class="text-xs text-gray-500"
+                                                                            x-text="formatCommentDate(reply.createdAt)"></span>
+                                                                    </div>
+                                                                    <div class="text-sm text-gray-700 mt-1 comment-text"
+                                                                        x-html="reply.content"></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <template x-if="comments.length === 0">
+                        <div class="text-center py-8 text-gray-500 text-sm">Belum ada komentar disini...</div>
+                    </template>
                 </div>
             </div>
-
-            <!-- POPUP Konfirmasi Gabung Rapat -->
-            @if ($event->is_online_meeting && $event->meeting_link)
-                <div x-show="openPopup" x-transition x-cloak
-                    class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-                    <div @click.away="openPopup = false"
-                        class="bg-[#f3f6fc] rounded-2xl shadow-lg p-8 w-full max-w-sm text-center">
-
-                        <img src="{{ asset('images/icons/teamimage.svg') }}" alt="Ilustrasi rapat"
-                            class="w-48 mx-auto mb-6">
-
-                        <h2 class="text-xl font-medium text-black mb-4">
-                            Apakah anda ingin bergabung dengan rapat?
-                        </h2>
-
-                        <p class="text-sm text-gray-600 mb-6">
-                            Anda akan diarahkan ke link rapat eksternal
-                        </p>
-
-                        <div class="flex justify-center gap-4">
-                            <button @click="openPopup = false"
-                                class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors text-sm">
-                                Batal
-                            </button>
-
-                            <a href="{{ $event->meeting_link }}" target="_blank" @click="openPopup = false"
-                                class="bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-6 rounded-lg transition-colors text-sm">
-                                Gabung Rapat
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            @endif
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.3.1/classic/ckeditor.js"></script>
+
     <script>
+        const editors = {};
+
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        async function createEditor(el, type = 'all', commentId = null) {
+            try {
+                const toolbarItems = [
+                    'undo', 'redo', '|',
+                    'heading', '|',
+                    'bold', 'italic', '|',
+                    'link', 'blockQuote', '|',
+                    'bulletedList', 'numberedList', '|',
+                    'insertTable'
+                ];
+
+                const config = {
+                    toolbar: {
+                        items: toolbarItems,
+                        shouldNotGroupWhenFull: true
+                    },
+                    heading: {
+                        options: [{
+                                model: 'paragraph',
+                                title: 'Paragraf',
+                                class: 'ck-heading_paragraph'
+                            },
+                            {
+                                model: 'heading1',
+                                view: 'h1',
+                                title: 'Heading 1',
+                                class: 'ck-heading_heading1'
+                            },
+                            {
+                                model: 'heading2',
+                                view: 'h2',
+                                title: 'Heading 2',
+                                class: 'ck-heading_heading2'
+                            }
+                        ]
+                    },
+                    placeholder: el.dataset.placeholder || ''
+                };
+
+                const editor = await ClassicEditor.create(el, config);
+
+                if (type === 'all') {
+                    insertUploadFileButtonToToolbar(editor, commentId);
+                    insertUploadImageButtonToToolbar(editor, commentId);
+                }
+
+                editor.editing.view.change(writer => {
+                    writer.setStyle('font-family', 'Inter, sans-serif', editor.editing.view.document.getRoot());
+                    writer.setStyle('font-size', '14px', editor.editing.view.document.getRoot());
+                    writer.setStyle('color', '#000000', editor.editing.view.document.getRoot());
+                });
+
+                return editor;
+            } catch (err) {
+                console.warn('CKEditor create failed, fallback to textarea for', el.id, err);
+                el.innerHTML =
+                    `<textarea id="${el.id}-fallback" class="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg bg-white resize-none"></textarea>`;
+                return null;
+            }
+        }
+
+        async function initMainEditor(id = 'main-editor') {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (editors[id] !== undefined) return;
+
+            const newCommentId = generateUUID();
+            window.currentMainCommentId = newCommentId;
+
+            const inst = await createEditor(el, 'all', newCommentId);
+            editors[id] = inst;
+        }
+
+        function destroyMainEditor(id = 'main-editor') {
+            const inst = editors[id];
+            if (inst) inst.destroy().catch(() => {});
+            delete editors[id];
+            const ta = document.getElementById(id + '-fallback');
+            if (ta) ta.remove();
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '';
+            window.currentMainCommentId = null;
+        }
+
+        async function initReplyEditorFor(commentId) {
+            const id = `reply-editor-${commentId}`;
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (editors[`reply-${commentId}`] !== undefined) return;
+
+            const newReplyId = generateUUID();
+            window[`currentReplyId_${commentId}`] = newReplyId;
+
+            const inst = await createEditor(el, 'all', newReplyId);
+            editors[`reply-${commentId}`] = inst;
+        }
+
+        function destroyReplyEditorFor(commentId) {
+            const key = `reply-${commentId}`;
+            const inst = editors[key];
+            if (inst) inst.destroy().catch(() => {});
+            delete editors[key];
+            const ta = document.getElementById(`reply-editor-${commentId}-fallback`);
+            if (ta) ta.remove();
+            const el = document.getElementById(`reply-editor-${commentId}`);
+            if (el) el.innerHTML = '';
+            delete window[`currentReplyId_${commentId}`];
+        }
+
+        function getEditorDataSafe(key) {
+            const inst = editors[key];
+            if (inst) return inst.getData();
+            if (key === 'main-editor') return document.getElementById('main-editor-fallback')?.value || '';
+            if (key.startsWith('reply-')) {
+                const id = key.replace('reply-', '');
+                return document.getElementById(`reply-editor-${id}-fallback`)?.value || '';
+            }
+            return '';
+        }
+
+        function insertUploadFileButtonToToolbar(editor, commentId) {
+            const toolbarEl = editor.ui.view.toolbar.element;
+            const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'ck ck-button';
+            btn.title = 'Upload File';
+            btn.innerHTML = `<span class="ck-button__label" style="display:flex;align-items:center;gap:2px">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="20">
+                    <path fill="currentColor" d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8.83a2 2 0 0 0-.59-1.41l-3.83-3.83A2 2 0 0 0 10.17 3H6zm4 2 4 4H10V4z"/>
+                </svg>
+            </span>`;
+            btn.style.marginLeft = '6px';
+            btn.style.cursor = 'pointer';
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            btn.addEventListener('click', () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar,.ppt,.pptx";
+                input.click();
+
+                input.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append('upload', file);
+                    formData.append('attachable_id', commentId);
+                    formData.append('attachable_type', 'App\\Models\\Comment');
+
+                    try {
+                        const res = await fetch('/upload', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.url) {
+                            editor.model.change(writer => {
+                                const insertPos = editor.model.document.selection
+                                    .getFirstPosition();
+                                const paragraph = writer.createElement('paragraph');
+                                const textNode = writer.createText(file.name, {
+                                    linkHref: data.url
+                                });
+                                writer.append(textNode, paragraph);
+                                editor.model.insertContent(paragraph, insertPos);
+                            });
+                        } else alert('Upload file gagal.');
+                    } catch (err) {
+                        console.error(err);
+                        alert('Terjadi kesalahan upload file.');
+                    }
+                }, {
+                    once: true
+                });
+            });
+
+            itemsContainer.appendChild(btn);
+        }
+
+        function insertUploadImageButtonToToolbar(editor, commentId) {
+            const toolbarEl = editor.ui.view.toolbar.element;
+            const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'ck ck-button';
+            btn.title = 'Upload Image';
+            btn.innerHTML = `<span class="ck-button__label" style="display:flex;align-items:center;gap:2px">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                    <path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 11a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM5 19l4.5-6 3.5 4.5 2.5-3L19 19H5z"/>
+                </svg>
+            </span>`;
+            btn.style.marginLeft = '6px';
+            btn.style.cursor = 'pointer';
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            btn.addEventListener('click', () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.click();
+                input.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append('upload', file);
+                    formData.append('attachable_id', commentId);
+                    formData.append('attachable_type', 'App\\Models\\Comment');
+
+                    try {
+                        const res = await fetch('/upload-image', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.url) {
+                            editor.model.change(writer => {
+                                const insertPos = editor.model.document.selection
+                                    .getFirstPosition();
+                                const imageElement = writer.createElement('imageBlock', {
+                                    src: data.url
+                                });
+                                editor.model.insertContent(imageElement, insertPos);
+                            });
+                        } else alert('Upload gagal.');
+                    } catch (err) {
+                        console.error(err);
+                        alert('Terjadi kesalahan upload image.');
+                    }
+                }, {
+                    once: true
+                });
+            });
+
+            itemsContainer.appendChild(btn);
+        }
+
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('commentSection', () => ({
+                comments: [],
+                replyView: {
+                    active: false,
+                    parentComment: null
+                },
+
+                async init() {
+                    const eventId = "{{ $event->id }}";
+                    try {
+                        const res = await fetch(`/comments/${eventId}`, {
+                            credentials: 'same-origin',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
+                        if (!res.ok) throw new Error('Gagal memuat komentar: ' + res.status);
+                        const data = await res.json();
+                        this.comments = data.comments || [];
+                    } catch (e) {
+                        console.error('Gagal memuat komentar:', e);
+                        this.comments = [];
+                    }
+                },
+
+                async submitMain() {
+                    const content = getEditorDataSafe('main-editor').trim();
+                    if (!content) {
+                        alert('Komentar tidak boleh kosong!');
+                        return;
+                    }
+
+                    const preGeneratedId = window.currentMainCommentId;
+
+                    try {
+                        const res = await fetch(`{{ route('comments.store') }}`, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                id: preGeneratedId,
+                                content,
+                                commentable_id: "{{ $event->id }}",
+                                commentable_type: "App\\Models\\CalendarEvent"
+                            })
+                        });
+
+                        if (!res.ok) {
+                            const text = await res.text();
+                            console.error('Server error', res.status, text);
+                            alert('Gagal mengirim komentar. Refresh halaman.');
+                            return;
+                        }
+
+                        const data = await res.json();
+                        if (data.success) {
+                            this.comments.unshift(data.comment);
+                            destroyMainEditor('main-editor');
+                            await initMainEditor('main-editor');
+                        } else {
+                            alert(data.message || 'Gagal menambahkan komentar.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Gagal mengirim komentar (network).');
+                    }
+                },
+
+                async submitReplyFromEditor() {
+                    if (!this.replyView.parentComment) return;
+                    const parent = this.replyView.parentComment;
+                    const key = `reply-${parent.id}`;
+                    const content = getEditorDataSafe(key).trim();
+                    if (!content) {
+                        alert('Balasan tidak boleh kosong!');
+                        return;
+                    }
+
+                    const preGeneratedId = window[`currentReplyId_${parent.id}`];
+
+                    try {
+                        const res = await fetch(`{{ route('comments.store') }}`, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                id: preGeneratedId,
+                                content,
+                                commentable_id: "{{ $event->id }}",
+                                commentable_type: "App\\Models\\CalendarEvent",
+                                parent_comment_id: parent.id
+                            })
+                        });
+
+                        if (!res.ok) {
+                            const text = await res.text();
+                            console.error('Server error', res.status, text);
+                            alert('Gagal mengirim balasan.');
+                            return;
+                        }
+
+                        const data = await res.json();
+                        if (data.success) {
+                            if (!parent.replies) parent.replies = [];
+                            parent.replies.push(data.comment);
+                            this.closeReplyView();
+                        } else {
+                            alert(data.message || 'Gagal menambahkan balasan.');
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert('Gagal mengirim balasan (network).');
+                    }
+                },
+
+                toggleReply(comment) {
+                    if (this.replyView.active && this.replyView.parentComment?.id === comment.id) {
+                        this.closeReplyView();
+                        return;
+                    }
+                    if (this.replyView.active && this.replyView.parentComment)
+                        destroyReplyEditorFor(this.replyView.parentComment.id);
+                    this.replyView.active = true;
+                    this.replyView.parentComment = comment;
+                    setTimeout(() => initReplyEditorFor(comment.id), 150);
+                },
+
+                closeReplyView() {
+                    if (this.replyView.parentComment) destroyReplyEditorFor(this.replyView.parentComment
+                        .id);
+                    this.replyView.active = false;
+                    this.replyView.parentComment = null;
+                },
+
+                formatCommentDate(dateString) {
+                    if (!dateString) return '';
+                    const d = new Date(dateString);
+                    return d.toLocaleString('id-ID', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                }
+            }));
+        });
+
+        window.addEventListener('beforeunload', () => {
+            Object.keys(editors).forEach(k => {
+                try {
+                    editors[k]?.destroy?.();
+                } catch (e) {}
+                delete editors[k];
+            });
+        });
+
         function confirmDelete() {
             Swal.fire({
                 title: 'Hapus Jadwal?',
@@ -321,7 +780,6 @@
                 reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
-                    // Submit form delete
                     document.getElementById('deleteForm').submit();
                 }
             });
@@ -333,18 +791,46 @@
             display: none !important;
         }
 
+        .ck-content a {
+            color: #2563eb !important;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .ck-content a:hover {
+            color: #1d4ed8 !important;
+            text-decoration: none;
+        }
+
+        .comment-text a {
+            color: #2563eb !important;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .comment-text a:hover {
+            color: #1d4ed8 !important;
+            text-decoration: none;
+        }
+
+        .deskripsi-jadwal a {
+            color: #2563eb;
+            text-decoration: underline;
+            font-weight: 500;
+        }
+
+        .deskripsi-jadwal a:hover {
+            color: #1d4ed8;
+        }
+
         .prose ul {
             list-style-type: disc;
             padding-left: 1.5rem;
-            margin-top: 0.5rem;
-            margin-bottom: 0.5rem;
         }
 
         .prose ol {
             list-style-type: decimal;
             padding-left: 1.5rem;
-            margin-top: 0.5rem;
-            margin-bottom: 0.5rem;
         }
 
         .prose li {
