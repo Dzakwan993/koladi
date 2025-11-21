@@ -39,7 +39,7 @@ class Workspace extends Model
                 ['name' => 'Selesai', 'position' => 3],
                 ['name' => 'Batal', 'position' => 4],
             ];
-            
+
             foreach ($defaultColumns as $column) {
                 BoardColumn::create([
                     'id' => Str::uuid()->toString(),
@@ -86,5 +86,11 @@ class Workspace extends Model
     public function scopeActive($query)
     {
         return $query->whereNull('deleted_at');
+    }
+
+    //relasi mindmap
+    public function mindmaps()
+    {
+        return $this->hasMany(Mindmap::class, 'workspace_id');
     }
 }

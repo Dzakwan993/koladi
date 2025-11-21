@@ -130,5 +130,10 @@ class User extends Authenticatable
         return $this->hasCompanyRole($companyId, $allowed);
     }
 
+    public function workspaces()
+    {
+        return $this->hasMany(Workspace::class, 'user_id');
+    }
+
 
 }

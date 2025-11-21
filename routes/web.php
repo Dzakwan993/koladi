@@ -9,6 +9,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\MindmapController;
 use App\Http\Controllers\TaskController;
 use App\Models\Workspace;
 
@@ -252,4 +253,23 @@ Route::middleware(['auth'])->group(function () {
 
     // ✅ Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
+
+
+    //mindmap
+    Route::middleware(['auth'])->group(function () {
+        // Route untuk mindmap dengan workspace
+        Route::get('/workspace/{workspace}/mindmap', [MindmapController::class, 'show'])->name('workspace.mindmap');
+
+        // TAMBAHKAN ROUTE INI - untuk akses langsung /mindmap
+        Route::get('/mindmap', [MindmapController::class, 'index'])->name('mindmap');
+        Route::get('/mindmap/{id}/data', [MindmapController::class, 'getData']);
+        Route::post('/mindmap/{id}/save', [MindmapController::class, 'save']);
+
+        // API routes
+        Route::get('/mindmap/{mindmap}/data', [MindmapController::class, 'getMindmapData'])->name('mindmap.data');
+        Route::post('/mindmap/{mindmap}/save', [MindmapController::class, 'saveNode'])->name('mindmap.save');
+        Route::post('/mindmap/{mindmap}/nodes', [MindmapController::class, 'addNode'])->name('mindmap.nodes.add');
+        Route::put('/mindmap/nodes/{node}', [MindmapController::class, 'updateNode'])->name('mindmap.nodes.update');
+        Route::delete('/mindmap/nodes/{node}', [MindmapController::class, 'deleteNode'])->name('mindmap.nodes.delete');
+    });
 });
