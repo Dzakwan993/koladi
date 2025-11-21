@@ -138,4 +138,88 @@ class DokumenController extends Controller
         }
 
 
+        public function updateFolder(Request $request, $id)
+        {
+            $folder = Folder::findOrFail($id);
+
+            $oldName = $folder->name;
+            $oldPrivate = $folder->is_private;
+
+            $newName = $request->name;
+            $newPrivate = $request->is_private == 1;
+
+            $messages = [];
+
+            // Perubahan nama
+            if ($oldName !== $newName) {
+                $messages[] = "Nama folder diperbarui.";
+            }
+
+            // Perubahan private/public, tapi kalimat dibuat netral
+            if ($oldPrivate !== $newPrivate) {
+                $messages[] = "Aturan privasi folder diperbarui.";
+            }
+
+            // Jika tidak ada perubahan sama sekali
+            if (empty($messages)) {
+                $messages[] = "Tidak ada perubahan pada folder.";
+            }
+
+            // Update data
+            $folder->update([
+                'name' => $newName,
+                'is_private' => $newPrivate,
+            ]);
+
+            return redirect()->back()->with('alert', [
+                'icon'  => 'success',
+                'title' => 'Folder berhasil diperbarui!',
+                'text'  => implode(" ", $messages),
+            ])->with('alert_once', true);
+        }
+
+        public function updateFile(Request $request, $id)
+        {
+            $file = File::findOrFail($id);
+
+            $oldName = $file->name;
+            $oldPrivate = $file->is_private;
+
+            $newName = $request->name;
+            $newPrivate = $request->is_private == 1;
+
+            $messages = [];
+
+            // Nama berubah
+            if ($oldName !== $newName) {
+                $messages[] = "Nama file diperbarui.";
+            }
+
+            // Privasi berubah
+            if ($oldPrivate !== $newPrivate) {
+                $messages[] = "Aturan privasi file diperbarui.";
+            }
+
+            // Tidak ada perubahan
+            if (empty($messages)) {
+                $messages[] = "Tidak ada perubahan pada file.";
+            }
+
+            // Update data
+            $file->update([
+                'name' => $newName,
+                'is_private' => $newPrivate,
+            ]);
+
+            return redirect()->back()->with('alert', [
+                'icon'  => 'success',
+                'title' => 'File berhasil diperbarui!',
+                'text'  => implode(" ", $messages),
+            ])->with('alert_once', true);
+        }
+
+
+
+
+
 }

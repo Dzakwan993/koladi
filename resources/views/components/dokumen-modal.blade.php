@@ -242,10 +242,17 @@
 
 
 
-                <!-- Modal Edit Folder -->
+               <!-- Modal Edit Folder -->
                 <div x-show="showEditFolderModal" x-cloak
                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div class="bg-white rounded-lg w-full max-w-md" @click.outside="showEditFolderModal = false">
+
+                    <!-- FORM MULAI -->
+                    <form method="POST" :action="`/folders/${editingFolder.id}/update`"
+                        @click.outside="showEditFolderModal = false"
+                        class="bg-white rounded-lg w-full max-w-md">
+
+                        @csrf
+
                         {{-- Header Modal --}}
                         <div class="px-6 py-4 border-b border-gray-200">
                             <h3 class="text-lg font-semibold text-gray-800">Edit Folder</h3>
@@ -253,9 +260,13 @@
 
                         {{-- Content Modal --}}
                         <div class="px-6 py-4">
+
                             <p class="text-sm text-gray-600 mb-4">Masukkan nama folder</p>
-                            <input type="text" x-model="editFolderName" placeholder="Nama folder"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition mb-4">
+
+                            <input type="text" name="name" x-model="editFolderName"
+                                placeholder="Nama folder"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 
+                                focus:ring-blue-500 focus:border-blue-500 transition mb-4">
 
                             {{-- Switch untuk Folder Rahasia --}}
                             <div class="flex items-center justify-between py-2">
@@ -272,31 +283,55 @@
                                         <p class="text-xs text-gray-500">Hanya yang berhak dapat melihat</p>
                                     </div>
                                 </div>
-                                <button type="button" @click="editIsSecretFolder = !editIsSecretFolder"
+
+                                <!-- Hidden for backend -->
+                                <input type="hidden" name="is_private" :value="editIsSecretFolder ? 1 : 0">
+
+                                <button type="button"
+                                    @click="editIsSecretFolder = !editIsSecretFolder"
                                     :class="editIsSecretFolder ? 'bg-blue-600' : 'bg-gray-200'"
-                                    class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                    class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full 
+                                    border-2 border-transparent transition-colors duration-200 ease-in-out 
+                                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+
                                     <span class="sr-only">Folder Rahasia</span>
+
                                     <span :class="editIsSecretFolder ? 'translate-x-5' : 'translate-x-0'"
-                                        class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
+                                        class="pointer-events-none inline-block h-5 w-5 transform rounded-full 
+                                        bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
                                 </button>
+
                             </div>
                         </div>
 
                         {{-- Footer Modal --}}
                         <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-                            <button @click="showEditFolderModal = false"
-                                class="px-4 py-2 text-sm text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 transition">
+
+                            <button type="button"
+                                @click="showEditFolderModal = false"
+                                class="px-4 py-2 text-sm text-blue-600 bg-white border border-blue-600 
+                                rounded-lg hover:bg-gray-50 transition">
                                 Batal
                             </button>
-                            <button @click="updateFolder()" :disabled="!editFolderName.trim()"
-                                :class="!editFolderName.trim() ? 'bg-gray-300 cursor-not-allowed' :
-                                    'bg-blue-600 hover:bg-blue-700'"
+
+                            <button type="submit"
+                                :disabled="editFolderName.trim() === originalFolderName.trim() 
+                                            && editIsSecretFolder === originalIsSecretFolder"
+                                :class="(editFolderName.trim() === originalFolderName.trim() 
+                                        && editIsSecretFolder === originalIsSecretFolder)
+                                    ? 'bg-gray-300 cursor-not-allowed' 
+                                    : 'bg-blue-600 hover:bg-blue-700'"
                                 class="px-4 py-2 text-sm text-white rounded-lg transition">
                                 Simpan
                             </button>
+
+
                         </div>
-                    </div>
+
+                    </form>
+                    <!-- FORM END -->
                 </div>
+
 
 
 
@@ -392,10 +427,17 @@
 
 
 
-                 <!-- Modal Edit File -->
+                <!-- Modal Edit File -->
                 <div x-show="showEditFileModal" x-cloak
                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div class="bg-white rounded-lg w-full max-w-md" @click.outside="showEditFileModal = false">
+
+                    <form method="POST" :action="`/files/${editingFile.id}/update`"
+                        class="bg-white rounded-lg w-full max-w-md"
+                        @click.outside="showEditFileModal = false">
+                        
+                        @csrf
+                        @method('PUT')
+
                         {{-- Header Modal --}}
                         <div class="px-6 py-4 border-b border-gray-200">
                             <h3 class="text-lg font-semibold text-gray-800">Edit File</h3>
@@ -403,7 +445,20 @@
 
                         {{-- Content Modal --}}
                         <div class="px-6 py-4">
-                            {{-- Info File --}}
+
+                            <!-- PREVIEW GAMBAR / VIDEO -->
+                            <template x-if="editingFile?.type === 'Image'">
+                                <img :src="editingFile.file_url"
+                                    class="w-full max-h-48 object-contain rounded mb-4 shadow">
+                            </template>
+
+                            <template x-if="editingFile?.type === 'Video'">
+                                <video controls class="w-full max-h-48 rounded mb-4 shadow">
+                                    <source :src="editingFile.file_url">
+                                </video>
+                            </template>
+
+                            {{-- Info File (icon + nama) --}}
                             <div class="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
                                 <img :src="editingFile?.icon" :alt="editingFile?.type" class="w-8 h-8">
                                 <div>
@@ -427,26 +482,36 @@
                                         <p class="text-xs text-gray-500">Hanya yang berhak dapat melihat</p>
                                     </div>
                                 </div>
-                                <button type="button" @click="editFileIsSecret = !editFileIsSecret"
+
+                                <input type="hidden" name="is_private" :value="editFileIsSecret ? 1 : 0">
+
+                                <button type="button"
+                                    @click="editFileIsSecret = !editFileIsSecret"
                                     :class="editFileIsSecret ? 'bg-blue-600' : 'bg-gray-200'"
-                                    class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                    <span class="sr-only">File Rahasia</span>
+                                    class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition">
                                     <span :class="editFileIsSecret ? 'translate-x-5' : 'translate-x-0'"
-                                        class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
+                                        class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition" />
                                 </button>
                             </div>
                         </div>
 
                         {{-- Footer Modal --}}
                         <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-                            <button @click="showEditFileModal = false; editFileIsSecret = false"
-                                class="px-4 py-2 text-smtext-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 transition">
+                            <button type="button"
+                                @click="showEditFileModal = false"
+                                class="px-4 py-2 text-sm text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 transition">
                                 Batal
                             </button>
-                            <button @click="updateFile()"
-                                class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+
+                            <button type="submit"
+                                :disabled="editFileIsSecret === originalIsSecretFile"
+                                :class="editFileIsSecret === originalIsSecretFile
+                                    ? 'bg-gray-300 cursor-not-allowed'
+                                    : 'bg-blue-600 hover:bg-blue-700'"
+                                class="px-4 py-2 text-sm text-white rounded-lg transition">
                                 Simpan
                             </button>
                         </div>
-                    </div>
+
+                    </form>
                 </div>

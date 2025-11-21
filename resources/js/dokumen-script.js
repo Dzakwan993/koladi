@@ -17,6 +17,7 @@ export default function documentSearch() {
                 isSecretFolder: false,
                 editFolderName: '',
                 editIsSecretFolder: false,
+                originalIsSecretFolder: null,
                 currentFile: null,
                 selectMode: false,
                 selectedDocuments: [],
@@ -32,8 +33,10 @@ export default function documentSearch() {
                 showEditFileModal: false,
                 editingFile: null,
                 editFileIsSecret: false,
+                originalIsSecretFile: null,
                 searchMember: '',
                 selectAll: false,
+                originalFolderName: '',
 
                 // Data akan diisi dari backend/API
                 folders: [],
@@ -546,6 +549,7 @@ export default function documentSearch() {
                 openEditFile(file) {
                     this.editingFile = file;
                     this.editFileIsSecret = file.isSecret || false;
+                     this.originalIsSecretFile = file.isSecret || false;
                     this.showEditFileModal = true;
                 },
 
@@ -589,7 +593,9 @@ export default function documentSearch() {
                 openEditFolder(folder) {
                     this.editingFolder = folder;
                     this.editFolderName = folder.name;
+                    this.originalFolderName = folder.name;
                     this.editIsSecretFolder = folder.isSecret || false;
+                    this.originalIsSecretFolder = folder.isSecret || false;
                     this.showEditFolderModal = true;
                 },
 

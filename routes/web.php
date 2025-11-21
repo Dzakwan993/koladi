@@ -182,6 +182,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dokumen-dan-file/{workspace}', [DokumenController::class, 'index'])->name('dokumen-dan-file');
     Route::post('/folder', [DokumenController::class, 'store'])->name('folder.store');
     Route::post('/file', [DokumenController::class, 'storeFile'])->name('file.store');
+    Route::post('/folders/{id}/update', [DokumenController::class, 'updateFolder'])->name('folder.update');
+    Route::put('/files/{id}/update', [DokumenController::class, 'updateFile'])->name('files.update');
+
+
 
 
     // ✅ Leave Management
