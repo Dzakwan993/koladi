@@ -16,6 +16,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\PengumumanPerusahaanController;
 use App\Http\Controllers\TaskController;
 use App\Models\Workspace;
 
@@ -310,4 +311,12 @@ Route::middleware(['auth'])->group(function () {
 
     // ✅ Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
+
+    //pengumuman perusahaan
+    Route::prefix('perusahaan/{company_id}/pengumuman')->group(function () {
+    Route::get('/', [PengumumanPerusahaanController::class, 'index'])->name('pengumuman-perusahaan.index');
+    Route::post('/store', [PengumumanPerusahaanController::class, 'store'])->name('pengumuman-perusahaan.store');
+    Route::get('/{id}', [PengumumanPerusahaanController::class, 'show'])->name('pengumuman-perusahaan.show');
+    Route::get('/data/workspaces', [PengumumanPerusahaanController::class, 'getWorkspaces'])->name('pengumuman-perusahaan.workspaces');
+});
 });

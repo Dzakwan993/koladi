@@ -60,15 +60,22 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                     class="w-5 h-5 {{ Request::is('kelola-workspace*') ? 'filter-blue' : '' }}"> <span
                     class="text-sm">Ruang Kerja</span>
             </a>
+@auth
+    @php
+        $userCompanies = auth()->user()->companies;
+    @endphp
 
-            {{-- Pengumuman --}}
-            <a href="{{ url('/pengumuman') }}"
-                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
-                      {{ Request::is('pengumuman*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                <img src="images/icons/workspace_pengumuman.svg" alt="Cuti"
-                    class="w-5 h-5 {{ Request::is('pengumuman*') ? 'filter-blue' : '' }}"> <span
-                    class="text-sm">Pengumuman</span>
-            </a>
+    @if($userCompanies->count() > 0)
+        {{-- Pengumuman Perusahaan --}}
+        <a href="{{ route('pengumuman-perusahaan.index', ['company_id' => $userCompanies->first()->id]) }}"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                  {{ Request::is('perusahaan/*/pengumuman*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+            <img src="images/icons/workspace_pengumuman.svg" alt="Pengumuman"
+                class="w-5 h-5 {{ Request::is('perusahaan/*/pengumuman*') ? 'filter-blue' : '' }}">
+            <span class="text-sm">Pengumuman Perusahaan</span>
+        </a>
+    @endif
+@endauth
 
             {{-- Chat --}}
             <a href="{{ url('/chat') }}"

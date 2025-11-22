@@ -39,7 +39,7 @@ class Workspace extends Model
                 ['name' => 'Selesai', 'position' => 3],
                 ['name' => 'Batal', 'position' => 4],
             ];
-            
+
             foreach ($defaultColumns as $column) {
                 BoardColumn::create([
                     'id' => Str::uuid()->toString(),
@@ -60,6 +60,7 @@ class Workspace extends Model
     {
         return $this->belongsTo(Company::class, 'company_id');
     }
+
 
     public function creator()
     {
@@ -86,5 +87,10 @@ class Workspace extends Model
     public function scopeActive($query)
     {
         return $query->whereNull('deleted_at');
+    }
+
+     public function pengumumans()
+    {
+        return $this->hasMany(Pengumuman::class);
     }
 }

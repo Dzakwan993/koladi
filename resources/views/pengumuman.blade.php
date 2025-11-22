@@ -33,89 +33,95 @@
                     <div class="space-y-4 h-full overflow-y-auto pr-2">
 
                         @forelse($pengumumans as $p)
-                                            @php
-                                                $canAccess = $p->isVisibleTo($user);
-                                            @endphp
-                                            @php
-                                                $creator = $p->creator;
-                                                $avatarPath = $creator->avatar ? 'storage/' . $creator->avatar : null;
-                                                $hasAvatarFile = $avatarPath && file_exists(public_path($avatarPath));
+                            @php
+                                $canAccess = $p->isVisibleTo($user);
+                            @endphp
+                            @php
+                                $creator = $p->creator;
+                                $avatarPath = $creator->avatar ? 'storage/' . $creator->avatar : null;
+                                $hasAvatarFile = $avatarPath && file_exists(public_path($avatarPath));
 
-                                                // Tentukan URL akhir avatar
-                                                $avatarUrl = $hasAvatarFile
-                                                    ? asset($avatarPath)
-                                                    : ($creator->full_name
-                                                        ? 'https://ui-avatars.com/api/?name=' .
-                                                        urlencode($creator->full_name) .
-                                                        '&background=random&color=fff'
-                                                        : asset('images/dk.jpg'));
-                                            @endphp
-                                            <div @if ($canAccess) onclick="window.location='{{ route('pengumuman.show', $p->id) }}'"
+                                // Tentukan URL akhir avatar
+                                $avatarUrl = $hasAvatarFile
+                                    ? asset($avatarPath)
+                                    : ($creator->full_name
+                                        ? 'https://ui-avatars.com/api/?name=' .
+                                            urlencode($creator->full_name) .
+                                            '&background=random&color=fff'
+                                        : asset('images/dk.jpg'));
+                            @endphp
+                            <div
+                                @if ($canAccess) onclick="window.location='{{ route('pengumuman.show', $p->id) }}'"
                                                 class="cursor-pointer bg-[#e9effd] hover:bg-[#dce6fc] transition-colors rounded-xl shadow-sm p-4 flex justify-between items-start"
                                             @else class="bg-[#e9effd] rounded-xl shadow-sm p-4 flex justify-between items-start opacity-70"
                                                 title="Private - Anda tidak memiliki akses" @endif>
-                                                <div class="flex items-start space-x-3">
-                                                    <img src="{{ $avatarUrl }}" alt="Avatar"
-                                                        class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
-                                                    <div>
-                                                        <p class="font-semibold ">{{ $p->creator->full_name ?? 'Unknown' }}</p>
+                                <div class="flex items-start space-x-3">
+                                    <img src="{{ $avatarUrl }}" alt="Avatar"
+                                        class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
+                                    <div>
+                                        <p class="font-semibold ">{{ $p->creator->full_name ?? 'Unknown' }}</p>
 
-                                                        <p class="font-medium flex items-center gap-1 text-[#000000]/80">
-                                                            @if ($p->is_private)
-                                                                <img src="{{ asset('images/icons/Lock.svg') }}" alt="Lock" class="w-5 h-5">
-                                                            @endif
+                                        <p class="font-medium flex items-center gap-1 text-[#000000]/80">
+                                            @if ($p->is_private)
+                                                <img src="{{ asset('images/icons/Lock.svg') }}" alt="Lock"
+                                                    class="w-5 h-5">
+                                            @endif
 
-                                                            @if ($canAccess)
-                                                                <span class="hover:underline text-black font-bold font-inter">
-                                                                    {{ $p->title }}
-                                                                </span>
-                                                            @else
-                                                                <span class="font-medium text-gray-500">
-                                                                    {{ $p->title }}
-                                                                </span>
-                                                            @endif
-                                                        </p>
+                                            @if ($canAccess)
+                                                <span class="hover:underline text-black font-bold font-inter">
+                                                    {{ $p->title }}
+                                                </span>
+                                            @else
+                                                <span class="font-medium text-gray-500">
+                                                    {{ $p->title }}
+                                                </span>
+                                            @endif
+                                        </p>
 
-                                                        <div class="text-sm text-gray-500 ck-content">
+                                        <div class="text-sm text-gray-500 ck-content">
 
-                                                            {!! preg_replace([
-                                '/<img[^>]+>/i',         // hapus tag <img>
-                                '/<figure[^>]*>.*?<\/figure>/is', // hapus figure CKEditor
-                                '/<p>\s*<\/p>/i',        // hapus paragraf kosong
-                                '/<br\s*\/?>/i',         // hapus br kosong
-                            ], '', $p->description) !!}
-                                                        </div>
-
-
-                                                        <div class="flex items-center space-x-2 mt-2">
-                                                            @if ($p->due_date)
-                                                                <span
-                                                                    class="bg-[#6B7280] text-white text-xs font-medium px-2 py-1 flex rounded-md items-center gap-1">
-                                                                    {{ \Carbon\Carbon::parse($p->due_date)->translatedFormat('d M') }}
-                                                                </span>
-                                                            @endif
-                                                            @if ($p->auto_due)
-                                                                <span class="text-xs text-[#102a63]/60 font-medium">
-                                                                    Selesai:
-                                                                    {{ \Carbon\Carbon::parse($p->auto_due)->translatedFormat('d M Y') }}
-                                                                </span>
-                                                            @endif
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="flex flex-col space-y-6 items-center">
-                                                    <span class="bg-[#102a63]/10 text-black text-xs px-2 py-1 rounded-md font-medium">
-                                                        {{ \Carbon\Carbon::parse($p->created_at)->diffForHumans() }}
-                                                    </span>
-                                                    <div
-                                                        class="w-5 h-5 inline-flex items-center justify-center rounded-full bg-yellow-400 text-gray-700 font-bold text-[12px]">
-                                                        {{ $p->comments_count }}
-                                                    </div>
+                                            {!! preg_replace(
+                                                [
+                                                    '/<img[^>]+>/i', // hapus tag <img>
+                                                    '/<figure[^>]*>.*?<\/figure>/is', // hapus figure CKEditor
+                                                    '/<p>\s*<\/p>/i', // hapus paragraf kosong
+                                                    '/<br\s*\/?>/i', // hapus br kosong
+                                                ],
+                                                '',
+                                                $p->description,
+                                            ) !!}
+                                        </div>
 
 
-                                                </div>
-                                            </div>
+                                        <div class="flex items-center space-x-2 mt-2">
+                                            @if ($p->due_date)
+                                                <span
+                                                    class="bg-[#6B7280] text-white text-xs font-medium px-2 py-1 flex rounded-md items-center gap-1">
+                                                    {{ \Carbon\Carbon::parse($p->due_date)->translatedFormat('d M') }}
+                                                </span>
+                                            @endif
+                                            @if ($p->auto_due)
+                                                <span class="text-xs text-[#102a63]/60 font-medium">
+                                                    Selesai:
+                                                    {{ \Carbon\Carbon::parse($p->auto_due)->translatedFormat('d M Y') }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex flex-col space-y-6 items-center">
+                                    <span class="bg-[#102a63]/10 text-black text-xs px-2 py-1 rounded-md font-medium">
+                                        {{ \Carbon\Carbon::parse($p->created_at)->diffForHumans() }}
+                                    </span>
+                                    <div
+                                        class="w-5 h-5 inline-flex items-center justify-center rounded-full bg-yellow-400 text-gray-700 font-bold text-[12px]">
+                                        {{ $p->comments_count }}
+                                    </div>
+
+
+                                </div>
+                            </div>
                         @empty
                             <div class="text-center text-gray-500 py-4">
                                 Tidak ada pengumuman
@@ -145,8 +151,7 @@
                             class="w-full border border-[#6B7280] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600 font-[Inter] text-[14px] placeholder:text-[#6B7280] pl-5" />
 
                         <!-- Catatan -->
-                        <div class="flex flex-col" x-data
-                            x-init="createEditorFor('catatan-editor', { placeholder: 'Masukkan catatan anda disini...' })">
+                        <div class="flex flex-col" x-data x-init="createEditorFor('catatan-editor', { placeholder: 'Masukkan catatan anda disini...' })">
                             <label class="block text-sm font-inter font-semibold text-black mb-1 mt-5">
                                 Deskripsi <span class="text-red-500">*</span>
                             </label>
@@ -182,22 +187,22 @@
                                         },
                                         heading: {
                                             options: [{
-                                                model: 'paragraph',
-                                                title: 'Paragraf',
-                                                class: 'ck-heading_paragraph'
-                                            },
-                                            {
-                                                model: 'heading1',
-                                                view: 'h1',
-                                                title: 'Heading 1',
-                                                class: 'ck-heading_heading1'
-                                            },
-                                            {
-                                                model: 'heading2',
-                                                view: 'h2',
-                                                title: 'Heading 2',
-                                                class: 'ck-heading_heading2'
-                                            }
+                                                    model: 'paragraph',
+                                                    title: 'Paragraf',
+                                                    class: 'ck-heading_paragraph'
+                                                },
+                                                {
+                                                    model: 'heading1',
+                                                    view: 'h1',
+                                                    title: 'Heading 1',
+                                                    class: 'ck-heading_heading1'
+                                                },
+                                                {
+                                                    model: 'heading2',
+                                                    view: 'h2',
+                                                    title: 'Heading 2',
+                                                    class: 'ck-heading_heading2'
+                                                }
                                             ]
                                         },
                                         fontFamily: {
@@ -211,21 +216,21 @@
                                         fontColor: {
                                             columns: 5,
                                             colors: [{
-                                                color: '#000000',
-                                                label: 'Black'
-                                            },
-                                            {
-                                                color: '#102a63',
-                                                label: 'Dark Blue'
-                                            },
-                                            {
-                                                color: '#6B7280',
-                                                label: 'Gray'
-                                            },
-                                            {
-                                                color: '#FFFFFF',
-                                                label: 'White'
-                                            }
+                                                    color: '#000000',
+                                                    label: 'Black'
+                                                },
+                                                {
+                                                    color: '#102a63',
+                                                    label: 'Dark Blue'
+                                                },
+                                                {
+                                                    color: '#6B7280',
+                                                    label: 'Gray'
+                                                },
+                                                {
+                                                    color: '#FFFFFF',
+                                                    label: 'White'
+                                                }
                                             ]
                                         },
                                         simpleUpload: {
@@ -297,15 +302,20 @@
                                             try {
                                                 const res = await fetch('/upload-image', {
                                                     method: 'POST',
-                                                    headers: { 'X-CSRF-TOKEN': csrfToken || '{{ csrf_token() }}' },
+                                                    headers: {
+                                                        'X-CSRF-TOKEN': csrfToken || '{{ csrf_token() }}'
+                                                    },
                                                     body: formData
                                                 });
 
                                                 const data = await res.json();
                                                 if (res.ok && data.url) {
                                                     editor.model.change(writer => {
-                                                        const insertPos = editor.model.document.selection.getFirstPosition();
-                                                        const imageElement = writer.createElement('imageBlock', { src: data.url });
+                                                        const insertPos = editor.model.document.selection
+                                                            .getFirstPosition();
+                                                        const imageElement = writer.createElement('imageBlock', {
+                                                            src: data.url
+                                                        });
                                                         editor.model.insertContent(imageElement, insertPos);
                                                     });
                                                 } else {
@@ -323,7 +333,9 @@
                                                                                                                     `;
 
                                             }
-                                        }, { once: true });
+                                        }, {
+                                            once: true
+                                        });
                                     });
 
                                     itemsContainer.appendChild(btn);
@@ -399,11 +411,14 @@
 
                                                 if (res.ok && data.url) {
                                                     editor.model.change(writer => {
-                                                        const insertPos = editor.model.document.selection.getFirstPosition();
+                                                        const insertPos = editor.model.document.selection
+                                                            .getFirstPosition();
 
                                                         // Tambahkan elemen paragraf dengan text berwarna biru & underline
                                                         const linkElement = writer.createElement('paragraph');
-                                                        const textNode = writer.createText(file.name, { linkHref: data.url });
+                                                        const textNode = writer.createText(file.name, {
+                                                            linkHref: data.url
+                                                        });
                                                         writer.append(textNode, linkElement);
                                                         editor.model.insertContent(linkElement, insertPos);
                                                     });
@@ -552,7 +567,8 @@
                                 const dropdown1 = document.createElement("div");
                                 dropdown1.className =
                                     "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 dropdown-menu-1";
-                                dropdown1.innerHTML = `
+                                dropdown1.innerHTML =
+                                    `
                                                                                                                                                                                                                                             <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-t-lg text-black font-[Inter]" data-value="Selesai otomatis">Selesai otomatis</div>
                                                                                                                                                                                                                                             <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-b-lg text-black font-[Inter]" data-value="Atur tenggat waktu sendiri">Atur tenggat waktu sendiri</div>
                                                                                                                                                                                                                                         `;
@@ -560,7 +576,8 @@
                                 const dropdown2 = document.createElement("div");
                                 dropdown2.className =
                                     "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 dropdown-menu-2";
-                                dropdown2.innerHTML = `
+                                dropdown2.innerHTML =
+                                    `
                                                                                                                                                                                                                                             <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-t-lg text-black font-[Inter]" data-value="1 hari dari sekarang">1 hari dari sekarang</div>
                                                                                                                                                                                                                                             <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer text-black font-[Inter]" data-value="3 hari dari sekarang">3 hari dari sekarang</div>
                                                                                                                                                                                                                                             <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-b-lg text-black font-[Inter]" data-value="7 hari dari sekarang">7 hari dari sekarang</div>
@@ -689,7 +706,8 @@
                                 <!-- Avatar list -->
                                 <div class="flex -space-x-2" id="selectedMembersAvatars">
                                     <template x-for="member in selectedMembers" :key="member.id">
-                                        <div class="w-10 h-10 rounded-full border-2 border-white shadow-sm overflow-hidden">
+                                        <div
+                                            class="w-10 h-10 rounded-full border-2 border-white shadow-sm overflow-hidden">
                                             <img :src="member.avatar" :alt="member.name" :title="member.name"
                                                 class="w-full h-full object-cover">
                                         </div>
@@ -708,8 +726,8 @@
 
                             <!-- Hidden input untuk dikirim ke backend -->
                             <template x-for="id in selectedMembers.map(m => m.id)" :key="id">
-    <input type="hidden" name="recipients[]" :value="id">
-</template>
+                                <input type="hidden" name="recipients[]" :value="id">
+                            </template>
 
 
                             <!-- Modal Pilih penerima -->
@@ -740,8 +758,8 @@
                                                         <p class="text-xs text-gray-500" x-text="member.email"></p>
                                                     </div>
                                                 </div>
-                                                <input type="checkbox" :value="member.id" @change="toggleMember(member)"
-                                                    :checked="isSelected(member.id)"
+                                                <input type="checkbox" :value="member.id"
+                                                    @change="toggleMember(member)" :checked="isSelected(member.id)"
                                                     :disabled="window.currentUser && member.id === window.currentUser.id"
                                                     class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                             </label>
@@ -782,7 +800,8 @@
                                 <input type="hidden" name="is_private" value="0">
 
                                 <!-- Checkbox utama -->
-                                <input type="checkbox" name="is_private" id="switchRahasia" class="sr-only" value="1">
+                                <input type="checkbox" name="is_private" id="switchRahasia" class="sr-only"
+                                    value="1">
                                 <div id="switchBg"
                                     class="relative w-11 h-6 bg-gray-300 rounded-full transition-colors duration-300">
                                     <span id="switchCircle"
@@ -796,7 +815,7 @@
                                 const switchBg = document.getElementById('switchBg');
                                 const switchCircle = document.getElementById('switchCircle');
 
-                                switchRahasia.addEventListener('change', function () {
+                                switchRahasia.addEventListener('change', function() {
                                     if (this.checked) {
                                         switchBg.classList.remove('bg-gray-300');
                                         switchBg.classList.add('bg-blue-600');
@@ -845,140 +864,147 @@
         });
 
         // Tangkap data dari CKEditor saat form dikirim
-        document.getElementById('pengumumanForm').addEventListener('submit', function (e) {
-            const title = document.querySelector('input[name="title"]').value.trim();
-            const editorData = window['catatan-editor_editor'].getData().trim();
-            const autoDueValue = document.getElementById('autoDue').value.trim();
-            const selectedMembers = Alpine.store?.selectedMembers || [];
+        document.getElementById('pengumumanForm').addEventListener('submit', function(e) {
+    const title = document.querySelector('input[name="title"]').value.trim();
+    const editorData = window['catatan-editor_editor'].getData().trim();
+    const autoDueValue = document.getElementById('autoDue').value.trim();
+    const isPrivate = document.getElementById('switchRahasia').checked;
+    const recipients = document.querySelectorAll('input[name="recipients[]"]');
 
-            // → CEK JUDUL
-            if (!title) {
-                e.preventDefault();
-                return Swal.fire("Kolom Belum Diisi", "Judul pengumuman wajib diisi.", "warning");
-            }
+    // → CEK JUDUL
+    if (!title) {
+        e.preventDefault();
+        return Swal.fire("Kolom Belum Diisi", "Judul pengumuman wajib diisi.", "warning");
+    }
 
-            // → CEK DESKRIPSI
-            if (!editorData || editorData === "<p><br></p>") {
-                e.preventDefault();
-                return Swal.fire("Kolom Belum Diisi", "Deskripsi pengumuman wajib diisi.", "warning");
-            }
+    // → CEK DESKRIPSI
+    if (!editorData || editorData === "<p><br></p>") {
+        e.preventDefault();
+        return Swal.fire("Kolom Belum Diisi", "Deskripsi pengumuman wajib diisi.", "warning");
+    }
 
-            // → CEK PENERIMA
-            if (document.querySelector('input[name="recipients[]"]').value.length === 0) {
-                e.preventDefault();
-                return Swal.fire("Penerima Kosong", "Pilih minimal 1 penerima pengumuman.", "warning");
-            }
+    // → CEK PENERIMA HANYA JIKA PRIVATE
+    if (isPrivate && recipients.length === 0) {
+        e.preventDefault();
+        return Swal.fire("Penerima Kosong", "Untuk pengumuman rahasia, pilih minimal 1 penerima.", "warning");
+    }
 
-            // Masukkan ke input hidden agar terkirim ke backend
-            document.getElementById('catatanInput').value = editorData;
-        });
+    // Masukkan ke input hidden agar terkirim ke backend
+    document.getElementById('catatanInput').value = editorData;
+});
     </script>
 
     <script>
-document.addEventListener('alpine:init', () => {
-    Alpine.data('pengumumanMembers', () => ({
-        showManageMembersModal: false,
-        members: [],
-        tempSelectedMembers: [], // 🔹 Temp untuk centang sementara di modal
-        selectedMembers: [], // 🔹 Member yang sudah di-Terapkan
-        search: '',
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('pengumumanMembers', () => ({
+                showManageMembersModal: false,
+                members: [],
+                tempSelectedMembers: [], // 🔹 Temp untuk centang sementara di modal
+                selectedMembers: [], // 🔹 Member yang sudah di-Terapkan
+                search: '',
 
-        async init() {
-            await this.loadMembers();
+                async init() {
+                    await this.loadMembers();
 
-            // 🔹 Tambahkan pembuat pengumuman otomatis
-            if (window.currentUser) {
-                const creator = this.members.find(m => m.id === window.currentUser.id);
-                if (creator && !this.isSelected(creator.id)) {
-                    this.selectedMembers.push(creator);
+                    // 🔹 Tambahkan pembuat pengumuman otomatis
+                    if (window.currentUser) {
+                        const creator = this.members.find(m => m.id === window.currentUser.id);
+
+                        if (creator) {
+                            // Pembuat otomatis masuk ke selected dan tempSelected
+                            this.selectedMembers.push(creator);
+                            this.tempSelectedMembers.push(creator);
+                        }
+                    }
+                },
+
+                async loadMembers() {
+                    try {
+                        const workspaceId = window.location.pathname.split('/')[2];
+                        const res = await fetch(`/pengumuman/anggota/${workspaceId}`);
+                        if (!res.ok) throw new Error('Gagal mengambil data anggota');
+                        this.members = await res.json();
+                    } catch (err) {
+                        console.error('Gagal memuat anggota:', err);
+                        this.members = [];
+                    }
+                },
+
+                toggleMember(member) {
+    // ❗ Pembuat pengumuman tidak boleh dihapus
+    if (window.currentUser && member.id === window.currentUser.id) {
+        return;
+    }
+
+    const idx = this.tempSelectedMembers.findIndex(m => m.id === member.id);
+    if (idx === -1) {
+        this.tempSelectedMembers.push(member);
+    } else {
+        this.tempSelectedMembers.splice(idx, 1);
+    }
+},
+
+
+                isTempSelected(id) {
+                    return this.tempSelectedMembers.some(m => m.id === id);
+                },
+
+                isSelected(id) {
+                    return this.selectedMembers.some(m => m.id === id);
+                },
+
+                get filteredMembers() {
+                    if (!this.search) return this.members;
+                    const term = this.search.toLowerCase();
+                    return this.members.filter(m =>
+                        m.name.toLowerCase().includes(term) ||
+                        m.email.toLowerCase().includes(term)
+                    );
+                },
+
+                applyMembers() {
+                    // 🔹 Terapkan pilihan dari temp ke selected
+                    this.selectedMembers = [...this.tempSelectedMembers];
+                    this.closeModal();
+                },
+
+                openMemberModal() {
+                    // 🔹 Saat buka modal, isi temp dengan yang sudah ada (biar centang tetap)
+                    this.tempSelectedMembers = [...this.selectedMembers];
+                    this.showManageMembersModal = true;
+                },
+
+                closeModal() {
+                    this.showManageMembersModal = false;
                 }
+            }))
+        });
+
+        // 🔹 Sinkronkan switch private dan daftar member
+        document.addEventListener('DOMContentLoaded', function() {
+            const privateSwitch = document.querySelector('#is_private');
+
+            if (privateSwitch) {
+                privateSwitch.addEventListener('change', function() {
+                    const isChecked = this.checked;
+                    const hiddenInputs = document.querySelectorAll('input[name="recipients[]"]');
+
+                    if (!isChecked) {
+                        // Kalau switch off → public
+                        hiddenInputs.forEach(el => el.remove());
+                    }
+                });
             }
-        },
 
-        async loadMembers() {
-            try {
-                const workspaceId = window.location.pathname.split('/')[2];
-                const res = await fetch(`/pengumuman/anggota/${workspaceId}`);
-                if (!res.ok) throw new Error('Gagal mengambil data anggota');
-                this.members = await res.json();
-            } catch (err) {
-                console.error('Gagal memuat anggota:', err);
-                this.members = [];
-            }
-        },
-
-        toggleMember(member) {
-            // 🔹 Tidak bisa hapus diri sendiri
-            if (window.currentUser && member.id === window.currentUser.id) return;
-
-            const idx = this.tempSelectedMembers.findIndex(m => m.id === member.id);
-            if (idx === -1) {
-                this.tempSelectedMembers.push(member);
-            } else {
-                this.tempSelectedMembers.splice(idx, 1);
-            }
-        },
-
-        isTempSelected(id) {
-            return this.tempSelectedMembers.some(m => m.id === id);
-        },
-
-        isSelected(id) {
-            return this.selectedMembers.some(m => m.id === id);
-        },
-
-        get filteredMembers() {
-            if (!this.search) return this.members;
-            const term = this.search.toLowerCase();
-            return this.members.filter(m =>
-                m.name.toLowerCase().includes(term) ||
-                m.email.toLowerCase().includes(term)
-            );
-        },
-
-        applyMembers() {
-            // 🔹 Terapkan pilihan dari temp ke selected
-            this.selectedMembers = [...this.tempSelectedMembers];
-            this.closeModal();
-        },
-
-        openMemberModal() {
-            // 🔹 Saat buka modal, isi temp dengan yang sudah ada (biar centang tetap)
-            this.tempSelectedMembers = [...this.selectedMembers];
-            this.showManageMembersModal = true;
-        },
-
-        closeModal() {
-            this.showManageMembersModal = false;
-        }
-    }))
-});
-
-// 🔹 Sinkronkan switch private dan daftar member
-document.addEventListener('DOMContentLoaded', function () {
-    const privateSwitch = document.querySelector('#is_private');
-
-    if (privateSwitch) {
-        privateSwitch.addEventListener('change', function () {
-            const isChecked = this.checked;
-            const hiddenInputs = document.querySelectorAll('input[name="recipients[]"]');
-
-            if (!isChecked) {
-                // Kalau switch off → public
-                hiddenInputs.forEach(el => el.remove());
+            // 🔹 Tombol "Pilih Member"
+            const pilihBtn = document.getElementById('btnPilihMember');
+            if (pilihBtn) {
+                pilihBtn.addEventListener('click', function() {
+                    const modal = document.querySelector('[x-show="showManageMembersModal"]');
+                    if (modal) modal.style.display = 'flex';
+                });
             }
         });
-    }
-
-    // 🔹 Tombol "Pilih Member"
-    const pilihBtn = document.getElementById('btnPilihMember');
-    if (pilihBtn) {
-        pilihBtn.addEventListener('click', function () {
-            const modal = document.querySelector('[x-show="showManageMembersModal"]');
-            if (modal) modal.style.display = 'flex';
-        });
-    }
-});
-</script>
+    </script>
 
 @endsection
