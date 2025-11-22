@@ -14,6 +14,7 @@ class CalendarEvent extends Model
 
     protected $fillable = [
         'workspace_id',
+        'company_id',
         'created_by',
         'title',
         'description',
@@ -42,6 +43,11 @@ class CalendarEvent extends Model
     public function workspace()
     {
         return $this->belongsTo(Workspace::class, 'workspace_id');
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 
     /**

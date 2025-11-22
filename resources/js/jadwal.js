@@ -267,8 +267,8 @@ function renderScheduleItem(event, workspaceId, dateKey) {
         }
 
         // Icon untuk online meeting
-        const hasMeetingLink = event.extendedProps?.meeting_link && event.extendedProps.meeting_link.trim() !== '';
-        const iconHtml = hasMeetingLink ? '<i class="fas fa-video text-gray-700 mr-2"></i>' : '';
+        const isOnline = event.extendedProps?.is_online === true;
+        const iconHtml = isOnline ? '<i class="fas fa-video text-gray-700 mr-2"></i>' : '';
 
         // Warna background
         const bgColor = event.extendedProps?.is_creator ? 'bg-[#bbcff9]' : 'bg-[#E9EFFD]';

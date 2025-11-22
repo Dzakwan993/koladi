@@ -4,7 +4,6 @@
     }
 </style>
 
-
 {{-- resources/views/components/sidebar.blade.php --}}
 <div x-data="{ openSidebar: window.innerWidth >= 992 }" x-init="const handleResize = () => {
     if (window.innerWidth < 992 && openSidebar) openSidebar = false;
@@ -48,8 +47,8 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                       {{ Request::is('dashboard*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
                 <img src="/images/icons/sidebar_dashboard.svg" alt="Dashboard"
-                    class="w-5 h-5 {{ Request::is('dashboard*') ? 'filter-blue' : '' }}"> <span
-                    class="text-sm">Dashboard</span>
+                    class="w-5 h-5 {{ Request::is('dashboard*') ? 'filter-blue' : '' }}">
+                <span class="text-sm">Dashboard</span>
             </a>
 
             {{-- Ruang Kerja --}}
@@ -57,17 +56,17 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                       {{ Request::is('kelola-workspace*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
                 <img src="/images/icons/sidebar_ruang-kerja.svg" alt="Ruang Kerja"
-                    class="w-5 h-5 {{ Request::is('kelola-workspace*') ? 'filter-blue' : '' }}"> <span
-                    class="text-sm">Ruang Kerja</span>
+                    class="w-5 h-5 {{ Request::is('kelola-workspace*') ? 'filter-blue' : '' }}">
+                <span class="text-sm">Ruang Kerja</span>
             </a>
 
             {{-- Pengumuman --}}
             <a href="{{ url('/pengumuman') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                       {{ Request::is('pengumuman*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                <img src="images/icons/workspace_pengumuman.svg" alt="Cuti"
-                    class="w-5 h-5 {{ Request::is('pengumuman*') ? 'filter-blue' : '' }}"> <span
-                    class="text-sm">Pengumuman</span>
+                <img src="{{ asset('images/icons/workspace_pengumuman.svg') }}" alt="Pengumuman"
+                    class="w-5 h-5 {{ Request::is('pengumuman*') ? 'filter-blue' : '' }}">
+                <span class="text-sm">Pengumuman</span>
             </a>
 
             {{-- Chat --}}
@@ -79,32 +78,31 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 <span class="text-sm">Chat</span>
             </a>
 
-            {{-- Jadwal --}}
-            <a href="{{ url('/jadwal') }}"
+            {{-- ✅ Jadwal Umum (Company Level) --}}
+            <a href="{{ route('jadwal-umum') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
-                {{ Request::is('jadwal*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                <img src="images/icons/workspace_kalender.svg" alt="Jadwal"
-                    class="w-5 h-5 {{ Request::is('jadwal*') ? 'filter-blue' : '' }}"> <span
-                    class="text-sm">Jadwal</span>
+                {{ Request::is('jadwal-umum*') || Request::is('notulensi-umum*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                <img src="{{ asset('images/icons/workspace_kalender.svg') }}" alt="Jadwal"
+                    class="w-5 h-5 {{ Request::is('jadwal-umum*') || Request::is('notulensi-umum*') ? 'filter-blue' : '' }}">
+                <span class="text-sm">Jadwal</span>
             </a>
 
             {{-- Dokumen --}}
             <a href="{{ url('/dokumen-dan-file') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                 {{ Request::is('dokumen*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                <img src="images/icons/workspace_dokumen&file.svg" alt="Dokumen"
-                    class="w-5 h-5 {{ Request::is('dokumen*') ? 'filter-blue' : '' }}"> <span
-                    class="text-sm">Dokumen</span>
+                <img src="{{ asset('images/icons/workspace_dokumen&file.svg') }}" alt="Dokumen"
+                    class="w-5 h-5 {{ Request::is('dokumen*') ? 'filter-blue' : '' }}">
+                <span class="text-sm">Dokumen</span>
             </a>
 
             {{-- Laporan Kinerja --}}
-             {{-- Laporan Kinerja --}}
             <a href="{{ url('/statistik') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                       {{ Request::is('statistik*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
                 <img src="/images/icons/sidebar_laporan-kinerja.svg" alt="Laporan Kinerja"
-                    class="w-5 h-5 {{ Request::is('statistik*') ? 'filter-blue' : '' }}"> <span class="text-sm">Laporan
-                    Kinerja</span>
+                    class="w-5 h-5 {{ Request::is('statistik*') ? 'filter-blue' : '' }}">
+                <span class="text-sm">Laporan Kinerja</span>
             </a>
 
             {{-- Search & Actions --}}
@@ -121,14 +119,14 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                             class="flex-1 bg-transparent outline-none border-none focus:ring-0 text-gray-700 text-[11px]">
                     </div>
 
-                    {{-- Filter Button (pakai gambar kamu) --}}
+                    {{-- Filter Button --}}
                     <button
                         class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
                         title="Filter">
                         <img src="/images/icons/sidebar_filter.svg" alt="Filter" class="w-3.5 h-3.5">
                     </button>
 
-                    {{-- Add Button (pakai gambar kamu) --}}
+                    {{-- Add Button --}}
                     <button
                         class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
                         title="Tambah">
@@ -139,32 +137,6 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
 
             {{-- Workspace List --}}
             <div class="mt-3 space-y-1">
-
-                {{-- HQ
-                <div>
-                    <button @click="openHQ = !openHQ"
-                        class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-lg transition">
-                        <div class="flex items-center gap-2">
-                            <img src="/images/icons/sidebar_hq.svg" alt="HQ" class="w-4 h-4">
-                            <span>HQ</span>
-                        </div>
-                        <svg class="w-3 h-3 transition-transform" :class="{ 'rotate-90': openHQ }" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
-                        </svg>
-                    </button>
-
-                    <div x-show="openHQ" x-transition class="mt-1 space-y-0.5">
-                        <a href="{{ url('/workspace/hq') }}"
-                            class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition
-                                {{ Request::is('workspace/hq*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                            <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
-                            <span>Mencari Cinta HQ</span>
-                        </a>
-                    </div>
-                </div> --}}
-
                 {{-- TIM --}}
                 <div>
                     <button @click="openTim = !openTim"

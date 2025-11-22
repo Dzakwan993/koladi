@@ -67,8 +67,8 @@
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-4">
-                        <div class="rounded-lg">
-                            <img src="{{ asset('images/icons/notulen.gif') }}" alt="Notulen Icon" class="w-14 h-14">
+                        <div class="bg-blue-100 p-3 rounded-lg">
+                            <img src="{{ asset('images/icons/Notulen.png') }}" alt="Notulen Icon" class="w-12 h-12">
                         </div>
                         <div>
                             <h1 class="text-2xl font-bold text-gray-800">Notulensi Rapat</h1>

@@ -38,9 +38,7 @@ Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallba
 Route::post('/invite/send', [InvitationController::class, 'send'])->name('invite.send');
 Route::get('/invite/accept/{token}', [InvitationController::class, 'accept'])->name('invite.accept');
 
-// Route::get('/{workspaceId}', [UserController::class, 'workspaceMember']);
-
-// ✅ UBAH: Pindahkan route hak-akses ke dalam middleware auth
+// ✅ Authenticated Routes
 Route::middleware(['auth'])->group(function () {
 
     // ✅ Dashboard & Company Routes
@@ -94,64 +92,46 @@ Route::middleware(['auth'])->group(function () {
 
     // Task API Routes
     Route::prefix('tasks')->group(function () {
-        // Board Columns
         Route::get('/board-columns/{workspaceId}', [TaskController::class, 'getBoardColumns']);
         Route::post('/board-columns', [TaskController::class, 'createBoardColumn']);
         Route::delete('/board-columns/{columnId}', [TaskController::class, 'deleteBoardColumn']);
         Route::put('/board-columns/positions', [TaskController::class, 'updateColumnPosition']);
 
-        // ✅ Task Assignment Routes
         Route::get('/workspace/{workspaceId}/task-members', [TaskController::class, 'getWorkspaceMembers'])->name('workspace.task-members');
         Route::get('/{taskId}/assignments', [TaskController::class, 'getTaskAssignments'])->name('task.assignments');
         Route::post('/{taskId}/assignments', [TaskController::class, 'manageTaskAssignments'])->name('task.assignments.manage');
         Route::post('/create-with-assignments', [TaskController::class, 'storeWithAssignments'])->name('tasks.create.with.assignments');
         Route::get('/workspace/{workspaceId}/list', [TaskController::class, 'getWorkspaceTasks'])->name('tasks.workspace');
-
-
         Route::get('/workspace/{workspaceId}/tasks-with-access', [TaskController::class, 'getWorkspaceTasksWithAccess'])->name('tasks.workspace.with-access');
-
-        // Debug Route
         Route::get('/debug-columns/{workspaceId}', [TaskController::class, 'debugBoardColumns']);
 
-
-        // ✅ NEW: Label Routes
         Route::get('/workspace/{workspaceId}/labels', [TaskController::class, 'getLabels']);
         Route::get('/colors', [TaskController::class, 'getColors']);
         Route::post('/labels', [TaskController::class, 'createLabel']);
         Route::post('/{taskId}/labels', [TaskController::class, 'manageTaskLabels']);
         Route::get('/{taskId}/labels', [TaskController::class, 'getTaskLabels']);
 
-
-        // Checklist Routes
         Route::get('/{taskId}/checklists', [TaskController::class, 'getTaskChecklists']);
         Route::post('/checklists', [TaskController::class, 'createChecklist']);
         Route::put('/checklists/{checklistId}', [TaskController::class, 'updateChecklist']);
         Route::delete('/checklists/{checklistId}', [TaskController::class, 'deleteChecklist']);
         Route::put('/checklists/positions/update', [TaskController::class, 'updateChecklistPositions']);
 
-
-        // Routes untuk attachments
         Route::post('/attachments/upload', [TaskController::class, 'uploadAttachment'])->name('tasks.attachments.upload');
         Route::get('/{taskId}/attachments', [TaskController::class, 'getTaskAttachments'])->name('tasks.attachments.get');
         Route::delete('/attachments/{attachmentId}', [TaskController::class, 'deleteAttachment'])->name('tasks.attachments.delete');
         Route::get('/attachments/{attachmentId}/download', [TaskController::class, 'downloadAttachment'])->name('tasks.attachments.download');
 
-
-
-        // untuk card kanban kolom
         Route::get('/workspace/{workspaceId}/kanban-tasks', [TaskController::class, 'getKanbanTasks'])->name('tasks.kanban');
 
-        // ✅ Task Detail Routes
         Route::get('/{taskId}/detail', [TaskController::class, 'getTaskDetail'])->name('tasks.detail');
         Route::put('/{taskId}/update', [TaskController::class, 'updateTaskDetail'])->name('tasks.update');
 
-        // ✅ Checklist Routes untuk detail
         Route::post('/{taskId}/checklists', [TaskController::class, 'createChecklistForTask'])->name('tasks.checklists.create');
         Route::put('/checklists/{checklistId}', [TaskController::class, 'updateChecklistItem'])->name('tasks.checklists.update');
         Route::delete('/checklists/{checklistId}', [TaskController::class, 'deleteChecklist'])->name('tasks.checklists.delete');
 
         Route::post('/{taskId}/attachments', [TaskController::class, 'updateTaskAttachments'])->name('tasks.attachments.update');
-
 
         Route::put('/{taskId}/update-title', [TaskController::class, 'updateTaskTitle'])->name('tasks.update-title');
         Route::post('/{taskId}/attachments/add', [TaskController::class, 'addAttachmentToTask'])->name('tasks.attachments.add');
@@ -162,46 +142,61 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/tasks/update-column', [TaskController::class, 'updateTaskColumn'])->name('tasks.update-column');
     });
 
-    // Jadwal / Calendar Routes
-    Route::middleware(['auth'])->prefix('workspace/{workspaceId}')->group(function () {
-        // 1️⃣ Halaman utama jadwal/calendar
+    // ✅ JADWAL WORKSPACE (dengan prefix workspace/{workspaceId})
+    Route::prefix('workspace/{workspaceId}')->group(function () {
+        // Halaman utama jadwal workspace
         Route::get('/jadwal', [CalendarController::class, 'index'])->name('jadwal');
 
-        // 2️⃣ API untuk get events (untuk FullCalendar AJAX)
+        // API untuk get events
         Route::get('/calendar/events', [CalendarController::class, 'getEvents'])->name('calendar.events');
 
-        // 3️⃣ ⚠️ PENTING: Route untuk CREATE harus di ATAS route {id}
+        // Create routes (harus di atas {id})
         Route::get('/jadwal/buat', [CalendarController::class, 'create'])->name('buatJadwal');
         Route::post('/jadwal/buat', [CalendarController::class, 'store'])->name('calendar.store');
 
-        // 4️⃣ Update participant status (sebelum route {id}/edit)
+        // Update participant status
         Route::post('/jadwal/{id}/participant-status', [CalendarController::class, 'updateParticipantStatus'])
             ->name('calendar.participant.status');
 
-        // 5️⃣ Edit route (sebelum route show)
+        // Edit & Update
         Route::get('/jadwal/{id}/edit', [CalendarController::class, 'edit'])->name('calendar.edit');
         Route::put('/jadwal/{id}', [CalendarController::class, 'update'])->name('calendar.update');
 
-        // 6️⃣ Delete route
+        // Delete
         Route::delete('/jadwal/{id}', [CalendarController::class, 'destroy'])->name('calendar.destroy');
 
-        // 7️⃣ ⚠️ Route dengan {id} wildcard HARUS PALING BAWAH
+        // ✅ Notulensi Workspace (pindah ke dalam group)
+        Route::get('/notulensi', [CalendarController::class, 'notulensi'])->name('notulensi');
+
+        // Show (harus paling bawah)
         Route::get('/jadwal/{id}', [CalendarController::class, 'show'])->name('calendar.show');
     });
 
-    // Comments Routes
+    // ✅ JADWAL UMUM (Company Level - tanpa workspace)
+    Route::prefix('jadwal-umum')->group(function () {
+        Route::get('/', [CalendarController::class, 'companyIndex'])->name('jadwal-umum');
+        Route::get('/events', [CalendarController::class, 'getCompanyEvents'])->name('jadwal-umum.events');
+        Route::get('/buat', [CalendarController::class, 'companyCreate'])->name('jadwal-umum.buat');
+        Route::post('/buat', [CalendarController::class, 'companyStore'])->name('jadwal-umum.store');
+        Route::get('/{id}/edit', [CalendarController::class, 'companyEdit'])->name('jadwal-umum.edit');
+        Route::put('/{id}', [CalendarController::class, 'companyUpdate'])->name('jadwal-umum.update');
+        Route::delete('/{id}', [CalendarController::class, 'companyDestroy'])->name('jadwal-umum.destroy');
+        Route::get('/{id}', [CalendarController::class, 'companyShow'])->name('jadwal-umum.show');
+    });
+
+    // ✅ Notulensi Umum (di luar prefix jadwal-umum)
+    Route::get('/notulensi-umum', [CalendarController::class, 'companyNotulensi'])->name('notulensi-umum');
+
+    // ✅ Comments Routes
     Route::get('/comments/{commentableId}', [CommentController::class, 'index']);
     Route::post('/comments', [CommentController::class, 'store'])->name('comments.store');
     Route::put('/comments/{id}', [CommentController::class, 'update']);
     Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
 
-    // Upload routes untuk attachments
+    // ✅ Upload routes untuk attachments
     Route::post('/upload', [App\Http\Controllers\AttachmentController::class, 'upload'])->name('upload.file');
     Route::post('/upload-image', [App\Http\Controllers\AttachmentController::class, 'uploadImage'])->name('upload.image');
 
-    // Route untuk Notulensi
-    Route::get('/workspace/{workspaceId}/notulensi', [CalendarController::class, 'notulensi'])
-        ->name('notulensi');
     // ✅ Announcement Routes
     Route::get('/pengumuman', function () {
         return view('pengumuman');
