@@ -333,15 +333,19 @@
                 </div>
 
 
-
-
-
-
-
                 <!-- Modal Hapus Folder -->
                 <div x-show="showDeleteFolderModal" x-cloak
                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div class="bg-white rounded-lg w-full max-w-md" @click.outside="showDeleteFolderModal = false">
+
+                    <form x-ref="deleteFolderForm"
+                        :action="`/folders/${deletingFolder.id}/delete`"
+                        method="POST"
+                        class="bg-white rounded-lg w-full max-w-md"
+                        @click.outside="showDeleteFolderModal = false">
+
+                        @csrf
+                        @method('DELETE')
+
                         {{-- Header Modal --}}
                         <div class="px-6 py-4 border-b border-gray-200">
                             <h3 class="text-lg font-semibold text-gray-800">Hapus Folder</h3>
@@ -358,23 +362,38 @@
                                     </svg>
                                 </div>
                             </div>
-                            <p class="text-center text-gray-700 font-medium">Anda yakin ingin menghapus folder ini?</p>
-                            <p class="text-center text-sm text-gray-500 mt-2"
-                                x-text="'Folder: ' + (deletingFolder?.name || '')"></p>
+
+                            <p class="text-center text-gray-700 font-medium">
+                                Anda yakin ingin menghapus folder 
+                                <span class="font-bold" x-text="deletingFolder?.name || ''"></span>?
+                            </p>
+                            <p class="text-center text-gray-700 text-sm">(Semua file dan subfolder di dalam akan ikut terhapus)</p>
                         </div>
 
                         {{-- Footer Modal --}}
                         <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-                            <button @click="showDeleteFolderModal = false"
+
+                            <button type="button"
+                                @click="showDeleteFolderModal = false"
                                 class="px-4 py-2 text-sm text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 transition">
                                 Batal
                             </button>
-                            <button @click="confirmDeleteFolder()"
+
+                            <button type="button"
+                                @click="
+                                        showDeleteFolderModal = false;
+                                        openConfirmModal(
+                                            'Konfirmasi Hapus',
+                                            'Apakah Anda benar-benar ingin menghapus folder ini?',
+                                            () => { $refs.deleteFolderForm.submit(); }
+                                        )"
                                 class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                                Ya
+                                Ya, Hapus
                             </button>
+
                         </div>
-                    </div>
+
+                    </form>
                 </div>
 
 
@@ -385,7 +404,16 @@
                  <!-- Modal Hapus File -->
                 <div x-show="showDeleteFileModal" x-cloak
                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div class="bg-white rounded-lg w-full max-w-md" @click.outside="showDeleteFileModal = false">
+
+                    <form x-ref="deleteFileForm"
+                        :action="`/files/${deletingFile.id}/delete`" 
+                        method="POST"
+                        class="bg-white rounded-lg w-full max-w-md"
+                        @click.outside="showDeleteFileModal = false">
+
+                        @csrf
+                        @method('DELETE')
+
                         {{-- Header Modal --}}
                         <div class="px-6 py-4 border-b border-gray-200">
                             <h3 class="text-lg font-semibold text-gray-800">Hapus File</h3>
@@ -402,6 +430,7 @@
                                     </svg>
                                 </div>
                             </div>
+
                             <p class="text-center text-gray-700 font-medium">Anda yakin ingin menghapus file ini?</p>
                             <p class="text-center text-sm text-gray-500 mt-2"
                                 x-text="'File: ' + (deletingFile?.name || '')"></p>
@@ -411,19 +440,74 @@
 
                         {{-- Footer Modal --}}
                         <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-                            <button @click="showDeleteFileModal = false"
+                            <button type="button"
+                                @click="showDeleteFileModal = false"
                                 class="px-4 py-2 text-sm text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 transition">
                                 Batal
                             </button>
-                            <button @click="confirmDeleteFile()"
+
+                            <button type="button"
+                                    @click="
+                                        showDeleteFileModal = false;
+                                        openConfirmModal(
+                                            'Konfirmasi Hapus',
+                                            'Apakah Anda benar-benar ingin menghapus file ini?',
+                                            () => { $refs.deleteFileForm.submit(); }
+                                        )
+                                    "
                                 class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
                                 Ya, Hapus
                             </button>
                         </div>
-                    </div>
+
+                    </form>
                 </div>
 
 
+
+
+
+                {{-- Modal Konfirmasi Universal --}}
+                    <div x-show="showConfirmModal" x-cloak
+                        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+
+                        <div class="bg-white rounded-lg w-full max-w-md" @click.outside="showConfirmModal = false">
+
+                            {{-- Header --}}
+                            <div class="px-6 py-4 border-b border-gray-200">
+                                <h3 class="text-lg font-semibold text-gray-800" x-text="confirmTitle"></h3>
+                            </div>
+
+                            {{-- Content --}}
+                            <div class="px-6 py-6">
+                                <div class="flex items-center justify-center mb-4">
+                                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <p class="text-center text-gray-700 font-medium text-sm" x-text="confirmMessage"></p>
+                                
+                            </div>
+
+                            {{-- Footer --}}
+                            <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+                                <button @click="showConfirmModal = false"
+                                    class="px-4 py-2 text-sm text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 transition">
+                                    Batal
+                                </button>
+
+                                <button @click="runConfirmedAction()"
+                                    class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                                    Ya, Lanjutkan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
 
 

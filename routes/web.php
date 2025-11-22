@@ -184,6 +184,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/file', [DokumenController::class, 'storeFile'])->name('file.store');
     Route::post('/folders/{id}/update', [DokumenController::class, 'updateFolder'])->name('folder.update');
     Route::put('/files/{id}/update', [DokumenController::class, 'updateFile'])->name('files.update');
+    Route::delete('/files/{id}/delete', [DokumenController::class, 'destroy'])->name('files.destroy');
+    Route::delete('/folders/{folder}/delete', [DokumenController::class, 'destroyFolder'])->name('folders.destroy');
+
+
 
 
 

@@ -37,6 +37,10 @@ export default function documentSearch() {
                 searchMember: '',
                 selectAll: false,
                 originalFolderName: '',
+                showConfirmModal: false,
+                confirmTitle: '',
+                confirmMessage: '',
+                onConfirmAction: null,
 
                 // Data akan diisi dari backend/API
                 folders: [],
@@ -568,26 +572,39 @@ export default function documentSearch() {
                 },
 
                 openDeleteFile(file) {
-                    if (confirm(`Apakah Anda yakin ingin menghapus file "${file.name}"?`)) {
-                        this.deleteFile(file);
-                        this.showSuccessMessage(`File "${file.name}" berhasil dihapus`);
-                    }
-                },
-
-                openDeleteFileModal(file) {
                     this.deletingFile = file;
                     this.showDeleteFileModal = true;
                 },
 
-                confirmDeleteFile() {
-                    if (!this.deletingFile) return;
-
-                    this.deleteFile(this.deletingFile);
-                    this.showSuccessMessage(`File "${this.deletingFile.name}" berhasil dihapus`);
-
-                    this.showDeleteFileModal = false;
-                    this.deletingFile = null;
+                openConfirmModal(title, message, action) {
+                    this.confirmTitle = title;
+                    this.confirmMessage = message;
+                    this.onConfirmAction = action;
+                    this.showConfirmModal = true;
                 },
+                
+                runConfirmedAction() {
+                    if (typeof this.onConfirmAction === 'function') {
+                        this.onConfirmAction();
+                    }
+                    this.showConfirmModal = false;
+                },
+
+
+                // openDeleteFileModal(file) {
+                //     this.deletingFile = file;
+                //     this.showDeleteFileModal = true;
+                // },
+
+                // confirmDeleteFile() {
+                //     if (!this.deletingFile) return;
+
+                //     this.deleteFile(this.deletingFile);
+                //     this.showSuccessMessage(`File "${this.deletingFile.name}" berhasil dihapus`);
+
+                //     this.showDeleteFileModal = false;
+                //     this.deletingFile = null;
+                // },
 
                 // Folder Operations
                 openEditFolder(folder) {
@@ -615,15 +632,15 @@ export default function documentSearch() {
                     this.showDeleteFolderModal = true;
                 },
 
-                confirmDeleteFolder() {
-                    if (!this.deletingFolder) return;
+                // confirmDeleteFolder() {
+                //     if (!this.deletingFolder) return;
 
-                    this.deleteFolder(this.deletingFolder);
-                    this.showSuccessMessage(`Folder "${this.deletingFolder.name}" berhasil dihapus`);
+                //     this.deleteFolder(this.deletingFolder);
+                //     this.showSuccessMessage(`Folder "${this.deletingFolder.name}" berhasil dihapus`);
 
-                    this.showDeleteFolderModal = false;
-                    this.deletingFolder = null;
-                },
+                //     this.showDeleteFolderModal = false;
+                //     this.deletingFolder = null;
+                // },
 
                 // Member Functions
                 toggleSelectAll() {

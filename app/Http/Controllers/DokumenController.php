@@ -218,6 +218,64 @@ class DokumenController extends Controller
             ])->with('alert_once', true);
         }
 
+        public function destroy($id)
+        {
+            $file = File::findOrFail($id);
+
+            // Hapus file dari storage
+            if ($file->path && Storage::exists($file->path)) {
+                Storage::delete($file->path);
+            }
+
+            $file->delete();
+
+            return redirect()->back()->with('alert', [
+                'icon' => 'success',
+                'title' => 'File berhasil dihapus!',
+                'text' => 'Data file sudah dihapus dari sistem.',
+            ])->with('alert_once', true);
+        }
+        
+        public function destroyFolder(Folder $folder)
+        {
+            // Hapus semua file dalam folder ini
+            foreach ($folder->files as $file) {
+                $file->delete();
+            }
+
+            // Hapus semua subfolder (rekursif)
+            $this->deleteSubfolders($folder);
+
+            // Hapus folder utama
+            $folder->delete();
+
+            return redirect()->back()->with('alert', [
+                'icon'  => 'success',
+                'title' => 'Folder berhasil dihapus!',
+                'text'  => 'Semua data di dalam folder sudah terhapus.',
+            ])->with('alert_once', true);
+        }
+
+        private function deleteSubfolders($folder)
+        {
+            foreach ($folder->children as $sub) {
+
+                // Hapus file di subfolder ini
+                foreach ($sub->files as $file) {
+                    $file->delete();
+                }
+
+                // Rekursif untuk subfolder berikutnya
+                $this->deleteSubfolders($sub);
+
+                // Hapus foldernya
+                $sub->delete();
+            }
+        }
+
+
+
+
 
 
 
