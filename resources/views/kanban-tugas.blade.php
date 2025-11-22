@@ -1618,7 +1618,11 @@
                                 try {
                                     console.log('Loading task detail for:', taskId);
 
-                                    const response = await fetch(`/tasks/${taskId}/detail`);
+                                    const response = await fetch(`/tasks/${taskId}/detail`, {
+                                        headers: {
+                                            'Accept': 'application/json'
+                                        }
+                                    });
 
                                     if (!response.ok) {
                                         throw new Error(`HTTP error! status: ${response.status}`);
@@ -1627,7 +1631,8 @@
                                     const data = await response.json();
 
                                     if (data.success) {
-                                        // Format data untuk kompatibilitas dengan frontend
+
+                                        // SET CURRENT TASK
                                         this.currentTask = {
                                             id: data.task.id,
                                             title: data.task.title,
@@ -1644,14 +1649,12 @@
                                                 5) : '',
                                             members: data.task.assigned_members || [],
                                             labels: data.task.labels || [],
-                                            checklist: data.task.checklists ? data.task.checklists.map(cl => ({
+                                            checklist: data.task.checklists?.map(cl => ({
                                                 id: cl.id,
-                                                name: cl.title,
                                                 title: cl.title,
-                                                done: cl.is_done,
                                                 is_done: cl.is_done,
                                                 position: cl.position
-                                            })) : [],
+                                            })) || [],
                                             attachments: data.task.attachments || [],
                                             progress_percentage: data.task.progress_percentage,
                                             is_overdue: data.task.is_overdue,
@@ -1660,16 +1663,35 @@
                                             board_column: data.task.board_column
                                         };
 
+                                        // members
                                         this.assignedMembers = data.task.assigned_members || [];
                                         this.selectedMemberIds = this.assignedMembers.map(member => member.id);
 
+                                        // buka modal
                                         this.isEditMode = false;
                                         this.openTaskDetail = true;
 
+                                        // LOAD COMMENTS DENGAN TASK ID
+                                        this.$nextTick(() => {
+    if (this.$refs.commentSection && this.currentTask?.id) {
+        // Re-init komponen comment agar task ID terbaca
+        this.$refs.commentSection.__x.updateElements(this.$refs.commentSection);
+
+        // Set task id ke komponen comment
+        this.$refs.commentSection.__x.$data.taskId = this.currentTask.id;
+
+        // Load komentar lama
+        this.$refs.commentSection.__x.$data.loadComments();
+    }
+});
+
+
                                         console.log('Task detail loaded:', this.currentTask);
+
                                     } else {
                                         this.showNotification('Gagal memuat detail tugas: ' + data.message, 'error');
                                     }
+
                                 } catch (error) {
                                     console.error('Error loading task detail:', error);
                                     this.showNotification('Terjadi kesalahan saat memuat detail tugas', 'error');
@@ -4548,7 +4570,7 @@
                                 return description;
                             },
 
-                            
+
 
 
 
@@ -4710,158 +4732,178 @@
                                 active: false,
                                 parentComment: null
                             },
-                            currentUserAvatar: 'https://i.pravatar.cc/40?img=11',
+                            currentUserAvatar: window.currentUser?.avatar || 'https://i.pravatar.cc/40?img=11',
                             loading: false,
 
-                            async init() {
-                                await this.loadComments();
-                                await this.$nextTick();
-                                this.initializeMainEditor();
+                            init() {
+                                // Muat komentar pertama kali
+                                this.loadComments();
+
+                                // Inisialisasi editor
+                                this.$nextTick(() => {
+                                    this.initializeMainEditor();
+                                });
+
+                                // 🔥 Tambahkan watcher untuk currentTask
+                                this.$watch('$root.currentTask', (newVal, oldVal) => {
+                                    if (newVal?.id !== oldVal?.id) {
+                                        this.loadComments();
+                                    }
+                                });
                             },
 
+
                             async loadComments() {
-                                if (!this.$root.openTaskDetail || !this.$root.currentTask?.id) return;
+                                const taskId = this.$root?.currentTask?.id;
+                                if (!taskId) return;
 
                                 this.loading = true;
                                 try {
                                     const taskId = this.$root.currentTask.id;
-                                    const response = await fetch(`/tasks/${taskId}/comments`);
-
-                                    if (!response.ok) throw new Error('Gagal memuat komentar');
-
-                                    const data = await response.json();
-
+                                    const res = await fetch(`/tasks/${taskId}/comments`, {
+                                        headers: {
+                                            'Accept': 'application/json'
+                                        }
+                                    });
+                                    if (!res.ok) throw new Error('Gagal memuat komentar');
+                                    const data = await res.json();
                                     if (data.success) {
-                                        this.comments = data.comments || [];
+                                        // ensure replies arrays exist
+                                        this.comments = (data.comments || []).map(c => {
+                                            c.replies = c.replies || [];
+                                            return c;
+                                        });
                                     } else {
                                         console.error('Gagal memuat komentar:', data.message);
                                     }
-                                } catch (error) {
-                                    console.error('Error loading comments:', error);
+                                } catch (err) {
+                                    console.error(err);
                                     this.comments = [];
                                 } finally {
                                     this.loading = false;
                                 }
                             },
 
+                            // ---------------- CKEditor helpers ----------------
                             initializeMainEditor() {
-                                const editorElement = document.getElementById('task-main-comment-editor');
-                                if (editorElement && !editorElement._editor) {
-                                    ClassicEditor
-                                        .create(editorElement, {
-                                            toolbar: {
-                                                items: [
-                                                    'undo', 'redo', '|',
-                                                    'bold', 'italic', 'underline', 'strikethrough', '|',
-                                                    'link', 'blockQuote', '|',
-                                                    'bulletedList', 'numberedList'
-                                                ],
-                                                shouldNotGroupWhenFull: true
-                                            },
-                                            placeholder: 'Tulis komentar Anda...'
-                                        })
-                                        .then(editor => {
-                                            editorElement._editor = editor;
-                                        })
-                                        .catch(error => {
-                                            console.error('Error initializing main editor:', error);
-                                            this.fallbackToTextarea('task-main-comment-editor');
-                                        });
-                                }
+                                const el = document.getElementById('task-main-comment-editor');
+                                if (!el) return;
+                                if (el._editor) return;
+
+                                ClassicEditor.create(el, {
+                                    toolbar: {
+                                        items: [
+                                            'undo', 'redo', '|', 'bold', 'italic', 'underline', 'strikethrough', '|',
+                                            'link', 'blockQuote', '|', 'bulletedList', 'numberedList'
+                                        ],
+                                        shouldNotGroupWhenFull: true
+                                    },
+                                    placeholder: 'Tulis komentar Anda...'
+                                }).then(editor => {
+                                    el._editor = editor;
+                                    // generate pre id for main comment to support pre-uploaded attachments
+                                    window.currentMainCommentId = window.currentMainCommentId || (self.crypto ? ([1e7] + -1e3 +
+                                        -4e3 + -8e3 + -1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(
+                                        new Uint8Array(1))[0] & 15 >> c / 4).toString(16)) : String(Date.now()));
+                                    // add custom upload buttons
+                                    insertUploadFileButtonToToolbar(editor, window.currentMainCommentId);
+                                    insertUploadImageButtonToToolbar(editor, window.currentMainCommentId);
+                                }).catch(err => {
+                                    console.error('Init main editor failed:', err);
+                                    this.fallbackToTextarea('task-main-comment-editor');
+                                });
                             },
 
                             initializeReplyEditor(commentId) {
-                                const editorId = `task-reply-editor-${commentId}`;
-                                const editorElement = document.getElementById(editorId);
+                                const el = document.getElementById('task-reply-editor-' + commentId);
+                                if (!el) return;
+                                if (el._editor) return;
 
-                                if (editorElement && !editorElement._editor) {
-                                    ClassicEditor
-                                        .create(editorElement, {
-                                            toolbar: {
-                                                items: [
-                                                    'undo', 'redo', '|',
-                                                    'bold', 'italic', 'underline', 'strikethrough', '|',
-                                                    'link', 'blockQuote', '|',
-                                                    'bulletedList', 'numberedList'
-                                                ],
-                                                shouldNotGroupWhenFull: true
-                                            },
-                                            placeholder: 'Tulis balasan Anda...'
-                                        })
-                                        .then(editor => {
-                                            editorElement._editor = editor;
-                                        })
-                                        .catch(error => {
-                                            console.error('Error initializing reply editor:', error);
-                                            this.fallbackToTextarea(editorId);
-                                        });
-                                }
+                                ClassicEditor.create(el, {
+                                    toolbar: {
+                                        items: [
+                                            'undo', 'redo', '|', 'bold', 'italic', 'underline', 'strikethrough', '|',
+                                            'link', 'blockQuote', '|', 'bulletedList', 'numberedList'
+                                        ],
+                                        shouldNotGroupWhenFull: true
+                                    },
+                                    placeholder: 'Tulis balasan Anda...'
+                                }).then(editor => {
+                                    el._editor = editor;
+                                    // generate pre id for this reply to support pre-uploaded attachments
+                                    window[`currentReplyId_${commentId}`] = window[`currentReplyId_${commentId}`] || (self
+                                        .crypto ? ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c => (c ^ crypto
+                                            .getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)) : String(
+                                            Date.now()));
+                                    insertUploadFileButtonToToolbar(editor, window[`currentReplyId_${commentId}`]);
+                                    insertUploadImageButtonToToolbar(editor, window[`currentReplyId_${commentId}`]);
+                                }).catch(err => {
+                                    console.error('Init reply editor failed:', err);
+                                    this.fallbackToTextarea('task-reply-editor-' + commentId);
+                                });
                             },
 
                             fallbackToTextarea(editorId) {
-                                const editorElement = document.getElementById(editorId);
-                                if (editorElement) {
-                                    editorElement.innerHTML = `
-                    <textarea id="${editorId}-fallback" 
-                              class="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg bg-white resize-none"
-                              placeholder="Tulis komentar di sini..."></textarea>
-                `;
-                                }
+                                const el = document.getElementById(editorId);
+                                if (!el) return;
+                                el.innerHTML =
+                                    `<textarea id="${editorId}-fallback" class="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg bg-white resize-none" placeholder="Tulis komentar di sini..."></textarea>`;
                             },
 
                             getEditorData(editorId) {
-                                const editorElement = document.getElementById(editorId);
-                                if (editorElement && editorElement._editor) {
-                                    return editorElement._editor.getData();
-                                }
-
-                                const fallbackTextarea = document.getElementById(editorId + '-fallback');
-                                if (fallbackTextarea) {
-                                    return fallbackTextarea.value;
-                                }
-
-                                return '';
+                                const el = document.getElementById(editorId);
+                                if (!el) return '';
+                                if (el._editor) return el._editor.getData();
+                                const ta = document.getElementById(editorId + '-fallback');
+                                return ta ? ta.value : '';
                             },
 
+                            resetEditor(editorId) {
+                                const el = document.getElementById(editorId);
+                                if (!el) return;
+                                if (el._editor) {
+                                    el._editor.setData('');
+                                } else {
+                                    const ta = document.getElementById(editorId + '-fallback');
+                                    if (ta) ta.value = '';
+                                }
+                            },
+
+                            destroyEditor(editorId) {
+                                const el = document.getElementById(editorId);
+                                if (!el) return;
+                                if (el._editor) {
+                                    el._editor.destroy().then(() => {
+                                        el._editor = null;
+                                        el.innerHTML = '';
+                                    }).catch(() => {});
+                                } else {
+                                    const ta = document.getElementById(editorId + '-fallback');
+                                    if (ta) ta.remove();
+                                    el.innerHTML = '';
+                                }
+                            },
+
+                            // ---------------- submit comment / reply ----------------
                             async submitMainComment() {
-                                const content = this.getCKEditorContent('task-main-comment-editor').trim();
+                                // Pastikan currentTask sudah ada
+                                if (!this.currentTask) {
+                                    console.error("currentTask belum tersedia saat submit komentar");
+                                    this.showNotification("Gagal: Task belum siap", "error");
+                                    return;
+                                }
+
+                                const content = this.getEditorData('task-main-comment-editor').trim();
                                 if (!content) {
                                     this.showNotification('Komentar tidak boleh kosong', 'error');
                                     return;
                                 }
 
-                                const success = await this.submitComment(content);
-                                if (success) {
-                                    // Clear editor
-                                    this.resetCKEditor('task-main-comment-editor');
-                                }
-                            },
-
-                            async submitReplyFromEditor() {
-                                if (!this.replyView.parentComment) return;
-
-                                const editorId = `task-reply-editor-${this.replyView.parentComment.id}`;
-                                const content = this.getCKEditorContent(editorId).trim();
-
-                                if (!content) {
-                                    this.showNotification('Balasan tidak boleh kosong', 'error');
-                                    return;
-                                }
-
-                                const success = await this.submitComment(content, this.replyView.parentComment.id);
-                                if (success) {
-                                    this.closeReplyView();
-                                }
-                            },
-
-                            async submitComment(content, parentCommentId = null) {
-                                if (!this.currentTask?.id) {
-                                    this.showNotification('Task tidak valid', 'error');
-                                    return;
-                                }
-
                                 try {
-                                    const response = await fetch(`/tasks/${this.currentTask.id}/comments`, {
+                                    const taskId = this.currentTask.id;
+                                    const preId = window.currentMainCommentId || null;
+
+                                    const res = await fetch(`/tasks/${taskId}/comments`, {
                                         method: 'POST',
                                         headers: {
                                             'Content-Type': 'application/json',
@@ -4869,89 +4911,126 @@
                                             'Accept': 'application/json'
                                         },
                                         body: JSON.stringify({
-                                            content: content,
-                                            parent_comment_id: parentCommentId
+                                            id: preId,
+                                            content: content
                                         })
                                     });
 
-                                    const data = await response.json();
+                                    if (!res.ok) throw new Error('Server error ' + res.status);
+
+                                    const data = await res.json();
 
                                     if (data.success) {
-                                        if (parentCommentId) {
-                                            // Tambahkan balasan ke komentar parent
-                                            const parentComment = this.comments.find(c => c.id === parentCommentId);
-                                            if (parentComment) {
-                                                if (!parentComment.replies) parentComment.replies = [];
-                                                parentComment.replies.push(data.comment);
-                                            }
-                                        } else {
-                                            // Tambahkan komentar utama
-                                            this.comments.unshift(data.comment);
-                                        }
+                                        // Tambahkan komentar BARU ke atas
+                                        this.comments.unshift(data.comment);
+
+                                        this.resetEditor('task-main-comment-editor');
+                                        window.currentMainCommentId = null;
+                                        this.initializeMainEditor();
 
                                         this.showNotification('Komentar berhasil dikirim', 'success');
-                                        return true;
                                     } else {
                                         throw new Error(data.message || 'Gagal mengirim komentar');
                                     }
-                                } catch (error) {
-                                    console.error('Error submitting comment:', error);
-                                    this.showNotification('Gagal mengirim komentar: ' + error.message, 'error');
-                                    return false;
+
+                                } catch (err) {
+                                    console.error(err);
+                                    this.showNotification('Gagal mengirim komentar: ' + err.message, 'error');
                                 }
                             },
+
+                            async submitReplyFromEditor() {
+                                if (!this.replyView.parentComment) return;
+                                const parent = this.replyView.parentComment;
+                                const editorId = `task-reply-editor-${parent.id}`;
+                                const content = this.getEditorData(editorId).trim();
+                                if (!content) {
+                                    this.showNotification('Balasan tidak boleh kosong', 'error');
+                                    return;
+                                }
+
+                                try {
+                                    console.log("ROOT:", this.$root);
+                                    console.log("ROOT.currentTask:", this.$root.currentTask);
+
+                                    const taskId = this.$root?.currentTask?.id;
+                                    if (!taskId) {
+                                        console.warn("Task belum siap untuk loadComments");
+                                        return;
+                                    }
+                                    const preId = window[`currentReplyId_${parent.id}`] || null;
+                                    const res = await fetch(`/tasks/${taskId}/comments`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': this.getCsrfToken(),
+                                            'Accept': 'application/json'
+                                        },
+                                        body: JSON.stringify({
+                                            id: preId,
+                                            content: content,
+                                            parent_comment_id: parent.id
+                                        })
+                                    });
+
+                                    if (!res.ok) throw new Error('Server error ' + res.status);
+                                    const data = await res.json();
+                                    if (data.success) {
+                                        // append reply to parent
+                                        if (!parent.replies) parent.replies = [];
+                                        parent.replies.push(data.comment);
+                                        // close reply view and destroy editor
+                                        this.closeReplyView();
+                                        this.showNotification('Balasan berhasil dikirim', 'success');
+                                    } else {
+                                        throw new Error(data.message || 'Gagal mengirim balasan');
+                                    }
+                                } catch (err) {
+                                    console.error(err);
+                                    this.showNotification('Gagal mengirim balasan: ' + err.message, 'error');
+                                }
+                            },
+
+                            // ---------------- reply view helpers ----------------
                             toggleReply(comment) {
                                 if (this.replyView.active && this.replyView.parentComment?.id === comment.id) {
                                     this.closeReplyView();
                                 } else {
+                                    // destroy previous editor if any
+                                    if (this.replyView.parentComment) {
+                                        this.destroyEditor(`task-reply-editor-${this.replyView.parentComment.id}`);
+                                    }
                                     this.replyView.active = true;
                                     this.replyView.parentComment = comment;
-
-                                    this.$nextTick(() => {
-                                        this.initializeReplyEditor(comment.id);
-                                    });
+                                    // init editor after DOM updates
+                                    this.$nextTick(() => this.initializeReplyEditor(comment.id));
                                 }
                             },
 
                             closeReplyView() {
                                 if (this.replyView.parentComment) {
-                                    const editorId = `task-reply-editor-${this.replyView.parentComment.id}`;
-                                    const editorElement = document.getElementById(editorId);
-                                    if (editorElement && editorElement._editor) {
-                                        editorElement._editor.destroy().then(() => {
-                                            editorElement._editor = null;
-                                        });
-                                    }
+                                    this.destroyEditor(`task-reply-editor-${this.replyView.parentComment.id}`);
+                                    // cleanup pre-gen id
+                                    delete window[`currentReplyId_${this.replyView.parentComment.id}`];
                                 }
-
                                 this.replyView.active = false;
                                 this.replyView.parentComment = null;
                             },
 
-                            destroyMainEditor() {
-                                const editorElement = document.getElementById('task-main-comment-editor');
-                                if (editorElement && editorElement._editor) {
-                                    editorElement._editor.destroy().then(() => {
-                                        editorElement._editor = null;
-                                    });
-                                }
-                            },
-
+                            // ---------------- util ----------------
                             formatCommentDate(dateString) {
                                 if (!dateString) return '';
-                                const date = new Date(dateString);
+                                const d = new Date(dateString);
                                 const now = new Date();
-                                const diffMs = Math.abs(now - date);
-                                const diffMinutes = Math.floor(diffMs / (1000 * 60));
-                                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-                                if (diffMinutes < 1) return 'beberapa detik yang lalu';
-                                if (diffMinutes < 60) return `${diffMinutes} menit yang lalu`;
-                                if (diffHours < 24) return `${diffHours} jam yang lalu`;
-                                if (diffDays < 7) return `${diffDays} hari yang lalu`;
-
-                                return date.toLocaleDateString('id-ID', {
+                                const diffMs = now - d;
+                                const minutes = Math.floor(diffMs / (1000 * 60));
+                                if (minutes < 1) return 'beberapa detik yang lalu';
+                                if (minutes < 60) return `${minutes} menit yang lalu`;
+                                const hours = Math.floor(minutes / 60);
+                                if (hours < 24) return `${hours} jam yang lalu`;
+                                const days = Math.floor(hours / 24);
+                                if (days < 7) return `${days} hari yang lalu`;
+                                return d.toLocaleDateString('id-ID', {
                                     day: 'numeric',
                                     month: 'short',
                                     year: 'numeric'
@@ -4959,15 +5038,149 @@
                             },
 
                             getCsrfToken() {
-                                const metaTag = document.querySelector('meta[name="csrf-token"]');
-                                return metaTag ? metaTag.getAttribute('content') : '';
+                                return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
                             },
 
-                            showNotification(message, type = 'info') {
-                                // Implementasi notifikasi Anda
-                                alert(message); // Sementara pakai alert
+                            showNotification(msg, type = 'info') {
+                                // replace with your toast lib
+                                console.log(`[${type}] ${msg}`);
+                                // fallback quick:
+                                // alert(msg);
                             }
                         };
+                    }
+
+
+                    // -------------------------
+                    // CKEditor toolbar custom upload functions (reuse from earlier)
+                    // -------------------------
+                    function insertUploadImageButtonToToolbar(editor, commentId) {
+                        const toolbarEl = editor.ui.view.toolbar.element;
+                        const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
+
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'ck ck-button';
+                        btn.title = 'Upload Image';
+                        btn.innerHTML = `<span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M21 19V5a2 2 0 0 0-2-2H5 a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14 a2 2 0 0 0 2-2zM8.5 11 a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM5 19 l4.5-6 3.5 4.5 2.5-3L19 19H5z"/></svg>
+    </span>`;
+                        btn.style.marginLeft = '6px';
+                        btn.style.cursor = 'pointer';
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                        btn.addEventListener('click', () => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.click();
+                            input.addEventListener('change', async (e) => {
+                                const file = e.target.files[0];
+                                if (!file) return;
+                                const fd = new FormData();
+                                fd.append('upload', file);
+                                fd.append('attachable_id', commentId || '');
+                                fd.append('attachable_type', 'App\\Models\\Comment');
+
+                                try {
+                                    const res = await fetch('/tasks/comments/upload', {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRF-TOKEN': csrfToken
+                                        },
+                                        body: fd
+                                    });
+                                    const data = await res.json();
+                                    if (res.ok && data.url) {
+                                        editor.model.change(writer => {
+                                            const insertPos = editor.model.document.selection
+                                                .getFirstPosition();
+                                            const imageElement = writer.createElement('imageBlock', {
+                                                src: data.url
+                                            });
+                                            editor.model.insertContent(imageElement, insertPos);
+                                        });
+                                    } else {
+                                        alert('Upload image gagal.');
+                                        console.error(data);
+                                    }
+                                } catch (err) {
+                                    console.error(err);
+                                    alert('Terjadi kesalahan upload image.');
+                                }
+                            }, {
+                                once: true
+                            });
+                        });
+
+                        itemsContainer.appendChild(btn);
+                    }
+
+                    function insertUploadFileButtonToToolbar(editor, commentId) {
+                        const toolbarEl = editor.ui.view.toolbar.element;
+                        const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
+
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'ck ck-button';
+                        btn.title = 'Upload File';
+                        btn.innerHTML = `<span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
+            <path fill="currentColor" d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8.83a2 2 0 0 0-.59-1.41l-3.83-3.83A2 2 0 0 0 10.17 3H6zm4 2 4 4H10V4z"/></svg>
+    </span>`;
+                        btn.style.marginLeft = '6px';
+                        btn.style.cursor = 'pointer';
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                        btn.addEventListener('click', () => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar,.ppt,.pptx";
+                            input.click();
+
+                            input.addEventListener('change', async (e) => {
+                                const file = e.target.files[0];
+                                if (!file) return;
+                                const fd = new FormData();
+                                fd.append('upload', file);
+                                fd.append('attachable_id', commentId || '');
+                                fd.append('attachable_type', 'App\\Models\\Comment');
+
+                                try {
+                                    const res = await fetch('/tasks/comments/upload', {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRF-TOKEN': csrfToken
+                                        },
+                                        body: fd
+                                    });
+                                    const data = await res.json();
+                                    if (res.ok && data.url) {
+                                        editor.model.change(writer => {
+                                            const insertPos = editor.model.document.selection
+                                                .getFirstPosition();
+                                            const paragraph = writer.createElement('paragraph');
+                                            const textNode = writer.createText(file.name, {
+                                                linkHref: data.url
+                                            });
+                                            writer.append(textNode, paragraph);
+                                            editor.model.insertContent(paragraph, insertPos);
+                                        });
+                                    } else {
+                                        alert('Upload file gagal.');
+                                        console.error(data);
+                                    }
+                                } catch (err) {
+                                    console.error(err);
+                                    alert('Terjadi kesalahan upload file.');
+                                }
+                            }, {
+                                once: true
+                            });
+                        });
+
+                        itemsContainer.appendChild(btn);
                     }
                 </script>
             @endsection

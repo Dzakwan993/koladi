@@ -1546,119 +1546,138 @@ private function mapColumnToStatus($columnName)
     // ✅ NEW: Get task detail untuk modal dengan semua relasi lengkap
     // ✅ PERBAIKI: Get task detail untuk modal
     public function getTaskDetail($taskId)
-    {
-        try {
-            // Validasi UUID
-            if (!Str::isUuid($taskId)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'ID tugas tidak valid'
-                ], 400);
-            }
-
-            $task = Task::with([
-                'assignments.user',
-                'labels.color',
-                'checklists' => function ($query) {
-                    $query->orderBy('position');
-                },
-                'attachments',
-                'boardColumn',
-                'creator'
-            ])->find($taskId);
-
-            if (!$task) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Tugas tidak ditemukan'
-                ], 404);
-            }
-
-            $user = Auth::user();
-
-            // Validasi akses
-            if (!$this->canAccessWorkspace($task->workspace_id)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke task ini'
-                ], 403);
-            }
-
-            // Format response
-            $taskData = [
-                'id' => $task->id,
-                'title' => $task->title,
-                'phase' => $task->phase,
-                'description' => $task->description,
-                'is_secret' => $task->is_secret,
-                'status' => $task->status,
-                'priority' => $task->priority,
-                'start_datetime' => $task->start_datetime,
-                'due_datetime' => $task->due_datetime,
-                'created_at' => $task->created_at,
-                'updated_at' => $task->updated_at,
-                'board_column' => $task->boardColumn ? [
-                    'id' => $task->boardColumn->id,
-                    'name' => $task->boardColumn->name
-                ] : null,
-                'creator' => $task->creator ? [
-                    'id' => $task->creator->id,
-                    'name' => $task->creator->full_name,
-                    'email' => $task->creator->email
-                ] : null,
-                'assigned_members' => $task->assignments->map(function ($assignment) {
-                    return [
-                        'id' => $assignment->user->id,
-                        'name' => $assignment->user->full_name,
-                        'email' => $assignment->user->email,
-                        'avatar' => $assignment->user->avatar ?: 'https://i.pravatar.cc/32?img=' . rand(1, 70)
-                    ];
-                })->toArray(),
-                'labels' => $task->labels->map(function ($label) {
-                    return [
-                        'id' => $label->id,
-                        'name' => $label->name,
-                        'color' => $label->color->rgb
-                    ];
-                })->toArray(),
-                'checklists' => $task->checklists->map(function ($checklist) {
-                    return [
-                        'id' => $checklist->id,
-                        'title' => $checklist->title,
-                        'is_done' => (bool)$checklist->is_done,
-                        'position' => $checklist->position
-                    ];
-                })->toArray(),
-                'attachments' => $task->attachments->map(function ($attachment) {
-                    return [
-                        'id' => $attachment->id,
-                        'name' => $attachment->file_name,
-                        'url' => Storage::disk('public')->exists($attachment->file_url)
-                            ? Storage::disk('public')->url($attachment->file_url)
-                            : null,
-                        'type' => $this->getFileType($attachment->file_url),
-                        'uploaded_by' => $attachment->uploader ? [
-                            'name' => $attachment->uploader->full_name
-                        ] : null,
-                        'uploaded_at' => $attachment->uploaded_at
-                    ];
-                })->toArray(),
-                'progress_percentage' => $this->calculateTaskProgress($task),
-                'is_overdue' => $task->due_datetime && $task->due_datetime->lt(now()) && !in_array($task->status, ['done', 'cancel'])
-            ];
-
-            return response()->json([
-                'success' => true,
-                'task' => $taskData
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error getting task detail: ' . $e->getMessage());
+{
+    try {
+        // Validasi UUID
+        if (!Str::isUuid($taskId)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil detail tugas: ' . $e->getMessage()
-            ], 500);
+                'message' => 'ID tugas tidak valid'
+            ], 400);
         }
+
+        $task = Task::with([
+            'assignments.user',
+            'labels.color',
+            'checklists' => function ($query) {
+                $query->orderBy('position');
+            },
+            'attachments',
+            'boardColumn',
+            'creator'
+        ])->find($taskId);
+
+        // 🔥 Load comments + replies + user
+$task->load([
+    'comments' => function ($query) {
+        $query->whereNull('parent_comment_id')
+              ->orderBy('created_at', 'desc');
+    },
+    'comments.user',
+    'comments.replies.user'
+]);
+
+
+        if (!$task) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tugas tidak ditemukan'
+            ], 404);
+        }
+
+        // Validasi akses workspace
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
+        }
+
+        // Format response sesuai frontend
+        $taskData = [
+            'id' => $task->id,
+            'title' => $task->title,
+            'phase' => $task->phase,
+            'description' => $task->description,
+            'is_secret' => $task->is_secret,
+            'status' => $task->status,
+            'priority' => $task->priority,
+            'start_datetime' => $task->start_datetime ? $task->start_datetime->toIso8601String() : null,
+            'due_datetime' => $task->due_datetime ? $task->due_datetime->toIso8601String() : null,
+            'created_at' => $task->created_at?->toIso8601String(),
+            'updated_at' => $task->updated_at?->toIso8601String(),
+
+            'board_column' => $task->boardColumn ? [
+                'id' => $task->boardColumn->id,
+                'name' => $task->boardColumn->name,
+            ] : null,
+
+            'creator' => $task->creator ? [
+                'id' => $task->creator->id,
+                'name' => $task->creator->full_name,
+                'email' => $task->creator->email
+            ] : null,
+
+            'assigned_members' => $task->assignments->map(function ($assignment) {
+                return [
+                    'id' => $assignment->user->id,
+                    'name' => $assignment->user->full_name,
+                    'email' => $assignment->user->email,
+                    'avatar' => $assignment->user->avatar ?? 'https://i.pravatar.cc/32?img=' . rand(1, 70)
+                ];
+            })->toArray(),
+
+            'labels' => $task->labels->map(function ($label) {
+                return [
+                    'id' => $label->id,
+                    'name' => $label->name,
+                    'color' => $label->color->rgb
+                ];
+            })->toArray(),
+
+            'checklists' => $task->checklists->map(function ($checklist) {
+                return [
+                    'id' => $checklist->id,
+                    'title' => $checklist->title,
+                    'is_done' => (bool)$checklist->is_done,
+                    'position' => $checklist->position
+                ];
+            })->toArray(),
+
+            // 🆕 Attachments mapping sesuai format preview frontend
+            'attachments' => $task->attachments->map(function ($attachment) {
+                return [
+                    'id' => $attachment->id,
+                    'name' => $attachment->file_name,
+                    'url' => (Storage::disk('public')->exists($attachment->file_url)
+                        ? Storage::disk('public')->url($attachment->file_url)
+                        : $attachment->file_url),
+                    'type' => pathinfo($attachment->file_url, PATHINFO_EXTENSION),
+                    'uploaded_by' => $attachment->uploader ? [
+                        'name' => $attachment->uploader->full_name
+                    ] : null,
+                    'uploaded_at' => $attachment->uploaded_at?->toIso8601String()
+                ];
+            }),
+
+            'progress_percentage' => $this->calculateTaskProgress($task),
+            'is_overdue' => $task->due_datetime && $task->due_datetime->lt(now()) && !in_array($task->status, ['done', 'cancel'])
+        ];
+
+        return response()->json([
+            'success' => true,
+            'task' => $taskData
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error getting task detail: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil detail tugas'
+        ], 500);
     }
+}
+
 
    
 
@@ -2094,139 +2113,105 @@ public function updateTaskLabels(Request $request, $taskId)
 
 // ✅ NEW: Comment methods for tasks
 // Di TaskController - perbaiki method storeTaskComment
-public function storeTaskComment(Request $request, $taskId)
-{
-    $validator = Validator::make($request->all(), [
-        'content' => 'required|string|min:1',
-        'parent_comment_id' => 'nullable|exists:comments,id',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Validasi gagal',
-            'errors' => $validator->errors()
-        ], 422);
-    }
-
-    try {
-        $task = Task::findOrFail($taskId);
-        $user = Auth::user();
-
-        // Validasi akses
-        if (!$this->canAccessWorkspace($task->workspace_id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses ke task ini'
-            ], 403);
-        }
-
-        // Buat komentar baru
-        $comment = Comment::create([
-            'id' => Str::uuid()->toString(),
-            'user_id' => $user->id,
-            'content' => $request->content,
-            'commentable_id' => $taskId,
-            'commentable_type' => 'App\\Models\\Task',
-            'parent_comment_id' => $request->parent_comment_id,
-        ]);
-
-        // Load relasi user dan replies
-        $comment->load(['user', 'replies.user']);
-
-        // Format response
-        $commentData = [
-            'id' => $comment->id,
-            'author' => [
-                'name' => $comment->user->full_name ?? 'Anonim',
-                'avatar' => $comment->user->avatar ?? 'https://i.pravatar.cc/40?img=0',
-            ],
-            'content' => $comment->content,
-            'createdAt' => $comment->created_at->toISOString(),
-            'replies' => $comment->replies->map(function ($reply) {
-                return [
-                    'id' => $reply->id,
-                    'author' => [
-                        'name' => $reply->user->full_name ?? 'Anonim',
-                        'avatar' => $reply->user->avatar ?? 'https://i.pravatar.cc/40?img=0',
-                    ],
-                    'content' => $reply->content,
-                    'createdAt' => $reply->created_at->toISOString(),
-                ];
-            }),
-        ];
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Komentar berhasil disimpan',
-            'comment' => $commentData,
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error storing task comment: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal menyimpan komentar: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-// Perbaiki juga method getTaskComments
 public function getTaskComments($taskId)
-{
-    try {
+    {
         $task = Task::findOrFail($taskId);
-        $user = Auth::user();
 
-        // Validasi akses
-        if (!$this->canAccessWorkspace($task->workspace_id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses ke task ini'
-            ], 403);
-        }
-
-        $comments = Comment::with(['user', 'replies.user'])
-            ->where('commentable_id', $taskId)
-            ->where('commentable_type', 'App\\Models\\Task')
+        $comments = $task->comments()
+            ->with(['user', 'replies.user'])
             ->whereNull('parent_comment_id')
             ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($comment) {
-                return [
-                    'id' => $comment->id,
-                    'author' => [
-                        'name' => $comment->user->full_name ?? 'Anonim',
-                        'avatar' => $comment->user->avatar ?? 'https://i.pravatar.cc/40?img=0',
-                    ],
-                    'content' => $comment->content,
-                    'createdAt' => $comment->created_at->toISOString(),
-                    'replies' => $comment->replies->map(function ($reply) {
-                        return [
-                            'id' => $reply->id,
-                            'author' => [
-                                'name' => $reply->user->full_name ?? 'Anonim',
-                                'avatar' => $reply->user->avatar ?? 'https://i.pravatar.cc/40?img=0',
-                            ],
-                            'content' => $reply->content,
-                            'createdAt' => $reply->created_at->toISOString(),
-                        ];
-                    }),
-                ];
-            });
+            ->get();
 
+        // return comments as JSON
         return response()->json([
             'success' => true,
             'comments' => $comments
         ]);
-    } catch (\Exception $e) {
-        Log::error('Error getting task comments: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil komentar'
-        ], 500);
     }
-}
+
+    // --- Store a new comment or reply ---
+    public function storeTaskComment(Request $request, $taskId)
+    {
+        $request->validate([
+            'content' => 'required|string',
+            'parent_comment_id' => 'nullable|exists:comments,id',
+            // optional: 'id' (pre-generated UUID) if frontend provides it
+            'id' => 'nullable|string'
+        ]);
+
+        $task = Task::findOrFail($taskId);
+
+        $comment = Comment::create([
+            'id' => $request->input('id') ?? Str::uuid()->toString(),
+            'user_id' => Auth::id(),
+            'content' => $request->content,
+            'commentable_id' => $task->id,
+            'commentable_type' => Task::class,
+            'parent_comment_id' => $request->parent_comment_id ?? null,
+        ]);
+
+        // optional: attach any pre-uploaded attachments that have attachable_type = Comment and attachable_id = pre-generated id
+        // (frontend can upload files before comment store using the pre-generated id)
+        if ($request->filled('id')) {
+            // Attachments that used this id as attachable_id are already saved by upload endpoint.
+            // No DB action required here unless you want to re-link / change attachable_type.
+        }
+
+        $comment->load('user');
+
+        return response()->json([
+            'success' => true,
+            'comment' => $comment
+        ]);
+    }
+
+    // --- Upload file/image for comment or other attachable ---
+    public function uploadCommentFile(Request $request)
+    {
+        try {
+            if (!$request->hasFile('upload')) {
+                return response()->json(['error' => 'No file uploaded'], 400);
+            }
+
+            $file = $request->file('upload');
+            $extension = strtolower($file->getClientOriginalExtension());
+
+            // image types
+            $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+            $folder = in_array($extension, $imageExtensions)
+                ? 'uploads/comment_images'
+                : 'uploads/comment_files';
+
+            $fileName = time() . '_' . Str::random(8) . '.' . $extension;
+            $filePath = $file->storeAs($folder, $fileName, 'public'); // stored in storage/app/public/{folder}
+
+            $fileUrl = asset('storage/' . $filePath);
+
+            // Save to attachments table if attachable info provided
+            $attachableId = $request->input('attachable_id'); // frontend sends generated UUID for Comment usually
+            $attachableType = $request->input('attachable_type'); // e.g. App\\Models\\Comment
+
+            if ($attachableId && $attachableType) {
+                DB::table('attachments')->insert([
+                    'id' => Str::uuid()->toString(),
+                    'attachable_type' => $attachableType,
+                    'attachable_id' => $attachableId,
+                    'file_url' => $fileUrl,
+                    'uploaded_by' => Auth::id(),
+                    'uploaded_at' => now(),
+                ]);
+            }
+
+            return response()->json([
+                'uploaded' => true,
+                'url' => $fileUrl,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 
 
 // Tambahkan method ini di TaskController.php

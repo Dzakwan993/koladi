@@ -121,11 +121,7 @@
                     <div class="absolute inset-0 bg-gray-50"></div>
 
                     <div class="absolute top-1/2 -translate-y-1/2 h-8 rounded-lg transition-all duration-500
-                                border bg-gray-200 overflow-hidden"
-                         :style="`
-                             left: ${calculatePhasePosition(phase).left};
-                             width: ${calculatePhasePosition(phase).width};
-                         `">
+                                border bg-gray-200 overflow-hidden">
 
                         <div class="absolute inset-0 opacity-20"
                              :class="{

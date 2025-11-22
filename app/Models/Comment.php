@@ -22,19 +22,33 @@ class Comment extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
-    // Relasi ke user
+    // -- relations --
+
+
+    protected $appends = ['author'];
+
+public function getAuthorAttribute()
+{
+    if (!$this->user) return null;
+
+    return [
+        'id' => $this->user->id,
+        'name' => $this->user->name,
+        'avatar' => $this->user->avatar ?? null,
+    ];
+}
+
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    // Relasi ke model yang bisa dikomentari
     public function commentable()
     {
         return $this->morphTo();
     }
 
-    // Relasi untuk reply
+    // replies (one level nested)
     public function replies()
     {
         return $this->hasMany(Comment::class, 'parent_comment_id')->orderBy('created_at');
@@ -45,9 +59,15 @@ class Comment extends Model
         return $this->belongsTo(Comment::class, 'parent_comment_id');
     }
 
-    // Accessor untuk formatted date
+    // attachments for this comment (optional, recommended)
+    public function attachments()
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    // accessor formatted date
     public function getFormattedCreatedAtAttribute()
     {
-        return $this->created_at->format('d M Y H:i');
+        return $this->created_at ? $this->created_at->format('d M Y H:i') : null;
     }
 }
