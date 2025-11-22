@@ -1,109 +1,159 @@
- <!-- Modal Detail Phase -->
- <div x-show="phaseModal.open" x-cloak
-     class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
-     <div class="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-         <div class="p-6 border-b">
-             <h2 class="text-xl font-bold text-gray-800" x-text="phaseModal.title"></h2>
-             <p class="text-gray-600 mt-1" x-text="phaseModal.description"></p>
+<!-- Modal Detail Phase -->
+<div x-show="phaseModal.open" x-cloak
+    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+    <div class="bg-white rounded-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b">
+            <h2 class="text-xl font-bold text-gray-800" x-text="phaseModal.title"></h2>
+            <p class="text-gray-600 mt-1" x-text="phaseModal.description"></p>
 
-             <!-- Progress Overview -->
-             <div class="mt-4 bg-blue-50 rounded-lg p-4">
-                 <div class="flex items-center justify-between mb-2">
-                     <span class="font-medium text-gray-700">Progress Phase</span>
-                     <span class="font-bold text-lg"
-                         :class="{
-                             'text-green-600': phaseModal.progress === 100,
-                             'text-blue-600': phaseModal.progress > 0 && phaseModal.progress < 100,
-                             'text-gray-400': phaseModal.progress === 0
-                         }"
-                         x-text="`${phaseModal.progress}%`">
-                     </span>
-                 </div>
-                 <div class="w-full bg-gray-200 rounded-full h-3">
-                     <div class="h-3 rounded-full transition-all duration-500"
-                         :class="{
-                             'bg-green-500': phaseModal.progress === 100,
-                             'bg-blue-500': phaseModal.progress > 0 && phaseModal.progress < 100,
-                             'bg-gray-300': phaseModal.progress === 0
-                         }"
-                         :style="`width: ${phaseModal.progress}%`">
-                     </div>
-                 </div>
-                 <div class="flex justify-between text-sm text-gray-600 mt-1">
-                     <span x-text="`${phaseModal.completedTasks} tugas selesai`"></span>
-                     <span x-text="`${phaseModal.totalTasks} total tugas`"></span>
-                 </div>
-             </div>
-         </div>
+            <!-- Phase Date Range & Duration -->
+            <div class="mt-4 bg-blue-50 rounded-lg p-4" x-show="phaseModal.start_date || phaseModal.end_date">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <!-- Start Date -->
+                    <div class="flex items-center gap-2" x-show="phaseModal.start_date">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <div>
+                            <div class="font-medium text-gray-700">Mulai Phase</div>
+                            <div class="text-gray-600" x-text="formatDate(phaseModal.start_date)"></div>
+                        </div>
+                    </div>
 
-         <div class="p-6">
-             <h3 class="text-lg font-semibold mb-4">Daftar Tugas</h3>
-             <div class="space-y-4">
-                 <template x-for="task in phaseModal.tasks" :key="task.id">
-                     <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-all duration-200"
-                         :class="{
-                             'border-green-200 bg-green-50': task.status === 'done',
-                             'border-blue-200 bg-blue-50': task.status === 'inprogress',
-                             'border-gray-200': task.status === 'todo'
-                         }"
-                         @click="openDetail(task.id)">
-                         <div class="flex justify-between items-start">
-                             <div class="flex-1">
-                                 <div class="flex items-center gap-2 mb-2">
-                                     <h4 class="font-medium text-gray-800" x-text="task.title"></h4>
-                                     <span class="text-xs px-2 py-1 rounded-full"
-                                         :class="{
-                                             'bg-green-100 text-green-800': task.status === 'done',
-                                             'bg-blue-100 text-blue-800': task.status === 'inprogress',
-                                             'bg-gray-100 text-gray-800': task.status === 'todo'
-                                         }"
-                                         x-text="task.status === 'done' ? 'Selesai' : (task.status === 'inprogress' ? 'Dikerjakan' : 'To Do')">
-                                     </span>
-                                 </div>
-                                 <div class="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                                     <div class="flex items-center gap-1">
-                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                         </svg>
-                                         <span x-text="`Mulai: ${formatDate(task.startDate)}`"></span>
-                                     </div>
-                                     <div class="flex items-center gap-1">
-                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                         </svg>
-                                         <span x-text="`Tenggat: ${formatDate(task.dueDate)}`"></span>
-                                     </div>
-                                 </div>
-                             </div>
-                             <div class="text-right">
-                                 <div class="text-sm text-gray-600 mb-1" x-text="`${calculateProgress(task)}%`">
-                                 </div>
-                                 <div class="w-24 h-2 bg-gray-200 rounded-full">
-                                     <div class="h-2 rounded-full transition-all duration-300"
-                                         :class="{
-                                             'bg-green-500': task.status === 'done',
-                                             'bg-blue-500': task.status === 'inprogress',
-                                             'bg-gray-400': task.status === 'todo'
-                                         }"
-                                         :style="`width: ${calculateProgress(task)}%`"></div>
-                                 </div>
-                             </div>
-                         </div>
-                     </div>
-                 </template>
-             </div>
-         </div>
+                    <!-- End Date -->
+                    <div class="flex items-center gap-2" x-show="phaseModal.end_date">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                            <div class="font-medium text-gray-700">Selesai Phase</div>
+                            <div class="text-gray-600" x-text="formatDate(phaseModal.end_date)"></div>
+                        </div>
+                    </div>
 
-         <div class="p-6 border-t flex justify-end">
-             <button @click="phaseModal.open = false"
-                 class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors">
-                 Tutup
-             </button>
-         </div>
-     </div>
- </div>
+                    <!-- Duration -->
+                    <div class="flex items-center gap-2" x-show="phaseModal.duration > 0">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>
+                            <div class="font-medium text-gray-700">Total Durasi</div>
+                            <div class="text-gray-600" x-text="phaseModal.duration + ' hari'"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date Range Summary -->
+                <div class="mt-3 pt-3 border-t border-blue-200" 
+                     x-show="phaseModal.start_date && phaseModal.end_date">
+                    <div class="text-center text-sm text-blue-700 font-medium">
+                        <span x-text="'Phase ini berlangsung dari ' + formatDate(phaseModal.start_date) + ' hingga ' + formatDate(phaseModal.end_date)"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Overview -->
+            <div class="mt-4 bg-gray-50 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="font-medium text-gray-700">Progress Phase</span>
+                    <span class="font-bold text-lg"
+                        :class="{
+                            'text-green-600': phaseModal.progress === 100,
+                            'text-blue-600': phaseModal.progress > 0 && phaseModal.progress < 100,
+                            'text-gray-400': phaseModal.progress === 0
+                        }"
+                        x-text="`${phaseModal.progress}%`">
+                    </span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div class="h-3 rounded-full transition-all duration-500"
+                        :class="{
+                            'bg-green-500': phaseModal.progress === 100,
+                            'bg-blue-500': phaseModal.progress > 0 && phaseModal.progress < 100,
+                            'bg-gray-300': phaseModal.progress === 0
+                        }"
+                        :style="`width: ${phaseModal.progress}%`">
+                    </div>
+                </div>
+                <div class="flex justify-between text-sm text-gray-600 mt-1">
+                    <span x-text="`${phaseModal.completedTasks} tugas selesai`"></span>
+                    <span x-text="`${phaseModal.totalTasks} total tugas`"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rest of the modal content remains the same -->
+        <div class="p-6">
+            <h3 class="text-lg font-semibold mb-4">Daftar Tugas</h3>
+            <div class="space-y-4">
+                <template x-for="task in phaseModal.tasks" :key="task.id">
+                    <div class="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-all duration-200"
+                        :class="{
+                            'border-green-200 bg-green-50': task.status === 'done',
+                            'border-blue-200 bg-blue-50': task.status === 'inprogress',
+                            'border-gray-200': task.status === 'todo'
+                        }"
+                        @click="openDetail(task.id)">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <h4 class="font-medium text-gray-800" x-text="task.title"></h4>
+                                    <span class="text-xs px-2 py-1 rounded-full"
+                                        :class="{
+                                            'bg-green-100 text-green-800': task.status === 'done',
+                                            'bg-blue-100 text-blue-800': task.status === 'inprogress',
+                                            'bg-gray-100 text-gray-800': task.status === 'todo'
+                                        }"
+                                        x-text="task.status === 'done' ? 'Selesai' : (task.status === 'inprogress' ? 'Dikerjakan' : 'To Do')">
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                                    <div class="flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <span x-text="`Mulai: ${formatDate(task.start_datetime)}`"></span>
+                                    </div>
+                                    <div class="flex items-center gap-1">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span x-text="`Tenggat: ${formatDate(task.due_datetime)}`"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-gray-600 mb-1" x-text="`${calculateProgress(task)}%`">
+                                </div>
+                                <div class="w-24 h-2 bg-gray-200 rounded-full">
+                                    <div class="h-2 rounded-full transition-all duration-300"
+                                        :class="{
+                                            'bg-green-500': task.status === 'done',
+                                            'bg-blue-500': task.status === 'inprogress',
+                                            'bg-gray-400': task.status === 'todo'
+                                        }"
+                                        :style="`width: ${calculateProgress(task)}%`"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <div class="p-6 border-t flex justify-end">
+            <button @click="phaseModal.open = false"
+                class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors">
+                Tutup
+            </button>
+        </div>
+    </div>
+</div>
 
 
 
@@ -1364,263 +1414,137 @@
              </div>
 
              <!-- Komentar Section -->
-            <!-- Komentar Section -->
-<div class="border-t pt-4 mt-6" x-data="taskCommentSection()" x-ref="commentSection" x-init="init()">
-    
-    <!-- ✅ Loading Indicator -->
-    <div x-show="loading" class="text-center py-8">
-        <svg class="animate-spin h-8 w-8 mx-auto text-blue-600" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        <p class="text-sm text-gray-500 mt-2">Memuat komentar...</p>
-    </div>
+             <!-- Komentar Section -->
+             <div class="border-t pt-4 mt-6" x-data="taskCommentSection()" x-ref="commentSection" x-init="init()">
+                 <div class="space-y-4">
 
-    <!-- ✅ Main Content (Hidden saat loading) -->
-    <div x-show="!loading" class="space-y-4">
+                     <!-- Tambah Komentar -->
+                     <div class="mb-6">
+                         <label class="text-sm font-medium text-gray-700 mb-2 block">Tulis Komentar</label>
+                         <div class="flex items-start gap-3">
+                             <img :src="currentUserAvatar" alt="Avatar" class="rounded-full w-10 h-10">
 
-        <!-- ✅ Tambah Komentar -->
-        <div class="mb-6">
-            <label class="text-sm font-medium text-gray-700 mb-2 block">Tulis Komentar</label>
-            <div class="flex items-start gap-3">
-                <img :src="currentUserAvatar" alt="Avatar" class="rounded-full w-10 h-10">
+                             <!-- Container untuk editor komentar utama -->
+                             <div class="flex-1" x-data="{ active: true }">
+                                 <div class="bg-white border border-gray-300 rounded-lg p-4">
+                                     <div id="task-main-comment-editor" class="min-h-[120px] bg-white"></div>
 
-                <!-- Container untuk editor komentar utama -->
-                <div class="flex-1">
-                    <div class="bg-white border border-gray-300 rounded-lg p-4">
-                        <div id="task-main-comment-editor" class="min-h-[120px] bg-white"></div>
+                                     <div class="flex justify-end gap-2 mt-4">
+                                         <button @click="destroyMainEditor()"
+                                             class="px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded-lg hover:text-gray-800 transition">
+                                             Batal
+                                         </button>
+                                         <button @click="submitMainComment()"
+                                             class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                                             Kirim
+                                         </button>
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
 
-                        <div class="flex justify-end gap-2 mt-4">
-                            <button @click="resetEditor('task-main-comment-editor')"
-                                class="px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded-lg hover:text-gray-800 transition">
-                                Batal
-                            </button>
-                            <button @click="submitMainComment()"
-                                class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                                Kirim
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                     <!-- Daftar Komentar yang sudah ada -->
+                     <template x-if="comments.length > 0">
+                         <div class="space-y-4">
+                             <template x-for="comment in comments" :key="comment.id">
+                                 <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                     <div class="flex items-start gap-3">
+                                         <img :src="comment.author.avatar" alt=""
+                                             class="w-8 h-8 rounded-full">
+                                         <div class="flex-1">
+                                             <div class="flex justify-between items-center">
+                                                 <p class="text-sm font-semibold text-gray-800"
+                                                     x-text="comment.author.name"></p>
+                                                 <span class="text-xs text-gray-500"
+                                                     x-text="formatCommentDate(comment.createdAt)"></span>
+                                             </div>
+                                             <div class="text-sm text-gray-700 mt-1" x-html="comment.content"></div>
 
-        <!-- ✅ Daftar Komentar -->
-        <div x-show="comments.length > 0" class="space-y-4">
-            <h3 class="text-sm font-semibold text-gray-700 mb-2">
-                Komentar (<span x-text="comments.length"></span>)
-            </h3>
-            
-            <template x-for="comment in comments" :key="comment.id">
-                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <div class="flex items-start gap-3">
-                        <!-- ✅ Avatar -->
-                        <img :src="comment.author?.avatar || 'https://i.pravatar.cc/40?img=0'" 
-                             :alt="comment.author?.name || 'User'"
-                             class="w-8 h-8 rounded-full flex-shrink-0">
-                        
-                        <div class="flex-1 min-w-0">
-                            <!-- ✅ Header Comment -->
-                            <div class="flex justify-between items-start mb-2">
-                                <div class="flex-1">
-                                    <p class="text-sm font-semibold text-gray-800"
-                                       x-text="comment.author?.name || 'Unknown User'"></p>
-                                    <span class="text-xs text-gray-500"
-                                          x-text="formatCommentDate(comment.createdAt || comment.created_at)"></span>
-                                </div>
-                            </div>
-                            
-                            <!-- ✅ Content -->
-                            <div class="text-sm text-gray-700 mt-1 prose prose-sm max-w-none" 
-                                 x-html="comment.content"></div>
+                                             <!-- Tombol Balas -->
+                                             <div class="flex items-center gap-4 mt-2">
+                                                 <button @click="toggleReply(comment)"
+                                                     class="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 transition">
+                                                     <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                         viewBox="0 0 24 24">
+                                                         <path stroke-linecap="round" stroke-linejoin="round"
+                                                             stroke-width="2"
+                                                             d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                                     </svg>
+                                                     <span>balas</span>
+                                                     <span 
+    x-show="(comment.replies ?? []).length > 0"
+    x-text="(comment.replies ?? []).length + ' balasan'"
+    class="ml-1"
+></span>
 
-                            <!-- ✅ Actions -->
-                            <div class="flex items-center gap-4 mt-3">
-                                <button @click="toggleReply(comment)"
-                                    class="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 transition">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                    </svg>
-                                    <span>Balas</span>
-                                    <template x-if="comment.replies && comment.replies.length > 0">
-                                        <span class="ml-1" x-text="`(${comment.replies.length})`"></span>
-                                    </template>
-                                </button>
-                            </div>
+                                                 </button>
+                                             </div>
 
-                            <!-- ✅ Form Balasan Inline -->
-                            <template x-if="replyView.active && replyView.parentComment?.id === comment.id">
-                                <div class="mt-4 pl-4 border-l-2 border-blue-500">
-                                    <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                        <h4 class="text-sm font-semibold text-gray-800 mb-2">
-                                            Membalas <span x-text="comment.author?.name"></span>
-                                        </h4>
-                                        <div class="border border-gray-300 rounded-lg overflow-hidden mb-3">
-                                            <div :id="'task-reply-editor-' + comment.id"
-                                                 class="min-h-[100px] p-3 bg-white"></div>
-                                        </div>
-                                        <div class="flex justify-end gap-2">
-                                            <button @click="closeReplyView()"
-                                                class="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition border border-gray-300 rounded-lg">
-                                                Batal
-                                            </button>
-                                            <button @click="submitReplyFromEditor()"
-                                                class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                                                Kirim
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
+                                             <!-- Form balasan inline -->
+                                             <template
+                                                 x-if="replyView.active && replyView.parentComment?.id === comment.id">
+                                                 <div class="mt-4 pl-6 border-l-2 border-gray-200">
+                                                     <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                                         <h4 class="text-sm font-semibold text-gray-800 mb-2">
+                                                             Membalas <span x-text="comment.author.name"></span>
+                                                         </h4>
+                                                         <div
+                                                             class="border border-gray-300 rounded-lg overflow-hidden mb-3">
+                                                             <div :id="'task-reply-editor-' + comment.id"
+                                                                 class="min-h-[100px] p-3 bg-white"></div>
+                                                         </div>
+                                                         <div class="flex justify-end gap-2">
+                                                             <button @click="closeReplyView()"
+                                                                 class="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition border border-gray-300 rounded-lg">
+                                                                 Batal
+                                                             </button>
+                                                             <button @click="submitReplyFromEditor()"
+                                                                 class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                                                                 Kirim
+                                                             </button>
+                                                         </div>
+                                                     </div>
+                                                 </div>
+                                             </template>
 
-                            <!-- ✅ Tampilkan Balasan -->
-                            <template x-if="comment.replies && comment.replies.length > 0">
-                                <div class="mt-3 pl-4 border-l-2 border-gray-300 space-y-3">
-                                    <template x-for="reply in comment.replies" :key="reply.id">
-                                        <div class="bg-white rounded-lg p-3 border border-gray-200">
-                                            <div class="flex items-start gap-2">
-                                                <img :src="reply.author?.avatar || 'https://i.pravatar.cc/40?img=0'"
-                                                     :alt="reply.author?.name || 'User'"
-                                                     class="w-6 h-6 rounded-full flex-shrink-0">
-                                                <div class="flex-1 min-w-0">
-                                                    <div class="flex items-center gap-2 mb-1">
-                                                        <p class="text-sm font-semibold text-gray-800"
-                                                           x-text="reply.author?.name || 'Unknown User'"></p>
-                                                        <span class="text-xs text-gray-500"
-                                                              x-text="formatCommentDate(reply.createdAt || reply.created_at)"></span>
-                                                    </div>
-                                                    <div class="text-sm text-gray-700 prose prose-sm max-w-none"
-                                                         x-html="reply.content"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                </div>
-            </template>
-        </div>
+                                             <!-- Tampilkan balasan yang sudah ada -->
+                                             <template x-if="comment.replies && (comment.replies ?? []).length
+ > 0">
+                                                 <div class="mt-3 pl-6 border-l-2 border-gray-200 space-y-3">
+                                                     <template x-for="reply in comment.replies"
+                                                         :key="reply.id">
+                                                         <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                                             <div class="flex items-start gap-2">
+                                                                 <img :src="reply.author.avatar"
+                                                                     class="w-6 h-6 rounded-full">
+                                                                 <div class="flex-1">
+                                                                     <div class="flex items-center gap-2">
+                                                                         <p class="text-sm font-semibold text-gray-800"
+                                                                             x-text="reply.author.name"></p>
+                                                                         <span class="text-xs text-gray-500"
+                                                                             x-text="formatCommentDate(reply.createdAt)"></span>
+                                                                     </div>
+                                                                     <div class="text-sm text-gray-700 mt-1"
+                                                                         x-html="reply.content"></div>
+                                                                 </div>
+                                                             </div>
+                                                         </div>
+                                                     </template>
+                                                 </div>
+                                             </template>
+                                         </div>
+                                     </div>
+                                 </div>
+                             </template>
+                         </div>
+                     </template>
 
-        <!-- ✅ Empty State -->
-        <template x-if="comments.length === 0 && !loading">
-            <div class="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                <svg class="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                <p class="text-sm text-gray-500">Belum ada komentar</p>
-                <p class="text-xs text-gray-400 mt-1">Jadilah yang pertama berkomentar</p>
-            </div>
-        </template>
-    </div>
-
-    <!-- ✅ Error State -->
-    <template x-if="error">
-        <div class="text-center py-8 bg-red-50 rounded-lg border border-red-200">
-            <svg class="w-12 h-12 mx-auto text-red-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p class="text-sm text-red-600" x-text="error"></p>
-            <button @click="loadComments()" 
-                    class="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">
-                Coba Lagi
-            </button>
-        </div>
-    </template>
-</div>
-
-<!-- ✅ Tambahkan CSS untuk styling prose content -->
-<style>
-    /* Styling untuk content komentar yang menggunakan CKEditor */
-    .prose-sm {
-        font-size: 0.875rem;
-        line-height: 1.5;
-    }
-    
-    .prose-sm p {
-        margin-bottom: 0.5rem;
-    }
-    
-    .prose-sm ul,
-    .prose-sm ol {
-        margin-left: 1.5rem;
-        margin-bottom: 0.5rem;
-    }
-    
-    .prose-sm li {
-        margin-bottom: 0.25rem;
-    }
-    
-    .prose-sm a {
-        color: #2563eb;
-        text-decoration: underline;
-    }
-    
-    .prose-sm a:hover {
-        color: #1d4ed8;
-    }
-    
-    .prose-sm strong {
-        font-weight: 600;
-    }
-    
-    .prose-sm em {
-        font-style: italic;
-    }
-    
-    .prose-sm blockquote {
-        border-left: 3px solid #e5e7eb;
-        padding-left: 1rem;
-        margin: 0.5rem 0;
-        color: #6b7280;
-    }
-    
-    .prose-sm code {
-        background-color: #f3f4f6;
-        padding: 0.125rem 0.25rem;
-        border-radius: 0.25rem;
-        font-family: monospace;
-        font-size: 0.875em;
-    }
-    
-    .prose-sm pre {
-        background-color: #1f2937;
-        color: #f9fafb;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        overflow-x: auto;
-        margin: 0.5rem 0;
-    }
-    
-    .prose-sm img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 0.5rem;
-        margin: 0.5rem 0;
-    }
-    
-    .prose-sm table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 0.5rem 0;
-    }
-    
-    .prose-sm th,
-    .prose-sm td {
-        border: 1px solid #e5e7eb;
-        padding: 0.5rem;
-        text-align: left;
-    }
-    
-    .prose-sm th {
-        background-color: #f3f4f6;
-        font-weight: 600;
-    }
-</style>
+                     <template x-if="comments.length === 0">
+                         <div class="text-center py-4 text-gray-500 text-sm">Belum ada komentar disini...</div>
+                     </template>
+                 </div>
+             </div>
 
              <!-- Tombol Aksi -->
              <div class="flex justify-end gap-3 pt-4 border-t">

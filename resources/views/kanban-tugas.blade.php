@@ -4388,16 +4388,20 @@
                             // Update method getProjectPhases() untuk menggunakan data real
                             getProjectPhases() {
                                 if (this.timelineData && this.timelineData.length > 0) {
-                                    return this.timelineData.map(phase => ({
-                                        id: phase.id,
-                                        name: phase.name,
-                                        normalized_name: phase.normalized_name,
-                                        total_tasks: phase.total_tasks,
-                                        completed_tasks: phase.completed_tasks,
-                                        progress_percentage: phase.progress_percentage,
-                                        description: `${phase.completed_tasks} dari ${phase.total_tasks} tugas selesai`
-                                    }));
-                                }
+        return this.timelineData.map(phase => ({
+            id: phase.id,
+            name: phase.name,
+            normalized_name: phase.normalized_name,
+            total_tasks: phase.total_tasks,
+            completed_tasks: phase.completed_tasks,
+            progress_percentage: phase.progress_percentage,
+            start_date: phase.start_date,
+            end_date: phase.end_date,
+            duration: phase.duration,
+            duration_percentage: phase.duration_percentage || 10, // Fallback 10% jika tidak ada
+            description: `${phase.completed_tasks} dari ${phase.total_tasks} tugas selesai`
+        }));
+    }
 
                                 // Fallback dummy data jika tidak ada data real
                                 return [{
@@ -4449,62 +4453,88 @@
                             },
 
                             // Update method showPhaseTasks() untuk menggunakan data real
-                            showPhaseTasks(phaseId) {
-                                let phase;
-                                let phaseTasks = [];
+                           // Di dalam kanbanApp() - tambahkan method ini
 
-                                if (this.timelineData && this.timelineData.length > 0) {
-                                    phase = this.timelineData.find(p => p.id === phaseId);
-                                    if (phase) {
-                                        phaseTasks = phase.tasks;
-                                    }
-                                } else {
-                                    // Fallback logic
-                                    const phaseMap = {
-                                        1: 'Perencanaan',
-                                        2: 'Analisis',
-                                        3: 'Desain',
-                                        4: 'Development',
-                                        5: 'Testing',
-                                        6: 'Deployment'
-                                    };
-                                    const phaseName = phaseMap[phaseId];
-                                    phaseTasks = this.tasks.filter(task => {
-                                        const taskPhase = task.phase ? strtolower(trim(preg_replace('/\s+/', ' ', task
-                                            .phase))) : '';
-                                        const targetPhase = strtolower(trim(preg_replace('/\s+/', ' ', phaseName)));
-                                        return taskPhase === targetPhase;
-                                    });
+// Method untuk format tanggal
+formatDate(dateString) {
+    if (!dateString) return 'Tidak ada tanggal';
+    
+    try {
+        const date = new Date(dateString);
+        
+        // Format: 12 Nov 2025
+        return date.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+    } catch (error) {
+        console.error('Error formatting date:', error);
+        return 'Tanggal tidak valid';
+    }
+},
 
-                                    phase = {
-                                        name: phaseName,
-                                        description: `Phase ${phaseName}`,
-                                        total_tasks: phaseTasks.length,
-                                        completed_tasks: phaseTasks.filter(task => task.status === 'done').length,
-                                        progress_percentage: phaseTasks.length > 0 ?
-                                            Math.round((phaseTasks.filter(task => task.status === 'done').length / phaseTasks
-                                                .length) * 100) : 0
-                                    };
-                                }
+// Update method showPhaseTasks untuk include date range
+showPhaseTasks(phaseId) {
+    let phase;
+    let phaseTasks = [];
 
-                                if (!phase) return;
+    if (this.timelineData && this.timelineData.length > 0) {
+        phase = this.timelineData.find(p => p.id === phaseId);
+        if (phase) {
+            phaseTasks = phase.tasks;
+        }
+    } else {
+        // Fallback logic
+        const phaseMap = {
+            1: 'Perencanaan',
+            2: 'Analisis',
+            3: 'Desain',
+            4: 'Development',
+            5: 'Testing',
+            6: 'Deployment'
+        };
+        const phaseName = phaseMap[phaseId];
+        phaseTasks = this.tasks.filter(task => {
+            const taskPhase = task.phase ? task.phase.toLowerCase().trim().replace(/\s+/g, ' ') : '';
+            const targetPhase = phaseName.toLowerCase().trim().replace(/\s+/g, ' ');
+            return taskPhase === targetPhase;
+        });
 
-                                this.selectedPhase = phaseId;
-                                this.phaseModal = {
-                                    open: true,
-                                    title: phase.name,
-                                    description: phase.description ||
-                                        `${phase.completed_tasks} dari ${phase.total_tasks} tugas selesai`,
-                                    tasks: phaseTasks,
-                                    stats: {
-                                        total: phase.total_tasks,
-                                        completed: phase.completed_tasks,
-                                        in_progress: phaseTasks.filter(task => task.status === 'inprogress').length,
-                                        todo: phaseTasks.filter(task => task.status === 'todo').length,
-                                        progress: phase.progress_percentage
-                                    }
-                                };
-                            },
+        phase = {
+            name: phaseName,
+            description: `Phase ${phaseName}`,
+            total_tasks: phaseTasks.length,
+            completed_tasks: phaseTasks.filter(task => task.status === 'done').length,
+            progress_percentage: phaseTasks.length > 0 ?
+                Math.round((phaseTasks.filter(task => task.status === 'done').length / phaseTasks.length) * 100) : 0
+        };
+    }
+
+    if (!phase) return;
+
+    this.selectedPhase = phaseId;
+    this.phaseModal = {
+        open: true,
+        title: phase.name,
+        description: phase.description || `${phase.completed_tasks} dari ${phase.total_tasks} tugas selesai`,
+        tasks: phaseTasks,
+        stats: {
+            total: phase.total_tasks,
+            completed: phase.completed_tasks,
+            in_progress: phaseTasks.filter(task => task.status === 'inprogress').length,
+            todo: phaseTasks.filter(task => task.status === 'todo').length,
+            progress: phase.progress_percentage
+        },
+        // Tambahkan date range information
+        start_date: phase.start_date,
+        end_date: phase.end_date,
+        duration: phase.duration || 0,
+        progress: phase.progress_percentage,
+        totalTasks: phase.total_tasks,
+        completedTasks: phase.completed_tasks
+    };
+},
 
 
                             // Tambahkan method ini di dalam kanbanApp() di Alpine.js

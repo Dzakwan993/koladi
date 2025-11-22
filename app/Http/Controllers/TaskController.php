@@ -1544,167 +1544,166 @@ class TaskController extends Controller
     // ✅ NEW: Get task detail untuk modal dengan semua relasi lengkap
     // ✅ PERBAIKI: Get task detail untuk modal
     public function getTaskDetail($taskId)
-{
-    try {
-        // Validasi UUID
-        if (!Str::isUuid($taskId)) {
+    {
+        try {
+            // Validasi UUID
+            if (!Str::isUuid($taskId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ID tugas tidak valid'
+                ], 400);
+            }
+
+            // Load task utama
+            $task = Task::with([
+                'assignments.user',
+                'labels.color',
+                'checklists' => function ($query) {
+                    $query->orderBy('position');
+                },
+                'attachments',
+                'boardColumn',
+                'creator'
+            ])->find($taskId);
+
+            if (!$task) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tugas tidak ditemukan'
+                ], 404);
+            }
+
+            // Validasi akses workspace
+            if (!$this->canAccessWorkspace($task->workspace_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            // 🔥 Load comments + user + replies + user
+            $task->load([
+                'comments' => function ($query) {
+                    $query->whereNull('parent_comment_id')
+                        ->orderBy('created_at', 'desc');
+                },
+                'comments.user',
+                'comments.replies.user'
+            ]);
+
+            // Format response sesuai frontend
+            $taskData = [
+                'id' => $task->id,
+                'title' => $task->title,
+                'phase' => $task->phase,
+                'description' => $task->description,
+                'is_secret' => $task->is_secret,
+                'status' => $task->status,
+                'priority' => $task->priority,
+                'start_datetime' => $task->start_datetime ? $task->start_datetime->toIso8601String() : null,
+                'due_datetime' => $task->due_datetime ? $task->due_datetime->toIso8601String() : null,
+                'created_at' => $task->created_at?->toIso8601String(),
+                'updated_at' => $task->updated_at?->toIso8601String(),
+
+                'board_column' => $task->boardColumn ? [
+                    'id' => $task->boardColumn->id,
+                    'name' => $task->boardColumn->name,
+                ] : null,
+
+                'creator' => $task->creator ? [
+                    'id' => $task->creator->id,
+                    'name' => $task->creator->full_name,
+                    'email' => $task->creator->email
+                ] : null,
+
+                'assigned_members' => $task->assignments->map(function ($assignment) {
+                    return [
+                        'id' => $assignment->user->id,
+                        'name' => $assignment->user->full_name,
+                        'email' => $assignment->user->email,
+                        'avatar' => $assignment->user->avatar ?? 'https://i.pravatar.cc/32?img=' . rand(1, 70)
+                    ];
+                })->toArray(),
+
+                'labels' => $task->labels->map(function ($label) {
+                    return [
+                        'id' => $label->id,
+                        'name' => $label->name,
+                        'color' => $label->color->rgb
+                    ];
+                })->toArray(),
+
+                'checklists' => $task->checklists->map(function ($checklist) {
+                    return [
+                        'id' => $checklist->id,
+                        'title' => $checklist->title,
+                        'is_done' => (bool)$checklist->is_done,
+                        'position' => $checklist->position
+                    ];
+                })->toArray(),
+
+                // 🆕 Attachments mapping
+                'attachments' => $task->attachments->map(function ($attachment) {
+                    return [
+                        'id' => $attachment->id,
+                        'name' => $attachment->file_name,
+                        'url' => (Storage::disk('public')->exists($attachment->file_url)
+                            ? Storage::disk('public')->url($attachment->file_url)
+                            : $attachment->file_url),
+                        'type' => pathinfo($attachment->file_url, PATHINFO_EXTENSION),
+                        'uploaded_by' => $attachment->uploader ? [
+                            'name' => $attachment->uploader->full_name
+                        ] : null,
+                        'uploaded_at' => $attachment->uploaded_at?->toIso8601String()
+                    ];
+                })->toArray(),
+
+                'progress_percentage' => $this->calculateTaskProgress($task),
+                'is_overdue' => $task->due_datetime && $task->due_datetime->lt(now()) && !in_array($task->status, ['done', 'cancel']),
+
+                // ============================
+                // 🔥 FORMAT KOMENTAR (AMAN)
+                // ============================
+                'comments' => $task->comments->map(function ($comment) {
+                    return [
+                        'id' => $comment->id,
+                        'content' => $comment->content,
+                        'author' => [
+                            'id' => $comment->user->id ?? null,
+                            'name' => $comment->user->full_name ?? $comment->user->name ?? 'Unknown',
+                            'avatar' => $comment->user->avatar ?? 'https://i.pravatar.cc/40?img=0'
+                        ],
+                        'createdAt' => $comment->created_at->toIso8601String(),
+
+                        // 🔥 Balasan komentar
+                        'replies' => $comment->replies->map(function ($reply) {
+                            return [
+                                'id' => $reply->id,
+                                'content' => $reply->content,
+                                'author' => [
+                                    'id' => $reply->user->id ?? null,
+                                    'name' => $reply->user->full_name ?? $reply->user->name ?? 'Unknown',
+                                    'avatar' => $reply->user->avatar ?? 'https://i.pravatar.cc/40?img=0'
+                                ],
+                                'createdAt' => $reply->created_at->toIso8601String(),
+                            ];
+                        })->toArray()
+                    ];
+                })->toArray()
+            ];
+
+            return response()->json([
+                'success' => true,
+                'task' => $taskData
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting task detail: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'ID tugas tidak valid'
-            ], 400);
+                'message' => 'Gagal mengambil detail tugas'
+            ], 500);
         }
-
-        // Load task utama
-        $task = Task::with([
-            'assignments.user',
-            'labels.color',
-            'checklists' => function ($query) {
-                $query->orderBy('position');
-            },
-            'attachments',
-            'boardColumn',
-            'creator'
-        ])->find($taskId);
-
-        if (!$task) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tugas tidak ditemukan'
-            ], 404);
-        }
-
-        // Validasi akses workspace
-        if (!$this->canAccessWorkspace($task->workspace_id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses ke task ini'
-            ], 403);
-        }
-
-        // 🔥 Load comments + user + replies + user
-        $task->load([
-            'comments' => function ($query) {
-                $query->whereNull('parent_comment_id')
-                      ->orderBy('created_at', 'desc');
-            },
-            'comments.user',
-            'comments.replies.user'
-        ]);
-
-        // Format response sesuai frontend
-        $taskData = [
-            'id' => $task->id,
-            'title' => $task->title,
-            'phase' => $task->phase,
-            'description' => $task->description,
-            'is_secret' => $task->is_secret,
-            'status' => $task->status,
-            'priority' => $task->priority,
-            'start_datetime' => $task->start_datetime ? $task->start_datetime->toIso8601String() : null,
-            'due_datetime' => $task->due_datetime ? $task->due_datetime->toIso8601String() : null,
-            'created_at' => $task->created_at?->toIso8601String(),
-            'updated_at' => $task->updated_at?->toIso8601String(),
-
-            'board_column' => $task->boardColumn ? [
-                'id' => $task->boardColumn->id,
-                'name' => $task->boardColumn->name,
-            ] : null,
-
-            'creator' => $task->creator ? [
-                'id' => $task->creator->id,
-                'name' => $task->creator->full_name,
-                'email' => $task->creator->email
-            ] : null,
-
-            'assigned_members' => $task->assignments->map(function ($assignment) {
-                return [
-                    'id' => $assignment->user->id,
-                    'name' => $assignment->user->full_name,
-                    'email' => $assignment->user->email,
-                    'avatar' => $assignment->user->avatar ?? 'https://i.pravatar.cc/32?img=' . rand(1, 70)
-                ];
-            })->toArray(),
-
-            'labels' => $task->labels->map(function ($label) {
-                return [
-                    'id' => $label->id,
-                    'name' => $label->name,
-                    'color' => $label->color->rgb
-                ];
-            })->toArray(),
-
-            'checklists' => $task->checklists->map(function ($checklist) {
-                return [
-                    'id' => $checklist->id,
-                    'title' => $checklist->title,
-                    'is_done' => (bool)$checklist->is_done,
-                    'position' => $checklist->position
-                ];
-            })->toArray(),
-
-            // 🆕 Attachments mapping
-            'attachments' => $task->attachments->map(function ($attachment) {
-                return [
-                    'id' => $attachment->id,
-                    'name' => $attachment->file_name,
-                    'url' => (Storage::disk('public')->exists($attachment->file_url)
-                        ? Storage::disk('public')->url($attachment->file_url)
-                        : $attachment->file_url),
-                    'type' => pathinfo($attachment->file_url, PATHINFO_EXTENSION),
-                    'uploaded_by' => $attachment->uploader ? [
-                        'name' => $attachment->uploader->full_name
-                    ] : null,
-                    'uploaded_at' => $attachment->uploaded_at?->toIso8601String()
-                ];
-            })->toArray(),
-
-            'progress_percentage' => $this->calculateTaskProgress($task),
-            'is_overdue' => $task->due_datetime && $task->due_datetime->lt(now()) && !in_array($task->status, ['done', 'cancel']),
-
-            // ============================
-            // 🔥 FORMAT KOMENTAR (AMAN)
-            // ============================
-            'comments' => $task->comments->map(function ($comment) {
-                return [
-                    'id' => $comment->id,
-                    'content' => $comment->content,
-                    'author' => [
-                        'id' => $comment->user->id ?? null,
-                        'name' => $comment->user->full_name ?? $comment->user->name ?? 'Unknown',
-                        'avatar' => $comment->user->avatar ?? 'https://i.pravatar.cc/40?img=0'
-                    ],
-                    'createdAt' => $comment->created_at->toIso8601String(),
-
-                    // 🔥 Balasan komentar
-                    'replies' => $comment->replies->map(function ($reply) {
-                        return [
-                            'id' => $reply->id,
-                            'content' => $reply->content,
-                            'author' => [
-                                'id' => $reply->user->id ?? null,
-                                'name' => $reply->user->full_name ?? $reply->user->name ?? 'Unknown',
-                                'avatar' => $reply->user->avatar ?? 'https://i.pravatar.cc/40?img=0'
-                            ],
-                            'createdAt' => $reply->created_at->toIso8601String(),
-                        ];
-                    })->toArray()
-                ];
-            })->toArray()
-        ];
-
-        return response()->json([
-            'success' => true,
-            'task' => $taskData
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error getting task detail: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil detail tugas'
-        ], 500);
     }
-}
 
 
 
@@ -2248,6 +2247,76 @@ class TaskController extends Controller
 
 
     // Tambahkan method ini di TaskController.php
+   // Di TaskController.php - tambahkan method ini
+
+    /**
+     * Get phase date range and duration
+     */
+    private function calculatePhaseDateRange($tasks)
+    {
+        if (empty($tasks)) {
+            return [
+                'start_date' => null,
+                'end_date' => null,
+                'duration' => 0
+            ];
+        }
+
+        // Cari tanggal mulai paling awal dan tanggal selesai paling akhir
+        $startDates = [];
+        $endDates = [];
+
+        foreach ($tasks as $task) {
+            if ($task->start_datetime) {
+                $startDates[] = $task->start_datetime;
+            }
+            if ($task->due_datetime) {
+                $endDates[] = $task->due_datetime;
+            }
+        }
+
+        // Jika tidak ada tanggal, return null
+        if (empty($startDates) && empty($endDates)) {
+            return [
+                'start_date' => null,
+                'end_date' => null,
+                'duration' => 0
+            ];
+        }
+
+        // Hitung tanggal mulai paling awal
+        $earliestStart = !empty($startDates) ? min($startDates) : null;
+
+        // Hitung tanggal selesai paling akhir
+        $latestEnd = !empty($endDates) ? max($endDates) : null;
+
+        // Jika hanya ada start date, gunakan start date sebagai end date juga
+        if ($earliestStart && !$latestEnd) {
+            $latestEnd = $earliestStart;
+        }
+        // Jika hanya ada end date, gunakan end date sebagai start date juga
+        if (!$earliestStart && $latestEnd) {
+            $earliestStart = $latestEnd;
+        }
+
+        // Hitung durasi dalam hari
+        $duration = 0;
+        if ($earliestStart && $latestEnd) {
+            $start = \Carbon\Carbon::parse($earliestStart);
+            $end = \Carbon\Carbon::parse($latestEnd);
+            $duration = $start->diffInDays($end) + 1; // +1 untuk include both start and end date
+        }
+
+        return [
+            'start_date' => $earliestStart,
+            'end_date' => $latestEnd,
+            'duration' => $duration
+        ];
+    }
+
+    // Update method getTimelineData untuk include date range
+    // Di TaskController.php - update method getTimelineData
+
     public function getTimelineData($workspaceId)
     {
         try {
@@ -2307,18 +2376,46 @@ class TaskController extends Controller
                 }
             }
 
-            // Hitung progress percentage untuk setiap phase
+            // Hitung progress percentage dan date range untuk setiap phase
+            $durations = []; // Untuk menyimpan semua durasi
             foreach ($phaseGroups as &$phase) {
                 $phase['progress_percentage'] = $phase['total_tasks'] > 0
                     ? round(($phase['completed_tasks'] / $phase['total_tasks']) * 100)
                     : 0;
+
+                // Hitung date range untuk phase ini
+                $dateRange = $this->calculatePhaseDateRange($phase['tasks']);
+                $phase['start_date'] = $dateRange['start_date'];
+                $phase['end_date'] = $dateRange['end_date'];
+                $phase['duration'] = $dateRange['duration'];
+
+                // Simpan durasi untuk perhitungan relatif nanti
+                if ($dateRange['duration'] > 0) {
+                    $durations[] = $dateRange['duration'];
+                }
             }
+
+            // Hitung durasi maksimum untuk normalisasi
+            $maxDuration = !empty($durations) ? max($durations) : 1;
 
             // Format response
             $timelineData = [];
             $phaseId = 1;
 
             foreach ($phaseGroups as $phase) {
+                // Hitung width percentage berdasarkan durasi relatif terhadap durasi maksimum
+                $duration_percentage = $phase['duration'] > 0
+                    ? ($phase['duration'] / $maxDuration) * 100
+                    : 5; // Minimal 5% jika tidak ada durasi
+
+                // Batasi maksimum 100%
+                $duration_percentage = min($duration_percentage, 100);
+
+                // Minimal 10% untuk phase yang memiliki durasi
+                if ($phase['duration'] > 0 && $duration_percentage < 10) {
+                    $duration_percentage = 10;
+                }
+
                 $timelineData[] = [
                     'id' => $phaseId++,
                     'name' => $phase['original_name'],
@@ -2326,6 +2423,10 @@ class TaskController extends Controller
                     'total_tasks' => $phase['total_tasks'],
                     'completed_tasks' => $phase['completed_tasks'],
                     'progress_percentage' => $phase['progress_percentage'],
+                    'start_date' => $phase['start_date'],
+                    'end_date' => $phase['end_date'],
+                    'duration' => $phase['duration'],
+                    'duration_percentage' => $duration_percentage, // Persentase untuk width timeline bar
                     'tasks' => array_map(function ($task) {
                         return [
                             'id' => $task->id,
@@ -2350,7 +2451,8 @@ class TaskController extends Controller
                 'timeline_data' => $timelineData,
                 'total_phases' => count($timelineData),
                 'total_tasks' => $tasks->count(),
-                'completed_tasks' => $tasks->where('status', 'done')->count()
+                'completed_tasks' => $tasks->where('status', 'done')->count(),
+                'max_duration' => $maxDuration // Untuk debugging
             ]);
         } catch (\Exception $e) {
             Log::error('Error getting timeline data: ' . $e->getMessage());
