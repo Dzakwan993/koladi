@@ -1562,13 +1562,12 @@ class TaskController extends Controller
             'attachments',
             'boardColumn',
             'creator',
-            // ✅ Load comments dengan replies dan user
+            // ✅ PASTIKAN INI ADA
             'comments' => function ($query) {
                 $query->whereNull('parent_comment_id')
+                      ->with(['user', 'replies.user'])
                       ->orderBy('created_at', 'desc');
-            },
-            'comments.user',
-            'comments.replies.user'
+            }
         ])->find($taskId);
 
         if (!$task) {
@@ -1599,13 +1598,21 @@ class TaskController extends Controller
                 return [
                     'id' => $comment->id,
                     'content' => $comment->content,
-                    'author' => $comment->author, // Menggunakan accessor
+                    'author' => [
+                        'id' => $comment->user->id ?? null,
+                        'name' => $comment->user->full_name ?? $comment->user->name ?? 'Unknown',
+                        'avatar' => $comment->user->avatar ?? 'https://i.pravatar.cc/40?img=0'
+                    ],
                     'createdAt' => $comment->created_at->toIso8601String(),
                     'replies' => $comment->replies->map(function($reply) {
                         return [
                             'id' => $reply->id,
                             'content' => $reply->content,
-                            'author' => $reply->author,
+                            'author' => [
+                                'id' => $reply->user->id ?? null,
+                                'name' => $reply->user->full_name ?? $reply->user->name ?? 'Unknown',
+                                'avatar' => $reply->user->avatar ?? 'https://i.pravatar.cc/40?img=0'
+                            ],
                             'createdAt' => $reply->created_at->toIso8601String(),
                         ];
                     })->toArray()
