@@ -1615,88 +1615,66 @@
                             // ✅ PERBAIKI: Method untuk membuka detail tugas
                             // ✅ PERBAIKI: Method untuk membuka detail tugas
                             async openDetail(taskId) {
-                                try {
-                                    console.log('Loading task detail for:', taskId);
+    try {
+        console.log('🔄 Loading task detail for:', taskId);
 
-                                    const response = await fetch(`/tasks/${taskId}/detail`, {
-                                        headers: {
-                                            'Accept': 'application/json'
-                                        }
-                                    });
+        const response = await fetch(`/tasks/${taskId}/detail`, {
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
 
-                                    if (!response.ok) {
-                                        throw new Error(`HTTP error! status: ${response.status}`);
-                                    }
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-                                    const data = await response.json();
+        const data = await response.json();
 
-                                    if (data.success) {
+        if (data.success) {
+            // SET CURRENT TASK
+            this.currentTask = {
+                id: data.task.id,
+                title: data.task.title,
+                // ... field lainnya ...
+                comments: data.task.comments || [] // ✅ Set comments
+            };
 
-                                        // SET CURRENT TASK
-                                        this.currentTask = {
-                                            id: data.task.id,
-                                            title: data.task.title,
-                                            phase: data.task.phase,
-                                            description: data.task.description,
-                                            is_secret: data.task.is_secret,
-                                            status: data.task.status,
-                                            priority: data.task.priority,
-                                            startDate: data.task.start_datetime ? data.task.start_datetime.split('T')[0] : '',
-                                            startTime: data.task.start_datetime ? data.task.start_datetime.split('T')[1]
-                                                ?.substring(0, 5) : '',
-                                            dueDate: data.task.due_datetime ? data.task.due_datetime.split('T')[0] : '',
-                                            dueTime: data.task.due_datetime ? data.task.due_datetime.split('T')[1]?.substring(0,
-                                                5) : '',
-                                            members: data.task.assigned_members || [],
-                                            labels: data.task.labels || [],
-                                            checklist: data.task.checklists?.map(cl => ({
-                                                id: cl.id,
-                                                title: cl.title,
-                                                is_done: cl.is_done,
-                                                position: cl.position
-                                            })) || [],
-                                            attachments: data.task.attachments || [],
-                                            progress_percentage: data.task.progress_percentage,
-                                            is_overdue: data.task.is_overdue,
-                                            created_at: data.task.created_at,
-                                            updated_at: data.task.updated_at,
-                                            board_column: data.task.board_column
-                                        };
+            // Update assigned members
+            this.assignedMembers = data.task.assigned_members || [];
+            this.selectedMemberIds = this.assignedMembers.map(member => member.id);
 
-                                        // members
-                                        this.assignedMembers = data.task.assigned_members || [];
-                                        this.selectedMemberIds = this.assignedMembers.map(member => member.id);
+            // Buka modal
+            this.isEditMode = false;
+            this.openTaskDetail = true;
 
-                                        // buka modal
-                                        this.isEditMode = false;
-                                        this.openTaskDetail = true;
+            // ✅ PERBAIKI: Load comments setelah modal terbuka
+            this.$nextTick(() => {
+                const commentSection = this.$refs.commentSection;
+                
+                if (commentSection && commentSection.__x) {
+                    console.log('🔄 Initializing comment section...');
+                    
+                    // Set task ID
+                    commentSection.__x.$data.taskId = this.currentTask.id;
+                    
+                    // Load comments
+                    commentSection.__x.$data.loadComments();
+                } else {
+                    console.warn('⚠️ Comment section ref not found');
+                }
+            });
 
-                                        // LOAD COMMENTS DENGAN TASK ID
-                                        this.$nextTick(() => {
-    if (this.$refs.commentSection && this.currentTask?.id) {
-        // Re-init komponen comment agar task ID terbaca
-        this.$refs.commentSection.__x.updateElements(this.$refs.commentSection);
+            console.log('✅ Task detail loaded:', this.currentTask);
 
-        // Set task id ke komponen comment
-        this.$refs.commentSection.__x.$data.taskId = this.currentTask.id;
+        } else {
+            this.showNotification('Gagal memuat detail tugas: ' + data.message, 'error');
+        }
 
-        // Load komentar lama
-        this.$refs.commentSection.__x.$data.loadComments();
+    } catch (error) {
+        console.error('❌ Error loading task detail:', error);
+        this.showNotification('Terjadi kesalahan saat memuat detail tugas', 'error');
     }
-});
-
-
-                                        console.log('Task detail loaded:', this.currentTask);
-
-                                    } else {
-                                        this.showNotification('Gagal memuat detail tugas: ' + data.message, 'error');
-                                    }
-
-                                } catch (error) {
-                                    console.error('Error loading task detail:', error);
-                                    this.showNotification('Terjadi kesalahan saat memuat detail tugas', 'error');
-                                }
-                            },
+},
 
                             // Di method saveTaskEdit() di Alpine.js
                             async saveTaskEdit() {
@@ -4734,50 +4712,82 @@
                             },
                             currentUserAvatar: window.currentUser?.avatar || 'https://i.pravatar.cc/40?img=11',
                             loading: false,
+                            taskId: null, // ✅ Track task ID
 
                             init() {
-                                // Muat komentar pertama kali
-                                this.loadComments();
+                                // ✅ Ambil task ID dari root component
+                                this.taskId = this.$root?.currentTask?.id;
 
-                                // Inisialisasi editor
+                                console.log('🔄 Initializing comment section for task:', this.taskId);
+
+                                // Load comments jika task ID tersedia
+                                if (this.taskId) {
+                                    this.loadComments();
+                                }
+
+                                // Initialize editor
                                 this.$nextTick(() => {
                                     this.initializeMainEditor();
                                 });
 
-                                // 🔥 Tambahkan watcher untuk currentTask
-                                this.$watch('$root.currentTask', (newVal, oldVal) => {
-                                    if (newVal?.id !== oldVal?.id) {
-                                        this.loadComments();
+                                // ✅ Watch untuk perubahan currentTask
+                                this.$watch('$root.currentTask', (newTask, oldTask) => {
+                                    console.log('📝 Task changed:', {
+                                        oldId: oldTask?.id,
+                                        newId: newTask?.id
+                                    });
+
+                                    if (newTask?.id !== oldTask?.id) {
+                                        this.taskId = newTask?.id;
+                                        this.comments = []; // Clear old comments
+
+                                        if (this.taskId) {
+                                            this.loadComments();
+                                        }
                                     }
                                 });
                             },
 
-
                             async loadComments() {
-                                const taskId = this.$root?.currentTask?.id;
-                                if (!taskId) return;
+                                // ✅ Pastikan taskId ada
+                                const taskId = this.taskId || this.$root?.currentTask?.id;
+
+                                if (!taskId) {
+                                    console.warn('⚠️ No task ID available for loading comments');
+                                    return;
+                                }
+
+                                console.log('🔄 Loading comments for task:', taskId);
 
                                 this.loading = true;
                                 try {
-                                    const taskId = this.$root.currentTask.id;
                                     const res = await fetch(`/tasks/${taskId}/comments`, {
                                         headers: {
                                             'Accept': 'application/json'
                                         }
                                     });
-                                    if (!res.ok) throw new Error('Gagal memuat komentar');
+
+                                    if (!res.ok) {
+                                        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                                    }
+
                                     const data = await res.json();
+
                                     if (data.success) {
-                                        // ensure replies arrays exist
+                                        // ✅ Ensure replies arrays exist
                                         this.comments = (data.comments || []).map(c => {
                                             c.replies = c.replies || [];
                                             return c;
                                         });
+
+                                        console.log('✅ Comments loaded:', this.comments.length, 'comments');
+                                        console.log('📋 Comments data:', this.comments);
                                     } else {
-                                        console.error('Gagal memuat komentar:', data.message);
+                                        console.error('❌ Failed to load comments:', data.message);
+                                        this.comments = [];
                                     }
                                 } catch (err) {
-                                    console.error(err);
+                                    console.error('❌ Error loading comments:', err);
                                     this.comments = [];
                                 } finally {
                                     this.loading = false;
