@@ -1,5 +1,7 @@
 {{-- Grid Dokumen di Dalam Folder --}}
-                <template x-if="currentFolder">
+
+                
+                <template x-if="currentFolder && isLoadingPermission === false">
                     <div
                          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-6 gap-y-3 items-start pb-4">
                         {{-- Tampilkan hasil pencarian atau dokumen biasa --}}

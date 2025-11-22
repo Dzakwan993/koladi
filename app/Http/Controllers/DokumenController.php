@@ -8,6 +8,9 @@ use App\Models\File;
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreFolderRequest;
 use App\Http\Requests\StoreFileRequest;
+use App\Models\UserWorkspace;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 
 class DokumenController extends Controller
 {
@@ -271,6 +274,101 @@ class DokumenController extends Controller
                 // Hapus foldernya
                 $sub->delete();
             }
+        }
+
+        public function getWorkspaceMembers(Request $req, $workspaceId)
+        {
+            $user = Auth::user();
+            $activeCompanyId = session('active_company_id');
+
+            // ================================
+            // 1. CEK AKSES ROLE COMPANY
+            // ================================
+
+            $userCompany = $user->userCompanies()
+                ->where('company_id', $activeCompanyId)
+                ->with('role')
+                ->first();
+
+            $companyRole = $userCompany?->role?->name ?? 'Member';
+            $companyHighRoles = ['SuperAdmin', 'Administrator', 'Admin', 'Manager'];
+
+            $isHighRole = in_array($companyRole, $companyHighRoles);
+
+            // ================================
+            // 2. BACA KONTEKS (folder/file)
+            // ================================
+
+            $folderCreatedBy = $req->folder_created_by ?: null;
+            $fileUploadedBy  = $req->file_uploaded_by ?: null;
+
+            // Jika BUKAN role tinggi,
+            // tetap izinkan kalau dia adalah pembuat folder / pengupload file
+            if (!$isHighRole) {
+
+                $userWorkspace = UserWorkspace::where('user_id', $user->id)
+                    ->where('workspace_id', $workspaceId)
+                    ->where('status_active', true)
+                    ->with('role')
+                    ->first();
+
+                $workspaceRole = $userWorkspace?->role?->name ?? 'Member';
+
+                // kalau workspace role juga bukan manager
+                if ($workspaceRole !== 'Manager') {
+
+                    // tetapi jika dia pembuat folder atau uploader → IZINKAN
+                    if ($folderCreatedBy != $user->id && $fileUploadedBy != $user->id) {
+                        return response()->json([
+                            'error' => 'Anda tidak memiliki akses untuk melihat anggota workspace ini'
+                        ], 403);
+                    }
+                }
+            }
+
+            // ================================
+            // 3. AMBIL SEMUA MEMBER
+            // ================================
+
+            $members = User::whereIn('id',
+                UserWorkspace::where('workspace_id', $workspaceId)->pluck('user_id')
+            )->get();
+
+            // ================================
+            // 4. IZIN PILIH MEMBER
+            // ================================
+
+            $filtered = $members->map(function ($m) use ($folderCreatedBy, $fileUploadedBy, $isHighRole) {
+
+                $canBeSelected = false;
+
+                // Role tinggi → bisa pilih siapa pun
+                if ($isHighRole) {
+                    $canBeSelected = true;
+                }
+
+                // pembuat folder → hanya dirinya yang bisa dipilih
+                if ($folderCreatedBy && $m->id == $folderCreatedBy) {
+                    $canBeSelected = true;
+                }
+
+                // pengupload file → hanya dirinya yang bisa dipilih
+                if ($fileUploadedBy && $m->id == $fileUploadedBy) {
+                    $canBeSelected = true;
+                }
+
+                return [
+                    'id'             => $m->id,
+                    'name'           => $m->full_name ?? $m->name,
+                    'avatar'         => $m->avatar ?? 'https://i.pravatar.cc/150?img=' . rand(1, 70),
+                    'can_be_selected'=> $canBeSelected,
+                    'selected'       => false,
+                ];
+            });
+
+            return response()->json([
+                'members' => $filtered
+            ]);
         }
 
 

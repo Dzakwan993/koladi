@@ -1,8 +1,8 @@
 console.log('✅ dokumen-script.js loaded');
 
 // ===== DOKUMEN SEARCH FUNCTIONS =====
-export default function documentSearch() {
-            return {
+    export default function documentSearch() {
+                return {
                 // State Properties
                 searchQuery: '',
                 filteredDocuments: [],
@@ -41,6 +41,12 @@ export default function documentSearch() {
                 confirmTitle: '',
                 confirmMessage: '',
                 onConfirmAction: null,
+                currentFolderCreatedBy: null,   // <–– TAMBAHAN
+                currentFileUploadedBy: null,    // <–– TAMBAHAN
+                memberListAllowed: null,        // <–– TAMBAHAN
+                isLoadingPermission: false,     // <–– TAMBAHAN
+
+
 
                 // Data akan diisi dari backend/API
                 folders: [],
@@ -108,6 +114,7 @@ export default function documentSearch() {
                         icon: this.getFolderIcon(),
                         isSecret: folder.is_private || false,
                         creator: {
+                            id: folder.creator?.id || folder.creator_id || null,
                             name: folder.creator?.full_name || 'kiki',
                             avatar: folder.creator?.avatar || 'https://i.pravatar.cc/32?img=8'
                         },
@@ -176,6 +183,9 @@ export default function documentSearch() {
                             icon: this.getFileIcon(type),
                             size: this.formatFileSize(file.file_size || 0),
                             file_url: file.file_url,   // ⬅⬅ WAJIB
+
+                             // 🔥 Tambahkan ID uploader
+                            uploaded_by: file.uploaded_by || file.uploader?.id || null,
                             creator: {
                                 // perhatikan properti uploader: kamu pakai full_name di data
                                 name: file.uploader?.full_name || file.uploader?.name || 'Zaki',
@@ -359,30 +369,45 @@ export default function documentSearch() {
 
                 // Folder Navigation
                 openFolder(folder) {
-                    console.log('openFolder dipanggil');
-                    this.currentFile = null;
+    console.log('openFolder dipanggil');
+    this.currentFile = null;
 
-                    // update URL hash
-                    history.pushState(
-                        { folderName: folder.name },
-                        '',
-                        `#${folder.name}`
-                    );
+    // RESET dulu agar tidak ada sisa state
+    this.currentFolderCreatedBy = null;
+    this.currentFileUploadedBy = null;
 
-                    localStorage.setItem('lastFolder', folder.name);
+    // TUNGGU Alpine commit reset, baru set ulang
+    this.$nextTick(() => {
 
-                    if (!this.currentFolder) {
-                        this.folderHistory = [];
-                    } else {
-                        const isAlreadyInHistory = this.folderHistory.some(f => f.id === this.currentFolder.id);
-                        if (!isAlreadyInHistory) {
-                            this.folderHistory.push({ ...this.currentFolder });
-                        }
-                    }
+        this.currentFolderCreatedBy = folder.creator?.id || folder.creator_id || null;
 
-                    this.currentFolder = folder;
-                    this.updateBreadcrumbs();
-                },
+        // ==== LOGIC LAMA (AMAN) ====
+        history.pushState(
+            { folderName: folder.name },
+            '',
+            `#${folder.name}`
+        );
+
+        localStorage.setItem('lastFolder', folder.name);
+
+        if (!this.currentFolder) {
+            this.folderHistory = [];
+        } else {
+            const isAlreadyInHistory = this.folderHistory.some(f => f.id === this.currentFolder.id);
+            if (!isAlreadyInHistory) {
+                this.folderHistory.push({ ...this.currentFolder });
+            }
+        }
+        // 🔥 CALL FETCH SETELAH STATE FIX
+        this.loadMembersFromAPI();
+
+        this.currentFolder = folder;
+        this.updateBreadcrumbs();
+
+        
+    });
+},
+
                 
                 restoreFolderFromUrl() {
                     console.log('restoreFolder() dipanggil');
@@ -476,6 +501,9 @@ export default function documentSearch() {
 
                 openFile(file) {
                     this.currentFolder = null;
+                    this.currentFolderCreatedBy = null;  // ⬅⬅ Tambahkan ini
+                    
+
                     const fileFolder = file.folder || this.currentFolder;
                     console.log('Gw Pembuat', file.creator.name);
                     this.currentFile = {
@@ -489,6 +517,10 @@ export default function documentSearch() {
                         recipients: file.recipients || this.getDefaultRecipients(),
                         comments: file.comments || this.getDefaultComments()
                     };
+
+                    // 🔥 Simpan untuk loadMembersFromAPI()
+                    this.currentFileUploadedBy = file.uploaded_by;
+                    this.loadMembersFromAPI();   // panggil di sini
 
                     // 🔹 Tambahkan ke history supaya tombol "Back browser" bisa tahu state
                     console.log('📂 openFile jalan, file:', file.id);
@@ -801,6 +833,41 @@ export default function documentSearch() {
                     const collection = collections[fileType];
                     if (collection) collection.push(file);
                 },
+
+             loadMembersFromAPI() {
+                this.isLoadingPermission = true; // ⬅ MULAI LOADING
+
+                const params = new URLSearchParams({
+                    folder_created_by: this.currentFolderCreatedBy ?? '',
+                    file_uploaded_by: this.currentFileUploadedBy ?? ''
+                });
+
+                fetch(`/workspaces/${this.currentWorkspaceId}/members?${params}`)
+                    .then(async res => {
+                        this.memberListAllowed = res.status === 200;
+
+                        if (!this.memberListAllowed) {
+                            this.members = [];
+                            return null;
+                        }
+
+                        return await res.json();
+                    })
+                    .then(data => {
+                        if (data?.members) this.members = data.members;
+                    })
+                    .catch(() => {
+                        this.memberListAllowed = false;
+                        this.members = [];
+                    })
+                    .finally(() => {
+                        this.isLoadingPermission = false; // ⬅ SELESAI LOADING
+                    });
+            },
+
+
+
+
 
                 updateFileInArrays(file, isSecret) {
                     // Update file in all possible locations

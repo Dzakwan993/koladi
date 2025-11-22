@@ -1,5 +1,5 @@
 {{-- Konten File dan Komentar --}}
-<div x-show="currentFile && !replyView.active" class="mt-4 sm:mt-6">
+<div x-show="currentFile && !replyView.active  && isLoadingPermission === false" class="mt-4 sm:mt-6">
     {{-- Preview File --}}
     <div class="bg-white border border-gray-200 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
         <h3 class="text-base sm:text-lg font-semibold text-gray-800 mb-3 sm:mb-4">Preview File</h3>
