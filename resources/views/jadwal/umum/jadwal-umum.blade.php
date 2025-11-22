@@ -12,18 +12,20 @@
             <!-- Bagian atas: kalender + notulen sejajar -->
             <div class="flex flex-row gap-5 items-center justify-center responsive-top">
                 <!-- Card kalender -->
-                <div class="card bg-white rounded-[8px] shadow-xl p-4 flex flex-col items-center justify-center w-full max-w-lg h-full calendar-card">
+                <div
+                    class="card bg-white rounded-[8px] shadow-xl p-4 flex flex-col items-center justify-center w-full max-w-lg h-full calendar-card">
                     <div id="calendar" class="w-full h-full"></div>
                 </div>
                 <div class="flex flex-col right-section">
                     {{-- Button Buat Jadwal - HANYA TAMPIL JIKA ADA PERMISSION --}}
-                    @if(isset($canCreateSchedule) && $canCreateSchedule)
+                    @if (isset($canCreateSchedule) && $canCreateSchedule)
                         <a href="{{ route('jadwal-umum.buat') }}"
                             class="bg-[#225ad6] rounded-[8px] shadow-xl flex items-center justify-center p-5 w-[400px] h-[40px] text-[#ffffff] font-semibold hover:bg-[#1a46a0] transition mb-4 buat-jadwal-btn">
                             Buat Jadwal Umum
                         </a>
                     @else
-                        <div class="bg-gray-100 rounded-[8px] shadow-xl flex items-center justify-center p-5 w-[400px] h-[40px] text-gray-500 font-semibold mb-4 buat-jadwal-btn cursor-not-allowed">
+                        <div
+                            class="bg-gray-100 rounded-[8px] shadow-xl flex items-center justify-center p-5 w-[400px] h-[40px] text-gray-500 font-semibold mb-4 buat-jadwal-btn cursor-not-allowed">
                             <i class="fas fa-lock mr-2"></i> Anda tidak dapat membuat jadwal
                         </div>
                     @endif
@@ -84,6 +86,28 @@
         </script>
     @endif
 
+    @if (session('access_denied'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: '{{ session('access_denied')['title'] }}',
+                    html: `
+                    <div class="text-center">
+                        <p class="mb-3">{{ session('access_denied')['message'] }}</p>
+                        <div class="bg-gray-100 rounded-lg p-3 inline-block">
+                            <p class="text-sm text-gray-600">Pembuat Jadwal:</p>
+                            <p class="font-semibold text-gray-800">{{ session('access_denied')['creator_name'] }}</p>
+                        </div>
+                    </div>
+                `,
+                    confirmButtonColor: '#2563eb',
+                    confirmButtonText: 'Mengerti'
+                });
+            });
+        </script>
+    @endif
+
     <script>
         window.userCanCreateSchedule = {{ $canCreateSchedule ? 'true' : 'false' }};
     </script>
@@ -121,7 +145,8 @@
                 events: function(info, successCallback, failureCallback) {
                     const startDate = info.start.toISOString().split('T')[0] + ' 00:00:00';
                     const endDate = info.end.toISOString().split('T')[0] + ' 23:59:59';
-                    const url = `/jadwal-umum/events?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`;
+                    const url =
+                        `/jadwal-umum/events?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`;
 
                     console.log('📡 Fetching company events from:', url);
 
@@ -355,7 +380,7 @@
                 class="${bgColor} rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition schedule-item mb-3">
 
                 <div class="flex flex-col items-start w-[140px] date-section">
-                    <span class="font-semibold text-[14px]">${dateKey.split(',')[0]}</span>
+                    <span class="font-semibold text-[14px] mx-auto">${dateKey.split(',')[0]}</span>
                     <span class="font-semibold text-[14px]">${dateKey.split(',')[1]?.trim() || ''}</span>
                 </div>
 
@@ -375,12 +400,12 @@
                 </div>
 
                 ${commentsCount > 0 ? `
-                <div class="badge-section">
-                    <span class="bg-yellow-400 text-gray-700 text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center shadow-sm">
-                        ${commentsCount}
-                    </span>
-                </div>
-                ` : ''}
+                    <div class="badge-section">
+                        <span class="bg-yellow-400 text-gray-700 text-xs font-bold rounded-full w-7 h-7 flex items-center justify-center shadow-sm">
+                            ${commentsCount}
+                        </span>
+                    </div>
+                    ` : ''}
             </a>
         `;
             } catch (e) {

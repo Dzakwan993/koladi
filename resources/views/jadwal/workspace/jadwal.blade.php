@@ -14,26 +14,28 @@
         {{-- Workspace Navigation --}}
         @include('components.workspace-nav', [
             'active' => 'jadwal',
-            'workspaceId' => $workspaceId
+            'workspaceId' => $workspaceId,
         ])
 
         <div class="card bg-white rounded-[8px] shadow-xl flex flex-col gap-5 p-6 m-6 mx-10 responsive-container">
             <!-- Bagian atas: kalender + notulen sejajar -->
             <div class="flex flex-row gap-5 items-center justify-center responsive-top">
                 <!-- Card kalender -->
-                <div class="card bg-white rounded-[8px] shadow-xl p-4 flex flex-col items-center justify-center w-full max-w-lg h-full calendar-card">
+                <div
+                    class="card bg-white rounded-[8px] shadow-xl p-4 flex flex-col items-center justify-center w-full max-w-lg h-full calendar-card">
                     <div id="calendar" class="w-full h-full"></div>
                 </div>
                 <div class="flex flex-col right-section">
                     {{-- ✅ Button Buat Jadwal - HANYA TAMPIL JIKA ADA PERMISSION --}}
-                    @if(isset($canCreateSchedule) && $canCreateSchedule)
+                    @if (isset($canCreateSchedule) && $canCreateSchedule)
                         <a href="{{ route('buatJadwal', ['workspaceId' => $workspaceId]) }}"
                             class="bg-[#225ad6] rounded-[8px] shadow-xl flex items-center justify-center p-5 w-[400px] h-[40px] text-[#ffffff] font-semibold hover:bg-[#1a46a0] transition mb-4 buat-jadwal-btn">
                             Buat Jadwal
                         </a>
                     @else
                         {{-- ✅ Jika tidak punya permission, tampilkan info atau hide button --}}
-                        <div class="bg-gray-100 rounded-[8px] shadow-xl flex items-center justify-center p-5 w-[400px] h-[40px] text-gray-500 font-semibold mb-4 buat-jadwal-btn cursor-not-allowed">
+                        <div
+                            class="bg-gray-100 rounded-[8px] shadow-xl flex items-center justify-center p-5 w-[400px] h-[40px] text-gray-500 font-semibold mb-4 buat-jadwal-btn cursor-not-allowed">
                             <i class="fas fa-lock mr-2"></i> Anda tidak dapat membuat jadwal
                         </div>
                     @endif
@@ -96,6 +98,28 @@
                     text: "{{ session('error') }}",
                     confirmButtonColor: '#ef4444',
                     confirmButtonText: 'OK'
+                });
+            });
+        </script>
+    @endif
+
+    @if (session('access_denied'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: '{{ session('access_denied')['title'] }}',
+                    html: `
+                    <div class="text-center">
+                        <p class="mb-3">{{ session('access_denied')['message'] }}</p>
+                        <div class="bg-gray-100 rounded-lg p-3 inline-block">
+                            <p class="text-sm text-gray-600">Pembuat Jadwal:</p>
+                            <p class="font-semibold text-gray-800">{{ session('access_denied')['creator_name'] }}</p>
+                        </div>
+                    </div>
+                `,
+                    confirmButtonColor: '#2563eb',
+                    confirmButtonText: 'Mengerti'
                 });
             });
         </script>

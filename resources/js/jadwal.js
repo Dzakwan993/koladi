@@ -285,7 +285,7 @@ function renderScheduleItem(event, workspaceId, dateKey) {
                 class="${bgColor} rounded-lg shadow-md flex items-center justify-between p-4 hover:shadow-lg transition schedule-item mb-3">
 
                 <div class="flex flex-col items-start w-[140px] date-section">
-                    <span class="font-semibold text-[14px]">${dateKey.split(',')[0]}</span>
+                    <span class="font-semibold text-[14px] mx-auto">${dateKey.split(',')[0]}</span>
                     <span class="font-semibold text-[14px]">${dateKey.split(',')[1]?.trim() || ''}</span>
                 </div>
 

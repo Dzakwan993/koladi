@@ -425,21 +425,27 @@ class CalendarController extends Controller
 
         $event = CalendarEvent::with(['creator', 'participants.user'])
             ->whereNull('workspace_id')
-            ->where('company_id', $activeCompanyId) // ✅ Validasi company
+            ->where('company_id', $activeCompanyId)
             ->findOrFail($id);
 
         $user = Auth::user();
         $isParticipant = $event->participants->where('user_id', $user->id)->isNotEmpty();
         $isCreator = $event->created_by === $user->id;
 
+        // ✅ FIXED: Cek akses untuk jadwal rahasia - redirect dengan pesan
         if ($event->is_private && !$isCreator && !$isParticipant) {
-            abort(403, 'Anda tidak memiliki akses ke jadwal ini');
+            return redirect()->route('jadwal-umum')
+                ->with('access_denied', [
+                    'title' => 'Akses Ditolak',
+                    'message' => 'Jadwal ini bersifat rahasia. Silakan hubungi pembuat jadwal untuk mendapatkan akses.',
+                    'creator_name' => $event->creator->full_name
+                ]);
         }
 
+        // Set avatar URL
         $event->participants->each(function ($participant) {
             $participant->user->avatar_url = $this->getAvatarUrl($participant->user);
         });
-
         $event->creator->avatar_url = $this->getAvatarUrl($event->creator);
 
         return view('jadwal.umum.detailJadwalUmum', compact('event', 'isParticipant', 'isCreator'));
@@ -915,19 +921,20 @@ class CalendarController extends Controller
         $isParticipant = $event->participants->where('user_id', $user->id)->isNotEmpty();
         $isCreator = $event->created_by === $user->id;
 
-        $hasWorkspaceAccess = UserWorkspace::where('user_id', $user->id)
-            ->where('workspace_id', $workspaceId)
-            ->where('status_active', true)
-            ->exists();
-
-        if ($event->is_private && !$isCreator && !$isParticipant && !$hasWorkspaceAccess) {
-            abort(403, 'Anda tidak memiliki akses ke jadwal ini');
+        // ✅ FIXED: Cek akses untuk jadwal rahasia - redirect dengan pesan
+        if ($event->is_private && !$isCreator && !$isParticipant) {
+            return redirect()->route('jadwal', ['workspaceId' => $workspaceId])
+                ->with('access_denied', [
+                    'title' => 'Akses Ditolak',
+                    'message' => 'Jadwal ini bersifat rahasia. Silakan hubungi pembuat jadwal untuk mendapatkan akses.',
+                    'creator_name' => $event->creator->full_name
+                ]);
         }
 
+        // Set avatar URL
         $event->participants->each(function ($participant) {
             $participant->user->avatar_url = $this->getAvatarUrl($participant->user);
         });
-
         $event->creator->avatar_url = $this->getAvatarUrl($event->creator);
 
         return view('jadwal.workspace.detailJadwal', compact('event', 'isParticipant', 'isCreator', 'workspaceId'));
