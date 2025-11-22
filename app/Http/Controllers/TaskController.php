@@ -1546,6 +1546,7 @@ class TaskController extends Controller
     public function getTaskDetail($taskId)
 {
     try {
+        // Validasi UUID
         if (!Str::isUuid($taskId)) {
             return response()->json([
                 'success' => false,
@@ -1553,6 +1554,7 @@ class TaskController extends Controller
             ], 400);
         }
 
+        // Load task utama
         $task = Task::with([
             'assignments.user',
             'labels.color',
@@ -1561,13 +1563,7 @@ class TaskController extends Controller
             },
             'attachments',
             'boardColumn',
-            'creator',
-            // ✅ PASTIKAN INI ADA
-            'comments' => function ($query) {
-                $query->whereNull('parent_comment_id')
-                      ->with(['user', 'replies.user'])
-                      ->orderBy('created_at', 'desc');
-            }
+            'creator'
         ])->find($taskId);
 
         if (!$task) {
@@ -1577,6 +1573,7 @@ class TaskController extends Controller
             ], 404);
         }
 
+        // Validasi akses workspace
         if (!$this->canAccessWorkspace($task->workspace_id)) {
             return response()->json([
                 'success' => false,
@@ -1584,17 +1581,90 @@ class TaskController extends Controller
             ], 403);
         }
 
-        // Format task data
+        // 🔥 Load comments + user + replies + user
+        $task->load([
+            'comments' => function ($query) {
+                $query->whereNull('parent_comment_id')
+                      ->orderBy('created_at', 'desc');
+            },
+            'comments.user',
+            'comments.replies.user'
+        ]);
+
+        // Format response sesuai frontend
         $taskData = [
             'id' => $task->id,
             'title' => $task->title,
             'phase' => $task->phase,
             'description' => $task->description,
             'is_secret' => $task->is_secret,
-            // ... field lainnya ...
-            
-            // ✅ Format comments dengan benar
-            'comments' => $task->comments->map(function($comment) {
+            'status' => $task->status,
+            'priority' => $task->priority,
+            'start_datetime' => $task->start_datetime ? $task->start_datetime->toIso8601String() : null,
+            'due_datetime' => $task->due_datetime ? $task->due_datetime->toIso8601String() : null,
+            'created_at' => $task->created_at?->toIso8601String(),
+            'updated_at' => $task->updated_at?->toIso8601String(),
+
+            'board_column' => $task->boardColumn ? [
+                'id' => $task->boardColumn->id,
+                'name' => $task->boardColumn->name,
+            ] : null,
+
+            'creator' => $task->creator ? [
+                'id' => $task->creator->id,
+                'name' => $task->creator->full_name,
+                'email' => $task->creator->email
+            ] : null,
+
+            'assigned_members' => $task->assignments->map(function ($assignment) {
+                return [
+                    'id' => $assignment->user->id,
+                    'name' => $assignment->user->full_name,
+                    'email' => $assignment->user->email,
+                    'avatar' => $assignment->user->avatar ?? 'https://i.pravatar.cc/32?img=' . rand(1, 70)
+                ];
+            })->toArray(),
+
+            'labels' => $task->labels->map(function ($label) {
+                return [
+                    'id' => $label->id,
+                    'name' => $label->name,
+                    'color' => $label->color->rgb
+                ];
+            })->toArray(),
+
+            'checklists' => $task->checklists->map(function ($checklist) {
+                return [
+                    'id' => $checklist->id,
+                    'title' => $checklist->title,
+                    'is_done' => (bool)$checklist->is_done,
+                    'position' => $checklist->position
+                ];
+            })->toArray(),
+
+            // 🆕 Attachments mapping
+            'attachments' => $task->attachments->map(function ($attachment) {
+                return [
+                    'id' => $attachment->id,
+                    'name' => $attachment->file_name,
+                    'url' => (Storage::disk('public')->exists($attachment->file_url)
+                        ? Storage::disk('public')->url($attachment->file_url)
+                        : $attachment->file_url),
+                    'type' => pathinfo($attachment->file_url, PATHINFO_EXTENSION),
+                    'uploaded_by' => $attachment->uploader ? [
+                        'name' => $attachment->uploader->full_name
+                    ] : null,
+                    'uploaded_at' => $attachment->uploaded_at?->toIso8601String()
+                ];
+            })->toArray(),
+
+            'progress_percentage' => $this->calculateTaskProgress($task),
+            'is_overdue' => $task->due_datetime && $task->due_datetime->lt(now()) && !in_array($task->status, ['done', 'cancel']),
+
+            // ============================
+            // 🔥 FORMAT KOMENTAR (AMAN)
+            // ============================
+            'comments' => $task->comments->map(function ($comment) {
                 return [
                     'id' => $comment->id,
                     'content' => $comment->content,
@@ -1604,7 +1674,9 @@ class TaskController extends Controller
                         'avatar' => $comment->user->avatar ?? 'https://i.pravatar.cc/40?img=0'
                     ],
                     'createdAt' => $comment->created_at->toIso8601String(),
-                    'replies' => $comment->replies->map(function($reply) {
+
+                    // 🔥 Balasan komentar
+                    'replies' => $comment->replies->map(function ($reply) {
                         return [
                             'id' => $reply->id,
                             'content' => $reply->content,
@@ -1633,6 +1705,7 @@ class TaskController extends Controller
         ], 500);
     }
 }
+
 
 
 
