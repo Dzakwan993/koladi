@@ -20,6 +20,11 @@ class Folder extends Model
         'parent_id', 
     ];
 
+    public function documentRecipients()
+    {
+        return $this->hasMany(DocumentRecipient::class, 'document_id', 'id');
+    }
+
     public function workspace()
     {
         return $this->belongsTo(Workspace::class);

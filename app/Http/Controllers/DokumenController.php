@@ -18,50 +18,105 @@ class DokumenController extends Controller
 {
     public function index(Workspace $workspace)
     {
-        // Cek apakah user punya akses ke workspace ini
-        // $this->authorize('view', $workspace);
+        $user = auth()->user();
+        $userId = $user->id;
 
-        $userId = auth()->id();
+        $activeCompanyId = $workspace->company_id;
 
-        // Ambil folders
-        // Jika user adalah creator/admin workspace, tampilkan semua
-        // Jika bukan, hanya tampilkan folder public dan folder private yang dia buat
+        // Cek role SuperAdmin perusahaan
+        $userCompany = $user->userCompanies()
+            ->where('company_id', $activeCompanyId)
+            ->with('role')
+            ->first();
+
+        $companyRole = $userCompany?->role?->name ?? 'Member';
+        $isSuperAdmin = ($companyRole === 'SuperAdmin');
+
+        // ================================
+        // ACCESS CONDITION FOR FOLDERS
+        // ================================
+        $folderAccess = function ($query) use ($userId, $isSuperAdmin) {
+
+            $query->where('is_private', false);
+
+            if ($isSuperAdmin) {
+                $query->orWhere('is_private', true);
+            }
+
+            $query->orWhere(function ($q) use ($userId) {
+                $q->where('is_private', true)
+                ->where('created_by', $userId);
+            });
+
+            $query->orWhere(function ($q) use ($userId) {
+                $q->where('is_private', true)
+                ->whereHas('documentRecipients', function($qr) use ($userId) {
+                    $qr->where('user_id', $userId)
+                        ->where('status', true);
+                });
+            });
+        };
+
+        // ================================
+        // ACCESS CONDITION FOR FILES
+        // ================================
+        $fileAccess = function ($query) use ($userId, $isSuperAdmin) {
+
+            $query->where('is_private', false);
+
+            if ($isSuperAdmin) {
+                $query->orWhere('is_private', true);
+            }
+
+            $query->orWhere(function ($q) use ($userId) {
+                $q->where('is_private', true)
+                ->where('uploaded_by', $userId);
+            });
+
+            $query->orWhere(function ($q) use ($userId) {
+                $q->where('is_private', true)
+                ->whereHas('documentRecipients', function($qr) use ($userId) {
+                    $qr->where('user_id', $userId)
+                        ->where('status', true);
+                });
+            });
+        };
+
+        // ================================
+        // GET FOLDERS
+        // ================================
         $folders = Folder::where('workspace_id', $workspace->id)
-            ->where(function ($query) use ($userId) {
-                $query->where('is_private', false)
-                    ->orWhere(function ($q) use ($userId) {
-                        $q->where('is_private', true)
-                          ->where('created_by', $userId);
-                    });
-            })
-            ->with(['creator', 'files' => function ($query) use ($userId) {
-                // Filter files juga berdasarkan is_private
-                $query->where(function ($q) use ($userId) {
-                    $q->where('is_private', false)
-                      ->orWhere('uploaded_by', $userId);
-                });
-            }])
-            ->withCount(['files' => function ($query) use ($userId) {
-                $query->where(function ($q) use ($userId) {
-                    $q->where('is_private', false)
-                      ->orWhere('uploaded_by', $userId);
-                });
-            }])
+            ->where($folderAccess)
+            ->with([
+                'creator',
+                'documentRecipients',
+                'files' => function ($query) use ($fileAccess) {
+                    $query->where($fileAccess)
+                        ->with('documentRecipients');
+                }
+            ])
+            ->withCount([
+                'files' => function ($query) use ($fileAccess) {
+                    $query->where($fileAccess);
+                }
+            ])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Ambil files yang tidak ada dalam folder (root files)
+        // ================================
+        // GET ROOT FILES
+        // ================================
         $rootFiles = File::where('workspace_id', $workspace->id)
-            ->where(function ($query) use ($userId) {
-                $query->where('is_private', false)
-                    ->orWhere('uploaded_by', $userId);
-            })
-            ->with('uploader')
+            ->where($fileAccess)
+            ->with(['uploader', 'documentRecipients'])
             ->orderBy('uploaded_at', 'desc')
             ->get();
 
         return view('dokumen-dan-file', compact('workspace', 'folders', 'rootFiles'));
     }
+
+
+
 
 
     public function store(StoreFolderRequest $request)
@@ -143,7 +198,7 @@ class DokumenController extends Controller
         }
 
 
-        public function updateFolder(Request $request, $id)
+       public function updateFolder(Request $request, $id)
         {
             $folder = Folder::findOrFail($id);
 
@@ -160,9 +215,14 @@ class DokumenController extends Controller
                 $messages[] = "Nama folder diperbarui.";
             }
 
-            // Perubahan private/public, tapi kalimat dibuat netral
+            // Perubahan private/public
             if ($oldPrivate !== $newPrivate) {
                 $messages[] = "Aturan privasi folder diperbarui.";
+
+                // Jika dari true -> false, reset semua document_recipients
+                if ($oldPrivate === true && $newPrivate === false) {
+                    $folder->documentRecipients()->update(['status' => false]);
+                }
             }
 
             // Jika tidak ada perubahan sama sekali
@@ -170,7 +230,7 @@ class DokumenController extends Controller
                 $messages[] = "Tidak ada perubahan pada folder.";
             }
 
-            // Update data
+            // Update data folder
             $folder->update([
                 'name' => $newName,
                 'is_private' => $newPrivate,
@@ -195,22 +255,27 @@ class DokumenController extends Controller
 
             $messages = [];
 
-            // Nama berubah
+            // Perubahan nama
             if ($oldName !== $newName) {
                 $messages[] = "Nama file diperbarui.";
             }
 
-            // Privasi berubah
+            // Perubahan private/public
             if ($oldPrivate !== $newPrivate) {
                 $messages[] = "Aturan privasi file diperbarui.";
+
+                // Jika dari true -> false, reset semua document_recipients
+                if ($oldPrivate === true && $newPrivate === false) {
+                    $file->documentRecipients()->update(['status' => false]);
+                }
             }
 
-            // Tidak ada perubahan
+            // Jika tidak ada perubahan sama sekali
             if (empty($messages)) {
                 $messages[] = "Tidak ada perubahan pada file.";
             }
 
-            // Update data
+            // Update data file
             $file->update([
                 'name' => $newName,
                 'is_private' => $newPrivate,
@@ -222,6 +287,7 @@ class DokumenController extends Controller
                 'text'  => implode(" ", $messages),
             ])->with('alert_once', true);
         }
+
 
         public function destroy($id)
         {
@@ -293,7 +359,7 @@ class DokumenController extends Controller
                 ->first();
 
             $companyRole = $userCompany?->role?->name ?? 'Member';
-            $companyHighRoles = ['SuperAdmin', 'Administrator', 'Admin', 'Manager'];
+            $companyHighRoles = ['SuperAdmin',];
 
             $isHighRole = in_array($companyRole, $companyHighRoles);
 
@@ -317,7 +383,7 @@ class DokumenController extends Controller
                 $workspaceRole = $userWorkspace?->role?->name ?? 'Member';
 
                 // kalau workspace role juga bukan manager
-                if ($workspaceRole !== 'Manager') {
+                if ($workspaceRole !== 'SuperAdmin') {
 
                     // tetapi jika dia pembuat folder atau uploader → IZINKAN
                     if ($folderCreatedBy != $user->id && $fileUploadedBy != $user->id) {
@@ -408,9 +474,22 @@ class DokumenController extends Controller
 
             // Update kolom is_private di files atau folders
             if ($file = File::find($request->document_id)) {
-                $file->update(['is_private' => $hasActiveRecipients]);
+
+                // Kalau ada recipient aktif → pastikan private
+                if ($hasActiveRecipients) {
+                    $file->update(['is_private' => true]);
+                }
+
+                // Kalau tidak ada recipient aktif → JANGAN sentuh is_private
+                // biarkan tetap seperti sebelumnya (true or false sesuai riwayat)
+
             } elseif ($folder = Folder::find($request->document_id)) {
-                $folder->update(['is_private' => $hasActiveRecipients]);
+
+                if ($hasActiveRecipients) {
+                    $folder->update(['is_private' => true]);
+                }
+
+                // Kalau kosong → tidak diubah
             }
 
             return redirect()->back()->with('alert', [

@@ -43,6 +43,12 @@ class File extends Model
         });
     }
 
+    // Relasi ke DocumentRecipient
+    public function documentRecipients()
+    {
+        return $this->hasMany(DocumentRecipient::class, 'document_id', 'id');
+    }
+    
     // Relasi ke Folder
     public function folder()
     {
