@@ -19,6 +19,26 @@ use Illuminate\Support\Facades\Auth;
 class CalendarController extends Controller
 {
 
+    /**
+     * ✅ Helper: Check if user is SuperAdmin/Admin in company
+     */
+    private function isCompanyAdmin()
+    {
+        $user = Auth::user();
+        $activeCompanyId = session('active_company_id');
+
+        if (!$activeCompanyId) return false;
+
+        $userCompany = UserCompany::where('user_id', $user->id)
+            ->where('company_id', $activeCompanyId)
+            ->with('role')
+            ->first();
+
+        $roleName = $userCompany?->role?->name ?? 'Member';
+
+        return in_array($roleName, ['SuperAdmin', 'Administrator', 'Admin', 'Manager']);
+    }
+
     private function getAvatarUrl($user)
     {
         if (!$user) {
@@ -52,8 +72,7 @@ class CalendarController extends Controller
 
         $companyRole = $userCompany?->role?->name ?? 'Member';
 
-        // ✅ Hanya SuperAdmin, Admin, Manager yang bisa buat jadwal umum
-        // ❌ Member TIDAK BISA buat jadwal umum
+        // ✅ SuperAdmin, Admin, Manager bisa buat jadwal umum
         return in_array($companyRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager']);
     }
 
@@ -64,7 +83,6 @@ class CalendarController extends Controller
         $workspace = Workspace::findOrFail($workspaceId);
         $companyId = $workspace->company_id;
 
-        // Ambil role user di company
         $userCompany = UserCompany::where('user_id', $user->id)
             ->where('company_id', $companyId)
             ->with('role')
@@ -85,7 +103,6 @@ class CalendarController extends Controller
                 ->with('role')
                 ->first();
 
-            // ❌ Jika bukan anggota workspace = TIDAK BISA buat jadwal
             if (!$userWorkspace) {
                 return false;
             }
@@ -93,11 +110,9 @@ class CalendarController extends Controller
             $workspaceRole = $userWorkspace->role?->name ?? 'Member';
 
             // ✅ Hanya Manager di workspace yang bisa buat jadwal
-            // ❌ Member di workspace TIDAK BISA buat jadwal
             return $workspaceRole === 'Manager';
         }
 
-        // ❌ Default: tidak bisa buat jadwal
         return false;
     }
 
@@ -432,8 +447,12 @@ class CalendarController extends Controller
         $isParticipant = $event->participants->where('user_id', $user->id)->isNotEmpty();
         $isCreator = $event->created_by === $user->id;
 
-        // ✅ FIXED: Cek akses untuk jadwal rahasia - redirect dengan pesan
-        if ($event->is_private && !$isCreator && !$isParticipant) {
+        // ✅ FIXED: Cek apakah SuperAdmin/Admin di company
+        $isCompanyAdmin = $this->isCompanyAdmin();
+
+        // ✅ Cek akses untuk jadwal rahasia
+        // SuperAdmin/Admin/Manager bisa akses SEMUA jadwal termasuk rahasia
+        if ($event->is_private && !$isCreator && !$isParticipant && !$isCompanyAdmin) {
             return redirect()->route('jadwal-umum')
                 ->with('access_denied', [
                     'title' => 'Akses Ditolak',
@@ -922,8 +941,13 @@ class CalendarController extends Controller
         $isParticipant = $event->participants->where('user_id', $user->id)->isNotEmpty();
         $isCreator = $event->created_by === $user->id;
 
-        // ✅ FIXED: Cek akses untuk jadwal rahasia - redirect dengan pesan
-        if ($event->is_private && !$isCreator && !$isParticipant) {
+        // ✅ FIXED: Cek apakah SuperAdmin/Admin di company
+        $workspace = Workspace::findOrFail($workspaceId);
+        $isCompanyAdmin = $this->isCompanyAdmin();
+
+        // ✅ Cek akses untuk jadwal rahasia
+        // SuperAdmin/Admin/Manager bisa akses SEMUA jadwal termasuk rahasia
+        if ($event->is_private && !$isCreator && !$isParticipant && !$isCompanyAdmin) {
             return redirect()->route('jadwal', ['workspaceId' => $workspaceId])
                 ->with('access_denied', [
                     'title' => 'Akses Ditolak',
