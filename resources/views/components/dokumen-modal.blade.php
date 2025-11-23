@@ -188,13 +188,24 @@
 
 
 
-
-
-
          <!-- Modal Tambah Peserta -->
-                <div x-show="openAddMemberModal" x-cloak
-                    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4" x-transition>
-                    <div class="bg-white rounded-xl w-full max-w-sm shadow-2xl">
+            <div x-show="openAddMemberModal" x-cloak
+                class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4" x-transition>
+
+                <div class="bg-white rounded-xl w-full max-w-sm shadow-2xl">
+
+                    <form method="POST" action="{{ route('document.recipients.store') }}">
+                        @csrf
+
+                        <!-- Hidden Input: document_id -->
+                        <input type="hidden" name="document_id"
+                            x-bind:value="currentFolder ? currentFolder.id : (currentFile ? currentFile.id : '')">
+
+                      
+                        <!-- Hidden Input: Selected Members as JSON -->
+                        <input type="hidden" name="selected_members"
+                            x-bind:value="JSON.stringify(members.filter(m => m.selected).map(m => m.id))">
+
                         <!-- Header -->
                         <div class="px-6 py-4 border-b">
                             <h2 class="text-center font-bold text-lg text-gray-800">Tambah Peserta</h2>
@@ -202,6 +213,7 @@
 
                         <!-- Isi Modal -->
                         <div class="p-6 space-y-4">
+
                             <!-- Input Cari -->
                             <div class="relative">
                                 <input type="text" placeholder="Cari anggota..."
@@ -233,11 +245,17 @@
                         <div class="flex justify-end gap-3 p-4 border-t">
                             <button type="button" @click="openAddMemberModal = false"
                                 class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700">Batal</button>
-                            <button type="button" @click="saveSelectedMembers()"
-                                class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">Simpan</button>
+
+                            <button type="submit"
+                                class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">
+                                Simpan
+                            </button>
                         </div>
-                    </div>
+
+                    </form>
                 </div>
+            </div>
+
 
 
 

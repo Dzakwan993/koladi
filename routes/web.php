@@ -187,6 +187,10 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/files/{id}/delete', [DokumenController::class, 'destroy'])->name('files.destroy');
     Route::delete('/folders/{folder}/delete', [DokumenController::class, 'destroyFolder'])->name('folders.destroy');
     Route::get('/workspaces/{workspace}/members', [DokumenController::class, 'getWorkspaceMembers'])->name('workspace.members');
+    Route::post('/documents/recipients', [DokumenController::class, 'recipientsStore'])->name('document.recipients.store');
+    Route::get('/documents/{document}/recipients', [DokumenController::class, 'getRecipients']);
+
+
 
 
 

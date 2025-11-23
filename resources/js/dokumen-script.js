@@ -369,44 +369,44 @@ console.log('✅ dokumen-script.js loaded');
 
                 // Folder Navigation
                 openFolder(folder) {
-    console.log('openFolder dipanggil');
-    this.currentFile = null;
+                    console.log('openFolder dipanggil');
+                    this.currentFile = null;
 
-    // RESET dulu agar tidak ada sisa state
-    this.currentFolderCreatedBy = null;
-    this.currentFileUploadedBy = null;
+                    // RESET dulu agar tidak ada sisa state
+                    this.currentFolderCreatedBy = null;
+                    this.currentFileUploadedBy = null;
 
-    // TUNGGU Alpine commit reset, baru set ulang
-    this.$nextTick(() => {
+                    // TUNGGU Alpine commit reset, baru set ulang
+                    this.$nextTick(() => {
 
-        this.currentFolderCreatedBy = folder.creator?.id || folder.creator_id || null;
+                        this.currentFolderCreatedBy = folder.creator?.id || folder.creator_id || null;
 
-        // ==== LOGIC LAMA (AMAN) ====
-        history.pushState(
-            { folderName: folder.name },
-            '',
-            `#${folder.name}`
-        );
+                        // ==== LOGIC LAMA (AMAN) ====
+                        history.pushState(
+                            { folderName: folder.name },
+                            '',
+                            `#${folder.name}`
+                        );
 
-        localStorage.setItem('lastFolder', folder.name);
+                        localStorage.setItem('lastFolder', folder.name);
 
-        if (!this.currentFolder) {
-            this.folderHistory = [];
-        } else {
-            const isAlreadyInHistory = this.folderHistory.some(f => f.id === this.currentFolder.id);
-            if (!isAlreadyInHistory) {
-                this.folderHistory.push({ ...this.currentFolder });
-            }
-        }
-        // 🔥 CALL FETCH SETELAH STATE FIX
-        this.loadMembersFromAPI();
+                        if (!this.currentFolder) {
+                            this.folderHistory = [];
+                        } else {
+                            const isAlreadyInHistory = this.folderHistory.some(f => f.id === this.currentFolder.id);
+                            if (!isAlreadyInHistory) {
+                                this.folderHistory.push({ ...this.currentFolder });
+                            }
+                        }
+                        // 🔥 CALL FETCH SETELAH STATE FIX
+                        this.loadMembersFromAPI();
 
-        this.currentFolder = folder;
-        this.updateBreadcrumbs();
+                        this.currentFolder = folder;
+                        this.updateBreadcrumbs();
 
-        
-    });
-},
+                        
+                    });
+                },
 
                 
                 restoreFolderFromUrl() {
@@ -676,25 +676,28 @@ console.log('✅ dokumen-script.js loaded');
 
                 // Member Functions
                 toggleSelectAll() {
-                    this.members.forEach(member => {
-                        member.selected = this.selectAll;
-                    });
+                     this.filteredMembers().forEach(m => m.selected = this.selectAll);
                 },
 
-                saveSelectedMembers() {
-                    const selectedMembers = this.members.filter(member => member.selected);
+                // Watch members agar otomatis update selectAll
+                watchMembersSelected() {
+                     this.selectAll = this.filteredMembers().length > 0 &&
+                         this.filteredMembers().every(m => m.selected);
+                },
+                // saveSelectedMembers() {
+                //     const selectedMembers = this.members.filter(member => member.selected);
                     
-                    if (this.currentFolder) {
-                        this.currentFolder.recipients = [...this.currentFolder.recipients, ...selectedMembers];
-                    } else if (this.currentFile) {
-                        this.currentFile.recipients = [...this.currentFile.recipients, ...selectedMembers];
-                    }
+                //     if (this.currentFolder) {
+                //         this.currentFolder.recipients = [...this.currentFolder.recipients, ...selectedMembers];
+                //     } else if (this.currentFile) {
+                //         this.currentFile.recipients = [...this.currentFile.recipients, ...selectedMembers];
+                //     }
 
-                    this.openAddMemberModal = false;
-                    this.searchMember = '';
-                    this.selectAll = false;
-                    this.showSuccessMessage(`Berhasil menambahkan ${selectedMembers.length} peserta`);
-                },
+                //     this.openAddMemberModal = false;
+                //     this.searchMember = '';
+                //     this.selectAll = false;
+                //     this.showSuccessMessage(`Berhasil menambahkan ${selectedMembers.length} peserta`);
+                // },
 
                 // Utility Functions
                 formatDate(dateString) {
@@ -834,8 +837,8 @@ console.log('✅ dokumen-script.js loaded');
                     if (collection) collection.push(file);
                 },
 
-             loadMembersFromAPI() {
-                this.isLoadingPermission = true; // ⬅ MULAI LOADING
+            loadMembersFromAPI() {
+                this.isLoadingPermission = true;
 
                 const params = new URLSearchParams({
                     folder_created_by: this.currentFolderCreatedBy ?? '',
@@ -845,25 +848,45 @@ console.log('✅ dokumen-script.js loaded');
                 fetch(`/workspaces/${this.currentWorkspaceId}/members?${params}`)
                     .then(async res => {
                         this.memberListAllowed = res.status === 200;
-
                         if (!this.memberListAllowed) {
                             this.members = [];
                             return null;
                         }
-
                         return await res.json();
                     })
-                    .then(data => {
-                        if (data?.members) this.members = data.members;
+                    .then(async data => {
+                        if (!data?.members) return;
+
+                        // Fetch recipients status=true dari backend
+                        const docId = this.currentFolder?.id || this.currentFile?.id;
+                        const recipientsRes = await fetch(`/documents/${docId}/recipients`);
+                        const recipientsData = await recipientsRes.json();
+                        const selectedUserIds = recipientsData?.recipients || [];
+
+                        // Tandai member yang sudah status=true
+                        this.members = data.members.map(m => ({
+                            ...m,
+                            selected: selectedUserIds.includes(m.id)
+                        }));
+
+                        // Centang "Pilih Semua" jika semua member tercentang
+                        this.selectAll = this.members.length > 0 && this.members.every(m => m.selected);
                     })
                     .catch(() => {
                         this.memberListAllowed = false;
                         this.members = [];
                     })
                     .finally(() => {
-                        this.isLoadingPermission = false; // ⬅ SELESAI LOADING
+                        this.isLoadingPermission = false;
                     });
             },
+
+
+
+            watchMembersSelected() {
+                this.selectAll = this.members.length > 0 && this.members.every(m => m.selected);
+            },
+
 
 
 
@@ -1028,7 +1051,14 @@ window.documentCommentSection = function() {
         },
 
         init() {
-            this.$nextTick(() => {
+            this.$watch(
+                () => this.members.map(m => m.selected),
+                () => {
+                    this.watchMembersSelected();
+                },
+                { deep: true }
+            );
+                    this.$nextTick(() => {
                 setTimeout(() => {
                     this.createEditorForDocument('document-main-comment-editor', {
                         placeholder: 'Ketik komentar Anda di sini...'

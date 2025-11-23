@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Workspace;
+use App\Models\DocumentRecipient;
 use App\Models\Folder;
 use App\Models\File;
+use Illuminate\Support\Str; // ⬅⬅ Tambahkan ini
 use Illuminate\Http\Request;
 use App\Http\Requests\StoreFolderRequest;
 use App\Http\Requests\StoreFileRequest;
@@ -369,6 +371,65 @@ class DokumenController extends Controller
             return response()->json([
                 'members' => $filtered
             ]);
+        }
+
+     public function recipientsStore(Request $request)
+        {
+            $request->validate([
+                'document_id' => 'required|uuid',
+                'selected_members' => 'required|json',
+            ]);
+
+            $selectedMembers = json_decode($request->selected_members, true) ?? [];
+
+            // Tandai semua yang ada di database tapi tidak dipilih => status false
+            DocumentRecipient::where('document_id', $request->document_id)
+                ->whereNotIn('user_id', $selectedMembers)
+                ->update(['status' => false]);
+
+            // Tambahkan atau update recipients
+            foreach ($selectedMembers as $userId) {
+                DocumentRecipient::updateOrCreate(
+                    [
+                        'document_id' => $request->document_id,
+                        'user_id' => $userId
+                    ],
+                    [
+                        'id' => Str::uuid(),
+                        'status' => true
+                    ]
+                );
+            }
+
+            // Cek apakah ada minimal 1 recipient aktif
+            $hasActiveRecipients = DocumentRecipient::where('document_id', $request->document_id)
+                ->where('status', true)
+                ->exists();
+
+            // Update kolom is_private di files atau folders
+            if ($file = File::find($request->document_id)) {
+                $file->update(['is_private' => $hasActiveRecipients]);
+            } elseif ($folder = Folder::find($request->document_id)) {
+                $folder->update(['is_private' => $hasActiveRecipients]);
+            }
+
+            return redirect()->back()->with('alert', [
+                'icon' => 'success',
+                'title' => 'Berhasil!',
+                'text' => 'Penerima berkas berhasil diperbarui.',
+            ])->with('alert_once', true);
+        }
+
+
+
+        public function getRecipients($documentId)
+        {
+            // Ambil hanya user_id yang status = true
+            $recipients = DocumentRecipient::where('document_id', $documentId)
+                ->where('status', true)
+                ->pluck('user_id'); // ambil array user_id
+
+            return response()->json(['recipients' => $recipients]);
         }
 
 
