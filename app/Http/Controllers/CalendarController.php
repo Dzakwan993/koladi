@@ -110,7 +110,7 @@ class CalendarController extends Controller
         $user = Auth::user();
         $activeCompanyId = session('active_company_id');
 
-        $userCompany = $user->userCompanies()
+        $userCompany = UserCompany::where('user_id', $user->id)
             ->where('company_id', $activeCompanyId)
             ->with('role')
             ->first();
@@ -634,7 +634,8 @@ class CalendarController extends Controller
         $user = Auth::user();
         $activeCompanyId = session('active_company_id');
 
-        $userCompany = $user->userCompanies()
+        // ✅ Ganti dengan query langsung (menghilangkan warning IDE)
+        $userCompany = UserCompany::where('user_id', $user->id)
             ->where('company_id', $activeCompanyId)
             ->with('role')
             ->first();
