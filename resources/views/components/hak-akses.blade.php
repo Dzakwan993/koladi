@@ -295,7 +295,7 @@
             const titleElement = document.querySelector('[data-title]');
             const userRoleElement = document.getElementById('accessModalUserRole');
 
-            // Tampilkan title berdasarkan konteks 
+            // Tampilkan title berdasarkan konteks
             if (titleElement) {
                 if (ctx.type === 'workspace' && ctx.workspaceName) {
                     titleElement.textContent = `Akses Anda di Workspace ${ctx.workspaceName}`;
@@ -332,7 +332,7 @@
                             const colorMap = {
                                 'Super Admin': '#102A63',
                                 'SuperAdmin': '#102A63',
-                                'Administrator': '#225AD6',
+                                'Administrator': '#DC2626',
                                 'Admin': '#225AD6',
                                 'Manager': '#0FA875',
                                 'Member': '#E4BA13'
@@ -359,7 +359,7 @@
                     const colorMap = {
                         'Super Admin': '#102A63',
                         'SuperAdmin': '#102A63',
-                        'Administrator': '#225AD6',
+                        'Administrator': '#DC2626',
                         'Admin': '#225AD6',
                         'Manager': '#0FA875',
                         'Member': '#E4BA13'
