@@ -694,17 +694,6 @@ class TaskController extends Controller
         }
     }
 
-/**
- * Mapping nama kolom ke status
- */
-private function mapColumnToStatus($columnName)
-{
-    $mapping = [
-        'To Do List' => 'todo',
-        'Dikerjakan' => 'inprogress',
-        'Selesai' => 'done',
-        'Batal' => 'cancel'
-    ];
     /**
      * Mapping nama kolom ke status
      */
@@ -717,15 +706,6 @@ private function mapColumnToStatus($columnName)
             'Batal' => 'cancel'
         ];
 
-    // Untuk kolom default, gunakan mapping
-    if (array_key_exists($columnName, $mapping)) {
-        return $mapping[$columnName];
-    }
-
-    // Untuk kolom custom, gunakan nama kolom sebagai status
-    // Konversi ke lowercase dan replace spasi dengan underscore
-    return strtolower(str_replace(' ', '_', $columnName));
-}
         // Untuk kolom default, gunakan mapping
         if (array_key_exists($columnName, $mapping)) {
             return $mapping[$columnName];
@@ -1729,7 +1709,6 @@ private function mapColumnToStatus($columnName)
 
 
 
-
     // Helper method untuk menghitung progress
     private function calculateTaskProgress($task)
     {
@@ -1807,14 +1786,6 @@ private function mapColumnToStatus($columnName)
                 'is_secret'
             ]);
 
-        // Handle datetime fields
-        if ($request->has('start_datetime')) {
-            $taskData['start_datetime'] = $request->start_datetime;
-        }
-
-        if ($request->has('due_datetime')) {
-            $taskData['due_datetime'] = $request->due_datetime;
-        }
             // Handle datetime fields
             if ($request->has('start_datetime')) {
                 $taskData['start_datetime'] = $request->start_datetime;
@@ -2229,75 +2200,74 @@ private function mapColumnToStatus($columnName)
 
     // --- Upload file/image for comment or other attachable ---
     /**
- * Upload file/image untuk komentar
- */
-public function uploadCommentFile(Request $request)
-{
-    try {
-        if (!$request->hasFile('upload')) {
-            return response()->json(['error' => 'No file uploaded'], 400);
-        }
+     * Upload file/image untuk komentar
+     */
+    public function uploadCommentFile(Request $request)
+    {
+        try {
+            if (!$request->hasFile('upload')) {
+                return response()->json(['error' => 'No file uploaded'], 400);
+            }
 
-        $file = $request->file('upload');
-        $extension = strtolower($file->getClientOriginalExtension());
+            $file = $request->file('upload');
+            $extension = strtolower($file->getClientOriginalExtension());
 
-        // Validasi tipe file
-        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        $documentExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'zip', 'rar', 'ppt', 'pptx'];
+            // Validasi tipe file
+            $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+            $documentExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'zip', 'rar', 'ppt', 'pptx'];
 
-        $allowedExtensions = array_merge($imageExtensions, $documentExtensions);
+            $allowedExtensions = array_merge($imageExtensions, $documentExtensions);
 
-        if (!in_array($extension, $allowedExtensions)) {
-            return response()->json(['error' => 'File type not allowed'], 400);
-        }
+            if (!in_array($extension, $allowedExtensions)) {
+                return response()->json(['error' => 'File type not allowed'], 400);
+            }
 
-        // Validasi ukuran file (max 10MB)
-        if ($file->getSize() > 10 * 1024 * 1024) {
-            return response()->json(['error' => 'File size exceeds 10MB'], 400);
-        }
+            // Validasi ukuran file (max 10MB)
+            if ($file->getSize() > 10 * 1024 * 1024) {
+                return response()->json(['error' => 'File size exceeds 10MB'], 400);
+            }
 
-        // Tentukan folder berdasarkan tipe file
-        $folder = in_array($extension, $imageExtensions)
-            ? 'uploads/comment_images'
-            : 'uploads/comment_files';
+            // Tentukan folder berdasarkan tipe file
+            $folder = in_array($extension, $imageExtensions)
+                ? 'uploads/comment_images'
+                : 'uploads/comment_files';
 
-        // Generate unique filename
-        $fileName = time() . '_' . Str::random(8) . '.' . $extension;
-        $filePath = $file->storeAs($folder, $fileName, 'public');
-        $fileUrl = asset('storage/' . $filePath);
+            // Generate unique filename
+            $fileName = time() . '_' . Str::random(8) . '.' . $extension;
+            $filePath = $file->storeAs($folder, $fileName, 'public');
+            $fileUrl = asset('storage/' . $filePath);
 
-        // Simpan ke attachments table jika ada attachable_id
-        $attachableId = $request->input('attachable_id');
-        $attachableType = $request->input('attachable_type', 'App\\Models\\Comment');
+            // Simpan ke attachments table jika ada attachable_id
+            $attachableId = $request->input('attachable_id');
+            $attachableType = $request->input('attachable_type', 'App\\Models\\Comment');
 
-        if ($attachableId) {
-            Attachment::create([
-                'id' => Str::uuid()->toString(),
-                'attachable_type' => $attachableType,
-                'attachable_id' => $attachableId,
-                'file_url' => $filePath,
-                'uploaded_by' => Auth::id(),
-                'uploaded_at' => now(),
+            if ($attachableId) {
+                Attachment::create([
+                    'id' => Str::uuid()->toString(),
+                    'attachable_type' => $attachableType,
+                    'attachable_id' => $attachableId,
+                    'file_url' => $filePath,
+                    'uploaded_by' => Auth::id(),
+                    'uploaded_at' => now(),
+                ]);
+
+                Log::info('Attachment created for comment', [
+                    'attachable_id' => $attachableId,
+                    'file_url' => $filePath
+                ]);
+            }
+
+            return response()->json([
+                'uploaded' => true,
+                'url' => $fileUrl,
+                'fileName' => $fileName,
+                'fileType' => in_array($extension, $imageExtensions) ? 'image' : 'document'
             ]);
-
-            Log::info('Attachment created for comment', [
-                'attachable_id' => $attachableId,
-                'file_url' => $filePath
-            ]);
+        } catch (\Exception $e) {
+            Log::error('Error uploading comment file: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        return response()->json([
-            'uploaded' => true,
-            'url' => $fileUrl,
-            'fileName' => $fileName,
-            'fileType' => in_array($extension, $imageExtensions) ? 'image' : 'document'
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error uploading comment file: ' . $e->getMessage());
-        return response()->json(['error' => $e->getMessage()], 500);
     }
-}
 
 
     // Tambahkan method ini di TaskController.php
