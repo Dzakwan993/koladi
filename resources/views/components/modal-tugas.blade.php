@@ -258,7 +258,7 @@
          <!-- Header Modal -->
          <div class="bg-white px-6 py-5 border-b">
              <h2 class="text-center font-bold text-xl text-gray-800">Buat Tugas Baru</h2>
-             <p class="text-center text-sm text-gray-500 mt-1">Didalam To do list di HQ</p>
+             {{-- <p class="text-center text-sm text-gray-500 mt-1">Didalam To do list di HQ</p> --}}
          </div>
 
          <form @submit.prevent="createTask()" class="p-6 space-y-4">
