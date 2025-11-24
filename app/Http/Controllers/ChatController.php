@@ -19,12 +19,71 @@ use Illuminate\Support\Facades\Storage;
 class ChatController extends Controller
 {
     /**
+     * 🔥 FIXED: Gunakan logika akses yang sama dengan WorkspaceController
+     */
+    public function index(string $workspaceId)
+    {
+        $workspace = Workspace::findOrFail($workspaceId);
+        $userId = Auth::id();
+
+        // 🔥 GUNAKAN METHOD HELPER YANG SAMA DENGAN WORKSPACECONTROLLER
+        if (!$this->canAccessWorkspace($workspace, $userId)) {
+            abort(403, 'Anda tidak memiliki akses ke workspace ini');
+        }
+
+        return view('chat', [
+            'workspace' => $workspace,
+            'active' => 'chat'
+        ]);
+    }
+
+    /**
+     * 🔥 HELPER: Cek akses workspace (sama dengan WorkspaceController)
+     */
+    private function canAccessWorkspace($workspace, $userId)
+    {
+        $activeCompanyId = session('active_company_id');
+
+        // Jika user adalah pembuat workspace => selalu boleh
+        if ($workspace->created_by === $userId) {
+            return true;
+        }
+
+        // Jika workspace bukan milik company aktif => tolak
+        if ($activeCompanyId && $workspace->company_id !== $activeCompanyId) {
+            return false;
+        }
+
+        // ✅ CEK APAKAH USER ADALAH SUPERADMIN/ADMIN/MANAGER DI COMPANY
+        $user = Auth::user();
+        $userCompany = $user->userCompanies()
+            ->where('company_id', $activeCompanyId)
+            ->with('role')
+            ->first();
+
+        $userRole = $userCompany?->role?->name ?? 'Member';
+
+        // ✅ JIKA SUPERADMIN/ADMIN/MANAGER, BOLEH AKSES SEMUA WORKSPACE DI COMPANY
+        if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
+            return true;
+        }
+
+        // ✅ JIKA BUKAN, CEK APAKAH USER ADALAH ANGGOTA WORKSPACE
+        return $workspace->hasMember($userId);
+    }
+
+    /**
      * 🔥 NEW: Endpoint khusus untuk load chat data (separasi dari index)
      */
     public function getChatData(string $workspaceId)
     {
         $userId = Auth::id();
         $workspace = Workspace::findOrFail($workspaceId);
+
+        // ✅ VALIDASI AKSES
+        if (!$this->canAccessWorkspace($workspace, $userId)) {
+            return response()->json(['error' => 'Akses ditolak'], 403);
+        }
 
         // Main group conversation
         $mainGroup = Conversation::where('workspace_id', $workspaceId)
@@ -101,10 +160,8 @@ class ChatController extends Controller
             ->orderBy('created_at', 'DESC')
             ->first();
 
-        // Get members
-        $members = $workspace->users()
-            ->where('users.id', '!=', $userId)
-            ->get();
+        // 🔥 FIX: Get members yang bisa diakses user
+        $members = $this->getAccessibleMembers($workspace, $userId);
 
         return response()->json([
             'main_group' => $mainGroup,
@@ -113,15 +170,51 @@ class ChatController extends Controller
         ]);
     }
 
-    public function index(string $workspaceId)
+    /**
+     * 🔥 HELPER: Get members yang bisa diakses user
+     */
+    private function getAccessibleMembers($workspace, $userId)
     {
-        $workspace = Workspace::findOrFail($workspaceId);
-        return view('chat', compact('workspace'));
+        $user = Auth::user();
+        $activeCompanyId = session('active_company_id');
+
+        $userCompany = $user->userCompanies()
+            ->where('company_id', $activeCompanyId)
+            ->with('role')
+            ->first();
+
+        $userRole = $userCompany?->role?->name ?? 'Member';
+
+        // ✅ JIKA SUPERADMIN/ADMIN/MANAGER, TAMPILKAN SEMUA MEMBER WORKSPACE + SEMUA ADMIN/MANAGER DI COMPANY
+        if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
+            // Ambil semua member workspace
+            $workspaceMembers = $workspace->activeMembers()
+                ->where('users.id', '!=', $userId)
+                ->get();
+
+            // Ambil semua SuperAdmin/Admin/Manager di company (yang bukan member workspace)
+            $companyAdmins = $workspace->company->users()
+                ->where('users.id', '!=', $userId)
+                ->whereHas('userCompanies', function ($q) use ($activeCompanyId) {
+                    $q->where('company_id', $activeCompanyId)
+                        ->whereHas('role', function ($roleQuery) {
+                            $roleQuery->whereIn('name', ['SuperAdmin', 'Administrator', 'Admin', 'Manager']);
+                        });
+                })
+                ->whereNotIn('users.id', $workspaceMembers->pluck('id'))
+                ->get();
+
+            return $workspaceMembers->concat($companyAdmins)->unique('id');
+        }
+
+        // ✅ JIKA MEMBER BIASA, HANYA TAMPILKAN SESAMA MEMBER WORKSPACE
+        return $workspace->activeMembers()
+            ->where('users.id', '!=', $userId)
+            ->get();
     }
 
-    /**
-     * Load messages dengan relasi replyTo
-     */
+    // ... (method lainnya tetap sama seperti sebelumnya)
+
     public function showMessages(string $conversationId)
     {
         $userId = Auth::id();
@@ -149,21 +242,6 @@ class ChatController extends Controller
             ->orderBy('created_at', 'asc')
             ->get();
 
-        $messagesWithReply = $messages->filter(fn($msg) => !is_null($msg->reply_to_message_id));
-
-        Log::info('📤 Sending messages to frontend', [
-            'conversation_id' => $conversationId,
-            'total_messages' => $messages->count(),
-            'messages_with_reply' => $messagesWithReply->count(),
-            'sample_reply_data' => $messagesWithReply->first() ? [
-                'id' => $messagesWithReply->first()->id,
-                'reply_to_message_id' => $messagesWithReply->first()->reply_to_message_id,
-                'has_reply_to' => !is_null($messagesWithReply->first()->reply_to),
-                'reply_to_content' => $messagesWithReply->first()->reply_to?->content,
-                'reply_to_sender' => $messagesWithReply->first()->reply_to?->sender?->full_name
-            ] : null
-        ]);
-
         try {
             ConversationParticipant::where('conversation_id', $conversationId)
                 ->where('user_id', $userId)
@@ -183,9 +261,6 @@ class ChatController extends Controller
         return response()->json($messages->toArray());
     }
 
-    /**
-     * Edit message
-     */
     public function editMessage(Request $request, Message $message)
     {
         $userId = Auth::id();
@@ -232,9 +307,6 @@ class ChatController extends Controller
         }
     }
 
-    /**
-     * Send message dengan support reply
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -271,20 +343,29 @@ class ChatController extends Controller
                 'deleted_at'      => null,
             ]);
 
-            // Upload files
             if ($request->hasFile('files')) {
                 foreach ($request->file('files') as $file) {
                     $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
                     $path = $file->storeAs('chat_files', $filename, 'public');
                     $fileUrl = url(Storage::url('chat_files/' . $filename));
 
+                    // 🔥 FIX: Pastikan file_size tidak null
+                    $fileSize = $file->getSize();
+                    if (!$fileSize || $fileSize === 0) {
+                        // Fallback: hitung ukuran file secara manual
+                        $fullPath = storage_path('app/public/chat_files/' . $filename);
+                        if (file_exists($fullPath)) {
+                            $fileSize = filesize($fullPath);
+                        }
+                    }
+
                     Attachment::create([
                         'attachable_type' => Message::class,
                         'attachable_id'   => $message->id,
                         'file_url'        => $fileUrl,
                         'file_name'       => $file->getClientOriginalName(),
-                        'file_size'       => $file->getSize(),
-                        'file_type'       => $file->getMimeType(),
+                        'file_size'       => $fileSize ?: 0, // 🔥 Pastikan tidak null
+                        'file_type'       => $file->getMimeType() ?: 'application/octet-stream', // 🔥 Fallback untuk mime type
                         'uploaded_by'     => $userId,
                     ]);
                 }
@@ -300,14 +381,6 @@ class ChatController extends Controller
                             'attachments'
                         ]);
                 }
-            ]);
-
-            Log::info('📤 Broadcasting message', [
-                'message_id' => $message->id,
-                'reply_to_message_id' => $message->reply_to_message_id,
-                'has_reply_to' => !is_null($message->reply_to),
-                'reply_to_content' => $message->reply_to?->content ?? null,
-                'message_array' => $message->toArray()
             ]);
 
             DB::commit();
@@ -368,7 +441,6 @@ class ChatController extends Controller
                 if ($attachment->file_url) {
                     $urlParts = parse_url($attachment->file_url);
                     $path = isset($urlParts['path']) ? ltrim($urlParts['path'], '/') : '';
-
                     $path = str_replace('storage/', '', $path);
 
                     if (Storage::disk('public')->exists($path)) {
@@ -407,12 +479,10 @@ class ChatController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error deleting message: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
 
             return response()->json([
                 'success' => false,
                 'error' => 'Gagal menghapus pesan',
-                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
             ], 500);
         }
     }
@@ -500,9 +570,6 @@ class ChatController extends Controller
         }
     }
 
-    /**
-     * Tandai pesan sebagai sudah dibaca
-     */
     public function markAsRead(string $conversationId)
     {
         $userId = Auth::id();

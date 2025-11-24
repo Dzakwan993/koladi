@@ -32,10 +32,19 @@ class CompanyChatController extends Controller
         return view('company-chat', compact('company'));
     }
 
+    /**
+     * 🔥 FIXED: Get chat data untuk company
+     */
     public function getChatData(string $companyId)
     {
         $userId = Auth::id();
         $company = Company::findOrFail($companyId);
+
+        // Validasi akses company
+        $isCompanyMember = $company->users()->where('users.id', $userId)->exists();
+        if (!$isCompanyMember) {
+            return response()->json(['error' => 'Akses ditolak'], 403);
+        }
 
         // Main company group
         $mainCompanyGroup = Conversation::where('company_id', $companyId)
@@ -51,17 +60,23 @@ class CompanyChatController extends Controller
                 'name' => $company->name,
                 'created_by' => $userId
             ]);
+
+            Log::info("Created new main company conversation for company {$companyId} with name '{$company->name}'");
         } else {
+            // Sync nama conversation dengan nama company
             if ($mainCompanyGroup->name !== $company->name) {
                 $mainCompanyGroup->update(['name' => $company->name]);
+                Log::info("Synced company conversation name from '{$mainCompanyGroup->name}' to '{$company->name}' for company {$companyId}");
             }
         }
 
+        // Pastikan user adalah participant
         ConversationParticipant::firstOrCreate(
             ['conversation_id' => $mainCompanyGroup->id, 'user_id' => $userId],
             ['last_read_at' => now()]
         );
 
+        // Other conversations (private chats)
         $otherConversations = Conversation::where('company_id', $companyId)
             ->where('scope', 'company')
             ->where('type', 'private')
@@ -70,7 +85,7 @@ class CompanyChatController extends Controller
             ->with(['participants.user'])
             ->get()
             ->map(function ($conversation) use ($userId) {
-                // 🔥 Calculate unread count
+                // Calculate unread count
                 $participantData = $conversation->participants->where('user_id', $userId)->first();
                 $lastReadAt = $participantData ? $participantData->last_read_at : null;
 
@@ -85,7 +100,7 @@ class CompanyChatController extends Controller
                         ->count();
                 }
 
-                // 🔥 Load last message
+                // Load last message
                 $conversation->last_message = $conversation->messages()
                     ->with(['sender', 'attachments'])
                     ->orderBy('created_at', 'DESC')
@@ -94,7 +109,7 @@ class CompanyChatController extends Controller
                 return $conversation;
             });
 
-        // Calculate unread for main group
+        // Calculate unread untuk main group
         $participantData = $mainCompanyGroup->participants->where('user_id', $userId)->first();
         $lastReadAt = $participantData ? $participantData->last_read_at : null;
 
@@ -114,7 +129,7 @@ class CompanyChatController extends Controller
             ->orderBy('created_at', 'DESC')
             ->first();
 
-        // Get members
+        // Get semua member company
         $members = $company->users()
             ->where('users.id', '!=', $userId)
             ->get();
@@ -126,12 +141,19 @@ class CompanyChatController extends Controller
         ]);
     }
 
+    /**
+     * 🔥 FIXED: Show messages untuk company chat
+     */
     public function showMessages(string $conversationId)
     {
         $userId = Auth::id();
 
+        // Validasi participant dan scope company
         $isParticipant = ConversationParticipant::where('conversation_id', $conversationId)
             ->where('user_id', $userId)
+            ->whereHas('conversation', function ($q) {
+                $q->where('scope', 'company');
+            })
             ->exists();
 
         if (!$isParticipant) {
@@ -154,10 +176,12 @@ class CompanyChatController extends Controller
             ->get();
 
         try {
+            // Update last read
             ConversationParticipant::where('conversation_id', $conversationId)
                 ->where('user_id', $userId)
                 ->update(['last_read_at' => now()]);
 
+            // Mark messages as read
             Message::where('conversation_id', $conversationId)
                 ->where('sender_id', '!=', $userId)
                 ->where('is_read', false)
@@ -166,12 +190,15 @@ class CompanyChatController extends Controller
                     'read_at' => now()
                 ]);
         } catch (\Exception $e) {
-            Log::error('Gagal update last_read_at: ' . $e->getMessage());
+            Log::error('Gagal update last_read_at di company chat: ' . $e->getMessage());
         }
 
         return response()->json($messages->toArray());
     }
 
+    /**
+     * 🔥 FIXED: Store message untuk company chat
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -183,8 +210,12 @@ class CompanyChatController extends Controller
 
         $userId = Auth::id();
 
+        // Validasi participant dan scope company
         $isParticipant = ConversationParticipant::where('conversation_id', $request->conversation_id)
             ->where('user_id', $userId)
+            ->whereHas('conversation', function ($q) {
+                $q->where('scope', 'company');
+            })
             ->exists();
 
         if (!$isParticipant) {
@@ -214,13 +245,22 @@ class CompanyChatController extends Controller
                     $path = $file->storeAs('chat_files', $filename, 'public');
                     $fileUrl = url(Storage::url('chat_files/' . $filename));
 
+                    // Pastikan file_size tidak null
+                    $fileSize = $file->getSize();
+                    if (!$fileSize || $fileSize === 0) {
+                        $fullPath = storage_path('app/public/chat_files/' . $filename);
+                        if (file_exists($fullPath)) {
+                            $fileSize = filesize($fullPath);
+                        }
+                    }
+
                     Attachment::create([
                         'attachable_type' => Message::class,
                         'attachable_id'   => $message->id,
                         'file_url'        => $fileUrl,
                         'file_name'       => $file->getClientOriginalName(),
-                        'file_size'       => $file->getSize(),
-                        'file_type'       => $file->getMimeType(),
+                        'file_size'       => $fileSize ?: 0,
+                        'file_type'       => $file->getMimeType() ?: 'application/octet-stream',
                         'uploaded_by'     => $userId,
                     ]);
                 }
@@ -240,6 +280,7 @@ class CompanyChatController extends Controller
 
             DB::commit();
 
+            // Broadcast event
             event(new NewMessageSent($message));
 
             return response()->json([
@@ -248,7 +289,7 @@ class CompanyChatController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Gagal kirim pesan: ' . $e->getMessage());
+            Log::error('Gagal kirim pesan company chat: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'error' => 'Gagal mengirim pesan.',
@@ -256,6 +297,9 @@ class CompanyChatController extends Controller
         }
     }
 
+    /**
+     * 🔥 FIXED: Edit message untuk company chat
+     */
     public function editMessage(Request $request, Message $message)
     {
         $userId = Auth::id();
@@ -287,6 +331,7 @@ class CompanyChatController extends Controller
                 }
             ]);
 
+            // Broadcast event
             event(new MessageEdited($message));
 
             return response()->json([
@@ -294,7 +339,7 @@ class CompanyChatController extends Controller
                 'message' => $message,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error editing message: ' . $e->getMessage());
+            Log::error('Error editing message company chat: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'error' => 'Gagal mengedit pesan',
@@ -302,28 +347,9 @@ class CompanyChatController extends Controller
         }
     }
 
-    // 🔥 TAMBAHKAN: Helper function untuk update last message
-    private function updateConversationLastMessage($conversationId)
-    {
-        // Cari pesan terbaru yang belum dihapus
-        $lastMessage = Message::where('conversation_id', $conversationId)
-            ->whereNull('deleted_at')
-            ->with(['sender', 'attachments'])
-            ->orderBy('created_at', 'DESC')
-            ->first();
-
-        // Jika tidak ada pesan, set last_message menjadi null
-        if (!$lastMessage) {
-            Conversation::where('id', $conversationId)
-                ->update(['last_message_id' => null]);
-            return;
-        }
-
-        // Update last_message_id di conversation
-        Conversation::where('id', $conversationId)
-            ->update(['last_message_id' => $lastMessage->id]);
-    }
-
+    /**
+     * 🔥 FIXED: Delete message untuk company chat
+     */
     public function deleteMessage(Message $message)
     {
         $userId = Auth::id();
@@ -338,33 +364,29 @@ class CompanyChatController extends Controller
             $conversationId = $message->conversation_id;
             $messageId = $message->id;
 
-            // 🔥 Hapus file dari storage terlebih dahulu
+            // Hapus file attachments
             $attachments = Attachment::where('attachable_type', Message::class)
                 ->where('attachable_id', $messageId)
                 ->get();
 
             foreach ($attachments as $attachment) {
                 if ($attachment->file_url) {
-                    // Extract relative path dari URL
                     $urlParts = parse_url($attachment->file_url);
                     $path = isset($urlParts['path']) ? ltrim($urlParts['path'], '/') : '';
-
-                    // Hapus prefix /storage/ untuk mendapatkan path sebenarnya
                     $path = str_replace('storage/', '', $path);
 
                     if (Storage::disk('public')->exists($path)) {
                         Storage::disk('public')->delete($path);
-                        Log::info("Deleted file: {$path}");
+                        Log::info("Deleted file company chat: {$path}");
                     }
                 }
             }
 
-            // Hapus records attachments
             Attachment::where('attachable_type', Message::class)
                 ->where('attachable_id', $messageId)
                 ->delete();
 
-            // 🔥 Update message dengan DB::table untuk menghindari mass assignment issue
+            // Soft delete message
             DB::table('messages')
                 ->where('id', $messageId)
                 ->update([
@@ -374,16 +396,15 @@ class CompanyChatController extends Controller
                     'updated_at' => now()
                 ]);
 
-            // 🔥 PENTING: Update last_message di conversation
+            // Update last message di conversation
             $this->updateConversationLastMessage($conversationId);
 
             DB::commit();
 
-            // 🔥 Reload message untuk broadcast
             $message->refresh();
             $message->load(['sender']);
 
-            // Broadcast dengan data yang benar
+            // Broadcast event
             event(new MessageDeleted($message));
 
             return response()->json([
@@ -392,17 +413,39 @@ class CompanyChatController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error deleting message: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('Error deleting message company chat: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
                 'error' => 'Gagal menghapus pesan',
-                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error'
             ], 500);
         }
     }
 
+    /**
+     * 🔥 FIXED: Helper untuk update last message
+     */
+    private function updateConversationLastMessage($conversationId)
+    {
+        $lastMessage = Message::where('conversation_id', $conversationId)
+            ->whereNull('deleted_at')
+            ->with(['sender', 'attachments'])
+            ->orderBy('created_at', 'DESC')
+            ->first();
+
+        if (!$lastMessage) {
+            Conversation::where('id', $conversationId)
+                ->update(['last_message_id' => null]);
+            return;
+        }
+
+        Conversation::where('id', $conversationId)
+            ->update(['last_message_id' => $lastMessage->id]);
+    }
+
+    /**
+     * 🔥 FIXED: Create conversation untuk company chat
+     */
     public function createConversation(Request $request)
     {
         $request->validate([
@@ -415,6 +458,7 @@ class CompanyChatController extends Controller
 
         $authId = Auth::id();
 
+        // Validasi untuk private chat
         if ($request->type == 'private' && count($request->participants) == 1) {
             $otherUserId = $request->participants[0];
 
@@ -422,6 +466,7 @@ class CompanyChatController extends Controller
                 return response()->json(['error' => 'Tidak dapat membuat percakapan dengan diri sendiri.'], 422);
             }
 
+            // Cek existing private chat
             $existing = Conversation::where('type', 'private')
                 ->where('scope', 'company')
                 ->where('company_id', $request->company_id)
@@ -462,6 +507,7 @@ class CompanyChatController extends Controller
                 ]);
             }
 
+            // Tambahkan creator sebagai participant
             ConversationParticipant::firstOrCreate([
                 'conversation_id' => $conversation->id,
                 'user_id'         => $authId,
@@ -480,7 +526,7 @@ class CompanyChatController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Gagal buat percakapan: ' . $e->getMessage());
+            Log::error('Gagal buat percakapan company chat: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'error' => 'Gagal membuat percakapan.',
@@ -488,6 +534,9 @@ class CompanyChatController extends Controller
         }
     }
 
+    /**
+     * 🔥 FIXED: Mark as read untuk company chat
+     */
     public function markAsRead(string $conversationId)
     {
         $userId = Auth::id();
@@ -507,7 +556,7 @@ class CompanyChatController extends Controller
 
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
-            Log::error('Gagal markAsRead: ' . $e->getMessage());
+            Log::error('Gagal markAsRead company chat: ' . $e->getMessage());
             return response()->json(['success' => false], 500);
         }
     }

@@ -100,18 +100,11 @@ function renderCompanySidebar(data) {
             </div>
         `;
 
-        // 🔥 FILTER: Hanya tampilkan member yang BELUM punya private chat
-        const existingPrivateChatUserIds = (data.conversations || [])
-            .filter(c => c.type === 'private')
-            .flatMap(c => c.participants)
-            .map(p => p.user_id)
-            .filter(id => id !== AUTH_USER_ID);
-
-        const existingUserSet = new Set(existingPrivateChatUserIds);
-
-        // Tampilkan semua member (termasuk yang sudah ada private chat)
+        // Tampilkan semua member (dengan null check)
         data.members.forEach(member => {
-            html += createMemberHTML(member);
+            if (member) { // 🔥 FIX: Null check untuk setiap member
+                html += createMemberHTML(member);
+            }
         });
     }
 
@@ -377,11 +370,13 @@ function cacheDOMElements() {
 // -----------------------------------------------------------------
 
 function getInitials(name) {
-    if (!name) return '??';
+    // 🔥 FIX: Null check
+    if (!name || typeof name !== 'string') return '??';
     const names = name.split(' ');
     if (names.length === 1) return name.substring(0, 2).toUpperCase();
     return (names[0][0] + names[names.length - 1][0]).toUpperCase();
 }
+
 
 function formatTime(dateTimeString) {
     if (!dateTimeString) return '';
@@ -394,14 +389,12 @@ function formatTime(dateTimeString) {
 }
 
 function getAvatarUrl(user) {
+    // 🔥 FIX: Null check
     if (!user) return null;
-    // Jika user punya avatar, generate URL yang benar
     if (user.avatar) {
-        // Cek apakah avatar sudah full URL atau relative path
         if (user.avatar.startsWith('http')) {
             return user.avatar;
         } else {
-            // Handle path storage Laravel
             if (user.avatar.startsWith('avatars/')) {
                 return `${API_URL}/storage/${user.avatar}`;
             } else {
@@ -427,6 +420,8 @@ function fixFileUrl(fileUrl) {
 }
 
 function formatFileSize(bytes) {
+    // 🔥 FIX: Null check
+    if (!bytes || bytes === 0) return '0 B';
     if (bytes >= 1073741824) {
         return (bytes / 1073741824).toFixed(2) + ' GB';
     } else if (bytes >= 1048576) {
@@ -438,6 +433,13 @@ function formatFileSize(bytes) {
 }
 
 function getFileIcon(fileType) {
+    // 🔥 FIX: Tambahkan null check
+    if (!fileType || typeof fileType !== 'string') {
+        return `<svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>`;
+    }
+
     if (fileType.startsWith('image/')) {
         return `<svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -562,16 +564,19 @@ function scrollToBottom() {
 // -----------------------------------------------------------------
 
 function createConversationHTML(conversation) {
-    let chatName = conversation.name;
+    // 🔥 FIX: Null check untuk conversation
+    if (!conversation) return '';
+
+    let chatName = conversation.name || 'Unnamed';
     let chatAvatar = null;
-    let chatAvatarInitials = getInitials(conversation.name);
+    let chatAvatarInitials = getInitials(conversation.name || '');
     let avatarBgClass = 'bg-blue-200 text-blue-800';
 
     if (conversation.type === 'private') {
-        const otherParticipant = conversation.participants.find(p => p.user_id !== AUTH_USER_ID);
+        const otherParticipant = conversation.participants?.find(p => p.user_id !== AUTH_USER_ID);
         if (otherParticipant) {
-            chatName = otherParticipant.user.full_name;
-            chatAvatarInitials = getInitials(otherParticipant.user.full_name);
+            chatName = otherParticipant.user?.full_name || 'Unknown';
+            chatAvatarInitials = getInitials(otherParticipant.user?.full_name || '');
             chatAvatar = getAvatarUrl(otherParticipant.user);
             avatarBgClass = 'bg-indigo-100 text-indigo-800';
         }
@@ -584,9 +589,8 @@ function createConversationHTML(conversation) {
     const lastMessage = conversation.last_message;
     let lastMessageText = 'Belum ada pesan';
 
-    // 🔥 PERBAIKAN KRUSIAL: Handle pesan terhapus dengan lebih robust
+    // 🔥 FIX: Null check untuk lastMessage dan semua propertinya
     if (lastMessage) {
-        // 🔥 PERBAIKI DETEKSI INI:
         const isDeleted = lastMessage.message_type === 'deleted' ||
             (lastMessage.deleted_at !== null && lastMessage.deleted_at !== undefined) ||
             (lastMessage.content === null && (!lastMessage.attachments || lastMessage.attachments.length === 0));
@@ -595,14 +599,14 @@ function createConversationHTML(conversation) {
             if (lastMessage.sender_id === AUTH_USER_ID) {
                 lastMessageText = 'Kamu telah menghapus pesan ini';
             } else {
-                const senderName = lastMessage.sender ? lastMessage.sender.full_name.split(' ')[0] : 'User';
+                const senderName = lastMessage.sender?.full_name?.split(' ')[0] || 'User';
                 lastMessageText = `${senderName}: Pesan telah dihapus`;
             }
         }
         else if (conversation.type === 'group') {
             let senderName = 'Anda';
             if (lastMessage.sender_id !== AUTH_USER_ID) {
-                if (lastMessage.sender && lastMessage.sender.full_name) {
+                if (lastMessage.sender?.full_name) {
                     senderName = lastMessage.sender.full_name.split(' ')[0];
                 } else {
                     senderName = 'User';
@@ -614,7 +618,8 @@ function createConversationHTML(conversation) {
                     lastMessageText = `${senderName}: ${lastMessage.content}`;
                 } else {
                     const fileCount = lastMessage.attachments.length;
-                    const fileType = lastMessage.attachments[0].file_type;
+                    // 🔥 FIX: Null check untuk file_type
+                    const fileType = lastMessage.attachments[0]?.file_type || '';
                     const isImage = fileType.startsWith('image/');
                     const isVideo = fileType.startsWith('video/');
 
@@ -629,7 +634,7 @@ function createConversationHTML(conversation) {
                     }
                 }
             } else {
-                lastMessageText = `${senderName}: ${lastMessage.content}`;
+                lastMessageText = `${senderName}: ${lastMessage.content || 'Mengirim pesan'}`;
             }
         } else {
             const senderPrefix = lastMessage.sender_id === AUTH_USER_ID ? 'Anda: ' : '';
@@ -638,7 +643,8 @@ function createConversationHTML(conversation) {
                     lastMessageText = senderPrefix + lastMessage.content;
                 } else {
                     const fileCount = lastMessage.attachments.length;
-                    const fileType = lastMessage.attachments[0].file_type;
+                    // 🔥 FIX: Null check untuk file_type
+                    const fileType = lastMessage.attachments[0]?.file_type || '';
                     const isImage = fileType.startsWith('image/');
                     const isVideo = fileType.startsWith('video/');
 
@@ -653,7 +659,7 @@ function createConversationHTML(conversation) {
                     }
                 }
             } else {
-                lastMessageText = senderPrefix + lastMessage.content;
+                lastMessageText = senderPrefix + (lastMessage.content || 'Mengirim pesan');
             }
         }
     }
@@ -686,17 +692,21 @@ function createConversationHTML(conversation) {
 }
 
 function createMemberHTML(member) {
-    const initials = getInitials(member.full_name);
+    // 🔥 FIX: Null check untuk member
+    if (!member) return '';
+
+    const initials = getInitials(member.full_name || '');
     const memberAvatar = getAvatarUrl(member);
 
     const avatarHTML = memberAvatar
-        ? `<img src="${memberAvatar}" alt="${member.full_name}" class="w-10 h-10 rounded-full object-cover border border-gray-200">`
+        ? `<img src="${memberAvatar}" alt="${member.full_name || 'User'}" class="w-10 h-10 rounded-full object-cover border border-gray-200">`
         : `<div class="w-10 h-10 rounded-full bg-gray-200 text-gray-800 flex items-center justify-center font-bold text-sm">${initials}</div>`;
 
     // 🔥 CARI private conversation dengan member ini
     const privateChat = window.allConversations.find(conv =>
+        conv && // 🔥 FIX: Null check
         conv.type === 'private' &&
-        conv.participants.some(p => p.user_id == member.id) // 🔥 Gunakan == bukan ===
+        conv.participants?.some(p => p.user_id == member.id)
     );
 
     // 🔥 SET default values
@@ -721,7 +731,8 @@ function createMemberHTML(member) {
                 if (lastMessage.content && lastMessage.content.trim() !== '') {
                     previewText = senderPrefix + lastMessage.content;
                 } else {
-                    const fileType = lastMessage.attachments[0].file_type;
+                    // 🔥 FIX: Null check untuk file_type
+                    const fileType = lastMessage.attachments[0]?.file_type || '';
                     if (fileType.startsWith('image/')) {
                         previewText = senderPrefix + '📷 Gambar';
                     } else if (fileType.startsWith('video/')) {
@@ -751,13 +762,13 @@ function createMemberHTML(member) {
     <div class="px-6 py-3 cursor-pointer ${activeClasses} transition-all duration-200"
          data-member-id="${member.id}"
          ${privateChat ? `data-conversation-id="${privateChat.id}"` : ''}
-         onclick="startChatWithUser('${member.id}', '${member.full_name}')">
+         onclick="startChatWithUser('${member.id}', '${member.full_name || 'User'}')">
         <div class="flex items-center">
             <div class="relative flex-shrink-0">
                 ${avatarHTML}
             </div>
             <div class="ml-3 flex-1 min-w-0">
-                <h4 class="text-sm font-semibold truncate ${isActive ? 'text-blue-700' : 'text-gray-800'}">${member.full_name}</h4>
+                <h4 class="text-sm font-semibold truncate ${isActive ? 'text-blue-700' : 'text-gray-800'}">${member.full_name || 'User'}</h4>
                 <p id="preview-member-${member.id}" class="text-xs truncate ${isActive ? 'text-blue-600' : 'text-gray-500'}">${previewText}</p>
             </div>
             <div id="unread-badge-member-${member.id}" class="ml-2 flex-shrink-0" style="${unreadCount > 0 ? 'display: block;' : 'display: none;'}">
@@ -770,11 +781,14 @@ function createMemberHTML(member) {
 }
 
 function createMessageHTML(message) {
+    // 🔥 FIX: Null check untuk message
+    if (!message) return '';
+
     const isSender = message.sender_id === AUTH_USER_ID;
     const senderName = isSender ? 'Anda' : (message.sender ? message.sender.full_name : 'User');
     const initials = getInitials(senderName);
 
-    // Avatar
+    // Avatar dengan null check
     const senderAvatar = message.sender ? getAvatarUrl(message.sender) : null;
     const avatarHTML = senderAvatar
         ? `<img src="${senderAvatar}" alt="${senderName}" class="w-8 h-8 rounded-full object-cover border border-gray-200 flex-shrink-0">`
@@ -829,19 +843,23 @@ function createMessageHTML(message) {
         }
     }
 
-    // Attachments
+    // Attachments dengan null check
     let attachmentsHTML = '';
     if (message.attachments && message.attachments.length > 0) {
         attachmentsHTML = '<div class="mt-2 space-y-2">';
         message.attachments.forEach(att => {
-            const isImage = att.file_type && att.file_type.startsWith('image/');
-            const isVideo = att.file_type && att.file_type.startsWith('video/');
-            const isPDF = att.file_type === 'application/pdf';
+            // 🔥 FIX: Null check untuk semua properti attachment
+            const fileType = att?.file_type || '';
+            const fileName = att?.file_name || 'File';
+            const fileUrl = att?.file_url || '';
+            const isImage = fileType.startsWith('image/');
+            const isVideo = fileType.startsWith('video/');
+            const isPDF = fileType === 'application/pdf';
 
-            if (att.uploading && att.preview_url && att.file_type.startsWith('image/')) {
+            if (att.uploading && att.preview_url && isImage) {
                 attachmentsHTML += `
                     <div class="relative">
-                        <img src="${att.preview_url}" alt="${att.file_name}"
+                        <img src="${att.preview_url}" alt="${fileName}"
                             class="max-w-xs rounded-xl shadow-md opacity-70">
                         <div class="absolute inset-0 bg-black bg-opacity-30 rounded-xl flex items-center justify-center">
                             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
@@ -853,44 +871,44 @@ function createMessageHTML(message) {
                 attachmentsHTML += `
                     <div class="flex items-center gap-2 bg-white bg-opacity-20 rounded-lg p-3">
                         <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        <span class="text-sm">Mengunggah ${att.file_name}...</span>
+                        <span class="text-sm">Mengunggah ${fileName}...</span>
                     </div>
                 `;
             } else if (isImage) {
-                const imageUrl = fixFileUrl(att.file_url);
+                const imageUrl = fixFileUrl(fileUrl);
                 attachmentsHTML += `
-        <div class="relative group max-w-sm">
-            <img src="${imageUrl}"
-                 alt="${att.file_name}"
-                 class="rounded-xl shadow-md cursor-pointer max-h-96 object-cover w-full"
-                 onclick="openImageModal('${imageUrl}', '${att.file_name}')"
-                 loading="lazy">
-            <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onclick="event.stopPropagation(); downloadImage('${imageUrl}', '${att.file_name}')"
-                        class="bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition"
-                        title="Download gambar">
-                    <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    `;
+                    <div class="relative group max-w-sm">
+                        <img src="${imageUrl}"
+                             alt="${fileName}"
+                             class="rounded-xl shadow-md cursor-pointer max-h-96 object-cover w-full"
+                             onclick="openImageModal('${imageUrl}', '${fileName}')"
+                             loading="lazy">
+                        <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onclick="event.stopPropagation(); downloadImage('${imageUrl}', '${fileName}')"
+                                    class="bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition"
+                                    title="Download gambar">
+                                <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
             } else {
                 // Handle semua jenis file (PDF, DOC, ZIP, dll)
-                const fileUrl = fixFileUrl(att.file_url);
-                const fileIcon = getFileIcon(att.file_type);
-                const fileSize = formatFileSize(att.file_size);
+                const fixedFileUrl = fixFileUrl(fileUrl);
+                const fileIcon = getFileIcon(fileType);
+                const fileSize = formatFileSize(att?.file_size || 0);
 
                 attachmentsHTML += `
                     <div class="bg-white border border-gray-200 rounded-lg p-3 max-w-xs">
-                        <a href="${fileUrl}" target="_blank" class="flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 transition">
+                        <a href="${fixedFileUrl}" target="_blank" class="flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 transition">
                             <div class="flex-shrink-0">
                                 ${fileIcon}
                             </div>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-800 truncate">${att.file_name}</p>
+                                <p class="text-sm font-medium text-gray-800 truncate">${fileName}</p>
                                 <p class="text-xs text-gray-500">${fileSize}</p>
                             </div>
                             <div class="flex-shrink-0">
@@ -908,11 +926,10 @@ function createMessageHTML(message) {
 
     let replyPreviewHTML = '';
     if (message.reply_to_message_id) {
-
-        if (message.reply_to && typeof message.reply_to === 'object') { // 🔥 UBAH
-            const repliedMessage = message.reply_to; // 🔥 UBAH
+        if (message.reply_to && typeof message.reply_to === 'object') {
+            const repliedMessage = message.reply_to;
             const repliedSenderName = repliedMessage.sender_id === AUTH_USER_ID ?
-                'Anda' : (repliedMessage.sender ? repliedMessage.sender.full_name : 'User');
+                'Anda' : (repliedMessage.sender?.full_name || 'User');
 
             const isRepliedMessageDeleted = repliedMessage.message_type === 'deleted' ||
                 (repliedMessage.deleted_at !== null && repliedMessage.deleted_at !== undefined);
@@ -924,7 +941,8 @@ function createMessageHTML(message) {
                 repliedContent = 'Pesan telah dihapus';
             } else if (repliedMessage.attachments && repliedMessage.attachments.length > 0) {
                 const fileCount = repliedMessage.attachments.length;
-                const fileType = repliedMessage.attachments[0].file_type;
+                // 🔥 FIX: Null check untuk file_type
+                const fileType = repliedMessage.attachments[0]?.file_type || '';
 
                 if (fileType.startsWith('image/')) {
                     repliedContent = 'Gambar';
@@ -940,6 +958,7 @@ function createMessageHTML(message) {
                     repliedAttachmentIcon = '📎';
                 }
 
+                // 🔥 FIX: Tambahkan null check untuk content
                 if (repliedMessage.content && repliedMessage.content.trim() !== '') {
                     repliedContent = repliedMessage.content;
                 }
@@ -995,35 +1014,36 @@ function createMessageHTML(message) {
         `;
         }
     }
+
     // Action buttons
     let actionButtonsHTML = '';
     if (!isDeleted) {
         if (isSender) {
             actionButtonsHTML = `
-        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button class="edit-message-btn text-gray-400 hover:text-blue-500 p-1 rounded"
-                    title="Edit pesan"
-                    onclick="startEditMessage('${message.id}')">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                </svg>
-            </button>
-            <button class="reply-message-btn text-gray-400 hover:text-green-500 p-1 rounded"
-                    title="Balas pesan"
-                    onclick="startReplyMessage('${message.id}')">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
-                </svg>
-            </button>
-            <button class="delete-message-btn text-gray-400 hover:text-red-500 p-1 rounded"
-                    title="Hapus pesan"
-                    onclick="deleteMessage('${message.id}')">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                </svg>
-            </button>
-        </div>
-    `;
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button class="edit-message-btn text-gray-400 hover:text-blue-500 p-1 rounded"
+                            title="Edit pesan"
+                            onclick="startEditMessage('${message.id}')">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                    </button>
+                    <button class="reply-message-btn text-gray-400 hover:text-green-500 p-1 rounded"
+                            title="Balas pesan"
+                            onclick="startReplyMessage('${message.id}')">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path>
+                        </svg>
+                    </button>
+                    <button class="delete-message-btn text-gray-400 hover:text-red-500 p-1 rounded"
+                            title="Hapus pesan"
+                            onclick="deleteMessage('${message.id}')">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            `;
         } else {
             actionButtonsHTML = `
                 <button class="reply-message-btn opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-green-500 p-1 rounded"
@@ -1045,7 +1065,8 @@ function createMessageHTML(message) {
     } else if (message.attachments && message.attachments.length > 0) {
         const fileCount = message.attachments.length;
         if (fileCount === 1) {
-            const fileType = message.attachments[0].file_type;
+            // 🔥 FIX: Null check untuk file_type
+            const fileType = message.attachments[0]?.file_type || '';
             if (fileType.startsWith('image/')) {
                 contentHTML = `<div class="message-content text-sm italic">📷 Gambar</div>`;
             } else if (fileType.startsWith('video/')) {
@@ -1074,7 +1095,7 @@ function createMessageHTML(message) {
                         <span class="font-semibold text-gray-700 text-sm whitespace-nowrap">Anda</span>
                     </div>
 
-                    <div class="bg-blue-100  rounded-2xl rounded-br-md px-4 py-3 shadow-sm w-auto min-w-0 max-w-full">
+                    <div class="bg-blue-100 rounded-2xl rounded-br-md px-4 py-3 shadow-sm w-auto min-w-0 max-w-full">
                         ${replyPreviewHTML}
                         ${contentHTML}
                         ${attachmentsHTML}
@@ -1199,6 +1220,7 @@ function renderFilePreview() {
 }
 
 // 🆕 Fungsi helper untuk mendapatkan data message
+// 🔥 PASTIKAN: Fungsi helper untuk mendapatkan data message dari DOM
 function getMessageDataById(messageId) {
     // Coba ambil dari stored messages dulu
     if (loadedMessages.has(messageId)) {
@@ -1463,6 +1485,7 @@ window.closeImageModal = function () {
     }
 }
 // Message Actions Functions
+// 🔥 TAMBAHKAN: Fungsi untuk handle reply message yang lebih robust
 window.startReplyMessage = function (messageId) {
     const messageElement = document.getElementById(messageId);
     if (!messageElement) {
@@ -1470,8 +1493,16 @@ window.startReplyMessage = function (messageId) {
         return;
     }
 
-    // Dapatkan data message dari DOM atau dari stored messages
-    const messageData = getMessageDataById(messageId); // Anda perlu implement fungsi ini
+    // Dapatkan data message dari stored messages atau DOM
+    let messageData = null;
+
+    // Coba dari loadedMessages dulu
+    if (loadedMessages.has(messageId)) {
+        messageData = loadedMessages.get(messageId);
+    } else {
+        // Fallback dari DOM
+        messageData = getMessageDataById(messageId);
+    }
 
     if (!messageData) {
         console.error('❌ Message data not found:', messageId);
@@ -1491,7 +1522,8 @@ window.startReplyMessage = function (messageId) {
 
         let content = messageData.content || '';
         if (!content && messageData.attachments && messageData.attachments.length > 0) {
-            const fileType = messageData.attachments[0].file_type;
+            // 🔥 FIX: Null check untuk file_type
+            const fileType = messageData.attachments[0]?.file_type || '';
             if (fileType.startsWith('image/')) {
                 content = 'Gambar';
             } else if (fileType.startsWith('video/')) {
@@ -1516,6 +1548,175 @@ window.startReplyMessage = function (messageId) {
         setTimeout(() => {
             messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 100);
+    }
+}
+
+// 🔥 TAMBAHKAN: Fungsi untuk save edit message yang benar
+window.saveEditMessage = async function () {
+    if (!currentEditMessage) return;
+
+    const content = messageInput.value.trim();
+    if (!content) {
+        await Swal.fire({
+            title: 'Error',
+            text: 'Pesan tidak boleh kosong',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+        return;
+    }
+
+    try {
+        // 🔥 FIX: Gunakan endpoint company chat untuk edit
+        const response = await fetch(`${API_URL}/api/company/chat/message/${currentEditMessage}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ content })
+        });
+
+        if (!response.ok) throw new Error('Gagal mengedit pesan');
+
+        const result = await response.json();
+
+        if (result.success) {
+            cancelEdit();
+
+            await Swal.fire({
+                title: 'Berhasil!',
+                text: 'Pesan berhasil diedit',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+    } catch (error) {
+        console.error('Edit error:', error);
+        await Swal.fire({
+            title: 'Gagal!',
+            text: 'Gagal mengedit pesan',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+    }
+}
+
+// 🔥 TAMBAHKAN: Fungsi delete message untuk company chat
+window.deleteMessage = async function (messageId) {
+    if (!messageId || messageId.startsWith('temp-')) {
+        return;
+    }
+
+    if (!window.pendingDeletes) {
+        window.pendingDeletes = new Set();
+    }
+
+    if (window.pendingDeletes.has(messageId)) {
+        return;
+    }
+
+    window.pendingDeletes.add(messageId);
+
+    // 🔥 FIX: Prevent layout shift
+    const body = document.body;
+    const scrollY = window.scrollY;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    body.style.overflow = 'hidden';
+    body.style.paddingRight = scrollbarWidth + 'px';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.width = '100%';
+
+    const { value: willDelete } = await Swal.fire({
+        title: 'Hapus Pesan?',
+        text: "Pesan yang sudah dihapus tidak dapat dikembalikan",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal',
+        reverseButtons: true,
+        customClass: {
+            container: 'swal-no-shift'
+        }
+    });
+
+    // 🔥 RESTORE: Reset body styles
+    body.style.overflow = '';
+    body.style.paddingRight = '';
+    body.style.position = '';
+    body.style.top = '';
+    body.style.width = '';
+    window.scrollTo(0, scrollY);
+
+    if (!willDelete) {
+        window.pendingDeletes.delete(messageId);
+        return;
+    }
+
+    try {
+        const messageElement = document.getElementById(messageId);
+        const isOwnMessage = messageElement && messageElement.classList.contains('justify-end');
+
+        if (messageElement && messageElement.parentNode && document.body.contains(messageElement)) {
+            replaceMessageWithDeletedText(messageId, isOwnMessage);
+        }
+
+        // 🔥 FIX: Gunakan endpoint company chat untuk delete
+        const response = await fetch(`${API_URL}/api/company/chat/message/${messageId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': CSRF_TOKEN,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        });
+
+        if (response.status === 404) {
+            throw new Error('Pesan tidak ditemukan (404)');
+        }
+
+        if (response.status === 403) {
+            throw new Error('Anda tidak memiliki akses untuk menghapus pesan ini');
+        }
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server error:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            await Swal.fire({
+                title: 'Berhasil!',
+                text: 'Pesan berhasil dihapus',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        } else {
+            throw new Error(result.error || 'Gagal menghapus pesan');
+        }
+
+    } catch (error) {
+        console.error('❌ Delete error:', error);
+
+        await Swal.fire({
+            title: 'Gagal!',
+            text: error.message || 'Terjadi kesalahan saat menghapus pesan',
+            icon: 'error',
+            confirmButtonText: 'OK'
+        });
+    } finally {
+        window.pendingDeletes.delete(messageId);
     }
 }
 

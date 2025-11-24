@@ -64,7 +64,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
             <a href="{{ url('/pengumuman') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                       {{ Request::is('pengumuman*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                <img src="{{ asset('images/icons/workspace_pengumuman.svg') }}" alt="Cuti"
+                <img src="{{ asset('images/icons/workspace_pengumuman.svg') }}" alt="Pengumuman"
                     class="w-5 h-5 {{ Request::is('pengumuman*') ? 'filter-blue' : '' }}">
                 <span class="text-sm">Pengumuman</span>
             </a>
@@ -95,12 +95,12 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 @endif
             @endauth
 
-            {{-- Jadwal --}}
-            <a href="{{ url('/jadwal') }}"
+            {{-- ✅ Jadwal Umum (Company Level) --}}
+            <a href="{{ route('jadwal-umum') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
-                {{ Request::is('jadwal*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                {{ Request::is('jadwal-umum*') || Request::is('notulensi-umum*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
                 <img src="{{ asset('images/icons/workspace_kalender.svg') }}" alt="Jadwal"
-                    class="w-5 h-5 {{ Request::is('jadwal*') ? 'filter-blue' : '' }}">
+                    class="w-5 h-5 {{ Request::is('jadwal-umum*') || Request::is('notulensi-umum*') ? 'filter-blue' : '' }}">
                 <span class="text-sm">Jadwal</span>
             </a>
 
@@ -156,32 +156,6 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
 
             {{-- Workspace List --}}
             <div class="mt-3 space-y-1">
-
-                {{-- HQ
-                <div>
-                    <button @click="openHQ = !openHQ"
-                        class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-lg transition">
-                        <div class="flex items-center gap-2">
-                            <img src="/images/icons/sidebar_hq.svg" alt="HQ" class="w-4 h-4">
-                            <span>HQ</span>
-                        </div>
-                        <svg class="w-3 h-3 transition-transform" :class="{ 'rotate-90': openHQ }" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
-                        </svg>
-                    </button>
-
-                    <div x-show="openHQ" x-transition class="mt-1 space-y-0.5">
-                        <a href="{{ url('/workspace/hq') }}"
-                            class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition
-                                {{ Request::is('workspace/hq*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                            <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
-                            <span>Mencari Cinta HQ</span>
-                        </a>
-                    </div>
-                </div> --}}
-
                 {{-- TIM --}}
                 <div>
                     <button @click="openTim = !openTim"

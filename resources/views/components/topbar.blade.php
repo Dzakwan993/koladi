@@ -45,10 +45,9 @@
         <div class="h-6 w-px bg-gray-200"></div>
 
         <!-- Action Buttons -->
-        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Atur Akses" onclick="openAccessModal()">
+        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Atur Akses" onclick="openAccessModal({ type: 'company' })">
             <img src="{{ asset('images/icons/akses.svg') }}" alt="Atur Akses" class="w-5 h-5">
         </button>
-
 
         <a href="{{ url('/pembayaran') }}" class="p-2 hover:bg-gray-100 rounded-lg transition" title="Dollar">
             <img src="{{ asset('images/icons/dollar.svg') }}" alt="Dollar" class="w-5 h-5">
@@ -58,6 +57,20 @@
             <img src="{{ asset('images/icons/notifikasi.svg') }}" alt="Notifikasi" class="w-5 h-5">
             <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
         </button>
+
+        @php
+            // ✅ Check apakah user adalah Super Admin
+            $isSuperAdmin = false;
+            if ($activeCompany) {
+                $userCompany = Auth::user()->userCompanies()
+                    ->where('company_id', $activeCompany->id)
+                    ->with('role')
+                    ->first();
+
+                $isSuperAdmin = $userCompany && $userCompany->role &&
+                    in_array($userCompany->role->name, ['SuperAdmin', 'Super Admin']);
+            }
+        @endphp
 
         <!-- Button Perusahaan dengan Alpine.js -->
         <div class="relative" x-data="{ openCompany: false }">
@@ -85,8 +98,18 @@
                 <!-- List Perusahaan di Dropdown -->
                 <div class="py-2 max-h-96 overflow-y-auto">
                     @forelse($companies as $company)
-                        <div x-data="{ showModal: false, showConfirm: false }" class="relative">
+                        @php
+                            // ✅ Check Super Admin untuk setiap company
+                            $userCompanyItem = Auth::user()->userCompanies()
+                                ->where('company_id', $company->id)
+                                ->with('role')
+                                ->first();
 
+                            $isSuperAdminForCompany = $userCompanyItem && $userCompanyItem->role &&
+                                in_array($userCompanyItem->role->name, ['SuperAdmin', 'Super Admin']);
+                        @endphp
+
+                        <div x-data="{ showModal: false, showConfirm: false }" class="relative">
                             {{-- Wrapper baris perusahaan --}}
                             <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition group">
                                 {{-- Nama perusahaan (klik untuk switch) --}}
@@ -105,11 +128,15 @@
 
                                 {{-- Tombol pengaturan + centang --}}
                                 <div class="flex items-center gap-2 ml-3">
-                                    <button type="button" @click.stop="showModal = true"
-                                        class="hover:opacity-80 transition">
-                                        <img src="{{ asset('images/icons/pengaturan.svg') }}" alt="Pengaturan"
-                                            class="w-5 h-5 cursor-pointer">
-                                    </button>
+                                    {{-- ✅ HANYA TAMPIL UNTUK SUPER ADMIN --}}
+                                    @if($isSuperAdminForCompany)
+                                        <button type="button" @click.stop="showModal = true"
+                                            class="hover:opacity-80 transition"
+                                            title="Edit Perusahaan (Super Admin)">
+                                            <img src="{{ asset('images/icons/pengaturan.svg') }}" alt="Pengaturan"
+                                                class="w-5 h-5 cursor-pointer">
+                                        </button>
+                                    @endif
 
                                     @if ($activeCompany && $company->id == $activeCompany->id)
                                         <img src="{{ asset('images/icons/centang.svg') }}" alt="Active"
@@ -118,89 +145,99 @@
                                 </div>
                             </div>
 
-                            {{-- Modal Edit Perusahaan --}}
-                            <div x-show="showModal"
-                                class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-                                x-transition>
-                                <div
-                                    class="bg-gradient-to-br from-[#f4f7ff] to-[#e9f0ff] rounded-2xl shadow-2xl w-[520px] p-8 relative border border-white/30">
+                            {{-- ✅ MODAL HANYA BISA DIBUKA JIKA SUPER ADMIN --}}
+                            @if($isSuperAdminForCompany)
+                                {{-- Modal Edit Perusahaan --}}
+                                <div x-show="showModal"
+                                    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                                    x-transition>
+                                    <div
+                                        class="bg-gradient-to-br from-[#f4f7ff] to-[#e9f0ff] rounded-2xl shadow-2xl w-[520px] p-8 relative border border-white/30">
 
-                                    {{-- Tombol Close --}}
-                                    <button @click="showModal = false"
-                                        class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
-                                            viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
+                                        {{-- Tombol Close --}}
+                                        <button @click="showModal = false"
+                                            class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none"
+                                                viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
 
-                                    {{-- Gambar Header --}}
-                                    <div class="flex justify-center mb-6">
-                                        <img src="{{ asset('images/pengaturan-perusahaan.svg') }}" alt="Kantor"
-                                            class="w-64 h-auto drop-shadow-md">
-                                    </div>
-
-                                    {{-- Form Edit --}}
-                                    <form action="{{ route('company.update', $company->id) }}" method="POST">
-                                        @csrf
-                                        @method('PUT')
-
-                                        <div class="mb-6">
-                                            <label class="block text-sm font-bold text-gray-700 mb-2">
-                                                Nama perusahaan
-                                            </label>
-                                            <input type="text" name="name" value="{{ $company->name }}"
-                                                class="w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:ring-2 focus:ring-[#225ad6] focus:border-[#225ad6] shadow-sm transition">
+                                        {{-- Badge Super Admin --}}
+                                        <div class="flex justify-center mb-2">
+                                            <span class="px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">
+                                                🔑 Super Admin Access
+                                            </span>
                                         </div>
 
-                                        <div class="flex items-center justify-between">
-                                            <button type="submit"
-                                                class="bg-[#2563EB] text-white px-5 py-2.5 rounded-lg hover:bg-[#1d4cc1] shadow-sm transition">
-                                                Simpan
-                                            </button>
-
-                                            {{-- Tombol Hapus --}}
-                                            <button type="button"
-                                                class="flex items-center gap-2 bg-[#b7791f] hover:bg-[#695609] text-white px-4 py-2.5 rounded-lg transition shadow-sm"
-                                                @click="showConfirm = true">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
-                                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" />
-                                                </svg>
-                                                Hapus
-                                            </button>
+                                        {{-- Gambar Header --}}
+                                        <div class="flex justify-center mb-6">
+                                            <img src="{{ asset('images/pengaturan-perusahaan.svg') }}" alt="Kantor"
+                                                class="w-64 h-auto drop-shadow-md">
                                         </div>
-                                    </form>
 
-                                    {{-- Konfirmasi Hapus --}}
-                                    <div x-show="showConfirm"
-                                        class="absolute right-6 bottom-24 bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-64 transition-all duration-200"
-                                        x-transition>
-                                        <p class="font-semibold text-gray-800 mb-1">Hapus perusahaan?</p>
-                                        <p class="text-sm text-gray-500 mb-4 leading-snug">
-                                            Perusahaan akan dihapus dan semua datanya akan hilang selamanya.
-                                        </p>
-                                        <div class="flex justify-end gap-2">
-                                            <button @click="showConfirm = false"
-                                                class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">
-                                                Batal
-                                            </button>
-                                            <form action="{{ route('company.destroy', $company->id) }}"
-                                                method="POST">
-                                                @csrf
-                                                @method('DELETE')
+                                        {{-- Form Edit --}}
+                                        <form action="{{ route('company.update', $company->id) }}" method="POST">
+                                            @csrf
+                                            @method('PUT')
+
+                                            <div class="mb-6">
+                                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                                    Nama perusahaan
+                                                </label>
+                                                <input type="text" name="name" value="{{ $company->name }}"
+                                                    class="w-full rounded-lg border border-gray-300 px-3 py-2.5 focus:ring-2 focus:ring-[#225ad6] focus:border-[#225ad6] shadow-sm transition">
+                                            </div>
+
+                                            <div class="flex items-center justify-between">
                                                 <button type="submit"
-                                                    class="px-3 py-1.5 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700">
-                                                    Ya, hapus
+                                                    class="bg-[#2563EB] text-white px-5 py-2.5 rounded-lg hover:bg-[#1d4cc1] shadow-sm transition">
+                                                    Simpan
                                                 </button>
-                                            </form>
+
+                                                {{-- Tombol Hapus --}}
+                                                <button type="button"
+                                                    class="flex items-center gap-2 bg-[#b7791f] hover:bg-[#695609] text-white px-4 py-2.5 rounded-lg transition shadow-sm"
+                                                    @click="showConfirm = true">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
+                                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" />
+                                                    </svg>
+                                                    Hapus
+                                                </button>
+                                            </div>
+                                        </form>
+
+                                        {{-- Konfirmasi Hapus --}}
+                                        <div x-show="showConfirm"
+                                            class="absolute right-6 bottom-24 bg-white border border-gray-200 rounded-xl shadow-xl p-4 w-64 transition-all duration-200"
+                                            x-transition>
+                                            <p class="font-semibold text-gray-800 mb-1">Hapus perusahaan?</p>
+                                            <p class="text-sm text-gray-500 mb-4 leading-snug">
+                                                Perusahaan akan dihapus dan semua datanya akan hilang selamanya.
+                                            </p>
+                                            <div class="flex justify-end gap-2">
+                                                <button @click="showConfirm = false"
+                                                    class="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">
+                                                    Batal
+                                                </button>
+                                                <form action="{{ route('company.destroy', $company->id) }}"
+                                                    method="POST">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                        class="px-3 py-1.5 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700">
+                                                        Ya, hapus
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            @endif
                         </div>
                     @empty
                         <div class="px-4 py-3 text-sm text-gray-500 text-center">
@@ -208,7 +245,6 @@
                         </div>
                     @endforelse
                 </div>
-
 
                 <!-- Footer - Tambah Perusahaan -->
                 <div class="border-t border-gray-200">
@@ -229,13 +265,11 @@
 
         <!-- Profile Dropdown -->
         <div class="relative" x-data="{ open: false }">
-
             <button @click="open = !open" @click.away="open = false"
                 class="rounded-full overflow-hidden border-2 border-gray-200 hover:border-[#225ad6] transition">
                 <img src="{{ $avatar }}" alt="{{ $user->name }}"
                     class="w-8 h-8 rounded-full object-cover border border-gray-300">
             </button>
-
 
             <!-- Dropdown -->
             <div x-show="open" x-transition
@@ -264,7 +298,6 @@
                         </div>
                     </div>
                 </div>
-
 
                 <!-- Menu Items -->
                 <div class="border-t border-gray-200">

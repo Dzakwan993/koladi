@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Support\Str;
 
 class Attachment extends Model
 {
@@ -14,7 +15,7 @@ class Attachment extends Model
         'attachable_type',
         'attachable_id',
         'file_url',
-        'file_name',
+        'file_name',      
         'file_size',
         'file_type',
         'uploaded_by'
@@ -22,9 +23,14 @@ class Attachment extends Model
 
     protected $casts = [
         'file_size' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    // Relasi polymorphic
+    // 🔥 TAMBAHKAN appends untuk accessor
+    protected $appends = ['url', 'formatted_size', 'is_image'];
+
+    // Polymorphic relation
     public function attachable()
     {
         return $this->morphTo();
@@ -35,22 +41,23 @@ class Attachment extends Model
         return $this->belongsTo(User::class, 'uploaded_by');
     }
 
-    // Helper untuk mendapatkan URL file
+    // 🔥 Helper untuk mendapatkan URL file
     public function getUrlAttribute()
     {
         // Jika file_url sudah full path (dimulai dengan http), return as is
-        if (str_starts_with($this->file_url, 'http')) {
+        if (Str::startsWith($this->file_url, ['http://', 'https://'])) {
             return $this->file_url;
         }
 
-        // Jika relative path, tambahkan asset URL
-        return url('storage/' . $this->file_url);
+        // Jika relative path, tambahkan storage URL
+        return asset('storage/' . ltrim($this->file_url, '/'));
     }
 
-    // Helper untuk format size
+    // 🔥 Helper untuk format size
     public function getFormattedSizeAttribute()
     {
         $bytes = $this->file_size;
+
         if ($bytes >= 1073741824) {
             return number_format($bytes / 1073741824, 2) . ' GB';
         } elseif ($bytes >= 1048576) {
@@ -58,6 +65,46 @@ class Attachment extends Model
         } elseif ($bytes >= 1024) {
             return number_format($bytes / 1024, 2) . ' KB';
         }
+
         return $bytes . ' B';
+    }
+
+    // 🔥 Helper untuk cek apakah file adalah gambar
+    public function getIsImageAttribute()
+    {
+        if (!$this->file_type) return false;
+
+        $imageMimes = [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+            'image/svg+xml'
+        ];
+
+        return in_array($this->file_type, $imageMimes);
+    }
+
+    // 🔥 Helper untuk icon file
+    public function getFileIconAttribute()
+    {
+        if ($this->is_image) {
+            return '🖼️';
+        }
+
+        if (!$this->file_name) return '📎';
+
+        $ext = strtolower(pathinfo($this->file_name, PATHINFO_EXTENSION));
+
+        return match ($ext) {
+            'pdf' => '📄',
+            'doc', 'docx' => '📝',
+            'xls', 'xlsx' => '📊',
+            'zip', 'rar' => '📦',
+            'mp4', 'avi', 'mov' => '🎥',
+            'mp3', 'wav' => '🎵',
+            default => '📎'
+        };
     }
 }

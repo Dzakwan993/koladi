@@ -423,6 +423,13 @@ function formatFileSize(bytes) {
 }
 
 function getFileIcon(fileType) {
+    // 🔥 FIX: Tambahkan null check
+    if (!fileType || typeof fileType !== 'string') {
+        return `<svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>`;
+    }
+
     if (fileType.startsWith('image/')) {
         return `<svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -539,16 +546,16 @@ function scrollToBottom() {
 // Create HTML Functions
 // -----------------------------------------------------------------
 function createConversationHTML(conversation) {
-    let chatName = conversation.name;
+    let chatName = conversation.name || 'Unnamed';
     let chatAvatar = null;
     let chatAvatarInitials = getInitials(conversation.name);
     let avatarBgClass = 'bg-blue-200 text-blue-800';
 
     if (conversation.type === 'private') {
-        const otherParticipant = conversation.participants.find(p => p.user_id !== AUTH_USER_ID);
+        const otherParticipant = conversation.participants?.find(p => p.user_id !== AUTH_USER_ID);
         if (otherParticipant) {
-            chatName = otherParticipant.user.full_name;
-            chatAvatarInitials = getInitials(otherParticipant.user.full_name);
+            chatName = otherParticipant.user?.full_name || 'Unknown';
+            chatAvatarInitials = getInitials(otherParticipant.user?.full_name);
             chatAvatar = getAvatarUrl(otherParticipant.user);
             avatarBgClass = 'bg-indigo-100 text-indigo-800';
         }
@@ -561,6 +568,7 @@ function createConversationHTML(conversation) {
     const lastMessage = conversation.last_message;
     let lastMessageText = 'Belum ada pesan';
 
+    // 🔥 FIX: Tambahkan null check untuk semua properti lastMessage
     if (lastMessage) {
         const isDeleted = lastMessage.message_type === 'deleted' ||
             (lastMessage.deleted_at !== null && lastMessage.deleted_at !== undefined) ||
@@ -570,14 +578,14 @@ function createConversationHTML(conversation) {
             if (lastMessage.sender_id === AUTH_USER_ID) {
                 lastMessageText = 'Kamu telah menghapus pesan ini';
             } else {
-                const senderName = lastMessage.sender ? lastMessage.sender.full_name.split(' ')[0] : 'User';
+                const senderName = lastMessage.sender?.full_name?.split(' ')[0] || 'User';
                 lastMessageText = `${senderName}: Pesan telah dihapus`;
             }
         }
         else if (conversation.type === 'group') {
             let senderName = 'Anda';
             if (lastMessage.sender_id !== AUTH_USER_ID) {
-                if (lastMessage.sender && lastMessage.sender.full_name) {
+                if (lastMessage.sender?.full_name) {
                     senderName = lastMessage.sender.full_name.split(' ')[0];
                 } else {
                     senderName = 'User';
@@ -585,17 +593,16 @@ function createConversationHTML(conversation) {
             }
 
             if (lastMessage.attachments && lastMessage.attachments.length > 0) {
+                // 🔥 FIX: Tambahkan null check untuk content
                 if (lastMessage.content && lastMessage.content.trim() !== '') {
                     lastMessageText = `${senderName}: ${lastMessage.content}`;
                 } else {
                     const fileCount = lastMessage.attachments.length;
-                    const fileType = lastMessage.attachments[0].file_type;
-                    const isImage = fileType.startsWith('image/');
-                    const isVideo = fileType.startsWith('video/');
+                    const fileType = lastMessage.attachments[0]?.file_type || 'file';
 
-                    if (isImage) {
+                    if (fileType.startsWith('image/')) {
                         lastMessageText = `${senderName}: 📷 Gambar`;
-                    } else if (isVideo) {
+                    } else if (fileType.startsWith('video/')) {
                         lastMessageText = `${senderName}: 🎬 Video`;
                     } else if (fileType === 'application/pdf') {
                         lastMessageText = `${senderName}: 📄 PDF`;
@@ -604,22 +611,22 @@ function createConversationHTML(conversation) {
                     }
                 }
             } else {
-                lastMessageText = `${senderName}: ${lastMessage.content}`;
+                // 🔥 FIX: Tambahkan default value jika content null
+                lastMessageText = `${senderName}: ${lastMessage.content || 'Mengirim pesan'}`;
             }
         } else {
             const senderPrefix = lastMessage.sender_id === AUTH_USER_ID ? 'Anda: ' : '';
             if (lastMessage.attachments && lastMessage.attachments.length > 0) {
+                // 🔥 FIX: Tambahkan null check untuk content
                 if (lastMessage.content && lastMessage.content.trim() !== '') {
                     lastMessageText = senderPrefix + lastMessage.content;
                 } else {
                     const fileCount = lastMessage.attachments.length;
-                    const fileType = lastMessage.attachments[0].file_type;
-                    const isImage = fileType.startsWith('image/');
-                    const isVideo = fileType.startsWith('video/');
+                    const fileType = lastMessage.attachments[0]?.file_type || 'file';
 
-                    if (isImage) {
+                    if (fileType.startsWith('image/')) {
                         lastMessageText = senderPrefix + '📷 Gambar';
-                    } else if (isVideo) {
+                    } else if (fileType.startsWith('video/')) {
                         lastMessageText = senderPrefix + '🎬 Video';
                     } else if (fileType === 'application/pdf') {
                         lastMessageText = senderPrefix + '📄 PDF';
@@ -628,7 +635,8 @@ function createConversationHTML(conversation) {
                     }
                 }
             } else {
-                lastMessageText = senderPrefix + lastMessage.content;
+                // 🔥 FIX: Tambahkan default value jika content null
+                lastMessageText = senderPrefix + (lastMessage.content || 'Mengirim pesan');
             }
         }
     }
@@ -806,72 +814,74 @@ function createMessageHTML(message) {
     if (message.attachments && message.attachments.length > 0) {
         attachmentsHTML = '<div class="mt-2 space-y-2">';
         message.attachments.forEach(att => {
-            const isImage = att.file_type && att.file_type.startsWith('image/');
-            const isVideo = att.file_type && att.file_type.startsWith('video/');
-            const isPDF = att.file_type === 'application/pdf';
+            // 🔥 FIX: Tambahkan null check untuk file_type
+            const fileType = att.file_type || '';
+            const isImage = fileType && fileType.startsWith('image/');
+            const isVideo = fileType && fileType.startsWith('video/');
+            const isPDF = fileType === 'application/pdf';
 
-            if (att.uploading && att.preview_url && att.file_type.startsWith('image/')) {
+            if (att.uploading && att.preview_url && isImage) {
                 attachmentsHTML += `
-                    <div class="relative">
-                        <img src="${att.preview_url}" alt="${att.file_name}"
-                            class="max-w-xs rounded-xl shadow-md opacity-70">
-                        <div class="absolute inset-0 bg-black bg-opacity-30 rounded-xl flex items-center justify-center">
-                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                        </div>
-                        <p class="text-xs text-gray-300 mt-1">Mengunggah...</p>
+                <div class="relative">
+                    <img src="${att.preview_url}" alt="${att.file_name || 'File'}"
+                        class="max-w-xs rounded-xl shadow-md opacity-70">
+                    <div class="absolute inset-0 bg-black bg-opacity-30 rounded-xl flex items-center justify-center">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
                     </div>
-                `;
+                    <p class="text-xs text-gray-300 mt-1">Mengunggah...</p>
+                </div>
+            `;
             } else if (att.uploading) {
                 attachmentsHTML += `
-                    <div class="flex items-center gap-2 bg-white bg-opacity-20 rounded-lg p-3">
-                        <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        <span class="text-sm">Mengunggah ${att.file_name}...</span>
-                    </div>
-                `;
+                <div class="flex items-center gap-2 bg-white bg-opacity-20 rounded-lg p-3">
+                    <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span class="text-sm">Mengunggah ${att.file_name || 'file'}...</span>
+                </div>
+            `;
             } else if (isImage) {
                 const imageUrl = fixFileUrl(att.file_url);
                 attachmentsHTML += `
-        <div class="relative group max-w-sm">
-            <img src="${imageUrl}"
-                 alt="${att.file_name}"
-                 class="rounded-xl shadow-md cursor-pointer max-h-96 object-cover w-full"
-                 onclick="openImageModal('${imageUrl}', '${att.file_name}')"
-                 loading="lazy">
-            <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onclick="event.stopPropagation(); downloadImage('${imageUrl}', '${att.file_name}')"
-                        class="bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition"
-                        title="Download gambar">
-                    <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    `;
+                <div class="relative group max-w-sm">
+                    <img src="${imageUrl}"
+                         alt="${att.file_name || 'Image'}"
+                         class="rounded-xl shadow-md cursor-pointer max-h-96 object-cover w-full"
+                         onclick="openImageModal('${imageUrl}', '${att.file_name || 'image'}')"
+                         loading="lazy">
+                    <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="event.stopPropagation(); downloadImage('${imageUrl}', '${att.file_name || 'image'}')"
+                                class="bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition"
+                                title="Download gambar">
+                            <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
             } else {
                 const fileUrl = fixFileUrl(att.file_url);
-                const fileIcon = getFileIcon(att.file_type);
-                const fileSize = formatFileSize(att.file_size);
+                const fileIcon = getFileIcon(fileType); // 🔥 Sekarang aman karena sudah di-check
+                const fileSize = formatFileSize(att.file_size || 0);
 
                 attachmentsHTML += `
-                    <div class="bg-white border border-gray-200 rounded-lg p-3 max-w-xs">
-                        <a href="${fileUrl}" target="_blank" class="flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 transition">
-                            <div class="flex-shrink-0">
-                                ${fileIcon}
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-800 truncate">${att.file_name}</p>
-                                <p class="text-xs text-gray-500">${fileSize}</p>
-                            </div>
-                            <div class="flex-shrink-0">
-                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                                </svg>
-                            </div>
-                        </a>
-                    </div>
-                `;
+                <div class="bg-white border border-gray-200 rounded-lg p-3 max-w-xs">
+                    <a href="${fileUrl}" target="_blank" class="flex items-center gap-3 hover:bg-gray-50 rounded-lg p-2 transition">
+                        <div class="flex-shrink-0">
+                            ${fileIcon}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-800 truncate">${att.file_name || 'File'}</p>
+                            <p class="text-xs text-gray-500">${fileSize}</p>
+                        </div>
+                        <div class="flex-shrink-0">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                        </div>
+                    </a>
+                </div>
+            `;
             }
         });
         attachmentsHTML += '</div>';
@@ -882,7 +892,7 @@ function createMessageHTML(message) {
         if (message.reply_to && typeof message.reply_to === 'object') {
             const repliedMessage = message.reply_to;
             const repliedSenderName = repliedMessage.sender_id === AUTH_USER_ID ?
-                'Anda' : (repliedMessage.sender ? repliedMessage.sender.full_name : 'User');
+                'Anda' : (repliedMessage.sender?.full_name || 'User');
 
             const isRepliedMessageDeleted = repliedMessage.message_type === 'deleted' ||
                 (repliedMessage.deleted_at !== null && repliedMessage.deleted_at !== undefined);
@@ -894,7 +904,8 @@ function createMessageHTML(message) {
                 repliedContent = 'Pesan telah dihapus';
             } else if (repliedMessage.attachments && repliedMessage.attachments.length > 0) {
                 const fileCount = repliedMessage.attachments.length;
-                const fileType = repliedMessage.attachments[0].file_type;
+                // 🔥 FIX: Tambahkan null check untuk file_type
+                const fileType = repliedMessage.attachments[0]?.file_type || '';
 
                 if (fileType.startsWith('image/')) {
                     repliedContent = 'Gambar';
@@ -910,6 +921,7 @@ function createMessageHTML(message) {
                     repliedAttachmentIcon = '📎';
                 }
 
+                // 🔥 FIX: Tambahkan null check untuk content
                 if (repliedMessage.content && repliedMessage.content.trim() !== '') {
                     repliedContent = repliedMessage.content;
                 }
@@ -1014,7 +1026,9 @@ function createMessageHTML(message) {
     } else if (message.attachments && message.attachments.length > 0) {
         const fileCount = message.attachments.length;
         if (fileCount === 1) {
-            const fileType = message.attachments[0].file_type;
+            // 🔥 FIX: Tambahkan null check untuk file_type
+            const fileType = message.attachments[0]?.file_type || '';
+
             if (fileType.startsWith('image/')) {
                 contentHTML = `<div class="message-content text-sm italic">📷 Gambar</div>`;
             } else if (fileType.startsWith('video/')) {
