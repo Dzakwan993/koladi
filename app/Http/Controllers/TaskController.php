@@ -2199,51 +2199,76 @@ class TaskController extends Controller
     }
 
     // --- Upload file/image for comment or other attachable ---
-    public function uploadCommentFile(Request $request)
-    {
-        try {
-            if (!$request->hasFile('upload')) {
-                return response()->json(['error' => 'No file uploaded'], 400);
-            }
-
-            $file = $request->file('upload');
-            $extension = strtolower($file->getClientOriginalExtension());
-
-            // image types
-            $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-
-            $folder = in_array($extension, $imageExtensions)
-                ? 'uploads/comment_images'
-                : 'uploads/comment_files';
-
-            $fileName = time() . '_' . Str::random(8) . '.' . $extension;
-            $filePath = $file->storeAs($folder, $fileName, 'public'); // stored in storage/app/public/{folder}
-
-            $fileUrl = asset('storage/' . $filePath);
-
-            // Save to attachments table if attachable info provided
-            $attachableId = $request->input('attachable_id'); // frontend sends generated UUID for Comment usually
-            $attachableType = $request->input('attachable_type'); // e.g. App\\Models\\Comment
-
-            if ($attachableId && $attachableType) {
-                DB::table('attachments')->insert([
-                    'id' => Str::uuid()->toString(),
-                    'attachable_type' => $attachableType,
-                    'attachable_id' => $attachableId,
-                    'file_url' => $fileUrl,
-                    'uploaded_by' => Auth::id(),
-                    'uploaded_at' => now(),
-                ]);
-            }
-
-            return response()->json([
-                'uploaded' => true,
-                'url' => $fileUrl,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+    /**
+ * Upload file/image untuk komentar
+ */
+public function uploadCommentFile(Request $request)
+{
+    try {
+        if (!$request->hasFile('upload')) {
+            return response()->json(['error' => 'No file uploaded'], 400);
         }
+
+        $file = $request->file('upload');
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        // Validasi tipe file
+        $imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $documentExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt', 'zip', 'rar', 'ppt', 'pptx'];
+        
+        $allowedExtensions = array_merge($imageExtensions, $documentExtensions);
+        
+        if (!in_array($extension, $allowedExtensions)) {
+            return response()->json(['error' => 'File type not allowed'], 400);
+        }
+
+        // Validasi ukuran file (max 10MB)
+        if ($file->getSize() > 10 * 1024 * 1024) {
+            return response()->json(['error' => 'File size exceeds 10MB'], 400);
+        }
+
+        // Tentukan folder berdasarkan tipe file
+        $folder = in_array($extension, $imageExtensions) 
+            ? 'uploads/comment_images' 
+            : 'uploads/comment_files';
+
+        // Generate unique filename
+        $fileName = time() . '_' . Str::random(8) . '.' . $extension;
+        $filePath = $file->storeAs($folder, $fileName, 'public');
+        $fileUrl = asset('storage/' . $filePath);
+
+        // Simpan ke attachments table jika ada attachable_id
+        $attachableId = $request->input('attachable_id');
+        $attachableType = $request->input('attachable_type', 'App\\Models\\Comment');
+
+        if ($attachableId) {
+            Attachment::create([
+                'id' => Str::uuid()->toString(),
+                'attachable_type' => $attachableType,
+                'attachable_id' => $attachableId,
+                'file_url' => $filePath,
+                'uploaded_by' => Auth::id(),
+                'uploaded_at' => now(),
+            ]);
+
+            Log::info('Attachment created for comment', [
+                'attachable_id' => $attachableId,
+                'file_url' => $filePath
+            ]);
+        }
+
+        return response()->json([
+            'uploaded' => true,
+            'url' => $fileUrl,
+            'fileName' => $fileName,
+            'fileType' => in_array($extension, $imageExtensions) ? 'image' : 'document'
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error uploading comment file: ' . $e->getMessage());
+        return response()->json(['error' => $e->getMessage()], 500);
     }
+}
 
 
     // Tambahkan method ini di TaskController.php

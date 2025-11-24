@@ -4747,7 +4747,7 @@ showPhaseTasks(phaseId) {
             active: false,
             parentComment: null
         },
-        currentUserAvatar: window.currentUser?.avatar || 'https://i.pravatar.cc/40?img=11',
+        currentUserAvatar: '{{ Auth::user()->avatar ?? "https://i.pravatar.cc/40?img=11" }}',
         loading: false,
         error: null,
         taskId: null,
@@ -4755,7 +4755,6 @@ showPhaseTasks(phaseId) {
         init() {
             console.log('🔄 Initializing comment section...');
             
-            // ✅ Get task ID from parent Alpine component
             const parentEl = this.$el.closest('[x-data*="kanbanApp"]');
             const parentData = parentEl ? Alpine.$data(parentEl) : null;
             
@@ -4763,21 +4762,17 @@ showPhaseTasks(phaseId) {
                 this.taskId = parentData.currentTask.id;
                 console.log('✅ Task ID initialized:', this.taskId);
                 
-                // Load comments from currentTask if available
                 if (parentData.currentTask.comments) {
                     this.comments = this.formatComments(parentData.currentTask.comments);
                     console.log('✅ Loaded', this.comments.length, 'comments from currentTask');
                 }
-            } else {
-                console.warn('⚠️ Parent data or currentTask not found on init');
             }
 
-            // Initialize main editor
             this.$nextTick(() => {
                 this.initializeMainEditor();
             });
 
-            // ✅ Watch for task changes
+            // Watch for task changes
             let lastTaskId = this.taskId;
             const watchInterval = setInterval(() => {
                 const parentEl = this.$el.closest('[x-data*="kanbanApp"]');
@@ -4790,23 +4785,17 @@ showPhaseTasks(phaseId) {
                     this.taskId = newTaskId;
                     this.error = null;
                     
-                    // Load comments from currentTask
                     if (parentData.currentTask.comments) {
                         this.comments = this.formatComments(parentData.currentTask.comments);
-                        console.log('✅ Updated comments:', this.comments.length);
-                    } else {
-                        this.loadComments();
                     }
                 }
             }, 500);
             
-            // Cleanup interval on component destroy
             this.$watch('$el', (value) => {
                 if (!value) clearInterval(watchInterval);
             });
         },
 
-        // ✅ Helper method untuk format comments
         formatComments(comments) {
             return comments.map(c => ({
                 ...c,
@@ -4819,58 +4808,13 @@ showPhaseTasks(phaseId) {
             }));
         },
 
-        async loadComments() {
-            if (!this.taskId) {
-                console.warn('⚠️ Cannot load comments: No task ID');
-                return;
-            }
-
-            console.log('🔄 Loading comments from API for task:', this.taskId);
-            
-            this.loading = true;
-            this.error = null;
-            
-            try {
-                const res = await fetch(`/tasks/${this.taskId}/comments`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.getCsrfToken()
-                    }
-                });
-                
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-                }
-                
-                const data = await res.json();
-                console.log('📥 Comments API response:', data);
-                
-                if (data.success) {
-                    this.comments = this.formatComments(data.comments || []);
-                    console.log('✅ Loaded', this.comments.length, 'comments from API');
-                } else {
-                    throw new Error(data.message || 'Failed to load comments');
-                }
-            } catch (err) {
-                console.error('❌ Error loading comments:', err);
-                this.error = 'Gagal memuat komentar: ' + err.message;
-                this.comments = [];
-            } finally {
-                this.loading = false;
-            }
-        },
-
         initializeMainEditor() {
             const el = document.getElementById('task-main-comment-editor');
-            if (!el) {
-                console.warn('⚠️ Main editor element not found');
-                return;
-            }
-            
-            if (el._editor) {
-                console.log('ℹ️ Main editor already initialized');
-                return;
-            }
+            if (!el) return;
+            if (el._editor) return;
+
+            const commentId = this.generateUUID();
+            window.currentMainCommentId = commentId;
 
             ClassicEditor.create(el, {
                 toolbar: {
@@ -4880,7 +4824,7 @@ showPhaseTasks(phaseId) {
                         'bold', 'italic', '|',
                         'link', 'blockQuote', '|',
                         'bulletedList', 'numberedList', '|',
-                        'insertTable', 'imageUpload'
+                        'insertTable'
                     ],
                     shouldNotGroupWhenFull: true
                 },
@@ -4888,10 +4832,13 @@ showPhaseTasks(phaseId) {
             }).then(editor => {
                 el._editor = editor;
                 console.log('✅ Main editor initialized');
-                window.currentMainCommentId = this.generateUUID();
+                
+                // Tambahkan tombol upload
+                this.insertUploadImageButton(editor, commentId);
+                this.insertUploadFileButton(editor, commentId);
+                
             }).catch(err => {
                 console.error('❌ Failed to init main editor:', err);
-                this.fallbackToTextarea('task-main-comment-editor');
             });
         },
 
@@ -4899,15 +4846,10 @@ showPhaseTasks(phaseId) {
             const editorId = `task-reply-editor-${commentId}`;
             const el = document.getElementById(editorId);
             
-            if (!el) {
-                console.warn('⚠️ Reply editor element not found:', editorId);
-                return;
-            }
-            
-            if (el._editor) {
-                console.log('ℹ️ Reply editor already initialized:', editorId);
-                return;
-            }
+            if (!el || el._editor) return;
+
+            const replyId = this.generateUUID();
+            window[`currentReplyId_${commentId}`] = replyId;
 
             ClassicEditor.create(el, {
                 toolbar: {
@@ -4923,58 +4865,195 @@ showPhaseTasks(phaseId) {
             }).then(editor => {
                 el._editor = editor;
                 console.log('✅ Reply editor initialized:', editorId);
-                window[`currentReplyId_${commentId}`] = this.generateUUID();
+                
+                // Tambahkan tombol upload
+                this.insertUploadImageButton(editor, replyId);
+                this.insertUploadFileButton(editor, replyId);
+                
             }).catch(err => {
                 console.error('❌ Failed to init reply editor:', err);
-                this.fallbackToTextarea(editorId);
             });
         },
 
-        fallbackToTextarea(editorId) {
-            const el = document.getElementById(editorId);
-            if (!el) return;
-            
-            el.innerHTML = `<textarea id="${editorId}-fallback" 
-                class="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg bg-white resize-none" 
-                placeholder="Tulis komentar di sini..."></textarea>`;
+        insertUploadImageButton(editor, commentId) {
+            const toolbarEl = editor.ui.view.toolbar.element;
+            const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'ck ck-button ck-off';
+            btn.title = 'Upload Image';
+            btn.innerHTML = `
+                <span class="ck-button__label" style="display:flex;align-items:center;gap:4px;padding:2px 4px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 11a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM5 19l4.5-6 3.5 4.5 2.5-3L19 19H5z"/>
+                    </svg>
+                    <span style="font-size:11px;">Image</span>
+                </span>
+            `;
+            btn.style.cursor = 'pointer';
+
+            btn.addEventListener('click', () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.click();
+                
+                input.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    // Show loading state
+                    btn.classList.add('ck-disabled');
+                    const originalHTML = btn.innerHTML;
+                    btn.innerHTML = '<span class="ck-button__label">Uploading...</span>';
+
+                    const fd = new FormData();
+                    fd.append('upload', file);
+                    fd.append('attachable_id', commentId || '');
+                    fd.append('attachable_type', 'App\\Models\\Comment');
+
+                    try {
+                        const res = await fetch('/tasks/comments/upload', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': this.getCsrfToken()
+                            },
+                            body: fd
+                        });
+
+                        const data = await res.json();
+                        
+                        if (res.ok && data.url) {
+                            editor.model.change(writer => {
+                                const insertPos = editor.model.document.selection.getFirstPosition();
+                                const imageElement = writer.createElement('imageBlock', {
+                                    src: data.url
+                                });
+                                editor.model.insertContent(imageElement, insertPos);
+                            });
+                            
+                            console.log('✅ Image uploaded:', data.url);
+                            this.showNotification('Image berhasil diupload', 'success');
+                        } else {
+                            throw new Error(data.error || 'Upload gagal');
+                        }
+                    } catch (err) {
+                        console.error('❌ Upload error:', err);
+                        this.showNotification('Gagal upload image: ' + err.message, 'error');
+                    } finally {
+                        // Restore button state
+                        btn.classList.remove('ck-disabled');
+                        btn.innerHTML = originalHTML;
+                    }
+                }, { once: true });
+            });
+
+            itemsContainer.appendChild(btn);
+        },
+
+        insertUploadFileButton(editor, commentId) {
+            const toolbarEl = editor.ui.view.toolbar.element;
+            const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'ck ck-button ck-off';
+            btn.title = 'Upload File';
+            btn.innerHTML = `
+                <span class="ck-button__label" style="display:flex;align-items:center;gap:4px;padding:2px 4px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+                        <path d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8.83a2 2 0 0 0-.59-1.41l-3.83-3.83A2 2 0 0 0 10.17 3H6zm4 2l4 4H10V4z"/>
+                    </svg>
+                    <span style="font-size:11px;">File</span>
+                </span>
+            `;
+            btn.style.cursor = 'pointer';
+
+            btn.addEventListener('click', () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar,.ppt,.pptx';
+                input.click();
+
+                input.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    // Show loading state
+                    btn.classList.add('ck-disabled');
+                    const originalHTML = btn.innerHTML;
+                    btn.innerHTML = '<span class="ck-button__label">Uploading...</span>';
+
+                    const fd = new FormData();
+                    fd.append('upload', file);
+                    fd.append('attachable_id', commentId || '');
+                    fd.append('attachable_type', 'App\\Models\\Comment');
+
+                    try {
+                        const res = await fetch('/tasks/comments/upload', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': this.getCsrfToken()
+                            },
+                            body: fd
+                        });
+
+                        const data = await res.json();
+                        
+                        if (res.ok && data.url) {
+                            editor.model.change(writer => {
+                                const insertPos = editor.model.document.selection.getFirstPosition();
+                                const paragraph = writer.createElement('paragraph');
+                                const textNode = writer.createText(`📎 ${file.name}`, {
+                                    linkHref: data.url
+                                });
+                                writer.append(textNode, paragraph);
+                                editor.model.insertContent(paragraph, insertPos);
+                            });
+                            
+                            console.log('✅ File uploaded:', data.url);
+                            this.showNotification('File berhasil diupload', 'success');
+                        } else {
+                            throw new Error(data.error || 'Upload gagal');
+                        }
+                    } catch (err) {
+                        console.error('❌ Upload error:', err);
+                        this.showNotification('Gagal upload file: ' + err.message, 'error');
+                    } finally {
+                        // Restore button state
+                        btn.classList.remove('ck-disabled');
+                        btn.innerHTML = originalHTML;
+                    }
+                }, { once: true });
+            });
+
+            itemsContainer.appendChild(btn);
         },
 
         getEditorData(editorId) {
             const el = document.getElementById(editorId);
             if (!el) return '';
-            
-            if (el._editor) {
-                return el._editor.getData();
-            }
-            
-            const ta = document.getElementById(editorId + '-fallback');
-            return ta ? ta.value : '';
+            if (el._editor) return el._editor.getData();
+            return '';
         },
 
         resetEditor(editorId) {
             const el = document.getElementById(editorId);
             if (!el) return;
-            
-            if (el._editor) {
-                el._editor.setData('');
-            } else {
-                const ta = document.getElementById(editorId + '-fallback');
-                if (ta) ta.value = '';
-            }
+            if (el._editor) el._editor.setData('');
         },
 
         destroyEditor(editorId) {
             const el = document.getElementById(editorId);
-            if (!el) return;
+            if (!el || !el._editor) return;
             
-            if (el._editor) {
-                el._editor.destroy()
-                    .then(() => {
-                        el._editor = null;
-                        el.innerHTML = '';
-                    })
-                    .catch(() => {});
-            }
+            el._editor.destroy()
+                .then(() => {
+                    el._editor = null;
+                    el.innerHTML = '';
+                })
+                .catch(() => {});
         },
 
         async submitMainComment() {
@@ -4988,8 +5067,6 @@ showPhaseTasks(phaseId) {
                 this.showNotification('Komentar tidak boleh kosong', 'error');
                 return;
             }
-
-            console.log('📤 Submitting comment for task:', this.taskId);
 
             try {
                 const preId = window.currentMainCommentId || this.generateUUID();
@@ -5012,12 +5089,11 @@ showPhaseTasks(phaseId) {
                 const data = await res.json();
 
                 if (data.success) {
-                    // Add new comment with formatted author
                     const newComment = {
                         ...data.comment,
                         replies: data.comment.replies || [],
                         author: data.comment.author || {
-                            name: data.comment.user?.full_name || data.comment.user?.name || 'You',
+                            name: data.comment.user?.full_name || 'You',
                             avatar: data.comment.user?.avatar || this.currentUserAvatar
                         }
                     };
@@ -5026,11 +5102,14 @@ showPhaseTasks(phaseId) {
                     this.resetEditor('task-main-comment-editor');
                     window.currentMainCommentId = null;
                     
+                    this.$nextTick(() => {
+                        this.initializeMainEditor();
+                    });
+                    
                     this.showNotification('Komentar berhasil dikirim', 'success');
                 } else {
                     throw new Error(data.message || 'Gagal mengirim komentar');
                 }
-
             } catch (err) {
                 console.error(err);
                 this.showNotification('Gagal mengirim komentar: ' + err.message, 'error');
@@ -5038,31 +5117,12 @@ showPhaseTasks(phaseId) {
         },
 
         async submitReplyFromEditor() {
-            if (!this.replyView.parentComment) {
-                console.warn('⚠️ No parent comment');
+            if (!this.replyView.parentComment || !this.taskId) {
+                this.showNotification('Data tidak lengkap', 'error');
                 return;
             }
             
             const parent = this.replyView.parentComment;
-            
-            // ✅ Use taskId that was set in init
-            if (!this.taskId) {
-                console.error('❌ Task ID not available');
-                
-                // Fallback: Try to get from parent Alpine
-                const parentEl = this.$el.closest('[x-data*="kanbanApp"]');
-                const parentData = parentEl ? Alpine.$data(parentEl) : null;
-                const fallbackTaskId = parentData?.currentTask?.id;
-                
-                if (fallbackTaskId) {
-                    console.log('✅ Using fallback task ID:', fallbackTaskId);
-                    this.taskId = fallbackTaskId;
-                } else {
-                    this.showNotification('Task ID tidak ditemukan', 'error');
-                    return;
-                }
-            }
-            
             const editorId = `task-reply-editor-${parent.id}`;
             const content = this.getEditorData(editorId).trim();
             
@@ -5070,8 +5130,6 @@ showPhaseTasks(phaseId) {
                 this.showNotification('Balasan tidak boleh kosong', 'error');
                 return;
             }
-
-            console.log('📤 Submitting reply for task:', this.taskId);
 
             try {
                 const preId = window[`currentReplyId_${parent.id}`] || this.generateUUID();
@@ -5090,39 +5148,29 @@ showPhaseTasks(phaseId) {
                     })
                 });
 
-                if (!res.ok) {
-                    const errorText = await res.text();
-                    throw new Error(`Server error ${res.status}: ${errorText}`);
-                }
+                if (!res.ok) throw new Error(`Server error ${res.status}`);
                 
                 const data = await res.json();
-                console.log('📥 Reply response:', data);
                 
                 if (data.success) {
-                    // Add reply to parent comment
-                    if (!parent.replies) {
-                        parent.replies = [];
-                    }
+                    if (!parent.replies) parent.replies = [];
                     
                     const newReply = {
                         ...data.comment,
                         author: data.comment.author || {
-                            name: data.comment.user?.full_name || data.comment.user?.name || 'You',
+                            name: data.comment.user?.full_name || 'You',
                             avatar: data.comment.user?.avatar || this.currentUserAvatar
                         }
                     };
                     
                     parent.replies.push(newReply);
-                    
                     this.closeReplyView();
                     this.showNotification('Balasan berhasil dikirim', 'success');
-                    
-                    console.log('✅ Reply added, total replies:', parent.replies.length);
                 } else {
                     throw new Error(data.message || 'Gagal mengirim balasan');
                 }
             } catch (err) {
-                console.error('❌ Error submitting reply:', err);
+                console.error(err);
                 this.showNotification('Gagal mengirim balasan: ' + err.message, 'error');
             }
         },
@@ -5190,7 +5238,6 @@ showPhaseTasks(phaseId) {
 
         showNotification(msg, type = 'info') {
             console.log(`[${type}] ${msg}`);
-            // Replace with your toast library
             alert(msg);
         }
     };
