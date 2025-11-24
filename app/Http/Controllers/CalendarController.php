@@ -139,19 +139,15 @@ class CalendarController extends Controller
                 ->firstOrFail();
         }
 
-        // ✅ Ambil jadwal yang:
-        // 1. Rapat Online (is_online_meeting = true)
-        // 2. Ada komentar (whereHas comments)
         $notulensis = CalendarEvent::where('workspace_id', $workspaceId)
             ->whereNull('deleted_at')
-            ->where('is_online_meeting', true) // Hanya rapat online
-            ->whereHas('comments') // ✅ FIX: Hanya yang ada komentar
-            ->withCount('comments') // Hitung jumlah komentar
+            ->where('is_online_meeting', true)
+            ->whereHas('comments')
+            ->withCount('comments')
             ->with(['creator', 'participants.user'])
             ->orderBy('start_datetime', 'desc')
             ->get();
 
-        // Set avatar URL untuk setiap notulensi
         $notulensis->each(function ($notulensi) {
             $notulensi->creator->avatar_url = $this->getAvatarUrl($notulensi->creator);
             $notulensi->participants->each(function ($participant) {
@@ -161,6 +157,7 @@ class CalendarController extends Controller
 
         return view('jadwal.workspace.notulensi', [
             'active' => 'jadwal',
+            'jadwalSubPage' => 'notulensi', // ✅ TAMBAHKAN INI
             'pageTitle' => 'Notulensi Rapat',
             'workspaceId' => $workspaceId,
             'workspace' => $workspace,
@@ -719,6 +716,7 @@ class CalendarController extends Controller
 
         return view('jadwal.workspace.buatJadwal', [
             'active' => 'jadwal',
+            'jadwalSubPage' => 'buat-jadwal', // ✅ TAMBAHKAN INI
             'pageTitle' => 'Buat Jadwal',
             'workspaceId' => $workspaceId,
             'workspace' => $workspace,
@@ -946,12 +944,9 @@ class CalendarController extends Controller
         $isParticipant = $event->participants->where('user_id', $user->id)->isNotEmpty();
         $isCreator = $event->created_by === $user->id;
 
-        // ✅ FIXED: Cek apakah SuperAdmin/Admin di company
         $workspace = Workspace::findOrFail($workspaceId);
         $isCompanyAdmin = $this->isCompanyAdmin();
 
-        // ✅ Cek akses untuk jadwal rahasia
-        // SuperAdmin/Admin/Manager bisa akses SEMUA jadwal termasuk rahasia
         if ($event->is_private && !$isCreator && !$isParticipant && !$isCompanyAdmin) {
             return redirect()->route('jadwal', ['workspaceId' => $workspaceId])
                 ->with('access_denied', [
@@ -961,13 +956,20 @@ class CalendarController extends Controller
                 ]);
         }
 
-        // Set avatar URL
         $event->participants->each(function ($participant) {
             $participant->user->avatar_url = $this->getAvatarUrl($participant->user);
         });
         $event->creator->avatar_url = $this->getAvatarUrl($event->creator);
 
-        return view('jadwal.workspace.detailJadwal', compact('event', 'isParticipant', 'isCreator', 'workspaceId'));
+        return view('jadwal.workspace.detailJadwal', [
+            'event' => $event,
+            'isParticipant' => $isParticipant,
+            'isCreator' => $isCreator,
+            'workspaceId' => $workspaceId,
+            'workspace' => $workspace, // ✅ TAMBAHKAN INI
+            'active' => 'jadwal', // ✅ TAMBAHKAN INI
+            'jadwalSubPage' => 'detail-jadwal' // ✅ TAMBAHKAN INI
+        ]);
     }
 
     public function edit($workspaceId, $id)
@@ -1009,7 +1011,14 @@ class CalendarController extends Controller
             $participant->user->avatar_url = $this->getAvatarUrl($participant->user);
         });
 
-        return view('jadwal.workspace.editJadwal', compact('event', 'workspace', 'workspaceId', 'members'));
+        return view('jadwal.workspace.editJadwal', [
+            'event' => $event,
+            'workspace' => $workspace,
+            'workspaceId' => $workspaceId,
+            'members' => $members,
+            'active' => 'jadwal', // ✅ TAMBAHKAN INI
+            'jadwalSubPage' => 'edit-jadwal' // ✅ TAMBAHKAN INI (opsional, untuk halaman edit)
+        ]);
     }
 
     /**

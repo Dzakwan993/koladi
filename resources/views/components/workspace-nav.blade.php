@@ -3,6 +3,13 @@
     // ✅ FIX: Ambil workspace ID dari session (bukan dari variable yang di-pass)
     $currentWorkspaceId = session('current_workspace_id');
     $currentWorkspaceName = session('current_workspace_name', 'Workspace');
+
+    // ✅ NEW: Mapping untuk sub-menu jadwal
+    $jadwalSubPages = [
+        'buat-jadwal' => 'Buat Jadwal',
+        'notulensi' => 'Notulensi',
+        'detail-jadwal' => 'Detail Jadwal',
+    ];
 @endphp
 
 <div class="flex flex-wrap items-center justify-between px-4 sm:px-6 md:px-8 py-3 md:py-4 border-b bg-white gap-3">
@@ -19,7 +26,20 @@
 
             @if ($active)
                 <span class="text-gray-400">›</span>
-                <span class="text-gray-800 font-semibold capitalize">{{ $active }}</span>
+
+                {{-- ✅ ENHANCEMENT: Cek apakah ini halaman Jadwal dengan sub-menu --}}
+                @if ($active == 'jadwal')
+                    <a href="{{ route('jadwal', ['workspaceId' => $currentWorkspaceId]) }}"
+                        class="text-gray-800 font-semibold hover:text-blue-600">Jadwal</a>
+
+                    {{-- Cek apakah ada sub-page jadwal --}}
+                    @if (isset($jadwalSubPage) && isset($jadwalSubPages[$jadwalSubPage]))
+                        <span class="text-gray-400">›</span>
+                        <span class="text-gray-800 font-semibold">{{ $jadwalSubPages[$jadwalSubPage] }}</span>
+                    @endif
+                @else
+                    <span class="text-gray-800 font-semibold capitalize">{{ $active }}</span>
+                @endif
             @endif
         @else
             {{-- Tampilkan judul default jika tidak ada workspace --}}
@@ -30,13 +50,6 @@
     {{-- Navigation Tabs --}}
     <div
         class="flex flex-wrap items-center justify-start sm:justify-end gap-3 sm:gap-4 text-sm md:text-base w-full sm:w-auto">
-        {{-- MODIFIKASI: Tambahkan pengecekan untuk link yang membutuhkan workspace --}}
-        {{-- <a href="{{ url('/workspace/insight') }}"
-            class="flex items-center gap-2 {{ $active == 'insight' ? 'active text-blue-600 font-semibold border-b-2 border-blue-600 pb-1' : 'text-gray-600 hover:text-blue-600' }}">
-            <img src="{{ asset('images/icons/workspace_insight.svg') }}" alt="Insight Icon"
-                class="nav-icon w-4 h-4 sm:w-5 sm:h-5">
-            <span class="nav-text">Insight</span>
-        </a> --}}
 
         <a href="{{ url('/kanban-tugas') }}"
             class="flex items-center gap-2 {{ $active == 'tugas' ? 'active text-blue-600 font-semibold border-b-2 border-blue-600 pb-1' : 'text-gray-600 hover:text-blue-600' }}">
@@ -56,10 +69,8 @@
         @else
             <a href="{{ url('/chat') }}"
                 class="flex items-center gap-2 {{ $active == 'chat' ? 'active text-blue-600 font-semibold border-b-2 border-blue-600 pb-1' : 'text-gray-600 hover:text-blue-600' }}">
-
                 <img src="{{ asset('images/icons/' . ($active == 'chat' ? 'workspace_chat1.svg' : 'workspace_chat.svg')) }}"
                     alt="Chat Icon" class="nav-icon w-4 h-4 sm:w-5 sm:h-5">
-
                 <span class="nav-text">Chat</span>
             </a>
         @endif
@@ -78,7 +89,6 @@
                 alt="Jadwal Icon" class="nav-icon w-4 h-4 sm:w-5 sm:h-5">
             <span class="nav-text">Jadwal</span>
         </a>
-
 
         <a href="{{ url('/workspace/pengumuman') }}"
             class="flex items-center gap-2 {{ $active == 'pengumuman' ? 'active text-blue-600 font-semibold border-b-2 border-blue-600 pb-1' : 'text-gray-600 hover:text-blue-600' }}">
