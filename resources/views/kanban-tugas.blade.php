@@ -1030,6 +1030,119 @@
                     }
 
                     /* Modal cucu (tambah label baru) */
+
+
+                    /* Style untuk komentar */
+                    .comment-content a {
+                        color: #2563eb !important;
+                        text-decoration: underline;
+                        cursor: pointer;
+                    }
+
+                    .comment-content a:hover {
+                        color: #1d4ed8 !important;
+                        text-decoration: none;
+                    }
+
+                    /* CKEditor styling untuk komentar */
+                    .ck-editor__editable {
+                        min-height: 120px !important;
+                        max-height: 200px;
+                        overflow-y: auto;
+                    }
+
+
+                    /* Tambahkan di section style */
+                    /* Phase Progress Colors */
+                    .phase-planning {
+                        background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+                    }
+
+                    .phase-analysis {
+                        background: linear-gradient(135deg, #10b981, #047857) !important;
+                    }
+
+                    .phase-design {
+                        background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+                    }
+
+                    .phase-development {
+                        background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+                    }
+
+                    .phase-testing {
+                        background: linear-gradient(135deg, #ec4899, #db2777) !important;
+                    }
+
+                    .phase-deployment {
+                        background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+                    }
+
+                    /* Progress percentage colors */
+                    .text-progress-high {
+                        color: #10b981;
+                    }
+
+                    .text-progress-medium {
+                        color: #3b82f6;
+                    }
+
+                    .text-progress-low {
+                        color: #f59e0b;
+                    }
+
+                    .text-progress-none {
+                        color: #ef4444;
+                    }
+
+
+                    /* Tambahkan di section style */
+                    /* Shimmer Animation */
+                    @keyframes shimmer {
+                        0% {
+                            transform: translateX(-100%);
+                        }
+
+                        100% {
+                            transform: translateX(100%);
+                        }
+                    }
+
+                    .animate-shimmer {
+                        animation: shimmer 2s infinite;
+                    }
+
+                    /* Phase Color Classes */
+                    .phase-planning {
+                        background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+                    }
+
+                    .phase-analysis {
+                        background: linear-gradient(135deg, #10b981, #047857) !important;
+                    }
+
+                    .phase-design {
+                        background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+                    }
+
+                    .phase-development {
+                        background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+                    }
+
+                    .phase-testing {
+                        background: linear-gradient(135deg, #ec4899, #db2777) !important;
+                    }
+
+                    .phase-deployment {
+                        background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+                    }
+
+                    /* Smooth transitions */
+                    .transition-all {
+                        transition-property: all;
+                        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+                        transition-duration: 300ms;
+                    }
                 </style>
 
                 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -1130,6 +1243,9 @@
                                 url: '',
                                 file: null
                             },
+
+                            timelineData: [],
+                            loadingTimeline: false,
 
 
                             currentColumnId: null,
@@ -1500,9 +1616,13 @@
                             // ✅ PERBAIKI: Method untuk membuka detail tugas
                             async openDetail(taskId) {
                                 try {
-                                    console.log('Loading task detail for:', taskId);
+                                    console.log('🔄 Loading task detail for:', taskId);
 
-                                    const response = await fetch(`/tasks/${taskId}/detail`);
+                                    const response = await fetch(`/tasks/${taskId}/detail`, {
+                                        headers: {
+                                            'Accept': 'application/json'
+                                        }
+                                    });
 
                                     if (!response.ok) {
                                         throw new Error(`HTTP error! status: ${response.status}`);
@@ -1511,7 +1631,7 @@
                                     const data = await response.json();
 
                                     if (data.success) {
-                                        // Format data untuk kompatibilitas dengan frontend
+                                        // SET CURRENT TASK dengan comments
                                         this.currentTask = {
                                             id: data.task.id,
                                             title: data.task.title,
@@ -1528,15 +1648,14 @@
                                                 5) : '',
                                             members: data.task.assigned_members || [],
                                             labels: data.task.labels || [],
-                                            checklist: data.task.checklists ? data.task.checklists.map(cl => ({
+                                            checklist: data.task.checklists?.map(cl => ({
                                                 id: cl.id,
-                                                name: cl.title,
                                                 title: cl.title,
-                                                done: cl.is_done,
                                                 is_done: cl.is_done,
                                                 position: cl.position
-                                            })) : [],
+                                            })) || [],
                                             attachments: data.task.attachments || [],
+                                            comments: data.task.comments || [], // ✅ Include comments
                                             progress_percentage: data.task.progress_percentage,
                                             is_overdue: data.task.is_overdue,
                                             created_at: data.task.created_at,
@@ -1544,18 +1663,22 @@
                                             board_column: data.task.board_column
                                         };
 
+                                        // Update assigned members
                                         this.assignedMembers = data.task.assigned_members || [];
                                         this.selectedMemberIds = this.assignedMembers.map(member => member.id);
 
+                                        // Buka modal
                                         this.isEditMode = false;
                                         this.openTaskDetail = true;
 
-                                        console.log('Task detail loaded:', this.currentTask);
+                                        console.log('✅ Task detail loaded with', data.task.comments?.length || 0, 'comments');
+
                                     } else {
                                         this.showNotification('Gagal memuat detail tugas: ' + data.message, 'error');
                                     }
+
                                 } catch (error) {
-                                    console.error('Error loading task detail:', error);
+                                    console.error('❌ Error loading task detail:', error);
                                     this.showNotification('Terjadi kesalahan saat memuat detail tugas', 'error');
                                 }
                             },
@@ -1847,9 +1970,16 @@
                             },
 
                             openTaskModalForColumn(columnId = null) {
-                                this.currentColumnId = columnId;
-                                this.openTaskModal = true;
-                            },
+    this.currentColumnId = columnId;
+    this.openTaskModal = true;
+    
+    // ✅ TAMBAHKAN: Initialize editor setelah modal terbuka
+    this.$nextTick(() => {
+        setTimeout(() => {
+            this.initializeTaskFormEditor();
+        }, 300);
+    });
+},
 
                             // Enable edit mode
                             // Di method enableEditMode() atau saat modal dibuka
@@ -2435,33 +2565,62 @@
 
                             // Update method resetTaskForm
                             // ✅ Update method resetTaskForm
-                            resetTaskForm() {
-                                // Reset CKEditor terlebih dahulu
-                                this.resetCKEditor('editor-catatan');
+                            // ✅ Update method resetTaskForm
+resetTaskForm() {
+    // Destroy CKEditor terlebih dahulu
+    const editorId = 'editor-catatan';
+    const el = document.getElementById(editorId);
+    
+    if (el && el._editor) {
+        try {
+            el._editor.destroy()
+                .then(() => {
+                    el._editor = null;
+                    el.innerHTML = '';
+                    if (window.taskEditors?.[editorId]) {
+                        delete window.taskEditors[editorId];
+                    }
+                })
+                .catch(() => {
+                    el._editor = null;
+                    el.innerHTML = '';
+                });
+        } catch (err) {
+            el._editor = null;
+            el.innerHTML = '';
+        }
+    }
 
-                                this.taskForm = {
-                                    title: '',
-                                    phase: '',
-                                    members: [],
-                                    is_secret: false,
-                                    description: '', // ✅ PASTIKAN INI ADA
-                                    attachments: [],
-                                    checklists: [],
-                                    labels: [],
-                                    startDate: '',
-                                    startTime: '',
-                                    dueDate: '',
-                                    dueTime: ''
-                                };
+    this.taskForm = {
+        title: '',
+        phase: '',
+        members: [],
+        is_secret: false,
+        description: '',
+        attachments: [],
+        checklists: [],
+        labels: [],
+        startDate: '',
+        startTime: '',
+        dueDate: '',
+        dueTime: ''
+    };
 
-                                // Reset selected state di labelData
-                                this.labelData.labels.forEach(label => {
-                                    label.selected = false;
-                                });
+    // Reset selected state di labelData
+    this.labelData.labels.forEach(label => {
+        label.selected = false;
+    });
 
-                                this.uploading = false;
-                                this.uploadProgress = 0;
-                            },
+    this.uploading = false;
+    this.uploadProgress = 0;
+    
+    // ✅ TAMBAHKAN: Re-initialize editor setelah reset
+    this.$nextTick(() => {
+        setTimeout(() => {
+            this.initializeTaskFormEditor();
+        }, 300);
+    });
+},
 
                             // Members
                             filteredMembers() {
@@ -3299,6 +3458,7 @@
                                     // Load data
                                     this.loadBoardColumns();
                                     this.loadKanbanTasks(); // ✅ GUNAKAN YANG BARU
+                                    this.loadTimelineData();
                                     this.loadWorkspaceMembers();
                                     this.loadLabels();
                                     this.loadColors();
@@ -4239,6 +4399,332 @@
                             },
 
 
+                            async loadTimelineData() {
+                                this.loadingTimeline = true;
+                                try {
+                                    const workspaceId = this.getCurrentWorkspaceId();
+                                    if (!workspaceId) return;
+
+                                    const response = await fetch(`/tasks/workspace/${workspaceId}/timeline`);
+                                    const data = await response.json();
+
+                                    if (data.success) {
+                                        this.timelineData = data.timeline_data;
+                                        console.log('Timeline data loaded:', this.timelineData);
+                                    } else {
+                                        console.error('Gagal memuat timeline data:', data.message);
+                                    }
+                                } catch (error) {
+                                    console.error('Error loading timeline data:', error);
+                                } finally {
+                                    this.loadingTimeline = false;
+                                }
+                            },
+
+                            // Update method getProjectPhases() untuk menggunakan data real
+                            getProjectPhases() {
+                                if (this.timelineData && this.timelineData.length > 0) {
+                                    return this.timelineData.map(phase => ({
+                                        id: phase.id,
+                                        name: phase.name,
+                                        normalized_name: phase.normalized_name,
+                                        total_tasks: phase.total_tasks,
+                                        completed_tasks: phase.completed_tasks,
+                                        progress_percentage: phase.progress_percentage,
+                                        start_date: phase.start_date,
+                                        end_date: phase.end_date,
+                                        duration: phase.duration,
+                                        duration_percentage: phase.duration_percentage || 10, // Fallback 10% jika tidak ada
+                                        description: `${phase.completed_tasks} dari ${phase.total_tasks} tugas selesai`
+                                    }));
+                                }
+
+                                // Fallback dummy data jika tidak ada data real
+                                return [{
+                                        id: 1,
+                                        name: 'Perencanaan',
+                                        description: '0 dari 0 tugas selesai',
+                                        total_tasks: 0,
+                                        completed_tasks: 0,
+                                        progress_percentage: 0
+                                    },
+                                    {
+                                        id: 2,
+                                        name: 'Analisis',
+                                        description: '0 dari 0 tugas selesai',
+                                        total_tasks: 0,
+                                        completed_tasks: 0,
+                                        progress_percentage: 0
+                                    }
+                                    // ... tambahkan phase lainnya sesuai kebutuhan
+                                ];
+                            },
+
+                            // 🔧 PERBAIKI: Method getTasksByPhaseId
+                            getTasksByPhaseId(phaseId) {
+                                if (this.timelineData && this.timelineData.length > 0) {
+                                    const phase = this.timelineData.find(p => p.id === phaseId);
+                                    return phase ? phase.tasks : [];
+                                }
+
+                                // Fallback ke data dummy dengan normalize yang benar
+                                const phaseMap = {
+                                    1: 'Perencanaan',
+                                    2: 'Analisis',
+                                    3: 'Desain',
+                                    4: 'Development',
+                                    5: 'Testing',
+                                    6: 'Deployment'
+                                };
+
+                                const phaseName = phaseMap[phaseId];
+                                return this.tasks.filter(task => {
+                                    if (!task.phase) return false;
+
+                                    // 🔧 PERBAIKI: Gunakan JavaScript string methods, bukan PHP functions
+                                    const taskPhase = task.phase.toLowerCase().trim().replace(/\s+/g, ' ');
+                                    const targetPhase = phaseName.toLowerCase().trim().replace(/\s+/g, ' ');
+                                    return taskPhase === targetPhase;
+                                });
+                            },
+
+                            // Update method showPhaseTasks() untuk menggunakan data real
+                            // Di dalam kanbanApp() - tambahkan method ini
+
+                            // Method untuk format tanggal
+                            formatDate(dateString) {
+                                if (!dateString) return 'Tidak ada tanggal';
+
+                                try {
+                                    const date = new Date(dateString);
+
+                                    // Format: 12 Nov 2025
+                                    return date.toLocaleDateString('id-ID', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric'
+                                    });
+                                } catch (error) {
+                                    console.error('Error formatting date:', error);
+                                    return 'Tanggal tidak valid';
+                                }
+                            },
+
+                            // Update method showPhaseTasks untuk include date range
+                            showPhaseTasks(phaseId) {
+                                let phase;
+                                let phaseTasks = [];
+
+                                if (this.timelineData && this.timelineData.length > 0) {
+                                    phase = this.timelineData.find(p => p.id === phaseId);
+                                    if (phase) {
+                                        phaseTasks = phase.tasks;
+                                    }
+                                } else {
+                                    // Fallback logic
+                                    const phaseMap = {
+                                        1: 'Perencanaan',
+                                        2: 'Analisis',
+                                        3: 'Desain',
+                                        4: 'Development',
+                                        5: 'Testing',
+                                        6: 'Deployment'
+                                    };
+                                    const phaseName = phaseMap[phaseId];
+                                    phaseTasks = this.tasks.filter(task => {
+                                        const taskPhase = task.phase ? task.phase.toLowerCase().trim().replace(/\s+/g, ' ') :
+                                        '';
+                                        const targetPhase = phaseName.toLowerCase().trim().replace(/\s+/g, ' ');
+                                        return taskPhase === targetPhase;
+                                    });
+
+                                    phase = {
+                                        name: phaseName,
+                                        description: `Phase ${phaseName}`,
+                                        total_tasks: phaseTasks.length,
+                                        completed_tasks: phaseTasks.filter(task => task.status === 'done').length,
+                                        progress_percentage: phaseTasks.length > 0 ?
+                                            Math.round((phaseTasks.filter(task => task.status === 'done').length / phaseTasks
+                                                .length) * 100) : 0
+                                    };
+                                }
+
+                                if (!phase) return;
+
+                                this.selectedPhase = phaseId;
+                                this.phaseModal = {
+                                    open: true,
+                                    title: phase.name,
+                                    description: phase.description ||
+                                        `${phase.completed_tasks} dari ${phase.total_tasks} tugas selesai`,
+                                    tasks: phaseTasks,
+                                    stats: {
+                                        total: phase.total_tasks,
+                                        completed: phase.completed_tasks,
+                                        in_progress: phaseTasks.filter(task => task.status === 'inprogress').length,
+                                        todo: phaseTasks.filter(task => task.status === 'todo').length,
+                                        progress: phase.progress_percentage
+                                    },
+                                    // Tambahkan date range information
+                                    start_date: phase.start_date,
+                                    end_date: phase.end_date,
+                                    duration: phase.duration || 0,
+                                    progress: phase.progress_percentage,
+                                    totalTasks: phase.total_tasks,
+                                    completedTasks: phase.completed_tasks
+                                };
+                            },
+
+
+                            // Tambahkan method ini di dalam kanbanApp() di Alpine.js
+
+                            // Method untuk menghitung progress keseluruhan
+                            getOverallProgress() {
+                                if (!this.timelineData || this.timelineData.length === 0) return 0;
+
+                                const totalTasks = this.timelineData.reduce((sum, phase) => sum + phase.total_tasks, 0);
+                                const completedTasks = this.timelineData.reduce((sum, phase) => sum + phase.completed_tasks, 0);
+
+                                return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+                            },
+
+                            // Method untuk mendapatkan jumlah tugas in progress
+                            getInProgressTasks(phaseId) {
+                                const phase = this.timelineData.find(p => p.id === phaseId);
+                                if (!phase || !phase.tasks) return 0;
+
+                                return phase.tasks.filter(task => task.status === 'inprogress').length;
+                            },
+
+                            // Method untuk mendapatkan jumlah tugas todo
+                            getTodoTasks(phaseId) {
+                                const phase = this.timelineData.find(p => p.id === phaseId);
+                                if (!phase || !phase.tasks) return 0;
+
+                                return phase.tasks.filter(task => task.status === 'todo').length;
+                            },
+
+                            // Method untuk mendapatkan deskripsi phase
+                            getPhaseDescription(phase) {
+                                const completed = phase.completed_tasks || 0;
+                                const total = phase.total_tasks || 0;
+                                const inProgress = this.getInProgressTasks(phase.id);
+                                const todo = this.getTodoTasks(phase.id);
+
+                                let description = `${completed} selesai`;
+
+                                if (inProgress > 0) {
+                                    description += `, ${inProgress} dalam progress`;
+                                }
+
+                                if (todo > 0) {
+                                    description += `, ${todo} belum mulai`;
+                                }
+
+                                return description;
+                            },
+
+
+                            async initializeTaskFormEditor() {
+    const editorId = 'editor-catatan';
+    const el = document.getElementById(editorId);
+    
+    if (!el) {
+        console.warn('❌ Task form editor element not found');
+        return;
+    }
+
+    // ✅ CRITICAL: Prevent duplicate initialization
+    if (el._editor || window.taskEditors?.[editorId]) {
+        console.log('⚠️ Task form editor already exists');
+        return;
+    }
+
+    // Clean existing CKEditor DOM
+    const existingCKEditor = el.querySelector('.ck-editor');
+    if (existingCKEditor) {
+        existingCKEditor.remove();
+    }
+
+    el.innerHTML = '';
+
+    try {
+        const editor = await ClassicEditor.create(el, {
+            toolbar: {
+                items: [
+                    'undo', 'redo', '|',
+                    'heading', '|',
+                    'bold', 'italic', 'underline', 'strikethrough', '|',
+                    'fontColor', 'fontBackgroundColor', '|',
+                    'link', 'blockQuote', 'code', '|',
+                    'bulletedList', 'numberedList', 'outdent', 'indent', '|',
+                    'insertTable', 'imageUpload', 'mediaEmbed'
+                ],
+                shouldNotGroupWhenFull: true
+            },
+            heading: {
+                options: [
+                    { model: 'paragraph', title: 'Paragraf', class: 'ck-heading_paragraph' },
+                    { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
+                    { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
+                    { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' }
+                ]
+            },
+            fontColor: {
+                colors: [
+                    { color: 'black', label: 'Hitam' },
+                    { color: 'red', label: 'Merah' },
+                    { color: 'blue', label: 'Biru' },
+                    { color: 'green', label: 'Hijau' },
+                    { color: 'orange', label: 'Oranye' },
+                    { color: 'purple', label: 'Ungu' }
+                ]
+            },
+            fontBackgroundColor: {
+                colors: [
+                    { color: 'yellow', label: 'Kuning' },
+                    { color: 'lightgreen', label: 'Hijau Muda' },
+                    { color: 'lightblue', label: 'Biru Muda' },
+                    { color: 'pink', label: 'Merah Muda' },
+                    { color: 'gray', label: 'Abu-abu' }
+                ]
+            },
+            image: {
+                toolbar: ['imageTextAlternative', 'imageStyle:inline', 'imageStyle:block', 'imageStyle:side']
+            },
+            table: {
+                contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
+            },
+            mediaEmbed: {
+                previewsInData: true
+            },
+            placeholder: 'Tulis catatan tugas di sini...'
+        });
+
+        // ✅ Store reference
+        el._editor = editor;
+        if (!window.taskEditors) {
+            window.taskEditors = {};
+        }
+        window.taskEditors[editorId] = editor;
+
+        console.log('✅ Task form editor initialized successfully');
+        return editor;
+
+    } catch (error) {
+        console.error('❌ Failed to initialize task form editor:', error);
+        
+        // Fallback to textarea
+        el.innerHTML = `
+            <textarea id="${editorId}-fallback" 
+                      class="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg bg-white resize-none"
+                      placeholder="Tulis catatan tugas di sini..."></textarea>
+        `;
+    }
+},
+
+
+
 
 
 
@@ -4391,163 +4877,779 @@
 
 
 
+                    // Alpine.js component untuk komentar tugas
+                    function taskCommentSection() {
+    return {
+        comments: [],
+        replyView: {
+            active: false,
+            parentComment: null
+        },
+        currentUserAvatar: '{{ Auth::user()->avatar ?? "https://i.pravatar.cc/40?img=11" }}',
+        loading: false,
+        error: null,
+        taskId: null,
+        editorInstances: {}, // ✅ TAMBAHKAN: Track semua editor instances
 
+                            init() {
+            console.log('🔄 Initializing comment section...');
+            
+            const parentEl = this.$el.closest('[x-data*="kanbanApp"]');
+            const parentData = parentEl ? Alpine.$data(parentEl) : null;
+            
+            if (parentData && parentData.currentTask) {
+                this.taskId = parentData.currentTask.id;
+                console.log('✅ Task ID initialized:', this.taskId);
+                
+                if (parentData.currentTask.comments) {
+                    this.comments = this.formatComments(parentData.currentTask.comments);
+                    console.log('✅ Loaded', this.comments.length, 'comments from currentTask');
+                }
+            }
 
+            // ✅ PERBAIKI: Delay initialization untuk memastikan DOM ready
+            this.$nextTick(() => {
+                setTimeout(() => {
+                    this.initializeMainEditor();
+                }, 300);
+            });
 
+            // Watch for task changes
+            let lastTaskId = this.taskId;
+            const watchInterval = setInterval(() => {
+                const parentEl = this.$el.closest('[x-data*="kanbanApp"]');
+                const parentData = parentEl ? Alpine.$data(parentEl) : null;
+                const newTaskId = parentData?.currentTask?.id;
+                
+                if (newTaskId && newTaskId !== lastTaskId) {
+                    console.log('📝 Task changed from', lastTaskId, 'to', newTaskId);
+                    lastTaskId = newTaskId;
+                    this.taskId = newTaskId;
+                    this.error = null;
+                    
+                    // ✅ PERBAIKI: Destroy old editors before loading new task
+                    this.destroyAllEditors();
+                    
+                    if (parentData.currentTask.comments) {
+                        this.comments = this.formatComments(parentData.currentTask.comments);
+                    }
+                    
+                    // ✅ PERBAIKI: Re-initialize main editor with delay
+                    this.$nextTick(() => {
+                        setTimeout(() => {
+                            this.initializeMainEditor();
+                        }, 300);
+                    });
+                }
+            }, 500);
+            
+            this.$watch('$el', (value) => {
+                if (!value) {
+                    clearInterval(watchInterval);
+                    this.destroyAllEditors(); // ✅ TAMBAHKAN: Cleanup on component destroy
+                }
+            });
+        },
 
-                    // Tambahkan fungsi commentSection di dalam script Alpine.js
-                    function commentSection() {
-                        return {
-                            comments: [
-                                // Data dummy komentar untuk tugas
-                                {
-                                    id: 1,
-                                    author: {
-                                        name: 'Risi Gustiar',
-                                        avatar: 'https://i.pravatar.cc/40?img=3'
-                                    },
-                                    content: 'Data transaksi sudah saya update di file Excel.',
-                                    createdAt: new Date(Date.now() - (1000 * 60 * 60 * 24)).toISOString(),
-                                    replies: [{
-                                        id: 11,
-                                        author: {
-                                            name: 'Naufal',
-                                            avatar: 'https://i.pravatar.cc/40?img=1'
-                                        },
-                                        content: 'Terima kasih, saya akan cek datanya.',
-                                        createdAt: new Date(Date.now() - (1000 * 60 * 60 * 12)).toISOString()
-                                    }]
-                                },
-                                {
-                                    id: 2,
-                                    author: {
-                                        name: 'Rendi Sinaga',
-                                        avatar: 'https://i.pravatar.cc/40?img=4'
-                                    },
-                                    content: 'Draft laporan hampir selesai, tinggal verifikasi',
-                                    createdAt: new Date(Date.now() - (1000 * 60 * 60 * 6)).toISOString(),
-                                    replies: []
-                                }
-                            ],
-
-                            // replyView untuk inline reply form
-                            replyView: {
-                                active: false,
-                                parentComment: null
+                            formatComments(comments) {
+                                return comments.map(c => ({
+                                    ...c,
+                                    replies: c.replies || [],
+                                    author: c.author || {
+                                        id: c.user?.id,
+                                        name: c.user?.full_name || c.user?.name || 'Unknown User',
+                                        avatar: c.user?.avatar || 'https://i.pravatar.cc/40?img=0'
+                                    }
+                                }));
                             },
 
+                           async initializeMainEditor() {
+            const editorId = 'task-main-comment-editor';
+            const el = document.getElementById(editorId);
+            
+            if (!el) {
+                console.warn('❌ Editor element not found:', editorId);
+                return;
+            }
 
+            // ✅ CRITICAL: Check if editor already exists
+            if (el._editor || this.editorInstances[editorId]) {
+                console.log('⚠️ Editor already exists for:', editorId);
+                return; // Prevent duplicate initialization
+            }
 
-                            /* toggle reply inline */
+            // ✅ CRITICAL: Check for existing CKEditor instances
+            const existingCKEditor = el.querySelector('.ck-editor');
+            if (existingCKEditor) {
+                console.log('⚠️ Found existing CKEditor DOM, cleaning up...');
+                existingCKEditor.remove();
+            }
+
+            // Clear element content
+            el.innerHTML = '';
+
+            const commentId = this.generateUUID();
+            window.currentMainCommentId = commentId;
+
+            try {
+                const editor = await ClassicEditor.create(el, {
+                    toolbar: {
+                        items: [
+                            'undo', 'redo', '|',
+                            'heading', '|',
+                            'bold', 'italic', '|',
+                            'link', 'blockQuote', '|',
+                            'bulletedList', 'numberedList', '|',
+                            'insertTable'
+                        ],
+                        shouldNotGroupWhenFull: true
+                    },
+                    placeholder: 'Tulis komentar Anda...'
+                });
+
+                // ✅ CRITICAL: Store reference to prevent duplicates
+                el._editor = editor;
+                this.editorInstances[editorId] = editor;
+                
+                console.log('✅ Main editor initialized successfully');
+                
+                // Tambahkan tombol upload
+                this.insertUploadImageButton(editor, commentId);
+                this.insertUploadFileButton(editor, commentId);
+                
+            } catch (err) {
+                console.error('❌ Failed to init main editor:', err);
+                
+                // Fallback to textarea
+                el.innerHTML = `
+                    <textarea id="${editorId}-fallback" 
+                              class="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg bg-white resize-none"
+                              placeholder="Tulis komentar Anda..."></textarea>
+                `;
+            }
+        },
+
+                            async initializeReplyEditor(commentId) {
+            const editorId = `task-reply-editor-${commentId}`;
+            const el = document.getElementById(editorId);
+            
+            if (!el) {
+                console.warn('❌ Reply editor element not found:', editorId);
+                return;
+            }
+
+            // ✅ CRITICAL: Prevent duplicate initialization
+            if (el._editor || this.editorInstances[editorId]) {
+                console.log('⚠️ Reply editor already exists for:', editorId);
+                return;
+            }
+
+            // ✅ CRITICAL: Clean up existing CKEditor DOM
+            const existingCKEditor = el.querySelector('.ck-editor');
+            if (existingCKEditor) {
+                console.log('⚠️ Found existing reply CKEditor DOM, cleaning up...');
+                existingCKEditor.remove();
+            }
+
+            el.innerHTML = '';
+
+            const replyId = this.generateUUID();
+            window[`currentReplyId_${commentId}`] = replyId;
+
+            try {
+                const editor = await ClassicEditor.create(el, {
+                    toolbar: {
+                        items: [
+                            'undo', 'redo', '|',
+                            'bold', 'italic', '|',
+                            'link', 'blockQuote', '|',
+                            'bulletedList', 'numberedList'
+                        ],
+                        shouldNotGroupWhenFull: true
+                    },
+                    placeholder: 'Tulis balasan Anda...'
+                });
+
+                // ✅ CRITICAL: Store reference
+                el._editor = editor;
+                this.editorInstances[editorId] = editor;
+                
+                console.log('✅ Reply editor initialized:', editorId);
+                
+                // Tambahkan tombol upload
+                this.insertUploadImageButton(editor, replyId);
+                this.insertUploadFileButton(editor, replyId);
+                
+            } catch (err) {
+                console.error('❌ Failed to init reply editor:', err);
+                
+                // Fallback to textarea
+                el.innerHTML = `
+                    <textarea id="${editorId}-fallback" 
+                              class="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg bg-white resize-none"
+                              placeholder="Tulis balasan Anda..."></textarea>
+                `;
+            }
+        },
+
+        destroyAllEditors() {
+            console.log('🔄 Destroying all editors...');
+            
+            // Destroy tracked instances
+            Object.keys(this.editorInstances).forEach(editorId => {
+                this.destroyEditor(editorId);
+            });
+            
+            // Clean up any orphaned CKEditor instances
+            document.querySelectorAll('.ck-editor').forEach(ckEditor => {
+                const parent = ckEditor.parentElement;
+                if (parent) {
+                    console.log('🧹 Cleaning up orphaned CKEditor:', parent.id);
+                    ckEditor.remove();
+                    parent.innerHTML = '';
+                }
+            });
+            
+            this.editorInstances = {};
+        },
+
+                            insertUploadImageButton(editor, commentId) {
+                                const toolbarEl = editor.ui.view.toolbar.element;
+                                const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
+
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'ck ck-button ck-off';
+                                btn.title = 'Upload Image';
+                                btn.innerHTML = `
+                <span class="ck-button__label" style="display:flex;align-items:center;gap:4px;padding:2px 4px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 11a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM5 19l4.5-6 3.5 4.5 2.5-3L19 19H5z"/>
+                    </svg>
+                    <span style="font-size:11px;">Image</span>
+                </span>
+            `;
+                                btn.style.cursor = 'pointer';
+
+                                btn.addEventListener('click', () => {
+                                    const input = document.createElement('input');
+                                    input.type = 'file';
+                                    input.accept = 'image/*';
+                                    input.click();
+
+                                    input.addEventListener('change', async (e) => {
+                                        const file = e.target.files[0];
+                                        if (!file) return;
+
+                                        // Show loading state
+                                        btn.classList.add('ck-disabled');
+                                        const originalHTML = btn.innerHTML;
+                                        btn.innerHTML = '<span class="ck-button__label">Uploading...</span>';
+
+                                        const fd = new FormData();
+                                        fd.append('upload', file);
+                                        fd.append('attachable_id', commentId || '');
+                                        fd.append('attachable_type', 'App\\Models\\Comment');
+
+                                        try {
+                                            const res = await fetch('/tasks/comments/upload', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'X-CSRF-TOKEN': this.getCsrfToken()
+                                                },
+                                                body: fd
+                                            });
+
+                                            const data = await res.json();
+
+                                            if (res.ok && data.url) {
+                                                editor.model.change(writer => {
+                                                    const insertPos = editor.model.document.selection
+                                                        .getFirstPosition();
+                                                    const imageElement = writer.createElement(
+                                                    'imageBlock', {
+                                                        src: data.url
+                                                    });
+                                                    editor.model.insertContent(imageElement, insertPos);
+                                                });
+
+                                                console.log('✅ Image uploaded:', data.url);
+                                                this.showNotification('Image berhasil diupload', 'success');
+                                            } else {
+                                                throw new Error(data.error || 'Upload gagal');
+                                            }
+                                        } catch (err) {
+                                            console.error('❌ Upload error:', err);
+                                            this.showNotification('Gagal upload image: ' + err.message, 'error');
+                                        } finally {
+                                            // Restore button state
+                                            btn.classList.remove('ck-disabled');
+                                            btn.innerHTML = originalHTML;
+                                        }
+                                    }, {
+                                        once: true
+                                    });
+                                });
+
+                                itemsContainer.appendChild(btn);
+                            },
+
+                            insertUploadFileButton(editor, commentId) {
+                                const toolbarEl = editor.ui.view.toolbar.element;
+                                const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
+
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'ck ck-button ck-off';
+                                btn.title = 'Upload File';
+                                btn.innerHTML = `
+                <span class="ck-button__label" style="display:flex;align-items:center;gap:4px;padding:2px 4px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="16" height="16" fill="currentColor">
+                        <path d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8.83a2 2 0 0 0-.59-1.41l-3.83-3.83A2 2 0 0 0 10.17 3H6zm4 2l4 4H10V4z"/>
+                    </svg>
+                    <span style="font-size:11px;">File</span>
+                </span>
+            `;
+                                btn.style.cursor = 'pointer';
+
+                                btn.addEventListener('click', () => {
+                                    const input = document.createElement('input');
+                                    input.type = 'file';
+                                    input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar,.ppt,.pptx';
+                                    input.click();
+
+                                    input.addEventListener('change', async (e) => {
+                                        const file = e.target.files[0];
+                                        if (!file) return;
+
+                                        // Show loading state
+                                        btn.classList.add('ck-disabled');
+                                        const originalHTML = btn.innerHTML;
+                                        btn.innerHTML = '<span class="ck-button__label">Uploading...</span>';
+
+                                        const fd = new FormData();
+                                        fd.append('upload', file);
+                                        fd.append('attachable_id', commentId || '');
+                                        fd.append('attachable_type', 'App\\Models\\Comment');
+
+                                        try {
+                                            const res = await fetch('/tasks/comments/upload', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'X-CSRF-TOKEN': this.getCsrfToken()
+                                                },
+                                                body: fd
+                                            });
+
+                                            const data = await res.json();
+
+                                            if (res.ok && data.url) {
+                                                editor.model.change(writer => {
+                                                    const insertPos = editor.model.document.selection
+                                                        .getFirstPosition();
+                                                    const paragraph = writer.createElement('paragraph');
+                                                    const textNode = writer.createText(`📎 ${file.name}`, {
+                                                        linkHref: data.url
+                                                    });
+                                                    writer.append(textNode, paragraph);
+                                                    editor.model.insertContent(paragraph, insertPos);
+                                                });
+
+                                                console.log('✅ File uploaded:', data.url);
+                                                this.showNotification('File berhasil diupload', 'success');
+                                            } else {
+                                                throw new Error(data.error || 'Upload gagal');
+                                            }
+                                        } catch (err) {
+                                            console.error('❌ Upload error:', err);
+                                            this.showNotification('Gagal upload file: ' + err.message, 'error');
+                                        } finally {
+                                            // Restore button state
+                                            btn.classList.remove('ck-disabled');
+                                            btn.innerHTML = originalHTML;
+                                        }
+                                    }, {
+                                        once: true
+                                    });
+                                });
+
+                                itemsContainer.appendChild(btn);
+                            },
+
+                            getEditorData(editorId) {
+                                const el = document.getElementById(editorId);
+                                if (!el) return '';
+                                if (el._editor) return el._editor.getData();
+                                return '';
+                            },
+
+                            resetEditor(editorId) {
+                                const el = document.getElementById(editorId);
+                                if (!el) return;
+                                if (el._editor) el._editor.setData('');
+                            },
+
+                            destroyEditor(editorId) {
+            const el = document.getElementById(editorId);
+            
+            // Destroy from tracked instances
+            if (this.editorInstances[editorId]) {
+                try {
+                    this.editorInstances[editorId].destroy()
+                        .then(() => {
+                            delete this.editorInstances[editorId];
+                            console.log('✅ Destroyed tracked editor:', editorId);
+                        })
+                        .catch(err => {
+                            console.warn('⚠️ Error destroying tracked editor:', err);
+                            delete this.editorInstances[editorId];
+                        });
+                } catch (err) {
+                    console.warn('⚠️ Error in destroy:', err);
+                    delete this.editorInstances[editorId];
+                }
+            }
+            
+            // Destroy from element reference
+            if (el && el._editor) {
+                try {
+                    el._editor.destroy()
+                        .then(() => {
+                            el._editor = null;
+                            el.innerHTML = '';
+                            console.log('✅ Destroyed element editor:', editorId);
+                        })
+                        .catch(err => {
+                            console.warn('⚠️ Error destroying element editor:', err);
+                            el._editor = null;
+                            el.innerHTML = '';
+                        });
+                } catch (err) {
+                    console.warn('⚠️ Error in element destroy:', err);
+                    el._editor = null;
+                    if (el) el.innerHTML = '';
+                }
+            }
+        },
+
+                            async submitMainComment() {
+                                if (!this.taskId) {
+                                    this.showNotification('Task ID tidak ditemukan', 'error');
+                                    return;
+                                }
+
+                                const content = this.getEditorData('task-main-comment-editor').trim();
+                                if (!content) {
+                                    this.showNotification('Komentar tidak boleh kosong', 'error');
+                                    return;
+                                }
+
+                                try {
+                                    const preId = window.currentMainCommentId || this.generateUUID();
+
+                                    const res = await fetch(`/tasks/${this.taskId}/comments`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': this.getCsrfToken(),
+                                            'Accept': 'application/json'
+                                        },
+                                        body: JSON.stringify({
+                                            id: preId,
+                                            content: content
+                                        })
+                                    });
+
+                                    if (!res.ok) throw new Error('Server error ' + res.status);
+
+                                    const data = await res.json();
+
+                                    if (data.success) {
+                                        const newComment = {
+                                            ...data.comment,
+                                            replies: data.comment.replies || [],
+                                            author: data.comment.author || {
+                                                name: data.comment.user?.full_name || 'You',
+                                                avatar: data.comment.user?.avatar || this.currentUserAvatar
+                                            }
+                                        };
+
+                                        this.comments.unshift(newComment);
+                                        this.resetEditor('task-main-comment-editor');
+                                        window.currentMainCommentId = null;
+
+                                        this.$nextTick(() => {
+                                            this.initializeMainEditor();
+                                        });
+
+                                        this.showNotification('Komentar berhasil dikirim', 'success');
+                                    } else {
+                                        throw new Error(data.message || 'Gagal mengirim komentar');
+                                    }
+                                } catch (err) {
+                                    console.error(err);
+                                    this.showNotification('Gagal mengirim komentar: ' + err.message, 'error');
+                                }
+                            },
+
+                            async submitReplyFromEditor() {
+                                if (!this.replyView.parentComment || !this.taskId) {
+                                    this.showNotification('Data tidak lengkap', 'error');
+                                    return;
+                                }
+
+                                const parent = this.replyView.parentComment;
+                                const editorId = `task-reply-editor-${parent.id}`;
+                                const content = this.getEditorData(editorId).trim();
+
+                                if (!content) {
+                                    this.showNotification('Balasan tidak boleh kosong', 'error');
+                                    return;
+                                }
+
+                                try {
+                                    const preId = window[`currentReplyId_${parent.id}`] || this.generateUUID();
+
+                                    const res = await fetch(`/tasks/${this.taskId}/comments`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': this.getCsrfToken(),
+                                            'Accept': 'application/json'
+                                        },
+                                        body: JSON.stringify({
+                                            id: preId,
+                                            content: content,
+                                            parent_comment_id: parent.id
+                                        })
+                                    });
+
+                                    if (!res.ok) throw new Error(`Server error ${res.status}`);
+
+                                    const data = await res.json();
+
+                                    if (data.success) {
+                                        if (!parent.replies) parent.replies = [];
+
+                                        const newReply = {
+                                            ...data.comment,
+                                            author: data.comment.author || {
+                                                name: data.comment.user?.full_name || 'You',
+                                                avatar: data.comment.user?.avatar || this.currentUserAvatar
+                                            }
+                                        };
+
+                                        parent.replies.push(newReply);
+                                        this.closeReplyView();
+                                        this.showNotification('Balasan berhasil dikirim', 'success');
+                                    } else {
+                                        throw new Error(data.message || 'Gagal mengirim balasan');
+                                    }
+                                } catch (err) {
+                                    console.error(err);
+                                    this.showNotification('Gagal mengirim balasan: ' + err.message, 'error');
+                                }
+                            },
+
                             toggleReply(comment) {
                                 if (this.replyView.active && this.replyView.parentComment?.id === comment.id) {
                                     this.closeReplyView();
-                                    return;
-                                }
-                                // close any previous reply editor
-                                if (this.replyView.active && this.replyView.parentComment) {
-                                    destroyReplyEditorForTask(this.replyView.parentComment.id);
-                                }
-                                this.replyView.active = true;
-                                this.replyView.parentComment = comment;
+                                } else {
+                                    if (this.replyView.parentComment) {
+                                        this.destroyEditor(`task-reply-editor-${this.replyView.parentComment.id}`);
+                                    }
 
-                                // give DOM time to render the template, kemudian inisialisasi editor untuk that comment
-                                setTimeout(() => {
-                                    initReplyEditorForTask(comment.id);
-                                }, 150);
+                                    this.replyView.active = true;
+                                    this.replyView.parentComment = comment;
+
+                                    this.$nextTick(() => this.initializeReplyEditor(comment.id));
+                                }
                             },
 
                             closeReplyView() {
-                                if (this.replyView.parentComment) {
-                                    destroyReplyEditorForTask(this.replyView.parentComment.id);
-                                }
-                                this.replyView.active = false;
-                                this.replyView.parentComment = null;
-                            },
+            if (this.replyView.parentComment) {
+                this.destroyEditor(`task-reply-editor-${this.replyView.parentComment.id}`);
+                delete window[`currentReplyId_${this.replyView.parentComment.id}`];
+            }
+            
+            this.replyView.active = false;
+            this.replyView.parentComment = null;
+        },
 
-                            /* submit reply dari editor inline */
-                            submitReplyFromEditor() {
-                                if (!this.replyView.parentComment) {
-                                    alert('Komentar induk tidak ditemukan');
-                                    return;
-                                }
-                                const parentId = this.replyView.parentComment.id;
-                                const content = getTaskReplyEditorDataFor(parentId).trim();
-                                if (!content) {
-                                    alert('Komentar balasan tidak boleh kosong!');
-                                    return;
-                                }
-
-                                const newReply = {
-                                    id: Date.now(),
-                                    author: {
-                                        name: 'Anda',
-                                        avatar: 'https://i.pravatar.cc/40?img=11'
-                                    },
-                                    content,
-                                    createdAt: new Date().toISOString()
-                                };
-
-                                // push ke parent comment
-                                if (!this.replyView.parentComment.replies) {
-                                    this.replyView.parentComment.replies = [];
-                                }
-                                this.replyView.parentComment.replies.push(newReply);
-
-                                // tutup & destroy editor
-                                this.closeReplyView();
-                            },
-
-                            /* submit main (top) comment */
-                            submitMain() {
-                                // ✅ PERBAIKI: Gunakan ID yang benar
-                                const content = getTaskEditorData('task-main-comment-editor').trim();
-                                if (!content) {
-                                    alert('Komentar tidak boleh kosong!');
-                                    return;
-                                }
-
-                                this.comments.unshift({
-                                    id: Date.now(),
-                                    author: {
-                                        name: 'Anda',
-                                        avatar: 'https://i.pravatar.cc/40?img=11'
-                                    },
-                                    content,
-                                    createdAt: new Date().toISOString(),
-                                    replies: []
-                                });
-
-                                // ✅ PERBAIKI: Clear editor setelah submit
-                                const editor = taskEditors['task-main-comment-editor'];
-                                if (editor) {
-                                    editor.setData('');
-                                }
-                            },
-
-                            /* helper tanggal */
                             formatCommentDate(dateString) {
                                 if (!dateString) return '';
-                                const date = new Date(dateString);
+
+                                const d = new Date(dateString);
                                 const now = new Date();
-                                const diffMs = Math.abs(now - date);
-                                const diffMinutes = Math.floor(diffMs / (1000 * 60));
-                                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                                const diffMs = now - d;
+                                const minutes = Math.floor(diffMs / (1000 * 60));
 
-                                if (diffMinutes < 1) return 'beberapa detik yang lalu';
-                                if (diffMinutes < 60) return `${diffMinutes} menit yang lalu`;
-                                if (diffHours < 24) return `${diffHours} jam yang lalu`;
-                                if (diffDays < 7) return `${diffDays} hari yang lalu`;
+                                if (minutes < 1) return 'beberapa detik yang lalu';
+                                if (minutes < 60) return `${minutes} menit yang lalu`;
 
-                                return date.toLocaleDateString('id-ID', {
+                                const hours = Math.floor(minutes / 60);
+                                if (hours < 24) return `${hours} jam yang lalu`;
+
+                                const days = Math.floor(hours / 24);
+                                if (days < 7) return `${days} hari yang lalu`;
+
+                                return d.toLocaleDateString('id-ID', {
                                     day: 'numeric',
                                     month: 'short',
                                     year: 'numeric'
                                 });
                             },
 
+                            getCsrfToken() {
+                                return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                            },
+
+                            generateUUID() {
+                                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                                    const r = Math.random() * 16 | 0;
+                                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                                    return v.toString(16);
+                                });
+                            },
+
+                            showNotification(msg, type = 'info') {
+                                console.log(`[${type}] ${msg}`);
+                                alert(msg);
+                            }
                         };
+                    }
+
+
+                    // -------------------------
+                    // CKEditor toolbar custom upload functions (reuse from earlier)
+                    // -------------------------
+                    function insertUploadImageButtonToToolbar(editor, commentId) {
+                        const toolbarEl = editor.ui.view.toolbar.element;
+                        const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
+
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'ck ck-button';
+                        btn.title = 'Upload Image';
+                        btn.innerHTML = `<span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M21 19V5a2 2 0 0 0-2-2H5 a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14 a2 2 0 0 0 2-2zM8.5 11 a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM5 19 l4.5-6 3.5 4.5 2.5-3L19 19H5z"/></svg>
+    </span>`;
+                        btn.style.marginLeft = '6px';
+                        btn.style.cursor = 'pointer';
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                        btn.addEventListener('click', () => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.click();
+                            input.addEventListener('change', async (e) => {
+                                const file = e.target.files[0];
+                                if (!file) return;
+                                const fd = new FormData();
+                                fd.append('upload', file);
+                                fd.append('attachable_id', commentId || '');
+                                fd.append('attachable_type', 'App\\Models\\Comment');
+
+                                try {
+                                    const res = await fetch('/tasks/comments/upload', {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRF-TOKEN': csrfToken
+                                        },
+                                        body: fd
+                                    });
+                                    const data = await res.json();
+                                    if (res.ok && data.url) {
+                                        editor.model.change(writer => {
+                                            const insertPos = editor.model.document.selection
+                                                .getFirstPosition();
+                                            const imageElement = writer.createElement('imageBlock', {
+                                                src: data.url
+                                            });
+                                            editor.model.insertContent(imageElement, insertPos);
+                                        });
+                                    } else {
+                                        alert('Upload image gagal.');
+                                        console.error(data);
+                                    }
+                                } catch (err) {
+                                    console.error(err);
+                                    alert('Terjadi kesalahan upload image.');
+                                }
+                            }, {
+                                once: true
+                            });
+                        });
+
+                        itemsContainer.appendChild(btn);
+                    }
+
+                    function insertUploadFileButtonToToolbar(editor, commentId) {
+                        const toolbarEl = editor.ui.view.toolbar.element;
+                        const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
+
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'ck ck-button';
+                        btn.title = 'Upload File';
+                        btn.innerHTML = `<span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="18" height="18" fill="currentColor">
+            <path fill="currentColor" d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8.83a2 2 0 0 0-.59-1.41l-3.83-3.83A2 2 0 0 0 10.17 3H6zm4 2 4 4H10V4z"/></svg>
+    </span>`;
+                        btn.style.marginLeft = '6px';
+                        btn.style.cursor = 'pointer';
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                        btn.addEventListener('click', () => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar,.ppt,.pptx";
+                            input.click();
+
+                            input.addEventListener('change', async (e) => {
+                                const file = e.target.files[0];
+                                if (!file) return;
+                                const fd = new FormData();
+                                fd.append('upload', file);
+                                fd.append('attachable_id', commentId || '');
+                                fd.append('attachable_type', 'App\\Models\\Comment');
+
+                                try {
+                                    const res = await fetch('/tasks/comments/upload', {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRF-TOKEN': csrfToken
+                                        },
+                                        body: fd
+                                    });
+                                    const data = await res.json();
+                                    if (res.ok && data.url) {
+                                        editor.model.change(writer => {
+                                            const insertPos = editor.model.document.selection
+                                                .getFirstPosition();
+                                            const paragraph = writer.createElement('paragraph');
+                                            const textNode = writer.createText(file.name, {
+                                                linkHref: data.url
+                                            });
+                                            writer.append(textNode, paragraph);
+                                            editor.model.insertContent(paragraph, insertPos);
+                                        });
+                                    } else {
+                                        alert('Upload file gagal.');
+                                        console.error(data);
+                                    }
+                                } catch (err) {
+                                    console.error(err);
+                                    alert('Terjadi kesalahan upload file.');
+                                }
+                            }, {
+                                once: true
+                            });
+                        });
+
+                        itemsContainer.appendChild(btn);
                     }
                 </script>
             @endsection
