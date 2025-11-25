@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\Pengumuman;
 use App\Models\Workspace;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -14,23 +16,63 @@ use Illuminate\Support\Facades\DB;
 class PengumumanPerusahaanController extends Controller
 {
     /**
+     * Helper untuk set timezone user
+     */
+    private function setUserTimezone()
+    {
+        if (Auth::check()) {
+            $user = Auth::user();
+            $userTimezone = $user->timezone ??
+                           request()->cookie('user_timezone') ??
+                           config('app.timezone');
+
+            // Set timezone
+            config(['app.timezone' => $userTimezone]);
+            date_default_timezone_set($userTimezone);
+
+            return $userTimezone;
+        }
+
+        return config('app.timezone');
+    }
+
+    /**
      * Menampilkan semua pengumuman dalam satu perusahaan
      */
-    public function index($company_id)
+    public function index(Request $request, $company_id)
     {
-        $user = Auth::user();
-        $company = Company::findOrFail($company_id);
+        // SET TIMEZONE USER
+        $userTimezone = $this->setUserTimezone();
 
-        // Ambil semua pengumuman dari semua workspace dalam perusahaan ini
-        $pengumumans = Pengumuman::whereHas('workspace', function($query) use ($company_id) {
-                $query->where('company_id', $company_id);
-            })
+        $user = Auth::user();
+
+        // validasi apakah user member perusahaan ini
+        if (!$user->companies()->where('company_id', $company_id)->exists()) {
+            abort(403, 'Unauthorized access');
+        }
+
+        $pengumumans = Pengumuman::where('company_id', $company_id)
             ->withCount('comments')
-            ->with('creator', 'workspace')
+            ->whereNull('workspace_id')
+            ->where(function ($q) use ($user) {
+                $q->where('is_private', false)
+                    ->orWhere('created_by', $user->id);
+            })
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('pengumuman-perusahaan', compact('pengumumans', 'company', 'user'));
+        // FORMAT WAKTU CREATED_AT SAJA UNTUK USER
+        foreach ($pengumumans as $pengumuman) {
+            $pengumuman->display_created_at = Carbon::parse($pengumuman->created_at)
+                ->setTimezone($userTimezone)
+                ->translatedFormat('d M Y H:i');
+
+            $pengumuman->display_relative_time = Carbon::parse($pengumuman->created_at)
+                ->setTimezone($userTimezone)
+                ->diffForHumans();
+        }
+
+        return view('pengumuman-perusahaan', compact('pengumumans', 'company_id'));
     }
 
     /**
@@ -38,32 +80,37 @@ class PengumumanPerusahaanController extends Controller
      */
     public function store(Request $request, $company_id)
     {
+        // SET TIMEZONE USER
+        $this->setUserTimezone();
+
+        $user = Auth::user();
+
+        // Validasi user memiliki akses ke company ini
+        if (!$user->companies->contains($company_id)) {
+            abort(403, 'Unauthorized access to this company');
+        }
+
         $request->validate([
             'title' => 'required|string',
             'description' => 'required|string',
-            'workspace_id' => 'required|exists:workspaces,id',
             'due_date' => 'nullable|date',
             'auto_due' => 'nullable|string',
+            'is_private' => 'nullable|boolean',
         ]);
 
-        $user = Auth::user();
         $company = Company::findOrFail($company_id);
-
-        // Pastikan workspace yang dipilih belong to perusahaan ini
-        $workspace = Workspace::where('id', $request->workspace_id)
-            ->where('company_id', $company_id)
-            ->firstOrFail();
 
         DB::beginTransaction();
 
         try {
             $pengumuman = new Pengumuman();
             $pengumuman->id = Str::uuid();
-            $pengumuman->workspace_id = $workspace->id;
+            $pengumuman->company_id = $company_id;
+            $pengumuman->workspace_id = null; // Karena workspace dihapus dari form
             $pengumuman->title = $request->title;
             $pengumuman->description = $request->description;
             $pengumuman->created_by = $user->id;
-            $pengumuman->is_private = false; // Selalu public untuk pengumuman perusahaan
+            $pengumuman->is_private = $request->is_private ?? false;
 
             // Logika auto due
             switch (strtolower($request->auto_due ?? '1 hari dari sekarang')) {
@@ -94,7 +141,7 @@ class PengumumanPerusahaanController extends Controller
 
             DB::commit();
 
-            return redirect()->route('pengumuman-perusahaan.show', $pengumuman->id)->with('alert', [
+            return redirect()->route('pengumuman-perusahaan.show', ['company_id' => $company_id, 'id' => $pengumuman->id])->with('alert', [
                 'icon' => 'success',
                 'title' => 'Berhasil!',
                 'text' => 'Berhasil membuat pengumuman perusahaan.'
@@ -108,25 +155,66 @@ class PengumumanPerusahaanController extends Controller
     /**
      * Menampilkan detail pengumuman perusahaan
      */
-    public function show($id)
+    public function show($company_id, $id)
     {
-        $pengumuman = Pengumuman::with(['creator', 'workspace'])->findOrFail($id);
-        $user = Auth::user();
-        $company = $pengumuman->workspace->company;
+        // SET TIMEZONE USER
+        $userTimezone = $this->setUserTimezone();
 
-        // Hitung komentar
+        $user = Auth::user();
+
+        // Validasi user memiliki akses ke company ini
+        if (!$user->companies->contains($company_id)) {
+            abort(403, 'Unauthorized access to this company');
+        }
+
+        $pengumuman = Pengumuman::with(['creator', 'workspace'])->findOrFail($id);
+
+        // Validasi pengumuman belong to company
+        if ($pengumuman->company_id != $company_id) {
+            abort(404);
+        }
+
+        // Validasi akses user ke pengumuman
+        if (!$pengumuman->isVisibleTo($user)) {
+            abort(403, 'Anda tidak memiliki akses ke pengumuman ini');
+        }
+
+        // FORMAT WAKTU CREATED_AT SAJA UNTUK USER
+        $pengumuman->display_created_at = Carbon::parse($pengumuman->created_at)
+            ->setTimezone($userTimezone)
+            ->translatedFormat('d M Y H:i');
+
+        $pengumuman->display_relative_time = Carbon::parse($pengumuman->created_at)
+            ->setTimezone($userTimezone)
+            ->diffForHumans();
+
+        $company = Company::findOrFail($company_id);
+
         $commentCount = $pengumuman->comments()->whereNull('parent_comment_id')->count();
         $allCommentCount = $pengumuman->comments()->count();
 
-        return view('isi-pengumuman-perusahaan', compact('pengumuman', 'company', 'commentCount', 'allCommentCount'));
+        return view('pengumuman-perusahaan-detail', compact(
+            'pengumuman',
+            'company',
+            'company_id',
+            'commentCount',
+            'allCommentCount',
+            'user'
+        ));
     }
 
     /**
      * Mendapatkan data workspaces dalam perusahaan untuk dropdown
-     * 🔹 PERBAIKAN: Ambil company_id dari request route parameter
      */
     public function getWorkspaces(Request $request, $company_id)
     {
+        $user = Auth::user();
+
+        // Validasi user memiliki akses ke company ini
+        if (!$user->companies->contains($company_id)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         $workspaces = Workspace::where('company_id', $company_id)
             ->select('id', 'name')
             ->get();
@@ -137,10 +225,29 @@ class PengumumanPerusahaanController extends Controller
     /**
      * Mendapatkan data pengumuman untuk edit
      */
-    public function getEditData($id)
+    public function getEditData($company_id, $id)
     {
-        $pengumuman = Pengumuman::with('workspace')->findOrFail($id);
+        // SET TIMEZONE USER
+        $this->setUserTimezone();
+
         $user = Auth::user();
+
+        // Validasi user memiliki akses ke company ini
+        if (!$user->companies->contains($company_id)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $pengumuman = Pengumuman::findOrFail($id);
+
+        // Validasi pengumuman belong to company
+        if ($pengumuman->company_id != $company_id) {
+            return response()->json(['error' => 'Pengumuman tidak ditemukan'], 404);
+        }
+
+        // Validasi akses user ke pengumuman
+        if (!$pengumuman->isVisibleTo($user)) {
+            return response()->json(['error' => 'Unauthorized access to this announcement'], 403);
+        }
 
         // Pastikan hanya pembuat yang bisa mengedit
         if ($pengumuman->created_by !== $user->id) {
@@ -169,9 +276,9 @@ class PengumumanPerusahaanController extends Controller
             'id' => $pengumuman->id,
             'title' => $pengumuman->title,
             'description' => $pengumuman->description,
-            'workspace_id' => $pengumuman->workspace_id,
             'due_date' => $pengumuman->due_date ? Carbon::parse($pengumuman->due_date)->toDateString() : null,
             'auto_due' => $autoDueText,
+            'is_private' => $pengumuman->is_private,
         ];
 
         return response()->json($data);
@@ -180,18 +287,37 @@ class PengumumanPerusahaanController extends Controller
     /**
      * Update pengumuman perusahaan
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, $company_id, $id)
     {
+        // SET TIMEZONE USER
+        $this->setUserTimezone();
+
+        $user = Auth::user();
+
+        // Validasi user memiliki akses ke company ini
+        if (!$user->companies->contains($company_id)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
         $request->validate([
             'title' => 'required|string',
             'description' => 'required|string',
-            'workspace_id' => 'required|exists:workspaces,id',
             'due_date' => 'nullable|date',
             'auto_due' => 'nullable|string',
+            'is_private' => 'nullable|boolean',
         ]);
 
-        $user = Auth::user();
         $pengumuman = Pengumuman::findOrFail($id);
+
+        // Validasi pengumuman belong to company
+        if ($pengumuman->company_id != $company_id) {
+            return response()->json(['error' => 'Pengumuman tidak ditemukan'], 404);
+        }
+
+        // Validasi akses user ke pengumuman
+        if (!$pengumuman->isVisibleTo($user)) {
+            return response()->json(['error' => 'Unauthorized access to this announcement'], 403);
+        }
 
         if ($pengumuman->created_by !== $user->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
@@ -202,7 +328,7 @@ class PengumumanPerusahaanController extends Controller
         try {
             $pengumuman->title = $request->title;
             $pengumuman->description = $request->description;
-            $pengumuman->workspace_id = $request->workspace_id;
+            $pengumuman->is_private = $request->is_private ?? false;
 
             // Logika auto due
             $autoDueValue = $request->auto_due ?? '';
@@ -239,9 +365,8 @@ class PengumumanPerusahaanController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Pengumuman perusahaan berhasil diperbarui.',
-                'redirect' => route('pengumuman-perusahaan.show', $pengumuman->id)
+                'redirect' => route('pengumuman-perusahaan.show', ['company_id' => $company_id, 'id' => $pengumuman->id])
             ]);
-
         } catch (\Throwable $th) {
             DB::rollBack();
             return response()->json([
@@ -254,40 +379,117 @@ class PengumumanPerusahaanController extends Controller
     /**
      * Hapus pengumuman perusahaan
      */
-    public function destroy($id)
-    {
-        $pengumuman = Pengumuman::findOrFail($id);
-        $user = Auth::user();
-        $company_id = $pengumuman->workspace->company_id;
+    public function destroy($company_id, $id)
+{
+    $user = Auth::user();
 
-        if ($pengumuman->created_by !== $user->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
-        DB::beginTransaction();
-
-        try {
-            // Hapus relasi recipients jika ada
-            $pengumuman->recipients()->detach();
-
-            // Hapus pengumuman
-            $pengumuman->delete();
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Pengumuman perusahaan berhasil dihapus.',
-                'redirect_url' => route('pengumuman-perusahaan.index', $company_id)
-            ]);
-
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $th->getMessage()
-            ], 500);
-        }
+    if (!$user->companies->contains($company_id)) {
+        return response()->json(['error' => 'Unauthorized'], 403);
     }
-    
+
+    $pengumuman = Pengumuman::findOrFail($id);
+
+    if ($pengumuman->company_id != $company_id) {
+        return response()->json(['error' => 'Pengumuman tidak ditemukan'], 404);
+    }
+
+    if (!$pengumuman->isVisibleTo($user)) {
+        return response()->json(['error' => 'Unauthorized access to this announcement'], 403);
+    }
+
+    if ($pengumuman->created_by !== $user->id) {
+        return response()->json(['error' => 'Unauthorized'], 403);
+    }
+
+    DB::beginTransaction();
+
+    try {
+        $pengumuman->recipients()->detach();
+
+        // 1. Kumpulkan SEMUA URL file yang akan dihapus
+        $filesToDelete = [];
+
+        // A. Dari tabel attachments
+        $attachments = Attachment::where('attachable_type', 'App\\Models\\Pengumuman')
+            ->where('attachable_id', $pengumuman->id)
+            ->get();
+
+        foreach ($attachments as $attachment) {
+            $filesToDelete[] = $attachment->file_url;
+        }
+
+        // B. Dari description (CKEditor content)
+        if (!empty($pengumuman->description)) {
+            preg_match_all('/(\/storage\/uploads\/(files|images)\/[^\s"\'<>]+)/i', $pengumuman->description, $matches);
+
+            if (!empty($matches[1])) {
+                foreach ($matches[1] as $fileUrl) {
+                    $fullUrl = Str::startsWith($fileUrl, 'http') ? $fileUrl : url($fileUrl);
+                    $filesToDelete[] = $fullUrl;
+                }
+            }
+        }
+
+        // 2. Hapus file HANYA jika tidak digunakan oleh pengumuman lain
+        $filesToDelete = array_unique($filesToDelete);
+
+        foreach ($filesToDelete as $fileUrl) {
+            $fileName = basename($fileUrl);
+
+            // CEK 1: Apakah file ini ada di attachments pengumuman lain?
+            $usedInAttachments = Attachment::where('attachable_type', 'App\\Models\\Pengumuman')
+                ->where('attachable_id', '!=', $pengumuman->id)
+                ->where('file_url', 'like', '%' . $fileName)
+                ->exists();
+
+            // CEK 2: Apakah file ini ada di description pengumuman lain?
+            $usedInDescription = Pengumuman::where('id', '!=', $pengumuman->id)
+                ->where('description', 'like', '%' . $fileName . '%')
+                ->exists();
+
+            // Jika file masih digunakan di pengumuman lain (baik di attachments ATAU description)
+            if ($usedInAttachments || $usedInDescription) {
+                // SKIP - jangan hapus file
+                continue;
+            }
+
+            // File tidak digunakan lagi, aman untuk dihapus
+            $relativePath = null;
+            if (Str::contains($fileUrl, '/storage/uploads/files/')) {
+                $relativePath = 'uploads/files/' . $fileName;
+            } elseif (Str::contains($fileUrl, '/storage/uploads/images/')) {
+                $relativePath = 'uploads/images/' . $fileName;
+            }
+
+            if ($relativePath && Storage::disk('public')->exists($relativePath)) {
+                Storage::disk('public')->delete($relativePath);
+            }
+        }
+
+        // 3. Hapus record attachments dari database
+        Attachment::where('attachable_type', 'App\\Models\\Pengumuman')
+            ->where('attachable_id', $pengumuman->id)
+            ->delete();
+
+        // 4. Hapus comments
+        $pengumuman->comments()->delete();
+
+        // 5. Soft delete pengumuman
+        $pengumuman->delete();
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengumuman perusahaan berhasil dihapus.',
+            'redirect_url' => route('pengumuman-perusahaan.index', $company_id)
+        ]);
+    } catch (\Throwable $th) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan: ' . $th->getMessage()
+        ], 500);
+    }
+}
 }

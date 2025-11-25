@@ -312,43 +312,98 @@ class PengumumanController extends Controller
 
     public function destroy(Pengumuman $pengumuman)
 {
-    $workspaceId = $pengumuman->workspace_id; // Simpan ID workspace sebelum hapus
+    $workspaceId = $pengumuman->workspace_id;
 
-    // 1. Hapus relasi penerima
-    $pengumuman->recipients()->detach();
+    DB::beginTransaction();
 
-    // 2. Ambil semua attachment milik pengumuman
-    $attachments = Attachment::where('attachable_type', 'App\\Models\\Pengumuman')
-        ->where('attachable_id', $pengumuman->id)
-        ->get();
+    try {
+        $pengumuman->recipients()->detach();
 
-    foreach ($attachments as $file) {
-    if (Str::contains($file->file_url, 'uploads/files')) {
-        // file biasa di storage/app/public/uploads/files
-        $filePath = storage_path('app/public/uploads/files/' . basename($file->file_url));
-    } elseif (Str::contains($file->file_url, 'uploads/images')) {
-        // file image di storage/app/public/uploads/images
-        $filePath = storage_path('app/public/uploads/images/' . basename($file->file_url));
-    } else {
-        $filePath = null;
+        // 1. Kumpulkan SEMUA URL file yang akan dihapus
+        $filesToDelete = [];
+
+        // A. Dari tabel attachments
+        $attachments = Attachment::where('attachable_type', 'App\\Models\\Pengumuman')
+            ->where('attachable_id', $pengumuman->id)
+            ->get();
+
+        foreach ($attachments as $attachment) {
+            $filesToDelete[] = $attachment->file_url;
+        }
+
+        // B. Dari description (CKEditor content)
+        if (!empty($pengumuman->description)) {
+            preg_match_all('/(\/storage\/uploads\/(files|images)\/[^\s"\'<>]+)/i', $pengumuman->description, $matches);
+
+            if (!empty($matches[1])) {
+                foreach ($matches[1] as $fileUrl) {
+                    $fullUrl = Str::startsWith($fileUrl, 'http') ? $fileUrl : url($fileUrl);
+                    $filesToDelete[] = $fullUrl;
+                }
+            }
+        }
+
+        // 2. Hapus file HANYA jika tidak digunakan oleh pengumuman lain
+        $filesToDelete = array_unique($filesToDelete);
+
+        foreach ($filesToDelete as $fileUrl) {
+            $fileName = basename($fileUrl);
+
+            // CEK 1: Apakah file ini ada di attachments pengumuman lain?
+            $usedInAttachments = Attachment::where('attachable_type', 'App\\Models\\Pengumuman')
+                ->where('attachable_id', '!=', $pengumuman->id)
+                ->where('file_url', 'like', '%' . $fileName)
+                ->exists();
+
+            // CEK 2: Apakah file ini ada di description pengumuman lain?
+            $usedInDescription = Pengumuman::where('id', '!=', $pengumuman->id)
+                ->where('description', 'like', '%' . $fileName . '%')
+                ->exists();
+
+            // Jika file masih digunakan di pengumuman lain (baik di attachments ATAU description)
+            if ($usedInAttachments || $usedInDescription) {
+                // SKIP - jangan hapus file
+                continue;
+            }
+
+            // File tidak digunakan lagi, aman untuk dihapus
+            $relativePath = null;
+            if (Str::contains($fileUrl, '/storage/uploads/files/')) {
+                $relativePath = 'uploads/files/' . $fileName;
+            } elseif (Str::contains($fileUrl, '/storage/uploads/images/')) {
+                $relativePath = 'uploads/images/' . $fileName;
+            }
+
+            if ($relativePath && Storage::disk('public')->exists($relativePath)) {
+                Storage::disk('public')->delete($relativePath);
+            }
+        }
+
+        // 3. Hapus record attachments dari database
+        Attachment::where('attachable_type', 'App\\Models\\Pengumuman')
+            ->where('attachable_id', $pengumuman->id)
+            ->delete();
+
+        // 4. Hapus comments
+        $pengumuman->comments()->delete();
+
+        // 5. Soft delete pengumuman
+        $pengumuman->delete();
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengumuman berhasil dihapus.',
+            'redirect_url' => route('workspace.pengumuman', $workspaceId)
+        ]);
+    } catch (\Throwable $th) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan: ' . $th->getMessage()
+        ], 500);
     }
-
-    if ($filePath && file_exists($filePath)) {
-        unlink($filePath);
-    }
-
-    $file->delete();
-}
-
-
-    // 3. Hapus pengumuman
-    $pengumuman->delete();
-
-    return response()->json([
-        'success' => true,
-        'message' => 'Pengumuman berhasil dihapus.',
-        'redirect_url' => route('workspace.pengumuman', $workspaceId)
-    ]);
 }
 
 

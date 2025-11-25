@@ -15,14 +15,15 @@ class Pengumuman extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'workspace_id',
-        'created_by',
-        'title',
-        'description',
-        'due_date',
-        'auto_due',
-        'is_private',
-    ];
+    'company_id',
+    'workspace_id',
+    'created_by',
+    'title',
+    'description',
+    'due_date',
+    'auto_due',
+    'is_private',
+];
 
     /**
      * 🔹 Relasi ke pembuat pengumuman
@@ -84,6 +85,12 @@ class Pengumuman extends Model
     {
         return $this->morphMany(Attachment::class, 'attachable')->latest();
     }
+
+    public function company()
+{
+    return $this->belongsTo(Company::class, 'company_id');
+}
+
 
 
 

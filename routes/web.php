@@ -87,7 +87,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['auth'])->group(function () {
         Route::post('/workspace/{id}/pengumuman/store', [PengumumanController::class, 'store'])
             ->name('pengumuman.store');
-        Route::get('/pengumuman/anggota/{workspaceId}',[App\Http\Controllers\PengumumanController::class, 'getAnggota'])->name('pengumuman.anggota');
+        Route::get('/pengumuman/anggota/{workspaceId}', [App\Http\Controllers\PengumumanController::class, 'getAnggota'])->name('pengumuman.anggota');
 
         Route::get('/pengumuman/{pengumuman}', [PengumumanController::class, 'show'])->name('pengumuman.show');
 
@@ -126,11 +126,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/statistikRuangKerja', function () {
         return view('statistikRuangKerja');
     })->name('statistikRuangKerja');
-
-    // isiPengumuman
-    Route::get('/isiPengunguman', function () {
-        return view('isiPengunguman');
-    })->name('isiPengunguman');
 
     // Events
     Route::get('/events', function () {
@@ -312,11 +307,27 @@ Route::middleware(['auth'])->group(function () {
     // ✅ Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 
-    //pengumuman perusahaan
-    Route::prefix('perusahaan/{company_id}/pengumuman')->group(function () {
-    Route::get('/', [PengumumanPerusahaanController::class, 'index'])->name('pengumuman-perusahaan.index');
-    Route::post('/store', [PengumumanPerusahaanController::class, 'store'])->name('pengumuman-perusahaan.store');
-    Route::get('/{id}', [PengumumanPerusahaanController::class, 'show'])->name('pengumuman-perusahaan.show');
-    Route::get('/data/workspaces', [PengumumanPerusahaanController::class, 'getWorkspaces'])->name('pengumuman-perusahaan.workspaces');
-});
+    Route::prefix('companies/{company_id}')->middleware('auth')->group(function () {
+
+        Route::get('/pengumuman-perusahaan', [PengumumanPerusahaanController::class, 'index'])
+            ->name('pengumuman-perusahaan.index');
+
+        Route::post('/pengumuman-perusahaan', [PengumumanPerusahaanController::class, 'store'])
+            ->name('pengumuman-perusahaan.store');
+
+        Route::get('/pengumuman-perusahaan/{id}', [PengumumanPerusahaanController::class, 'show'])
+            ->name('pengumuman-perusahaan.show');
+
+        // ✅ PERBAIKAN: Tambahkan {company_id} di route edit
+    Route::get('/pengumuman-perusahaan/{id}/edit', [PengumumanPerusahaanController::class, 'getEditData'])
+        ->name('pengumuman-perusahaan.edit');
+
+    // ✅ PERBAIKAN: Tambahkan {company_id} di route update
+    Route::put('/pengumuman-perusahaan/{id}', [PengumumanPerusahaanController::class, 'update'])
+        ->name('pengumuman-perusahaan.update');
+
+        Route::delete('/pengumuman-perusahaan/{id}', [PengumumanPerusahaanController::class, 'destroy'])
+    ->name('pengumuman-perusahaan.destroy');
+
+    });
 });

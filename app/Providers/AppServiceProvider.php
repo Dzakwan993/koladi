@@ -57,7 +57,7 @@ class AppServiceProvider extends ServiceProvider
     // ✅ View composer untuk atur-hak - SETELAH composer *
     View::composer('components.atur-hak', function ($view) {
         $user = Auth::user();
-        
+
         if (!$user) {
             $view->with([
                 'currentUserRole' => 'Guest',
@@ -70,12 +70,12 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $activeCompanyId = session('active_company_id');
-        
+
         $userCompany = $user->userCompanies()
             ->where('company_id', $activeCompanyId)
             ->with('role')
             ->first();
-        
+
         $currentUserRole = $userCompany?->role?->name ?? 'Member';
         $canManageRoles = in_array($currentUserRole, ['Super Admin', 'Admin']);
 
@@ -88,7 +88,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         $activeCompany = Company::find($activeCompanyId);
-        $usersInCompany = $activeCompany 
+        $usersInCompany = $activeCompany
             ? $activeCompany->users()->with('userCompanies.role')->get()
             : collect();
 
