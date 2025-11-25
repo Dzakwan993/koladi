@@ -13,25 +13,31 @@ class MindmapController extends Controller
 {
     public function index()
 {
-    // Cari workspace pertama yang ada di database
+    // Misal ambil workspace pertama user
     $workspace = Workspace::first();
 
     if (!$workspace) {
         abort(404, 'Tidak ada workspace yang tersedia. Silakan buat workspace terlebih dahulu.');
     }
 
-    // Cari atau buat mindmap untuk workspace ini
+    return $this->loadMindmapByWorkspace($workspace);
+}
+
+
+private function loadMindmapByWorkspace(Workspace $workspace)
+{
     $mindmap = Mindmap::firstOrCreate(
         ['workspace_id' => $workspace->id],
         [
             'id' => Str::uuid(),
-            'title' => 'Mind Map Utama',
-            'description' => 'Mind map utama Anda'
+            'title' => 'Mind Map ' . $workspace->name,
+            'description' => 'Mind map untuk workspace ' . $workspace->name
         ]
     );
 
     return view('mindmap', compact('workspace', 'mindmap'));
 }
+
     public function show($workspaceId)
     {
         $workspace = Workspace::findOrFail($workspaceId);

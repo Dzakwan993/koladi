@@ -199,7 +199,18 @@
                                                         d="M12 4v16m8-8H4" />
                                                 </svg>
                                             </button>
+                                            <button @click.stop="removeConnection(node)"
+                                                x-show="node.parentId"
+                                                :class="node.isRoot || node.type === 'idea' || node.type === 'task' ?
+                                                    'text-white hover:bg-white/20' : 'text-gray-600 hover:bg-gray-100'"
+                                                class="p-1.5 rounded transition" title="Hapus Koneksi">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M8 7l4-4m0 0l4 4m-4-4v18m0 0l-4-4m4 4l4-4" />
+                                                </svg>
+                                            </button>
                                             <button @click.stop="deleteNode(node)"
+                                                x-show="!node.isRoot"
                                                 :class="node.isRoot || node.type === 'idea' || node.type === 'task' ?
                                                     'text-white hover:bg-white/20' : 'text-gray-600 hover:bg-gray-100'"
                                                 class="p-1.5 rounded transition" title="Hapus Node">
@@ -233,7 +244,7 @@
                         </div>
                     </template>
 
-                    <!-- Empty State -->
+                    {{-- <!-- Empty State -->
                     <div x-show="nodes.length === 0" class="absolute inset-0 flex items-center justify-center">
                         <div class="text-center">
                             <svg class="w-24 h-24 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor"
@@ -250,7 +261,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> --}}
 
             <!-- Node Editor Modal -->
             <div x-show="showModal" x-cloak @click.self="closeModal()"
@@ -287,32 +298,6 @@
                                 <option value="task">Task</option>
                             </select>
                         </div>
-
-                        <!-- Parent Selection -->
-                        <div x-show="!editingNode.isRoot">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Parent Node</label>
-                            <select x-model="editingNode.parentId"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                                <option value="">Tidak Ada Parent (Root)</option>
-                                <template x-for="parent in nodes.filter(n => n.id !== editingNode.id)" :key="parent.id">
-                                    <option :value="parent.id" x-text="parent.title"></option>
-                                </template>
-                            </select>
-                        </div>
-
-                        <!-- Connection Side Selection -->
-                        <div x-show="editingNode.parentId">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Sisi Koneksi dari Parent</label>
-                            <select x-model="editingNode.connectionSide"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
-                                <option value="auto">Auto</option>
-                                <option value="top">Atas</option>
-                                <option value="right">Kanan</option>
-                                <option value="bottom">Bawah</option>
-                                <option value="left">Kiri</option>
-                            </select>
-                        </div>
-                    </div>
 
                     <div class="bg-gray-50 px-6 py-4 rounded-b-2xl flex justify-end gap-3">
                         <button @click="closeModal()"
@@ -355,6 +340,13 @@
                     isSaving: false,
                     isLoading: false,
 
+                    // Canvas boundaries
+                    canvasPadding: 50,
+                    minX: 0,
+                    maxX: 0,
+                    minY: 0,
+                    maxY: 0,
+
                     // Undo / Redo
                     undoStack: [],
                     redoStack: [],
@@ -376,9 +368,11 @@
                         this.canvas = document.getElementById('mindmap-canvas');
                         this.ctx = this.canvas.getContext('2d');
                         this.resizeCanvas();
+                        this.updateCanvasBoundaries();
 
                         window.addEventListener('resize', () => {
                             this.resizeCanvas();
+                            this.updateCanvasBoundaries();
                             this.drawConnections();
                         });
 
@@ -478,36 +472,17 @@
                                 }), 0);
                                 this.nodeIdCounter = maxId + 1;
                             } else {
-                                // Buat node default jika kosong
-                                this.createDefaultNode();
+                                // Tidak membuat node default - user harus klik tambah node dulu
+                                this.nodes = [];
                             }
 
                             this.pushHistory('load');
                         } catch (error) {
                             console.error('Failed to load mindmap data:', error);
-                            this.createDefaultNode();
+                            this.nodes = [];
                         } finally {
                             this.isLoading = false;
                         }
-                    },
-
-                    createDefaultNode() {
-                        const centerX = this.canvas.width / 2;
-                        const centerY = this.canvas.height / 2;
-
-                        this.nodes = [{
-                            id: String(this.nodeIdCounter++),
-                            title: 'Proyek Utama',
-                            description: 'Node utama mind map',
-                            x: centerX,
-                            y: centerY,
-                            isRoot: true,
-                            type: 'default',
-                            parentId: null,
-                            connectionSide: 'auto'
-                        }];
-                        this.pushHistory('init');
-                        this.saveToDatabase();
                     },
 
                     showNotification(message, type = 'info') {
@@ -516,6 +491,14 @@
                     },
 
                     // ========== CANVAS METHODS ==========
+                    updateCanvasBoundaries() {
+                        const rect = this.canvas.getBoundingClientRect();
+                        this.minX = this.canvasPadding;
+                        this.maxX = rect.width - this.canvasPadding;
+                        this.minY = this.canvasPadding;
+                        this.maxY = rect.height - this.canvasPadding;
+                    },
+
                     redrawLoop() {
                         this.applyPendingDrag();
                         this.drawConnections();
@@ -776,13 +759,16 @@
                         const centerX = (this.canvas.width / 2 - this.panX) / this.zoomLevel;
                         const centerY = (this.canvas.height / 2 - this.panY) / this.zoomLevel;
 
+                        // Cek apakah ini node pertama (akan menjadi root)
+                        const isFirstNode = this.nodes.length === 0;
+
                         this.editingNode = {
                             id: null,
-                            title: `Node ${this.nodeIdCounter}`,
-                            description: 'Deskripsi node baru',
-                            x: centerX + (Math.random() * 200 - 100),
-                            y: centerY + (Math.random() * 200 - 100),
-                            isRoot: this.nodes.length === 0,
+                            title: '',
+                            description: '',
+                            x: centerX,
+                            y: centerY,
+                            isRoot: isFirstNode,
                             type: 'default',
                             parentId: null,
                             connectionSide: 'auto'
@@ -796,8 +782,8 @@
 
                         this.editingNode = {
                             id: null,
-                            title: 'Child Node',
-                            description: 'Node anak',
+                            title: '',
+                            description: '',
                             x: parent.x + Math.cos(angle) * distance,
                             y: parent.y + Math.sin(angle) * distance,
                             isRoot: false,
@@ -823,6 +809,11 @@
                             return;
                         }
 
+                        // Validasi posisi node agar tidak keluar batas
+                        const boundedPos = this.getBoundedPosition(this.editingNode.x, this.editingNode.y);
+                        this.editingNode.x = boundedPos.x;
+                        this.editingNode.y = boundedPos.y;
+
                         if (this.editingNode.id) {
                             // Edit existing node
                             const index = this.nodes.findIndex(n => n.id === this.editingNode.id);
@@ -842,23 +833,36 @@
                     },
 
                     deleteNode(node) {
-                        if (node.isRoot && this.nodes.length > 1) {
-                            alert('Tidak dapat menghapus node utama jika masih ada node lain!');
+                        if (node.isRoot) {
+                            alert('Node utama tidak dapat dihapus!');
                             return;
                         }
 
-                        if (!confirm(`Hapus node "${node.title}" dan semua node anaknya?`)) {
+                        if (!confirm(`Hapus node "${node.title}"?`)) {
                             return;
                         }
 
-                        const deleteRecursive = (nodeId) => {
-                            const children = this.nodes.filter(n => n.parentId === nodeId);
-                            children.forEach(child => deleteRecursive(child.id));
-                            this.nodes = this.nodes.filter(n => n.id !== nodeId);
-                        };
+                        // Hapus node dan semua koneksi yang terkait
+                        this.nodes = this.nodes.filter(n => n.id !== node.id);
 
-                        deleteRecursive(node.id);
+                        // Hapus parentId dari node yang memiliki parent yang dihapus
+                        this.nodes.forEach(n => {
+                            if (n.parentId === node.id) {
+                                n.parentId = null;
+                            }
+                        });
+
                         this.pushHistory('deleteNode');
+                        this.saveToDatabase();
+                    },
+
+                    removeConnection(node) {
+                        if (!confirm(`Hapus koneksi dari node "${node.title}"?`)) {
+                            return;
+                        }
+
+                        node.parentId = null;
+                        this.pushHistory('removeConnection');
                         this.saveToDatabase();
                     },
 
@@ -984,7 +988,9 @@
                             const newX = (event.clientX - rect.left - this.panX) / this.zoomLevel;
                             const newY = (event.clientY - rect.top - this.panY) / this.zoomLevel;
 
-                            this.pendingDrag = { x: newX, y: newY };
+                            // Apply boundaries
+                            const boundedPos = this.getBoundedPosition(newX, newY);
+                            this.pendingDrag = { x: boundedPos.x, y: boundedPos.y };
                         }
                     },
 
@@ -1012,6 +1018,29 @@
                             this.draggingNode.y = this.pendingDrag.y;
                             this.pendingDrag = null;
                         }
+                    },
+
+                    getBoundedPosition(x, y) {
+                        // Convert world coordinates to screen coordinates for boundary check
+                        const screenX = x * this.zoomLevel + this.panX;
+                        const screenY = y * this.zoomLevel + this.panY;
+
+                        let boundedX = x;
+                        let boundedY = y;
+
+                        if (screenX < this.minX) {
+                            boundedX = (this.minX - this.panX) / this.zoomLevel;
+                        } else if (screenX > this.maxX) {
+                            boundedX = (this.maxX - this.panX) / this.zoomLevel;
+                        }
+
+                        if (screenY < this.minY) {
+                            boundedY = (this.minY - this.panY) / this.zoomLevel;
+                        } else if (screenY > this.maxY) {
+                            boundedY = (this.maxY - this.panY) / this.zoomLevel;
+                        }
+
+                        return { x: boundedX, y: boundedY };
                     },
 
                     startPan(event) {
