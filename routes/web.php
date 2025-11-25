@@ -318,16 +318,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/pengumuman-perusahaan/{id}', [PengumumanPerusahaanController::class, 'show'])
             ->name('pengumuman-perusahaan.show');
 
-        // ✅ PERBAIKAN: Tambahkan {company_id} di route edit
-    Route::get('/pengumuman-perusahaan/{id}/edit', [PengumumanPerusahaanController::class, 'getEditData'])
-        ->name('pengumuman-perusahaan.edit');
+        Route::get('/companies/{company_id}/pengumuman-perusahaan/{id}/edit', [PengumumanPerusahaanController::class, 'getEditData'])
+            ->name('pengumuman-perusahaan.edit');
 
-    // ✅ PERBAIKAN: Tambahkan {company_id} di route update
-    Route::put('/pengumuman-perusahaan/{id}', [PengumumanPerusahaanController::class, 'update'])
-        ->name('pengumuman-perusahaan.update');
+        Route::put('/companies/{company_id}/pengumuman-perusahaan/{id}', [PengumumanPerusahaanController::class, 'update'])
+            ->name('pengumuman-perusahaan.update');
 
         Route::delete('/pengumuman-perusahaan/{id}', [PengumumanPerusahaanController::class, 'destroy'])
-    ->name('pengumuman-perusahaan.destroy');
-
+            ->name('pengumuman-perusahaan.destroy');
     });
 });
