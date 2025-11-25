@@ -66,4 +66,16 @@ class File extends Model
     {
         return $this->belongsTo(User::class, 'uploaded_by');
     }
+
+    // 🔥 TAMBAHAN: Relasi ke komentar (polymorphic)
+    public function comments()
+    {
+        return $this->morphMany(Comment::class, 'commentable')->latest();
+    }
+
+    // 🔥 TAMBAHAN: Relasi ke attachments
+    public function attachments()
+    {
+        return $this->morphMany(Attachment::class, 'attachable')->latest();
+    }
 }

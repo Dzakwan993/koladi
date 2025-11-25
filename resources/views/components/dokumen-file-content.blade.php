@@ -170,16 +170,14 @@
     <div class="bg-white border border-gray-200 rounded-lg p-6" x-data="documentCommentSection()">
         <h3 class="text-lg font-semibold text-gray-800 mb-4">Komentar</h3>
 
-        <!-- Tambah Komentar -->
+        {{-- Tambah Komentar --}}
         <div class="mb-6">
             <label class="text-sm font-medium text-gray-700 mb-2 block">Tulis Komentar</label>
             <div class="flex items-start gap-3">
                 <img src="https://i.pravatar.cc/40?img=11" alt="Avatar" class="rounded-full w-10 h-10">
 
-                <!-- Container untuk editor komentar utama -->
                 <div class="flex-1">
                     <div class="bg-white border border-gray-300 rounded-lg p-4">
-                        <!-- Gunakan ID yang unik untuk editor komentar dokumen -->
                         <div id="document-main-comment-editor" class="min-h-[120px] bg-white"></div>
                         
                         <div class="flex justify-end gap-2 mt-4">
@@ -187,6 +185,7 @@
                                 class="px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded-lg hover:text-gray-800 transition">
                                 Batal
                             </button>
+                            {{-- ✅ PASTIKAN INI MEMANGGIL submitMainComment() --}}
                             <button @click="submitMainComment()" 
                                 class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
                                 Kirim

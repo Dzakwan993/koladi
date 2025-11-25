@@ -12,6 +12,9 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\TaskController;
 use App\Models\Workspace;
 use App\Http\Controllers\DokumenController; 
+use App\Http\Controllers\DocumentCommentController;
+use App\Http\Controllers\CommentController;
+use App\Http\Controllers\AttachmentController;
 
 // ✅ Route Landing Page
 Route::get('/', function () {
@@ -111,6 +114,8 @@ Route::middleware(['auth'])->group(function () {
         // Debug Route
         Route::get('/debug-columns/{workspaceId}', [TaskController::class, 'debugBoardColumns']);
 
+        
+
 
         // ✅ NEW: Label Routes
         Route::get('/workspace/{workspaceId}/labels', [TaskController::class, 'getLabels']);
@@ -135,6 +140,20 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/attachments/{attachmentId}/download', [TaskController::class, 'downloadAttachment']);
     });
 
+
+    // Route untuk upload file/image di komentar
+        Route::post('/upload', [AttachmentController::class, 'upload']);
+        Route::post('/upload-image', [AttachmentController::class, 'uploadImage']);
+
+        // Route untuk komentar umum (pengumuman, task, dll)
+        Route::post('/comments', [CommentController::class, 'store'])->name('comments.store');
+
+        // Route khusus untuk komentar file/dokumen
+        Route::prefix('documents')->group(function () {
+            Route::get('/{file}/comments', [DocumentCommentController::class, 'index']);
+            Route::post('/comments', [DocumentCommentController::class, 'store'])->name('document.comments.store');
+        });
+        
     // ✅ Calendar & Schedule Routes
     Route::get('/jadwal', function () {
         return view('jadwal');

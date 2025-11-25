@@ -1043,6 +1043,7 @@ console.log('✅ dokumen-script.js loaded');
 window.documentEditors = {};
 
 // ===== DOKUMEN COMMENT SECTION =====
+// ===== TAMBAHKAN DI BAGIAN documentCommentSection =====
 window.documentCommentSection = function() {
     return {
         replyView: {
@@ -1058,7 +1059,8 @@ window.documentCommentSection = function() {
                 },
                 { deep: true }
             );
-                    this.$nextTick(() => {
+
+            this.$nextTick(() => {
                 setTimeout(() => {
                     this.createEditorForDocument('document-main-comment-editor', {
                         placeholder: 'Ketik komentar Anda di sini...'
@@ -1068,19 +1070,150 @@ window.documentCommentSection = function() {
 
             window.addEventListener('popstate', (event) => {
                 if (event.state && event.state.fileId) {
-                    // Kalau popstate punya fileId, tampilkan lagi file-nya
                     const file = this.getAllFiles().find(f => f.id === event.state.fileId);
                     if (file) this.currentFile = file;
                 } else {
-                    // Kalau tidak ada state (berarti balik ke default view)
                     this.currentFile = null;
                     this.replyView.active = false;
                 }
             });
 
+            // 🔥 TAMBAHAN: Load komentar saat file dibuka
+            this.$watch('currentFile', (newFile) => {
+                if (newFile && newFile.id) {
+                    this.loadCommentsForFile(newFile.id);
+                }
+            });
         },
 
-    
+        // 🔥 FUNGSI BARU: Load komentar dari backend
+        async loadCommentsForFile(fileId) {
+            try {
+                const response = await fetch(`/documents/${fileId}/comments`);
+                const data = await response.json();
+                
+                if (data.comments) {
+                    this.currentFile.comments = data.comments;
+                }
+            } catch (error) {
+                console.error('Error loading comments:', error);
+            }
+        },
+
+        // 🔥 FUNGSI BARU: Submit komentar utama dengan UUID generation
+        async submitMainComment() {
+            const content = this.getDocumentEditorData('document-main-comment-editor').trim();
+            if (!content) {
+                alert('Komentar tidak boleh kosong!');
+                return;
+            }
+
+            const commentId = this.generateUUID(); // ✅ Generate UUID di frontend
+
+            try {
+                const response = await fetch('/documents/comments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        id: commentId, // ✅ Kirim UUID ke backend
+                        content: content,
+                        commentable_id: this.currentFile.id,
+                        commentable_type: 'App\\Models\\File'
+                    })
+                });
+
+                // 🔥 TAMBAHKAN LOGGING INI
+        console.log('Response status:', response.status);
+        const text = await response.text();
+        console.log('Response text:', text);
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Tambahkan komentar baru ke array
+                    if (!this.currentFile.comments) {
+                        this.currentFile.comments = [];
+                    }
+                    this.currentFile.comments.unshift(data.comment);
+
+                    // Reset editor
+                    const editor = window.documentEditors['document-main-comment-editor'];
+                    if (editor) editor.setData('');
+
+                    alert('Komentar berhasil ditambahkan!');
+                } else {
+                    alert('Gagal menambahkan komentar');
+                }
+            } catch (error) {
+                console.error('Error submitting comment:', error);
+                alert('Terjadi kesalahan saat mengirim komentar');
+            }
+        },
+
+        // 🔥 FUNGSI BARU: Submit reply dengan UUID generation
+        async submitReplyFromEditor() {
+            if (!this.replyView.parentComment) {
+                alert('Komentar induk tidak ditemukan');
+                return;
+            }
+            
+            const parentId = this.replyView.parentComment.id;
+            const content = this.getDocumentReplyEditorDataFor(parentId).trim();
+            
+            if (!content) {
+                alert('Komentar balasan tidak boleh kosong!');
+                return;
+            }
+
+            const replyId = this.generateUUID(); // ✅ Generate UUID di frontend
+
+            try {
+                const response = await fetch('/documents/comments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        id: replyId, // ✅ Kirim UUID ke backend
+                        content: content,
+                        commentable_id: this.currentFile.id,
+                        commentable_type: 'App\\Models\\File',
+                        parent_comment_id: parentId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Tambahkan reply ke parent comment
+                    if (!this.replyView.parentComment.replies) {
+                        this.replyView.parentComment.replies = [];
+                    }
+                    this.replyView.parentComment.replies.push(data.comment);
+
+                    this.closeReplyView();
+                    alert('Balasan berhasil ditambahkan!');
+                } else {
+                    alert('Gagal menambahkan balasan');
+                }
+            } catch (error) {
+                console.error('Error submitting reply:', error);
+                alert('Terjadi kesalahan saat mengirim balasan');
+            }
+        },
+
+        // 🔥 FUNGSI BARU: Generate UUID v4
+        generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        },
 
         toggleReply(comment) {
             if (this.replyView.active && this.replyView.parentComment?.id === comment.id) {
@@ -1108,40 +1241,7 @@ window.documentCommentSection = function() {
             this.replyView.parentComment = null;
         },
 
-        submitReplyFromEditor() {
-            if (!this.replyView.parentComment) {
-                alert('Komentar induk tidak ditemukan');
-                return;
-            }
-            
-            const parentId = this.replyView.parentComment.id;
-            const content = this.getDocumentReplyEditorDataFor(parentId).trim();
-            
-            if (!content) {
-                alert('Komentar balasan tidak boleh kosong!');
-                return;
-            }
-
-            const alpineComponent = document.querySelector('[x-data]').__x.$data;
-            alpineComponent.addReply(parentId, content);
-            this.closeReplyView();
-        },
-
-        submitMainComment() {
-            const content = this.getDocumentEditorData('document-main-comment-editor').trim();
-            if (!content) {
-                alert('Komentar tidak boleh kosong!');
-                return;
-            }
-
-            const alpineComponent = document.querySelector('[x-data]').__x.$data;
-            alpineComponent.addComment(alpineComponent.currentFile, content);
-
-            const editor = window.documentEditors['document-main-comment-editor'];
-            if (editor) editor.setData('');
-        },
-
-        // Editor Functions
+        // Editor Functions (sisanya sama seperti kode asli...)
         async createEditorForDocument(containerId, options = {}) {
             const el = document.getElementById(containerId);
             if (!el) {
@@ -1151,6 +1251,7 @@ window.documentCommentSection = function() {
 
             el.innerHTML = '';
 
+            // 🔥 PENTING: Tambahkan config untuk upload file/image
             const baseConfig = {
                 toolbar: {
                     items: [
@@ -1159,7 +1260,8 @@ window.documentCommentSection = function() {
                         'bold', 'italic', 'underline', 'strikethrough', '|',
                         'link', 'blockQuote', '|',
                         'bulletedList', 'numberedList', '|',
-                        'insertTable'
+                        'insertTable', '|',
+                        'imageUpload', 'uploadFile' // ✅ Tambahkan button upload
                     ],
                     shouldNotGroupWhenFull: true
                 },
@@ -1170,12 +1272,55 @@ window.documentCommentSection = function() {
                         { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' }
                     ]
                 },
+                // 🔥 Konfigurasi upload image
+                simpleUpload: {
+                    uploadUrl: '/upload-image',
+                    withCredentials: true,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                },
+                // 🔥 Konfigurasi upload file
+                fileUpload: {
+                    uploadUrl: '/upload',
+                    withCredentials: true,
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                },
                 placeholder: options.placeholder || ''
             };
 
             try {
                 const editor = await ClassicEditor.create(el, baseConfig);
                 window.documentEditors[containerId] = editor;
+
+                // 🔥 PENTING: Tambahkan commentable_id ke setiap upload
+                editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
+                    return {
+                        upload: async () => {
+                            const file = await loader.file;
+                            const formData = new FormData();
+                            formData.append('upload', file);
+                            
+                            // ✅ Kirim commentable info
+                            const commentId = this.generateUUID();
+                            formData.append('attachable_type', 'App\\Models\\Comment');
+                            formData.append('attachable_id', commentId);
+
+                            const response = await fetch('/upload-image', {
+                                method: 'POST',
+                                body: formData,
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                                }
+                            });
+
+                            const data = await response.json();
+                            return { default: data.url };
+                        }
+                    };
+                };
 
                 editor.model.document.on('change:data', () => {
                     const data = editor.getData();
