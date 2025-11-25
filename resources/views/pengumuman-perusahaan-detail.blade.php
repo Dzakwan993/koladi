@@ -841,7 +841,6 @@
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="pengumuman_id" id="editPengumumanId">
-                <input type="hidden" id="editWorkspaceId" name="workspace_id" value="">
 
                 <!-- Judul -->
                 <div>
@@ -853,7 +852,7 @@
                         class="w-full border border-[#6B7280] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600 font-[Inter] text-[14px] placeholder:text-[#6B7280] pl-5" />
 
                     <!-- Deskripsi -->
-                    <div class="flex flex-col" x-data x-init="createEditorFor('edit-catatan-editor', { placeholder: 'Masukkan catatan anda disini...' })">
+                    <div class="flex flex-col">
                         <label class="block text-sm font-inter font-semibold text-black mb-1 mt-5">
                             Deskripsi <span class="text-red-500">*</span>
                         </label>
@@ -864,309 +863,6 @@
                         </div>
                         <input type="hidden" name="description" id="editCatatanInput">
                     </div>
-
-                    <script>
-                        async function createEditorFor(containerId, options = {}) {
-                            const el = document.getElementById(containerId);
-                            if (!el) return console.warn('Element not found:', containerId);
-
-                            try {
-                                const editor = await ClassicEditor.create(el, {
-                                    toolbar: {
-                                        items: [
-                                            'undo', 'redo', '|',
-                                            'heading', '|',
-                                            'bold', 'italic', 'underline', 'strikethrough', '|',
-                                            'link', 'blockQuote', '|',
-                                            'bulletedList', 'numberedList', '|',
-                                            'insertTable', '|',
-                                        ],
-                                        shouldNotGroupWhenFull: true
-                                    },
-                                    heading: {
-                                        options: [{
-                                                model: 'paragraph',
-                                                title: 'Paragraf',
-                                                class: 'ck-heading_paragraph'
-                                            },
-                                            {
-                                                model: 'heading1',
-                                                view: 'h1',
-                                                title: 'Heading 1',
-                                                class: 'ck-heading_heading1'
-                                            },
-                                            {
-                                                model: 'heading2',
-                                                view: 'h2',
-                                                title: 'Heading 2',
-                                                class: 'ck-heading_heading2'
-                                            }
-                                        ]
-                                    },
-                                    fontFamily: {
-                                        options: ['Inter, sans-serif', 'Arial, Helvetica, sans-serif',
-                                            'Courier New, Courier, monospace'
-                                        ],
-                                    },
-                                    fontSize: {
-                                        options: ['14px', '16px', '18px', '24px', '32px']
-                                    },
-                                    fontColor: {
-                                        columns: 5,
-                                        colors: [{
-                                                color: '#000000',
-                                                label: 'Black'
-                                            },
-                                            {
-                                                color: '#102a63',
-                                                label: 'Dark Blue'
-                                            },
-                                            {
-                                                color: '#6B7280',
-                                                label: 'Gray'
-                                            },
-                                            {
-                                                color: '#FFFFFF',
-                                                label: 'White'
-                                            }
-                                        ]
-                                    },
-                                    simpleUpload: {
-                                        uploadUrl: '/upload',
-                                        headers: {
-                                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                                        }
-                                    },
-                                    placeholder: options.placeholder || ''
-                                });
-
-                                // Tambahkan tombol Upload File ke toolbar
-                                insertUploadFileButtonToToolbar(editor);
-                                insertUploadImageButtonToToolbar(editor);
-
-                                // Styling editor content agar sama dengan input judul
-                                editor.editing.view.change(writer => {
-                                    writer.setStyle('font-family', 'Inter, sans-serif', editor.editing.view.document.getRoot());
-                                    writer.setStyle('font-size', '14px', editor.editing.view.document.getRoot());
-                                    writer.setStyle('color', '#000000', editor.editing.view.document.getRoot());
-                                });
-
-                                window[containerId + '_editor'] = editor;
-
-                            } catch (err) {
-                                console.error('CKEditor init error:', err);
-                            }
-                        }
-
-                        //fungsi untuk upload image
-                        function insertUploadImageButtonToToolbar(editor) {
-                            try {
-                                const toolbarEl = editor.ui.view.toolbar.element;
-                                const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
-
-                                const btn = document.createElement('button');
-                                btn.type = 'button';
-                                btn.className = 'ck ck-button';
-                                btn.title = 'Upload Image';
-                                btn.innerHTML = `
-                                    <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
-                                        ${imageIconSVG()}
-                                    </span>
-                                `;
-
-                                btn.style.marginLeft = '6px';
-                                btn.style.padding = '4px 8px';
-                                btn.style.borderRadius = '6px';
-                                btn.style.background = 'transparent';
-                                btn.style.border = '0';
-                                btn.style.cursor = 'pointer';
-
-                                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-                                btn.addEventListener('click', () => {
-                                    const input = document.createElement('input');
-                                    input.type = 'file';
-                                    input.accept = 'image/*';
-                                    input.click();
-
-                                    input.addEventListener('change', async (e) => {
-                                        const file = e.target.files[0];
-                                        if (!file) return;
-
-                                        btn.innerHTML = '⏳';
-                                        const formData = new FormData();
-                                        formData.append('upload', file);
-
-                                        // TAMBAHKAN attachable_id saat upload image
-                                        const pengumumanId = document.getElementById('editPengumumanId')?.value;
-                                        if (pengumumanId) {
-                                            formData.append('attachable_id', pengumumanId);
-                                        }
-
-                                        try {
-                                            const res = await fetch('/upload-image', {
-                                                method: 'POST',
-                                                headers: {
-                                                    'X-CSRF-TOKEN': csrfToken || '{{ csrf_token() }}'
-                                                },
-                                                body: formData
-                                            });
-
-                                            const data = await res.json();
-                                            if (res.ok && data.url) {
-                                                editor.model.change(writer => {
-                                                    const insertPos = editor.model.document.selection
-                                                        .getFirstPosition();
-                                                    const imageElement = writer.createElement('imageBlock', {
-                                                        src: data.url
-                                                    });
-                                                    editor.model.insertContent(imageElement, insertPos);
-                                                });
-                                            } else {
-                                                alert('Upload gagal. Cek console.');
-                                                console.error(data);
-                                            }
-                                        } catch (err) {
-                                            console.error('Upload error:', err);
-                                            alert('Terjadi kesalahan saat upload image.');
-                                        } finally {
-                                            btn.innerHTML = `
-                                                <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
-                                                    ${imageIconSVG()}
-                                                </span>
-                                            `;
-                                        }
-                                    }, {
-                                        once: true
-                                    });
-                                });
-
-                                itemsContainer.appendChild(btn);
-                            } catch (err) {
-                                console.error('Insert upload image button error:', err);
-                            }
-                            // Ikon SVG untuk tombol Upload Image
-                            function imageIconSVG() {
-                                return `
-                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                                        <path d="M21 19V5a2 2 0 0 0-2-2H5
-                                            a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14
-                                            a2 2 0 0 0 2-2zM8.5 11
-                                            a1.5 1.5 0 1 1 0-3
-                                            1.5 1.5 0 0 1 0 3zM5 19
-                                            l4.5-6 3.5 4.5 2.5-3L19 19H5z"/>
-                                    </svg>
-                                `;
-                            }
-                        }
-
-                        // Fungsi untuk menambahkan tombol Upload File
-                        function insertUploadFileButtonToToolbar(editor) {
-                            try {
-                                const toolbarEl = editor.ui.view.toolbar.element;
-                                const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
-
-                                const btn = document.createElement('button');
-                                btn.type = 'button';
-                                btn.className = 'ck ck-button';
-                                btn.title = 'Upload File';
-                                btn.innerHTML =
-                                    ` <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">${fileIconSVG()}</span>`;
-                                btn.style.marginLeft = '6px';
-                                btn.style.padding = '4px 8px';
-                                btn.style.borderRadius = '6px';
-                                btn.style.background = 'transparent';
-                                btn.style.border = '0';
-                                btn.style.cursor = 'pointer';
-
-                                // ✅ Ambil CSRF token dari meta tag (aman untuk Blade & eksternal JS)
-                                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-                                btn.addEventListener('click', () => {
-                                    const input = document.createElement('input');
-                                    input.type = 'file';
-                                    input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.sql,.txt,.zip,.rar,.ppt,.pptx";
-                                    input.click();
-
-                                    input.addEventListener('change', async (e) => {
-                                        const file = e.target.files && e.target.files[0];
-                                        if (!file) return;
-
-                                        const originalHTML = btn.innerHTML;
-                                        btn.innerHTML = 'Uploading...';
-
-                                        const formData = new FormData();
-                                        formData.append('upload', file);
-
-                                        // TAMBAHKAN attachable_id saat upload
-                                        const pengumumanId = document.getElementById('editPengumumanId')?.value;
-                                        if (pengumumanId) {
-                                            formData.append('attachable_id', pengumumanId);
-                                        }
-
-                                        try {
-                                            const res = await fetch('/upload', {
-                                                method: 'POST',
-                                                headers: {
-                                                    'X-CSRF-TOKEN': csrfToken || '{{ csrf_token() }}'
-                                                },
-                                                body: formData
-                                            });
-
-                                            const data = await res.json();
-
-                                            if (res.ok && data.url) {
-                                                editor.model.change(writer => {
-                                                    const insertPos = editor.model.document.selection
-                                                        .getFirstPosition();
-
-                                                    // Tambahkan elemen paragraf dengan text berwarna biru & underline
-                                                    const linkElement = writer.createElement('paragraph');
-                                                    const textNode = writer.createText(file.name, {
-                                                        linkHref: data.url
-                                                    });
-                                                    writer.append(textNode, linkElement);
-                                                    editor.model.insertContent(linkElement, insertPos);
-                                                });
-                                            } else {
-                                                console.error('Upload response:', data);
-                                                alert('Upload gagal. Cek console untuk detail.');
-                                            }
-                                        } catch (error) {
-                                            console.error('Upload error:', error);
-                                            alert('Terjadi kesalahan saat upload file.');
-                                        } finally {
-                                            btn.innerHTML = originalHTML;
-                                        }
-                                    }, {
-                                        once: true
-                                    });
-                                });
-
-                                // Sisipkan sebelum tombol "Insert Table" (kalau ada)
-                                const insertTableBtn = Array.from(itemsContainer.children).find(
-                                    el => el.title?.toLowerCase().includes('table')
-                                );
-
-                                if (insertTableBtn) {
-                                    itemsContainer.insertBefore(btn, insertTableBtn);
-                                } else {
-                                    itemsContainer.appendChild(btn);
-                                }
-
-                            } catch (err) {
-                                console.error('Insert upload button error:', err);
-                            }
-                        }
-
-                        // Ikon SVG untuk tombol Upload File
-                        function fileIconSVG() {
-                            return `
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="20">
-                                    <path fill="currentColor" d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8.83a2 2 0 0 0-.59-1.41l-3.83-3.83A2 2 0 0 0 10.17 3H6zm4 2 4 4H10V4z"/>
-                                </svg>`;
-                        }
-                    </script>
 
                     <!-- Tenggat -->
                     <div>
@@ -1215,7 +911,7 @@
                                 </div>
                             </div>
                         </div>
-                        <input type="hidden" name="auto_due" id="editAutoDue" value="">
+                        <input type="hidden" name="auto_due" id="editAutoDue" value="1 hari dari sekarang">
                     </div>
 
                     <style>
@@ -1398,29 +1094,27 @@
                             });
                         });
                     </script>
+                </div>
 
-                        <!-- Tombol Lebih Besar -->
-                        <div class="flex justify-end gap-2 pt-2">
-                            <button type="button" id="editBtnBatal"
-                                class="border border-blue-700 text-blue-600 bg-white px-8 py-2 text-[16px] rounded-lg hover:bg-red-50 transition">
-                                Batal
-                            </button>
-                            <button type="submit" id="editSubmitBtn"
-                                class="bg-blue-700 text-white px-8 py-2 text-[16px] rounded-lg hover:bg-blue-800 transition">
-                                Perbarui
-                            </button>
-                        </div>
+                <!-- Tombol Lebih Besar -->
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" id="editBtnBatal"
+                        class="border border-blue-700 text-blue-600 bg-white px-8 py-2 text-[16px] rounded-lg hover:bg-red-50 transition">
+                        Batal
+                    </button>
+                    <button type="submit" id="editSubmitBtn"
+                        class="bg-blue-700 text-white px-8 py-2 text-[16px] rounded-lg hover:bg-blue-800 transition">
+                        Perbarui
+                    </button>
+                </div>
             </form>
         </div>
     </div>
 
     <script>
-        window.currentUser = @json(auth()->user());
-    </script>
-
-    <script>
         // Variabel untuk mencegah multiple submit
         let isSubmittingEdit = false;
+        let editEditorInstance = null;
 
         // Fungsi untuk membuka modal edit
         function openEditModal(pengumumanId) {
@@ -1437,22 +1131,27 @@
             // Reset form state terlebih dahulu
             resetEditForm();
 
-            // PERBAIKAN: Gunakan route yang benar
-            // ✅ SESUDAH (BENAR) - Menggunakan route helper
-fetch(`{{ route('pengumuman-perusahaan.edit', ['company_id' => $company_id, 'id' => '__ID__']) }}`.replace('__ID__', pengumumanId))
-                .then(response => {
-                    if (!response.ok) throw new Error('Gagal mengambil data');
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Data received:', data);
-                    // Isi form dengan data yang diterima
-                    populateEditForm(data);
-                })
-                .catch(error => {
-                    console.error('Fetch error (edit-data):', error);
-                    closeEditModal();
-                });
+            // Load data pengumuman
+            fetch(`/companies/{{ $company_id }}/pengumuman-perusahaan/${pengumumanId}/edit`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Gagal mengambil data: ' + response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Data received:', data);
+                // Isi form dengan data yang diterima
+                populateEditForm(data);
+            })
+            .catch(error => {
+                console.error('Fetch error (edit-data):', error);
+                Swal.fire('Error', 'Gagal memuat data pengumuman', 'error');
+                closeEditModal();
+            });
         }
 
         // Fungsi reset form
@@ -1460,9 +1159,8 @@ fetch(`{{ route('pengumuman-perusahaan.edit', ['company_id' => $company_id, 'id'
             document.getElementById('editTitle').value = '';
 
             // Reset CKEditor
-            const editor = window['edit-catatan-editor_editor'];
-            if (editor) {
-                editor.setData('');
+            if (editEditorInstance) {
+                editEditorInstance.setData('');
             }
 
             // Reset due date settings ke default
@@ -1473,16 +1171,6 @@ fetch(`{{ route('pengumuman-perusahaan.edit', ['company_id' => $company_id, 'id'
             document.querySelector('.edit-chip-text-2').textContent = '1 hari dari sekarang';
             document.getElementById('editAutoDue').value = '1 hari dari sekarang';
             document.getElementById('editCustomDeadline').value = '';
-
-            // Reset privacy switch
-            const switchInput = document.getElementById('editSwitchRahasia');
-            const switchBg = document.getElementById('editSwitchBg');
-            const switchCircle = document.getElementById('editSwitchCircle');
-
-            switchInput.checked = false;
-            switchBg.classList.remove('bg-blue-600');
-            switchBg.classList.add('bg-gray-300');
-            switchCircle.style.transform = 'translateX(0px)';
 
             // Reset submit state
             isSubmittingEdit = false;
@@ -1496,19 +1184,15 @@ fetch(`{{ route('pengumuman-perusahaan.edit', ['company_id' => $company_id, 'id'
             document.getElementById('editTitle').value = data.title || '';
 
             // Deskripsi - set ke CKEditor
-            const editor = window['edit-catatan-editor_editor'];
-            if (editor) {
-                editor.setData(data.description || '');
+            if (editEditorInstance) {
+                editEditorInstance.setData(data.description || '');
             } else {
-                // Jika editor belum siap, tunggu sebentar
-                setTimeout(() => {
-                    const editorRetry = window['edit-catatan-editor_editor'];
-                    if (editorRetry) {
-                        editorRetry.setData(data.description || '');
-                    } else {
-                        console.error('CKEditor not found');
+                // Inisialisasi editor jika belum ada
+                initializeEditEditor().then(() => {
+                    if (editEditorInstance) {
+                        editEditorInstance.setData(data.description || '');
                     }
-                }, 500);
+                });
             }
 
             // Due date settings
@@ -1526,7 +1210,11 @@ fetch(`{{ route('pengumuman-perusahaan.edit', ['company_id' => $company_id, 'id'
                 document.getElementById('editLabelText').textContent = 'Tenggat :';
                 document.getElementById('editDropdownChip').classList.add('hidden');
                 document.getElementById('editDateInputContainer').classList.remove('hidden');
-                document.getElementById('editCustomDeadline').value = data.due_date;
+
+                // Format date untuk input[type=date] (YYYY-MM-DD)
+                const dueDate = new Date(data.due_date);
+                const formattedDate = dueDate.toISOString().split('T')[0];
+                document.getElementById('editCustomDeadline').value = formattedDate;
                 document.getElementById('editAutoDue').value = '';
             } else {
                 // Default mode
@@ -1537,26 +1225,212 @@ fetch(`{{ route('pengumuman-perusahaan.edit', ['company_id' => $company_id, 'id'
                 document.querySelector('.edit-chip-text-2').textContent = '1 hari dari sekarang';
                 document.getElementById('editAutoDue').value = '1 hari dari sekarang';
             }
+        }
 
-            // Privacy setting
-            const switchInput = document.getElementById('editSwitchRahasia');
-            const switchBg = document.getElementById('editSwitchBg');
-            const switchCircle = document.getElementById('editSwitchCircle');
+        // Inisialisasi CKEditor untuk edit
+        async function initializeEditEditor() {
+            const editorElement = document.getElementById('edit-catatan-editor');
+            if (!editorElement || editEditorInstance) return;
 
-            if (data.is_private) {
-                switchInput.checked = true;
-                switchBg.classList.remove('bg-gray-300');
-                switchBg.classList.add('bg-blue-600');
-                switchCircle.style.transform = 'translateX(20px)';
-            } else {
-                switchInput.checked = false;
-                switchBg.classList.remove('bg-blue-600');
-                switchBg.classList.add('bg-gray-300');
-                switchCircle.style.transform = 'translateX(0px)';
+            try {
+                editEditorInstance = await ClassicEditor.create(editorElement, {
+                    toolbar: {
+                        items: [
+                            'undo', 'redo', '|',
+                            'heading', '|',
+                            'bold', 'italic', 'underline', 'strikethrough', '|',
+                            'link', 'blockQuote', '|',
+                            'bulletedList', 'numberedList', '|',
+                            'insertTable', '|',
+                        ],
+                        shouldNotGroupWhenFull: true
+                    },
+                    heading: {
+                        options: [
+                            {
+                                model: 'paragraph',
+                                title: 'Paragraf',
+                                class: 'ck-heading_paragraph'
+                            },
+                            {
+                                model: 'heading1',
+                                view: 'h1',
+                                title: 'Heading 1',
+                                class: 'ck-heading_heading1'
+                            },
+                            {
+                                model: 'heading2',
+                                view: 'h2',
+                                title: 'Heading 2',
+                                class: 'ck-heading_heading2'
+                            }
+                        ]
+                    },
+                    placeholder: 'Masukkan deskripsi pengumuman...'
+                });
+
+                // Tambahkan tombol upload
+                insertUploadFileButtonToEditToolbar(editEditorInstance);
+                insertUploadImageButtonToEditToolbar(editEditorInstance);
+
+            } catch (error) {
+                console.error('Error initializing edit editor:', error);
             }
         }
 
-        // Event listener untuk form submit
+        // Fungsi untuk tombol upload file di editor edit
+        function insertUploadFileButtonToEditToolbar(editor) {
+            try {
+                const toolbarEl = editor.ui.view.toolbar.element;
+                const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'ck ck-button';
+                btn.title = 'Upload File';
+                btn.innerHTML = `
+                    <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="20">
+                            <path fill="currentColor" d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8.83a2 2 0 0 0-.59-1.41l-3.83-3.83A2 2 0 0 0 10.17 3H6zm4 2 4 4H10V4z"/>
+                        </svg>
+                    </span>
+                `;
+                btn.style.marginLeft = '6px';
+                btn.style.cursor = 'pointer';
+
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                btn.addEventListener('click', () => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar,.ppt,.pptx";
+                    input.click();
+
+                    input.addEventListener('change', async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        const formData = new FormData();
+                        formData.append('upload', file);
+
+                        // Gunakan pengumuman ID yang sedang diedit
+                        const pengumumanId = document.getElementById('editPengumumanId')?.value;
+                        if (pengumumanId) {
+                            formData.append('attachable_id', pengumumanId);
+                            formData.append('attachable_type', 'App\\Models\\Pengumuman');
+                        }
+
+                        try {
+                            const res = await fetch('/upload', {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': csrfToken
+                                },
+                                body: formData
+                            });
+                            const data = await res.json();
+                            if (res.ok && data.url) {
+                                editor.model.change(writer => {
+                                    const insertPos = editor.model.document.selection.getFirstPosition();
+                                    const paragraph = writer.createElement('paragraph');
+                                    const textNode = writer.createText(file.name, {
+                                        linkHref: data.url
+                                    });
+                                    writer.append(textNode, paragraph);
+                                    editor.model.insertContent(paragraph, insertPos);
+                                });
+                            } else {
+                                alert('Upload file gagal.');
+                            }
+                        } catch (err) {
+                            console.error(err);
+                            alert('Terjadi kesalahan upload file.');
+                        }
+                    }, { once: true });
+                });
+
+                itemsContainer.appendChild(btn);
+            } catch (err) {
+                console.error('Insert upload button error:', err);
+            }
+        }
+
+        // Fungsi untuk tombol upload image di editor edit
+        function insertUploadImageButtonToEditToolbar(editor) {
+            try {
+                const toolbarEl = editor.ui.view.toolbar.element;
+                const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'ck ck-button';
+                btn.title = 'Upload Image';
+                btn.innerHTML = `
+                    <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                            <path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 11a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM5 19l4.5-6 3.5 4.5 2.5-3L19 19H5z"/>
+                        </svg>
+                    </span>
+                `;
+                btn.style.marginLeft = '6px';
+                btn.style.cursor = 'pointer';
+
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                btn.addEventListener('click', () => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.click();
+
+                    input.addEventListener('change', async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        const formData = new FormData();
+                        formData.append('upload', file);
+
+                        // Gunakan pengumuman ID yang sedang diedit
+                        const pengumumanId = document.getElementById('editPengumumanId')?.value;
+                        if (pengumumanId) {
+                            formData.append('attachable_id', pengumumanId);
+                            formData.append('attachable_type', 'App\\Models\\Pengumuman');
+                        }
+
+                        try {
+                            const res = await fetch('/upload-image', {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': csrfToken
+                                },
+                                body: formData
+                            });
+                            const data = await res.json();
+                            if (res.ok && data.url) {
+                                editor.model.change(writer => {
+                                    const insertPos = editor.model.document.selection.getFirstPosition();
+                                    const imageElement = writer.createElement('imageBlock', {
+                                        src: data.url
+                                    });
+                                    editor.model.insertContent(imageElement, insertPos);
+                                });
+                            } else {
+                                alert('Upload gambar gagal.');
+                            }
+                        } catch (err) {
+                            console.error(err);
+                            alert('Terjadi kesalahan upload gambar.');
+                        }
+                    }, { once: true });
+                });
+
+                itemsContainer.appendChild(btn);
+            } catch (err) {
+                console.error('Insert upload image button error:', err);
+            }
+        }
+
+        // Event listener untuk form submit - DIPERBAIKI
         document.getElementById('pengumumanEditForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
@@ -1569,99 +1443,114 @@ fetch(`{{ route('pengumuman-perusahaan.edit', ['company_id' => $company_id, 'id'
             isSubmittingEdit = true;
 
             const pengumumanId = document.getElementById('editPengumumanId').value;
-            const companyId = "{{ $company_id }}";
+            const submitBtn = document.getElementById('editSubmitBtn');
 
-            // Sinkronkan CKEditor sebelum FormData dibuat
-            if (window['edit-catatan-editor_editor']) {
-                window['edit-catatan-editor_editor'].updateSourceElement();
-            }
-
-            const formData = new FormData(this);
+            // Simpan teks asli tombol
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Memperbarui...';
+            submitBtn.disabled = true;
 
             // Validasi form
             const title = document.getElementById('editTitle').value.trim();
-            const editor = window['edit-catatan-editor_editor'];
-            const editorData = editor ? editor.getData().trim() : '';
+            const editorData = editEditorInstance ? editEditorInstance.getData().trim() : '';
 
             if (!title) {
                 Swal.fire("Kolom Belum Diisi", "Judul pengumuman wajib diisi.", "warning");
+                resetSubmitButton(submitBtn, originalText);
                 isSubmittingEdit = false;
                 return;
             }
 
             if (!editorData || editorData === "<p><br></p>") {
                 Swal.fire("Kolom Belum Diisi", "Deskripsi pengumuman wajib diisi.", "warning");
+                resetSubmitButton(submitBtn, originalText);
                 isSubmittingEdit = false;
                 return;
             }
 
-            // Set deskripsi ke hidden input
-            document.getElementById('editCatatanInput').value = editorData;
+            // Prepare data dengan FormData (lebih baik untuk file upload)
+            const formData = new FormData();
+            formData.append('_method', 'PUT'); // Laravel method spoofing
+            formData.append('title', title);
+            formData.append('description', editorData);
+            formData.append('auto_due', document.getElementById('editAutoDue').value);
 
-            // TAMBAHKAN attachable_id ke formData untuk attachments
-            formData.append('attachable_id', pengumumanId);
+            // Handle due_date jika ada
+            const customDeadline = document.getElementById('editCustomDeadline').value;
+            if (customDeadline) {
+                formData.append('due_date', customDeadline);
+            }
 
-            console.log('Submitting form with data:', {
-                title: title,
-                description: editorData.substring(0, 100) + '...',
-                is_private: document.getElementById('editSwitchRahasia').checked,
-                attachable_id: pengumumanId
-            });
+            formData.append('is_private', document.getElementById('editSwitchRahasia')?.checked ? '1' : '0');
 
-            // PERBAIKAN: Gunakan route yang benar
+            console.log('Submitting form data:');
+            console.log('Title:', title);
+            console.log('Auto Due:', document.getElementById('editAutoDue').value);
+            console.log('Due Date:', customDeadline);
+            console.log('Is Private:', document.getElementById('editSwitchRahasia')?.checked);
+
+            // Kirim request update dengan FormData
             fetch(`/companies/{{ $company_id }}/pengumuman-perusahaan/${pengumumanId}`, {
-    method: 'POST', // ⚠️ Ganti ke POST
-    headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-        _method: 'PUT', // ✅ Laravel akan parse ini sebagai PUT
-        title: title,
-        description: editorData,
-        auto_due: document.getElementById('editAutoDue').value,
-        due_date: document.getElementById('editCustomDeadline').value,
-        is_private: document.getElementById('editSwitchRahasia').checked,
-        attachable_id: pengumumanId
-    })
-}))
-                .then(async response => {
+                method: 'POST', // Gunakan POST untuk method spoofing
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(async response => {
+                const contentType = response.headers.get('content-type');
+
+                if (!response.ok) {
+                    // Coba baca response sebagai text dulu untuk debug
+                    const errorText = await response.text();
+                    console.error('Server error response:', errorText);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                if (contentType && contentType.includes('application/json')) {
+                    return response.json();
+                } else {
                     const text = await response.text();
-                    try {
-                        return JSON.parse(text);
-                    } catch {
-                        throw new Error("Server tidak mengembalikan JSON: " + text.slice(0, 120));
-                    }
-                })
-                .then(data => {
-                    console.log('Response data:', data);
-                    if (data.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil!',
-                            text: data.message,
-                            timer: 2000,
-                            showConfirmButton: false
-                        }).then(() => {
-                            closeEditModal();
-                            if (data.redirect) {
-                                window.location.href = data.redirect;
-                            } else {
-                                location.reload();
-                            }
-                        });
-                    } else {
-                        Swal.fire("Error", data.message || "Terjadi kesalahan", "error");
-                    }
-                })
-                .catch(error => {
-                    console.error('Submit error (update):', error);
-                    Swal.fire("Error", "Terjadi kesalahan saat memperbarui pengumuman", "error");
-                })
-                .finally(() => {
-                    isSubmittingEdit = false;
-                });
+                    throw new Error("Server tidak mengembalikan JSON: " + text.slice(0, 120));
+                }
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: data.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        closeEditModal();
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                        } else {
+                            location.reload();
+                        }
+                    });
+                } else {
+                    throw new Error(data.message || "Terjadi kesalahan");
+                }
+            })
+            .catch(error => {
+                console.error('Submit error (update):', error);
+                Swal.fire("Error", error.message || "Terjadi kesalahan saat memperbarui pengumuman", "error");
+            })
+            .finally(() => {
+                resetSubmitButton(submitBtn, originalText);
+                isSubmittingEdit = false;
+            });
         });
+
+        // Fungsi reset tombol submit
+        function resetSubmitButton(button, originalText) {
+            button.textContent = originalText;
+            button.disabled = false;
+        }
 
         // Fungsi untuk menutup modal edit
         function closeEditModal() {
@@ -1675,51 +1564,56 @@ fetch(`{{ route('pengumuman-perusahaan.edit', ['company_id' => $company_id, 'id'
 
         // Event listener untuk tombol batal
         document.getElementById('editBtnBatal').addEventListener('click', closeEditModal);
+
+        // Inisialisasi editor ketika modal pertama kali dibuka
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEditEditor();
+        });
     </script>
 
     <!-- delete -->
     <script>
         function deletePengumuman(id) {
-    Swal.fire({
-        title: "Hapus pengumuman?",
-        text: "Semua file & gambar terkait juga akan dihapus.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#d33",
-        cancelButtonColor: "#3085d6",
-        confirmButtonText: "Ya, hapus!",
-        cancelButtonText: "Batal"
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(`/companies/{{ $company_id }}/pengumuman-perusahaan/${id}`, {
-                method: "DELETE",
-                headers: {
-                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-                    "Accept": "application/json"
-                }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        icon: "success",
-                        title: "Berhasil!",
-                        text: data.message,
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        window.location.href = data.redirect_url;
+            Swal.fire({
+                title: "Hapus pengumuman?",
+                text: "Semua file & gambar terkait juga akan dihapus.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#3085d6",
+                confirmButtonText: "Ya, hapus!",
+                cancelButtonText: "Batal"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/companies/{{ $company_id }}/pengumuman-perusahaan/${id}`, {
+                        method: "DELETE",
+                        headers: {
+                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                            "Accept": "application/json"
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: "success",
+                                title: "Berhasil!",
+                                text: data.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                window.location.href = data.redirect_url;
+                            });
+                        } else {
+                            Swal.fire("Gagal", data.message, "error");
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error:", error);
+                        Swal.fire("Error", "Terjadi kesalahan saat menghapus pengumuman", "error");
                     });
-                } else {
-                    Swal.fire("Gagal", data.message, "error");
                 }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                Swal.fire("Error", "Terjadi kesalahan saat menghapus pengumuman", "error");
             });
         }
-    });
-}
     </script>
 @endsection

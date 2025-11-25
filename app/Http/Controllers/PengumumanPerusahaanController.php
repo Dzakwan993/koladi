@@ -226,63 +226,82 @@ class PengumumanPerusahaanController extends Controller
      * Mendapatkan data pengumuman untuk edit
      */
     public function getEditData($company_id, $id)
-    {
-        // SET TIMEZONE USER
-        $this->setUserTimezone();
+{
+    // SET TIMEZONE USER
+    $this->setUserTimezone();
 
-        $user = Auth::user();
+    $user = Auth::user();
 
-        // Validasi user memiliki akses ke company ini
-        if (!$user->companies->contains($company_id)) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
-        $pengumuman = Pengumuman::findOrFail($id);
-
-        // Validasi pengumuman belong to company
-        if ($pengumuman->company_id != $company_id) {
-            return response()->json(['error' => 'Pengumuman tidak ditemukan'], 404);
-        }
-
-        // Validasi akses user ke pengumuman
-        if (!$pengumuman->isVisibleTo($user)) {
-            return response()->json(['error' => 'Unauthorized access to this announcement'], 403);
-        }
-
-        // Pastikan hanya pembuat yang bisa mengedit
-        if ($pengumuman->created_by !== $user->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
-        // Tentukan auto_due text berdasarkan due_date
-        $autoDueText = '';
-        if ($pengumuman->auto_due) {
-            $dueDate = Carbon::parse($pengumuman->due_date);
-            $now = Carbon::now();
-            $diffDays = $now->diffInDays($dueDate, false);
-
-            if ($diffDays === 1)
-                $autoDueText = '1 hari dari sekarang';
-            else if ($diffDays === 3)
-                $autoDueText = '3 hari dari sekarang';
-            else if ($diffDays === 7)
-                $autoDueText = '7 hari dari sekarang';
-            else
-                $autoDueText = '';
-        }
-
-        // Format data untuk frontend
-        $data = [
-            'id' => $pengumuman->id,
-            'title' => $pengumuman->title,
-            'description' => $pengumuman->description,
-            'due_date' => $pengumuman->due_date ? Carbon::parse($pengumuman->due_date)->toDateString() : null,
-            'auto_due' => $autoDueText,
-            'is_private' => $pengumuman->is_private,
-        ];
-
-        return response()->json($data);
+    // Validasi user memiliki akses ke company ini
+    if (!$user->companies->contains($company_id)) {
+        return response()->json([
+            'success' => false, // TAMBAHKAN INI
+            'message' => 'Unauthorized access'
+        ], 403);
     }
+
+    $pengumuman = Pengumuman::find($id); // Gunakan find() bukan findOrFail()
+
+    if (!$pengumuman) {
+        return response()->json([
+            'success' => false, // TAMBAHKAN INI
+            'message' => 'Pengumuman tidak ditemukan'
+        ], 404);
+    }
+
+    // Validasi pengumuman belong to company
+    if ($pengumuman->company_id != $company_id) {
+        return response()->json([
+            'success' => false, // TAMBAHKAN INI
+            'message' => 'Pengumuman tidak ditemukan'
+        ], 404);
+    }
+
+    // Validasi akses user ke pengumuman
+    if (!$pengumuman->isVisibleTo($user)) {
+        return response()->json([
+            'success' => false, // TAMBAHKAN INI
+            'message' => 'Unauthorized access to this announcement'
+        ], 403);
+    }
+
+    // Pastikan hanya pembuat yang bisa mengedit
+    if ($pengumuman->created_by !== $user->id) {
+        return response()->json([
+            'success' => false, // TAMBAHKAN INI
+            'message' => 'Unauthorized: Hanya pembuat pengumuman yang dapat mengedit'
+        ], 403);
+    }
+
+    // Tentukan auto_due text berdasarkan due_date
+    $autoDueText = '';
+    if ($pengumuman->auto_due) {
+        $dueDate = Carbon::parse($pengumuman->due_date);
+        $now = Carbon::now();
+        $diffDays = $now->diffInDays($dueDate, false);
+
+        if ($diffDays === 1)
+            $autoDueText = '1 hari dari sekarang';
+        else if ($diffDays === 3)
+            $autoDueText = '3 hari dari sekarang';
+        else if ($diffDays === 7)
+            $autoDueText = '7 hari dari sekarang';
+        else
+            $autoDueText = '';
+    }
+
+    // Format data untuk frontend - TAMBAHKAN success: true
+    $data = [
+        'success' => true, // INI YANG DITUNGGU FRONTEND
+        'title' => $pengumuman->title,
+        'description' => $pengumuman->description,
+        'due_date' => $pengumuman->due_date ? Carbon::parse($pengumuman->due_date)->toDateString() : null,
+        'auto_due' => $autoDueText,
+        'is_private' => $pengumuman->is_private,
+    ];
+
+    return response()->json($data);
+}
 
     /**
      * Update pengumuman perusahaan

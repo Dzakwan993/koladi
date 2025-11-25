@@ -318,11 +318,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/pengumuman-perusahaan/{id}', [PengumumanPerusahaanController::class, 'show'])
             ->name('pengumuman-perusahaan.show');
 
-        Route::get('/companies/{company_id}/pengumuman-perusahaan/{id}/edit', [PengumumanPerusahaanController::class, 'getEditData'])
-            ->name('pengumuman-perusahaan.edit');
+        Route::get('/pengumuman-perusahaan/{id}/edit', [PengumumanPerusahaanController::class, 'getEditData'])
+        ->name('pengumuman-perusahaan.edit');
 
-        Route::put('/companies/{company_id}/pengumuman-perusahaan/{id}', [PengumumanPerusahaanController::class, 'update'])
-            ->name('pengumuman-perusahaan.update');
+    // PERBAIKI ROUTE INI - hapus duplicate 'companies/{company_id}/'
+    Route::put('/pengumuman-perusahaan/{id}', [PengumumanPerusahaanController::class, 'update'])
+        ->name('pengumuman-perusahaan.update');
 
         Route::delete('/pengumuman-perusahaan/{id}', [PengumumanPerusahaanController::class, 'destroy'])
             ->name('pengumuman-perusahaan.destroy');
