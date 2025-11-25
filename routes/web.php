@@ -46,6 +46,27 @@ Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallba
 Route::post('/invite/send', [InvitationController::class, 'send'])->name('invite.send');
 Route::get('/invite/accept/{token}', [InvitationController::class, 'accept'])->name('invite.accept');
 
+// ============================================
+// 🔐 ROUTES OTP & PASSWORD RESET
+// ============================================
+
+// Verifikasi OTP setelah registrasi
+Route::get('/verify-otp', [AuthController::class, 'showVerifyOtp'])->name('verify-otp.show');
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->name('verify-otp.verify');
+Route::post('/verify-otp/resend', [AuthController::class, 'resendOtp'])->name('verify-otp.resend');
+
+// Lupa Password
+Route::get('/lupa-password', [AuthController::class, 'showForgotPassword'])->name('forgot-password');
+Route::post('/lupa-password', [AuthController::class, 'sendResetOtp'])->name('forgot-password.send');
+
+// Verifikasi OTP Reset Password
+Route::get('/reset-password/verify', [AuthController::class, 'showResetPasswordVerifyOtp'])->name('reset-password.verify-otp');
+Route::post('/reset-password/verify', [AuthController::class, 'verifyResetOtp'])->name('reset-password.verify-otp-submit');
+
+// Form Reset Password Baru
+Route::get('/reset-password', [AuthController::class, 'showResetPasswordForm'])->name('reset-password.form');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('reset-password.submit');
+
 // ✅ Authenticated Routes
 Route::middleware(['auth'])->group(function () {
 
