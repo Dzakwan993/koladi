@@ -29,7 +29,33 @@ class AuthController extends Controller
             'password' => 'required|min:8|confirmed',
         ]);
 
-        // 🔥 Simpan data pendaftaran di session (belum buat user)
+        // 🔥 Cek apakah ini dari undangan (email sudah di-set dari query string)
+        $isInvited = $request->query('email') && $request->email === $request->query('email');
+
+        if ($isInvited) {
+            // 🔥 Jika dari undangan, langsung buat user tanpa OTP
+            $user = User::create([
+                'full_name' => $request->full_name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'email_verified_at' => now(), // Langsung verified karena diundang
+            ]);
+
+            $pendingToken = session('pending_invitation_token');
+            session()->forget('pending_invitation_token');
+
+            if ($pendingToken) {
+                return redirect()->route('masuk')->with([
+                    'info' => 'Akun berhasil dibuat! Silakan masuk untuk menerima undangan perusahaan Anda.'
+                ]);
+            }
+
+            return redirect()->route('masuk')->with([
+                'success' => 'Akun berhasil dibuat! Silakan masuk untuk melanjutkan.'
+            ]);
+        }
+
+        // 🔥 Untuk pendaftaran biasa (bukan undangan), tetap pakai OTP
         session([
             'register_data' => [
                 'full_name' => $request->full_name,
@@ -39,12 +65,19 @@ class AuthController extends Controller
             'pending_invitation_token' => session('pending_invitation_token')
         ]);
 
-        // 🔥 Generate dan kirim OTP
-        $otp = OtpVerification::generateOtp($request->email, 'register');
-        Mail::to($request->email)->send(new OtpMail($otp, 'register'));
+        try {
+            // 🔥 Generate dan kirim OTP
+            $otp = OtpVerification::generateOtp($request->email, 'register');
+            Mail::to($request->email)->send(new OtpMail($otp, 'register'));
 
-        return redirect()->route('verify-otp.show')
-            ->with('success', 'Kode OTP telah dikirim ke email Anda. Silakan cek inbox atau folder spam.');
+            return redirect()->route('verify-otp.show')
+                ->with('success', 'Kode OTP telah dikirim ke email Anda. Silakan cek inbox atau folder spam.');
+        } catch (\Exception $e) {
+            // Jika email gagal terkirim, tampilkan error yang lebih user-friendly
+            return back()->withErrors([
+                'email' => 'Gagal mengirim email OTP. Silakan coba lagi atau hubungi admin.'
+            ])->withInput();
+        }
     }
 
     // ✅ Halaman verifikasi OTP
