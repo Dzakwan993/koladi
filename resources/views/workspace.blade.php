@@ -51,7 +51,10 @@
                 $currentWorkspace = \App\Models\Workspace::where('company_id', $activeCompanyId)->active()->first();
             } else {
                 // User biasa hanya bisa akses workspace yang mereka ikuti
-                $currentWorkspace = $user->workspaces()->active()->first();
+                $currentWorkspace = $user->userWorkspaces()
+                    ->where('status_active', true)
+                    ->with('workspace')
+                    ->first()?->workspace;
             }
 
             // Simpan ke session jika ada workspace yang bisa diakses
@@ -66,15 +69,16 @@
 
     <div x-data x-init="$store.workspace = { selectedMenu: '' }" class="bg-[#f3f6fc] min-h-screen">
         {{-- Workspace Nav --}}
-        @include('components.workspace-nav')
+        @include('components.workspace-nav', ['workspace' => $workspace, 'active' => ''])
 
         {{-- Grid Workspace --}}
         <div class="p-8 grid grid-cols-3 gap-6 max-w-6xl mx-auto">
 
             {{-- Card Tugas --}}
-            @if ($currentWorkspace)
-                <a href="{{ route('kanban-tugas', $currentWorkspace->id) }}" @click="$store.workspace.selectedMenu = 'tugas'"
-                    class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
+            @if($currentWorkspace)
+                <a href="{{ route('kanban-tugas', $currentWorkspace->id) }}"
+                   @click="$store.workspace.selectedMenu = 'tugas'"
+                   class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
                     <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
                         <img src="{{ asset('images/icons/workspace_tugas.svg') }}" alt="Tugas Icon" class="w-full h-full">
                     </div>
@@ -103,9 +107,10 @@
             </a>
 
             {{-- Card Jadwal --}}
-            @if ($currentWorkspace)
-                <a href="{{ url('/jadwal') }}" @click="$store.workspace.selectedMenu = 'jadwal'"
-                    class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
+            @if($currentWorkspace)
+                <a href="{{ route('jadwal', ['workspaceId' => $currentWorkspace->id]) }}"
+                   @click="$store.workspace.selectedMenu = 'jadwal'"
+                   class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
                     <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
                         <img src="{{ asset('images/icons/workspace_kalender.svg') }}" alt="Jadwal Icon"
                             class="w-full h-full">
@@ -124,9 +129,9 @@
                 </div>
             @endif
 
-            {{-- Card Chat --}}
-            @if ($currentWorkspace)
-                <a href="{{ url('/chat') }}" @click="$store.workspace.selectedMenu = 'chat'"
+            {{-- Card Chat - 🔥 FIXED: Gunakan route dengan workspace ID --}}
+            @if($currentWorkspace)
+                <a href="{{ route('chat', $currentWorkspace->id) }}" @click="$store.workspace.selectedMenu = 'chat'"
                     class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
                     <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
                         <img src="{{ asset('images/icons/workspace_chat.svg') }}" alt="Chat Icon" class="w-full h-full">
@@ -144,7 +149,7 @@
                 </div>
             @endif
 
-            {{-- Card Insight --}}
+            {{-- Card Mindmap --}}
             @if ($currentWorkspace)
                 <a href="{{ url('/mindmap') }}" @click="$store.workspace.selectedMenu = 'insight'"
                     class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
@@ -167,8 +172,8 @@
             @endif
 
             {{-- Card Dokumen --}}
-            @if ($currentWorkspace)
-                <a href="{{ url('/dokumen-dan-file') }}" @click="$store.workspace.selectedMenu = 'dokumen'"
+            @if($currentWorkspace)
+                <a href="{{ route('dokumen-dan-file', $currentWorkspace->id) }}" @click="$store.workspace.selectedMenu = 'dokumen'"
                     class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
                     <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
                         <img src="{{ asset('images/icons/workspace_dokumen&file.svg') }}" alt="Dokumen Icon"
@@ -202,10 +207,8 @@
                         </svg>
                         <p class="text-sm text-yellow-700">
                             <strong>Peringatan:</strong>
-                            @if ($isCompanyAdmin)
-                                Belum ada workspace yang tersedia atau Anda belum memilih workspace. Silakan buat atau pilih
-                                workspace dari halaman <a href="{{ route('kelola-workspace') }}"
-                                    class="underline font-medium">Kelola Workspace</a> terlebih dahulu.
+                            @if($isCompanyAdmin)
+                                Belum ada workspace yang tersedia atau Anda belum memilih workspace. Silakan buat atau pilih workspace dari halaman <a href="{{ route('kelola-workspace') }}" class="underline font-medium">Kelola Workspace</a> terlebih dahulu.
                             @else
                                 Anda belum tergabung dalam workspace manapun atau belum memilih workspace. Silakan pilih
                                 workspace dari halaman <a href="{{ route('kelola-workspace') }}"

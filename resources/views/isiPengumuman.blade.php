@@ -126,7 +126,7 @@
                         <!-- Input Komentar Utama (placeholder -> CKEditor) -->
                         <div class="flex items-start gap-3 mb-6">
                             <img src="{{ $avatarUrl }}" alt="Avatar"
-                     class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
+                                class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
 
                             <!-- gunakan x-data lokal hanya untuk toggle active -->
                             <div class="flex-1" x-data="{ active: false }" x-cloak>
@@ -252,14 +252,14 @@
                         <hr class="border-gray-200 my-6">
                         <div class="flex items-center gap-2 text-sm text-gray-600">
                             <!-- <span>Pengumuman ini diterima oleh 3 anggota</span>
-                                                                                                                    <div class="flex -space-x-2">
-                                                                                                                        <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
-                                                                                                                            class="rounded-full w-8 h-8 border-2 border-white">
-                                                                                                                        <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
-                                                                                                                            class="rounded-full w-8 h-8 border-2 border-white">
-                                                                                                                        <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
-                                                                                                                            class="rounded-full w-8 h-8 border-2 border-white">
-                                                                                                                    </div> -->
+                                                                                                                                    <div class="flex -space-x-2">
+                                                                                                                                        <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
+                                                                                                                                            class="rounded-full w-8 h-8 border-2 border-white">
+                                                                                                                                        <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
+                                                                                                                                            class="rounded-full w-8 h-8 border-2 border-white">
+                                                                                                                                        <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
+                                                                                                                                            class="rounded-full w-8 h-8 border-2 border-white">
+                                                                                                                                    </div> -->
                         </div>
 
                     </div>
@@ -877,7 +877,10 @@
         <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-3xl">
             <h2 class="text-xl font-bold mb-4 text-[#102a63] border-b pb-2">Edit Pengumuman</h2>
 
-            <form action="#" method="POST" class="space-y-5" id="pengumumanEditForm">
+            // Menjadi:
+            <form
+                action="{{ route('pengumuman.update', ['workspace' => $workspace->id, 'pengumuman' => $pengumuman->id]) }}"
+                method="POST" class="space-y-5" id="pengumumanEditForm">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="pengumuman_id" id="editPengumumanId">
@@ -1592,6 +1595,7 @@
         let isSubmittingEdit = false;
 
         // Fungsi untuk membuka modal edit
+        // Fungsi untuk membuka modal edit
         function openEditModal(pengumumanId) {
             console.log('Opening edit modal for ID:', pengumumanId);
 
@@ -1606,8 +1610,8 @@
             // Reset form state terlebih dahulu
             resetEditForm();
 
-            // Ambil data pengumuman dari server
-            fetch(`/pengumuman/${pengumumanId}/edit-data`)
+            // PERBAIKAN: Ambil data dengan URL yang benar (tambahkan workspace)
+            fetch(`/workspace/{{ $workspace->id }}/pengumuman/${pengumumanId}/edit-data`)
                 .then(response => {
                     if (!response.ok) throw new Error('Gagal mengambil data');
                     return response.json();
@@ -1619,7 +1623,7 @@
                 })
                 .catch(error => {
                     console.error('Fetch error (edit-data):', error);
-                    closeEditModal(); // kalau mau tetap ditutup
+                    closeEditModal();
                 });
         }
 
@@ -1809,7 +1813,7 @@
             });
 
             // 🟦 PERBAIKAN FETCH — TIDAK AKAN ERROR "<DOCTYPE>" LAGI
-            fetch(`/pengumuman/${pengumumanId}`, {
+            fetch(`/workspace/{{ $workspace->id }}/pengumuman/${pengumumanId}`, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
@@ -1870,14 +1874,14 @@
         // Event listener untuk tombol batal
         document.getElementById('editBtnBatal').addEventListener('click', closeEditModal);
 
-        // Alpine.js component untuk edit members - VERSI DIPERBAIKI
         document.addEventListener('alpine:init', () => {
             Alpine.data('editPengumumanMembers', () => ({
                 showManageMembersModal: false,
                 members: [],
-                tempSelectedMembers: [], // 🔹 Temp untuk centang sementara di modal
-                selectedMembers: [], // 🔹 Member yang sudah di-Terapkan
+                tempSelectedMembers: [],
+                selectedMembers: [],
                 search: '',
+                isLoading: false,
 
                 async init() {
                     console.log('🎯 Alpine edit members component initialized');
@@ -1895,6 +1899,7 @@
                 },
 
                 async loadMembers() {
+                    this.isLoading = true;
                     try {
                         // ✅ DAPATKAN WORKSPACE ID DARI INPUT HIDDEN
                         const workspaceId = document.getElementById('editWorkspaceId')?.value;
@@ -1902,23 +1907,35 @@
 
                         if (!workspaceId) {
                             console.error('Workspace ID tidak ditemukan');
+                            this.members = [];
                             return;
                         }
 
-                        const res = await fetch(`/pengumuman/anggota/${workspaceId}`);
-                        if (!res.ok) throw new Error('Gagal mengambil data anggota');
+                        const res = await fetch(
+                            `/workspace/${workspaceId}/pengumuman/anggota/${workspaceId}`);
 
-                        this.members = await res.json();
-                        console.log('✅ Data anggota edit berhasil di-load:', this.members.length,
-                            'anggota');
+                        console.log('📡 Fetch URL edit:',
+                            `/workspace/${workspaceId}/pengumuman/anggota/${workspaceId}`);
+
+                        if (!res.ok) {
+                            throw new Error(`Gagal mengambil data anggota: ${res.status}`);
+                        }
+
+                        const data = await res.json();
+                        console.log('✅ Data anggota edit berhasil di-load:', data);
+
+                        this.members = Array.isArray(data) ? data : [];
+                        console.log('📊 Jumlah anggota edit:', this.members.length);
+
                     } catch (err) {
-                        console.error('Gagal memuat anggota:', err);
+                        console.error('❌ Gagal memuat anggota edit:', err);
                         this.members = [];
+                    } finally {
+                        this.isLoading = false;
                     }
                 },
 
                 toggleMember(member) {
-                    // 🔹 Tidak bisa hapus diri sendiri
                     if (window.currentUser && member.id === window.currentUser.id) return;
 
                     const idx = this.tempSelectedMembers.findIndex(m => m.id === member.id);
@@ -1937,21 +1954,20 @@
                     if (!this.search) return this.members;
                     const term = this.search.toLowerCase();
                     return this.members.filter(m =>
-                        m.name.toLowerCase().includes(term) ||
-                        m.email.toLowerCase().includes(term)
+                        m.name?.toLowerCase().includes(term) ||
+                        m.email?.toLowerCase().includes(term)
                     );
                 },
 
                 applyMembers() {
-                    // 🔹 Terapkan pilihan dari temp ke selected
                     this.selectedMembers = [...this.tempSelectedMembers];
                     this.closeModal();
                 },
 
                 openMemberModal() {
-                    // 🔹 Saat buka modal, isi temp dengan yang sudah ada (biar centang tetap)
                     this.tempSelectedMembers = [...this.selectedMembers];
                     this.showManageMembersModal = true;
+                    this.search = '';
                 },
 
                 closeModal() {
@@ -1964,6 +1980,7 @@
 
     <!-- delete -->
     <script>
+        // Di file isiPengumuman.blade.php - bagian delete
         function deletePengumuman(id) {
             Swal.fire({
                 title: "Hapus pengumuman?",
@@ -1975,7 +1992,8 @@
                 confirmButtonText: "Ya, hapus!"
             }).then((result) => {
                 if (result.isConfirmed) {
-                    fetch(`/pengumuman/${id}`, {
+                    // PERBAIKAN: Tambahkan workspace ID dalam URL
+                    fetch(`/workspace/{{ $workspace->id }}/pengumuman/${id}`, {
                             method: "POST",
                             headers: {
                                 "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
@@ -1996,7 +2014,7 @@
                                 }).then(() => {
                                     // Redirect ke halaman pengumuman
                                     window.location.href =
-                                        "{{ route('workspace.pengumuman', $workspace->id ?? $pengumuman->workspace_id) }}";
+                                        "{{ route('workspace.pengumuman', $workspace->id) }}";
                                 });
                             } else {
                                 Swal.fire("Gagal", data.message, "error");

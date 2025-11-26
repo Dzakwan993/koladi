@@ -4,7 +4,6 @@
     }
 </style>
 
-
 {{-- resources/views/components/sidebar.blade.php --}}
 <div x-data="{ openSidebar: window.innerWidth >= 992 }" x-init="const handleResize = () => {
     if (window.innerWidth < 992 && openSidebar) openSidebar = false;
@@ -37,7 +36,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
         x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full">
         {{-- Logo --}}
         <div class="h-16 flex items-center justify-center px-4 border-b border-gray-200">
-            <img src="/images/logo-koladi.png" class="h-28 mt-12" alt="Koladi Logo">
+            <img src="{{ asset('images/logo-koladi.png') }}" class="h-28 mt-12" alt="Koladi Logo">
         </div>
 
         {{-- Navigation --}}
@@ -47,75 +46,83 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
             <a href="{{ url('/dashboard') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                       {{ Request::is('dashboard*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                <img src="/images/icons/sidebar_dashboard.svg" alt="Dashboard"
-                    class="w-5 h-5 {{ Request::is('dashboard*') ? 'filter-blue' : '' }}"> <span
-                    class="text-sm">Dashboard</span>
+                <img src="{{ asset('images/icons/sidebar_dashboard.svg') }}" alt="Dashboard"
+                    class="w-5 h-5 {{ Request::is('dashboard*') ? 'filter-blue' : '' }}">
+                <span class="text-sm">Dashboard</span>
             </a>
 
             {{-- Ruang Kerja --}}
             <a href="{{ url('/kelola-workspace') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                       {{ Request::is('kelola-workspace*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                <img src="/images/icons/sidebar_ruang-kerja.svg" alt="Ruang Kerja"
-                    class="w-5 h-5 {{ Request::is('kelola-workspace*') ? 'filter-blue' : '' }}"> <span
-                    class="text-sm">Ruang Kerja</span>
+                <img src="{{ asset('images/icons/sidebar_ruang-kerja.svg') }}" alt="Ruang Kerja"
+                    class="w-5 h-5 {{ Request::is('kelola-workspace*') ? 'filter-blue' : '' }}">
+                <span class="text-sm">Ruang Kerja</span>
             </a>
 
-         @php
-    $company_id = session('active_company_id');
-@endphp
+            @php
+                $company_id = session('active_company_id');
+            @endphp
 
-@if($company_id)
-<a href="{{ route('pengumuman-perusahaan.index', ['company_id' => $company_id]) }}"
-   class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+            @if ($company_id)
+                <a href="{{ route('pengumuman-perusahaan.index', ['company_id' => $company_id]) }}"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
    {{ Request::is('companies/*/pengumuman-perusahaan*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-    <img src="{{ asset('images/icons/workspace_pengumuman.svg') }}" class="w-5 h-5">
-    <span class="text-sm">Pengumuman</span>
-</a>
-@endif
+                    <img src="{{ asset('images/icons/workspace_pengumuman.svg') }}" class="w-5 h-5">
+                    <span class="text-sm">Pengumuman</span>
+                </a>
+            @endif
+            
+            {{-- Chat Perusahaan --}}
+            @auth
+                @php
+                    $activeCompanyId = session('active_company_id');
+                    $activeCompany = $activeCompanyId ? \App\Models\Company::find($activeCompanyId) : null;
+                @endphp
 
+                @if ($activeCompany)
+                    <a href="{{ route('company.chat', $activeCompany) }}"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                  {{ Request::is('company/*/chat*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                        <img src="{{ asset('images/icons/sidebar_chat.svg') }}" alt="Chat Perusahaan"
+                            class="w-5 h-5 {{ Request::is('company/*/chat*') ? 'filter-blue' : '' }}">
+                        <span class="text-sm">Chat</span>
+                    </a>
+                @else
+                    {{-- Tampilkan disabled link jika tidak ada company aktif --}}
+                    <div class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 cursor-not-allowed"
+                        title="Pilih perusahaan terlebih dahulu">
+                        <img src="{{ asset('images/icons/sidebar_chat.svg') }}" alt="Chat Perusahaan" class="w-5 h-5">
+                        <span class="text-sm">Chat</span>
+                    </div>
+                @endif
+            @endauth
 
-
-
-
-
-
-
-            {{-- Chat --}}
-            <a href="{{ url('/chat') }}"
+            {{-- ✅ Jadwal Umum (Company Level) --}}
+            <a href="{{ route('jadwal-umum') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
-                      {{ Request::is('chat*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                <img src="/images/icons/sidebar_chat.svg" alt="Chat"
-                    class="w-5 h-5 {{ Request::is('chat*') ? 'filter-blue' : '' }}">
-                <span class="text-sm">Chat</span>
-            </a>
-
-            {{-- Jadwal --}}
-            <a href="{{ url('/jadwal') }}"
-                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
-                {{ Request::is('jadwal*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                <img src="images/icons/workspace_kalender.svg" alt="Jadwal"
-                    class="w-5 h-5 {{ Request::is('jadwal*') ? 'filter-blue' : '' }}"> <span
-                    class="text-sm">Jadwal</span>
+                {{ Request::is('jadwal-umum*') || Request::is('notulensi-umum*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                <img src="{{ asset('images/icons/workspace_kalender.svg') }}" alt="Jadwal"
+                    class="w-5 h-5 {{ Request::is('jadwal-umum*') || Request::is('notulensi-umum*') ? 'filter-blue' : '' }}">
+                <span class="text-sm">Jadwal</span>
             </a>
 
             {{-- Dokumen --}}
             <a href="{{ url('/dokumen-dan-file') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                 {{ Request::is('dokumen*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                <img src="images/icons/workspace_dokumen&file.svg" alt="Dokumen"
-                    class="w-5 h-5 {{ Request::is('dokumen*') ? 'filter-blue' : '' }}"> <span
-                    class="text-sm">Dokumen</span>
+                <img src="{{ asset('images/icons/workspace_dokumen&file.svg') }}" alt="Dokumen"
+                    class="w-5 h-5 {{ Request::is('dokumen*') ? 'filter-blue' : '' }}">
+                <span class="text-sm">Dokumen</span>
             </a>
 
             {{-- Laporan Kinerja --}}
-             {{-- Laporan Kinerja --}}
             <a href="{{ url('/statistik') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                       {{ Request::is('statistik*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                <img src="/images/icons/sidebar_laporan-kinerja.svg" alt="Laporan Kinerja"
-                    class="w-5 h-5 {{ Request::is('statistik*') ? 'filter-blue' : '' }}"> <span class="text-sm">Laporan
-                    Kinerja</span>
+                <img src="{{ asset('images/icons/sidebar_laporan-kinerja.svg') }}" alt="Laporan Kinerja"
+                    class="w-5 h-5 {{ Request::is('statistik*') ? 'filter-blue' : '' }}">
+                <span class="text-sm">Laporan Kinerja</span>
             </a>
 
             {{-- Search & Actions --}}
@@ -132,50 +139,25 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                             class="flex-1 bg-transparent outline-none border-none focus:ring-0 text-gray-700 text-[11px]">
                     </div>
 
-                    {{-- Filter Button (pakai gambar kamu) --}}
+                    {{-- Filter Button --}}
                     <button
                         class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
                         title="Filter">
-                        <img src="/images/icons/sidebar_filter.svg" alt="Filter" class="w-3.5 h-3.5">
+                        <img src="{{ asset('images/icons/sidebar_filter.svg') }}" alt="Filter" class="w-3.5 h-3.5">
                     </button>
 
-                    {{-- Add Button (pakai gambar kamu) --}}
+                    {{-- Add Button --}}
                     <button
                         class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
                         title="Tambah">
-                        <img src="/images/icons/sidebar_tambah.svg" alt="Tambah" class="w-3.5 h-3.5">
+                        <img src="{{ asset('images/icons/sidebar_tambah.svg') }}" alt="Tambah"
+                            class="w-3.5 h-3.5">
                     </button>
                 </div>
             </div>
 
             {{-- Workspace List --}}
             <div class="mt-3 space-y-1">
-
-                {{-- HQ
-                <div>
-                    <button @click="openHQ = !openHQ"
-                        class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-lg transition">
-                        <div class="flex items-center gap-2">
-                            <img src="/images/icons/sidebar_hq.svg" alt="HQ" class="w-4 h-4">
-                            <span>HQ</span>
-                        </div>
-                        <svg class="w-3 h-3 transition-transform" :class="{ 'rotate-90': openHQ }" fill="none"
-                            stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
-                            </path>
-                        </svg>
-                    </button>
-
-                    <div x-show="openHQ" x-transition class="mt-1 space-y-0.5">
-                        <a href="{{ url('/workspace/hq') }}"
-                            class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition
-                                {{ Request::is('workspace/hq*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                            <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
-                            <span>Mencari Cinta HQ</span>
-                        </a>
-                    </div>
-                </div> --}}
-
                 {{-- TIM --}}
                 <div>
                     <button @click="openTim = !openTim"

@@ -51,7 +51,7 @@
                                         : asset('images/dk.jpg'));
                             @endphp
                             <div
-                                @if ($canAccess) onclick="window.location='{{ route('pengumuman.show', $p->id) }}'"
+                                @if ($canAccess) onclick="window.location='{{ route('pengumuman.show', ['workspace' => $workspace->id, 'pengumuman' => $p->id]) }}'"
                                                 class="cursor-pointer bg-[#e9effd] hover:bg-[#dce6fc] transition-colors rounded-xl shadow-sm p-4 flex justify-between items-start"
                                             @else class="bg-[#e9effd] rounded-xl shadow-sm p-4 flex justify-between items-start opacity-70"
                                                 title="Private - Anda tidak memiliki akses" @endif>
@@ -138,8 +138,7 @@
             <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-3xl">
                 <h2 class="text-xl font-bold mb-4 text-[#102a63] border-b pb-2">Buat Pengumuman</h2>
 
-                <form action="{{ route('pengumuman.store', ['id' => $workspace->id]) }}" method="POST" class="space-y-5"
-                    id="pengumumanForm">
+                <form action="{{ route('pengumuman.store', ['workspace' => $workspace->id]) }}" method="POST" class="space-y-5" id="pengumumanForm">
                     @csrf
                     <!-- Judul -->
                     <div>
@@ -865,146 +864,159 @@
 
         // Tangkap data dari CKEditor saat form dikirim
         document.getElementById('pengumumanForm').addEventListener('submit', function(e) {
-    const title = document.querySelector('input[name="title"]').value.trim();
-    const editorData = window['catatan-editor_editor'].getData().trim();
-    const autoDueValue = document.getElementById('autoDue').value.trim();
-    const isPrivate = document.getElementById('switchRahasia').checked;
-    const recipients = document.querySelectorAll('input[name="recipients[]"]');
+            const title = document.querySelector('input[name="title"]').value.trim();
+            const editorData = window['catatan-editor_editor'].getData().trim();
+            const autoDueValue = document.getElementById('autoDue').value.trim();
+            const isPrivate = document.getElementById('switchRahasia').checked;
+            const recipients = document.querySelectorAll('input[name="recipients[]"]');
 
-    // → CEK JUDUL
-    if (!title) {
-        e.preventDefault();
-        return Swal.fire("Kolom Belum Diisi", "Judul pengumuman wajib diisi.", "warning");
-    }
+            // → CEK JUDUL
+            if (!title) {
+                e.preventDefault();
+                return Swal.fire("Kolom Belum Diisi", "Judul pengumuman wajib diisi.", "warning");
+            }
 
-    // → CEK DESKRIPSI
-    if (!editorData || editorData === "<p><br></p>") {
-        e.preventDefault();
-        return Swal.fire("Kolom Belum Diisi", "Deskripsi pengumuman wajib diisi.", "warning");
-    }
+            // → CEK DESKRIPSI
+            if (!editorData || editorData === "<p><br></p>") {
+                e.preventDefault();
+                return Swal.fire("Kolom Belum Diisi", "Deskripsi pengumuman wajib diisi.", "warning");
+            }
 
-    // → CEK PENERIMA HANYA JIKA PRIVATE
-    if (isPrivate && recipients.length === 0) {
-        e.preventDefault();
-        return Swal.fire("Penerima Kosong", "Untuk pengumuman rahasia, pilih minimal 1 penerima.", "warning");
-    }
+            // → CEK PENERIMA HANYA JIKA PRIVATE
+            if (isPrivate && recipients.length === 0) {
+                e.preventDefault();
+                return Swal.fire("Penerima Kosong", "Untuk pengumuman rahasia, pilih minimal 1 penerima.",
+                    "warning");
+            }
 
-    // Masukkan ke input hidden agar terkirim ke backend
-    document.getElementById('catatanInput').value = editorData;
-});
+            // Masukkan ke input hidden agar terkirim ke backend
+            document.getElementById('catatanInput').value = editorData;
+        });
     </script>
 
-    <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('pengumumanMembers', () => ({
-                showManageMembersModal: false,
-                members: [],
-                tempSelectedMembers: [], // 🔹 Temp untuk centang sementara di modal
-                selectedMembers: [], // 🔹 Member yang sudah di-Terapkan
-                search: '',
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('pengumumanMembers', () => ({
+            showManageMembersModal: false,
+            members: [],
+            tempSelectedMembers: [], // 🔹 Temp untuk centang sementara di modal
+            selectedMembers: [], // 🔹 Member yang sudah di-Terapkan
+            search: '',
+            isLoading: false,
 
-                async init() {
-                    await this.loadMembers();
+            async init() {
+                console.log('🎯 Alpine members component initialized - CREATE');
+                await this.loadMembers();
 
-                    // 🔹 Tambahkan pembuat pengumuman otomatis
-                    if (window.currentUser) {
-                        const creator = this.members.find(m => m.id === window.currentUser.id);
-
-                        if (creator) {
-                            // Pembuat otomatis masuk ke selected dan tempSelected
-                            this.selectedMembers.push(creator);
-                            this.tempSelectedMembers.push(creator);
-                        }
+                // 🔹 Tambahkan pembuat pengumuman otomatis
+                if (window.currentUser) {
+                    const creator = this.members.find(m => m.id === window.currentUser.id);
+                    if (creator && !this.isSelected(creator.id)) {
+                        this.selectedMembers.push(creator);
+                        this.tempSelectedMembers.push(creator);
+                        console.log('✅ Creator added:', creator.name);
                     }
-                },
-
-                async loadMembers() {
-                    try {
-                        const workspaceId = window.location.pathname.split('/')[2];
-                        const res = await fetch(`/pengumuman/anggota/${workspaceId}`);
-                        if (!res.ok) throw new Error('Gagal mengambil data anggota');
-                        this.members = await res.json();
-                    } catch (err) {
-                        console.error('Gagal memuat anggota:', err);
-                        this.members = [];
-                    }
-                },
-
-                toggleMember(member) {
-    // ❗ Pembuat pengumuman tidak boleh dihapus
-    if (window.currentUser && member.id === window.currentUser.id) {
-        return;
-    }
-
-    const idx = this.tempSelectedMembers.findIndex(m => m.id === member.id);
-    if (idx === -1) {
-        this.tempSelectedMembers.push(member);
-    } else {
-        this.tempSelectedMembers.splice(idx, 1);
-    }
-},
-
-
-                isTempSelected(id) {
-                    return this.tempSelectedMembers.some(m => m.id === id);
-                },
-
-                isSelected(id) {
-                    return this.selectedMembers.some(m => m.id === id);
-                },
-
-                get filteredMembers() {
-                    if (!this.search) return this.members;
-                    const term = this.search.toLowerCase();
-                    return this.members.filter(m =>
-                        m.name.toLowerCase().includes(term) ||
-                        m.email.toLowerCase().includes(term)
-                    );
-                },
-
-                applyMembers() {
-                    // 🔹 Terapkan pilihan dari temp ke selected
-                    this.selectedMembers = [...this.tempSelectedMembers];
-                    this.closeModal();
-                },
-
-                openMemberModal() {
-                    // 🔹 Saat buka modal, isi temp dengan yang sudah ada (biar centang tetap)
-                    this.tempSelectedMembers = [...this.selectedMembers];
-                    this.showManageMembersModal = true;
-                },
-
-                closeModal() {
-                    this.showManageMembersModal = false;
                 }
-            }))
-        });
+            },
 
-        // 🔹 Sinkronkan switch private dan daftar member
-        document.addEventListener('DOMContentLoaded', function() {
-            const privateSwitch = document.querySelector('#is_private');
+            async loadMembers() {
+                this.isLoading = true;
+                try {
+                    // ✅ DAPATKAN WORKSPACE ID DARI URL
+                    const workspaceId = window.location.pathname.split('/')[2];
+                    console.log('🏢 Workspace ID untuk create:', workspaceId);
 
-            if (privateSwitch) {
-                privateSwitch.addEventListener('change', function() {
-                    const isChecked = this.checked;
-                    const hiddenInputs = document.querySelectorAll('input[name="recipients[]"]');
-
-                    if (!isChecked) {
-                        // Kalau switch off → public
-                        hiddenInputs.forEach(el => el.remove());
+                    if (!workspaceId) {
+                        console.error('Workspace ID tidak ditemukan');
+                        this.members = [];
+                        return;
                     }
-                });
-            }
 
-            // 🔹 Tombol "Pilih Member"
-            const pilihBtn = document.getElementById('btnPilihMember');
-            if (pilihBtn) {
-                pilihBtn.addEventListener('click', function() {
-                    const modal = document.querySelector('[x-show="showManageMembersModal"]');
-                    if (modal) modal.style.display = 'flex';
-                });
+                    // PERBAIKAN: Gunakan URL yang benar dengan workspace prefix
+                    const res = await fetch(`/workspace/${workspaceId}/pengumuman/anggota/${workspaceId}`);
+
+                    console.log('📡 Fetch URL:', `/workspace/${workspaceId}/pengumuman/anggota/${workspaceId}`);
+
+                    if (!res.ok) {
+                        throw new Error(`Gagal mengambil data anggota: ${res.status} ${res.statusText}`);
+                    }
+
+                    const data = await res.json();
+                    console.log('✅ Data anggota berhasil di-load:', data);
+
+                    this.members = Array.isArray(data) ? data : [];
+                    console.log('📊 Jumlah anggota create:', this.members.length);
+
+                } catch (err) {
+                    console.error('❌ Gagal memuat anggota:', err);
+                    this.members = [];
+                    // Tampilkan pesan error ke user
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Memuat Anggota',
+                        text: 'Tidak dapat mengambil data anggota workspace. Silakan refresh halaman.',
+                        timer: 3000
+                    });
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+
+            toggleMember(member) {
+                // ❗ Pembuat pengumuman tidak boleh dihapus
+                if (window.currentUser && member.id === window.currentUser.id) {
+                    return;
+                }
+
+                const idx = this.tempSelectedMembers.findIndex(m => m.id === member.id);
+                if (idx === -1) {
+                    this.tempSelectedMembers.push(member);
+                } else {
+                    this.tempSelectedMembers.splice(idx, 1);
+                }
+
+                console.log('Anggota dipilih:', this.tempSelectedMembers.map(m => m.name));
+            },
+
+            isSelected(id) {
+                return this.tempSelectedMembers.some(m => m.id === id);
+            },
+
+            get filteredMembers() {
+                if (!this.search) return this.members;
+                const term = this.search.toLowerCase();
+                return this.members.filter(m =>
+                    m.name?.toLowerCase().includes(term) ||
+                    m.email?.toLowerCase().includes(term)
+                );
+            },
+
+            applyMembers() {
+                // 🔹 Terapkan pilihan dari temp ke selected
+                this.selectedMembers = [...this.tempSelectedMembers];
+                console.log('Anggota diterapkan:', this.selectedMembers.map(m => m.name));
+                this.closeModal();
+            },
+
+            openMemberModal() {
+                // 🔹 Saat buka modal, isi temp dengan yang sudah ada (biar centang tetap)
+                this.tempSelectedMembers = [...this.selectedMembers];
+                this.showManageMembersModal = true;
+                this.search = ''; // Reset pencarian
+
+                console.log('Modal dibuka, anggota sementara:', this.tempSelectedMembers.map(m => m.name));
+            },
+
+            closeModal() {
+                this.showManageMembersModal = false;
+                this.search = '';
             }
-        });
-    </script>
+        }));
+    });
+
+    // Inisialisasi currentUser global
+    window.currentUser = @json(auth()->user());
+    console.log('👤 Current user:', window.currentUser);
+</script>
 
 @endsection

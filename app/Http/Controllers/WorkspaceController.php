@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log; // <- TAMBAH INI
-use Illuminate\Support\Str;
-use App\Models\Workspace;
-use App\Models\UserWorkspace;
-use App\Models\UserCompany;
-use App\Models\User;
 use App\Models\Role;
+use App\Models\User;
 use App\Models\Company;
+use App\Models\Workspace;
+use Illuminate\Support\Str;
+use App\Models\Conversation;
+use Illuminate\Http\Request;
+use App\Models\UserWorkspace;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log; // <- TAMBAH INI
 
 class WorkspaceController extends Controller
 {
@@ -396,7 +396,7 @@ private function checkWorkspaceAccess($workspace)
         ->first();
 
     $userRole = $userCompany?->role?->name ?? 'Member';
-    
+
     // ✅ JIKA SUPERADMIN/ADMIN/MANAGER, BOLEH AKSES SEMUA WORKSPACE DI COMPANY
     if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
         return true;
@@ -411,11 +411,6 @@ private function checkWorkspaceAccess($workspace)
     return !is_null($userWorkspace);
 }
 
-
-
-
-    // Di WorkspaceController.php
-    // Di WorkspaceController.php - update method show()
     // Di WorkspaceController.php - update method show()
 public function show(Workspace $workspace)
 {
@@ -460,7 +455,7 @@ private function canAccessWorkspace($workspace)
         ->first();
 
     $userRole = $userCompany?->role?->name ?? 'Member';
-    
+
     // ✅ JIKA SUPERADMIN/ADMIN/MANAGER, BOLEH AKSES SEMUA WORKSPACE DI COMPANY
     if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
         return true;

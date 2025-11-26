@@ -60,7 +60,7 @@
                                                 'SuperAdmin' => 'bg-[#102A63] text-white',
                                                 'Super Admin' => 'bg-[#102A63] text-white',
                                                 'Admin' => 'bg-[#225AD6] text-white',
-                                                'Administrator' => 'bg-[#225AD6] text-white',
+                                                'Administrator' => 'bg-[#DC2626] text-white',
                                                 'Manager' => 'bg-[#0FA875] text-white',
                                                 'Member' => 'bg-[#E4BA13] text-white'
                                             ];

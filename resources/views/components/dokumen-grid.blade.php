@@ -1,7 +1,9 @@
 {{-- Grid Dokumen di Dalam Folder --}}
-                <template x-if="currentFolder">
+
+                
+                <template x-if="currentFolder && isLoadingPermission === false">
                     <div
-                        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 overflow-y-auto flex-1 pb-4">
+                         class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-6 gap-y-3 items-start pb-4">
                         {{-- Tampilkan hasil pencarian atau dokumen biasa --}}
                         <template x-for="document in getDisplayedDocuments()" :key="document.id">
                             <div @click="selectMode ? toggleDocumentSelection(document) : (document.type === 'Folder' ? openFolder(document) : openFile(document))"
@@ -28,13 +30,48 @@
                                     </div>
                                 </div>
 
-                                <img :src="document.icon" :alt="document.type"
-                                    class="w-8 h-8 sm:w-10 sm:h-10 mb-1 sm:mb-2">
+                                <!-- PREVIEW -->
+                                <div class="w-8 h-8 sm:w-10 sm:h-10 mb-1 sm:mb-2 flex items-center justify-center overflow-hidden rounded">
+
+                                    <!-- IMAGE PREVIEW -->
+                                    <template x-if="document.type === 'Image'">
+                                        <img 
+                                            :src="document.file_url"
+                                            class="w-full h-full object-cover"
+                                            alt="image preview">
+                                    </template>
+
+                                    <!-- VIDEO PREVIEW -->
+                                    <template x-if="document.type === 'Video'">
+                                        <video 
+                                            :src="document.file_url"
+                                            class="w-full h-full object-cover"
+                                            muted
+                                        ></video>
+                                    </template>
+
+                                    <!-- DEFAULT ICON (folder, pdf, docx, dll) -->
+                                    <template x-if="document.type !== 'Image' && document.type !== 'Video'">
+                                        <img 
+                                            :src="document.icon"
+                                            :alt="document.type"
+                                            class="w-8 h-8 sm:w-10 sm:h-10">
+                                    </template>
+
+                                </div>
                                 <span class="text-xs font-medium text-gray-700 truncate w-full"
                                     x-text="document.name"></span>
 
-                                <span x-show="document.type !== 'Folder'" class="text-xs text-gray-400 mt-0.5"
-                                    x-text="document.type"></span>
+                            <div class="flex items-center gap-1">
+                                <span x-show="document.type" class="text-xs text-gray-400 mt-1" x-text="document.type"></span>
+                                <template x-if="document.isSecret">
+                                    <svg class="w-3 h-3 text-yellow-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                </template>
+                            </div>
+                                
                             </div>
                         </template>
 
@@ -67,4 +104,5 @@
                             <p class="text-xs">Tambahkan file atau folder baru</p>
                         </div>
                     </div>
+                    
                 </template>

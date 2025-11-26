@@ -19,6 +19,8 @@
         "vite": "^7.0.4"
     },
     "dependencies": {
-        "fullcalendar": "^6.1.19"
+        "fullcalendar": "^6.1.19",
+        "laravel-echo": "^2.2.6",
+        "pusher-js": "^8.4.0"
     }
 }

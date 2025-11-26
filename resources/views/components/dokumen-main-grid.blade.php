@@ -1,6 +1,6 @@
 {{-- Grid Dokumen Utama (Scrollable) --}}
 <template x-if="filteredDocuments.length > 0 && !currentFolder && !currentFile">
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 overflow-y-auto flex-1 pb-4">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-3 items-start">
         <template x-for="document in filteredDocuments" :key="document.id">
             <div @click="selectMode ? toggleDocumentSelection(document) : (document.type === 'Folder' ? openFolder(document) : openFile(document))"
                 :class="{

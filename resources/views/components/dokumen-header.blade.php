@@ -11,16 +11,25 @@
              <span class="font-medium text-sm" x-text="currentFolder ? 'Buat Sub Folder' : 'Buat Folder'"></span>
          </button>
 
-         <label
-             class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center gap-2 transition cursor-pointer">
-             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
-                 stroke="currentColor" stroke-width="2">
-                 <path stroke-linecap="round" stroke-linejoin="round"
-                     d="M12 16v-8m0 0l-4 4m4-4l4 4m4 4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h3l2-2h6a2 2 0 012 2v12z" />
-             </svg>
-             <span class="font-medium text-sm">Unggah File</span>
-             <input type="file" class="hidden" @change="uploadFileToFolder($event)">
-         </label>
+         <form action="{{ route('file.store') }}" method="POST" enctype="multipart/form-data" class="inline">
+            @csrf
+
+            <input type="hidden" name="workspace_id" value="{{ $workspace->id }}">
+            <input type="hidden" name="folder_id" x-bind:value="currentFolder ? currentFolder.id : ''">
+
+            <label class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center gap-2 transition cursor-pointer">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 16v-8m0 0l-4 4m4-4l4 4m4 4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h3l2-2h6a2 2 0 012 2v12z" />
+                </svg>
+
+                <span class="font-medium text-sm">Unggah File</span>
+
+                <input type="file" name="file" class="hidden" onchange="this.form.submit()">
+            </label>
+        </form>
+
 
          <button @click="toggleSelectMode()"
              class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center gap-2 transition">

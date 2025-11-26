@@ -306,81 +306,6 @@
             </div>
         </div>
 
-        {{-- <!-- HQ Section -->
-        <div class="mt-2 mx-8 mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <button @click="hqOpen = !hqOpen"
-                    class="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition">
-                    <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': !hqOpen }" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
-                        </path>
-                    </svg>
-                    <span class="font-medium">HQ</span>
-                </button>
-                <button
-                    class="w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition shadow-lg"
-                    @click="showModal = true; workspaceData.type = 'HQ'">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                </button>
-            </div>
-
-            <div x-show="hqOpen" x-collapse>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    @forelse($workspaces['HQ'] ?? [] as $workspace)
-                        <a href="{{ url('/workspace') }}"
-                            class="block bg-white rounded-xl border border-gray-200 p-4 relative group hover:shadow-md transition-shadow duration-200">
-                            <div class="flex justify-between items-start">
-                                <h3 class="font-semibold text-gray-800">{{ $workspace->name }}</h3>
-
-                                <!-- tombol titik tiga -->
-                                <button @click.stop.prevent="openWorkspaceMenu($event, {{ json_encode($workspace) }})"
-                                    class="p-1 hover:bg-gray-100 rounded-lg">
-                                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M5 12v.01M12 12v.01M19 12v.01
-                                    M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                                    </svg>
-                                </button>
-                            </div>
-
-                            <p class="text-sm text-gray-600 mt-2">
-                                {{ $workspace->description ?? 'Tidak ada deskripsi' }}
-                            </p>
-
-                            <div class="mt-4">
-                                <div class="flex -space-x-2">
-                                    @foreach ($workspace->userWorkspaces->take(4) as $userWorkspace)
-                                        <img src="https://i.pravatar.cc/32?img={{ $loop->index + 1 }}"
-                                            class="w-8 h-8 rounded-full border-2 border-white"
-                                            title="{{ $userWorkspace->user->full_name }}">
-                                    @endforeach
-                                    @if ($workspace->userWorkspaces->count() > 4)
-                                        <div
-                                            class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center">
-                                            <span
-                                                class="text-xs text-gray-600">+{{ $workspace->userWorkspaces->count() - 4 }}</span>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        </a>
-                    @empty
-                        <div class="col-span-4 text-center py-8 text-gray-500">
-                            Belum ada workspace HQ
-                        </div>
-                    @endforelse
-                </div>
-            </div>
-        </div> --}}
-
         <!-- Tim Section -->
         <div class="m-8">
             <div class="flex items-center justify-between mb-4">
@@ -703,7 +628,6 @@
                 </div>
             </div>
         </div>
-
 
         <!-- Modal Atur Role -->
         <div x-show="showRoleModal" x-cloak
