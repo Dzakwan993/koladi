@@ -31,6 +31,13 @@
                 </div>
             @endif
 
+            {{-- Notifikasi info --}}
+            @if (session('info'))
+                <div class="mb-4 bg-blue-100 border border-blue-300 text-blue-700 px-4 py-3 rounded-lg text-sm">
+                    {{ session('info') }}
+                </div>
+            @endif
+
             {{-- Notifikasi error --}}
             @if ($errors->any())
                 <div class="mb-4 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg text-sm">
@@ -53,7 +60,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
-                    <input type="email" name="email" placeholder="Alamat email"
+                    <input type="email" name="email" placeholder="Alamat email" value="{{ old('email') }}"
                         class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                         required>
                 </div>
@@ -71,7 +78,6 @@
                         required>
 
                     {{-- Toggle Password --}}
-                    <!-- Toggle Password -->
                     <button type="button" id="togglePassword"
                         class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none">
 
@@ -103,7 +109,7 @@
 
                 {{-- Lupa kata sandi & Daftar --}}
                 <div class="flex flex-col sm:flex-row justify-between items-center text-sm gap-2 sm:gap-0">
-                    <a href="#" class="text-blue-600 font-semibold hover:underline">Lupa kata sandi?</a>
+                    <a href="{{ route('forgot-password') }}" class="text-blue-600 font-semibold hover:underline">Lupa kata sandi?</a>
                     <div class="text-center sm:text-right">
                         <span class="text-gray-500">Belum punya akun? </span>
                         <a href="{{ url('/daftar') }}" class="text-blue-600 font-semibold hover:underline">Daftar</a>

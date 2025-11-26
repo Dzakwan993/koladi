@@ -21,7 +21,7 @@ class User extends Authenticatable
         'password',
         'google_id',
         'status_active',
-        'avatar', // Tambahkan ini jika kolom avatar sudah ada
+        'avatar',
     ];
 
     protected $hidden = [
@@ -35,29 +35,24 @@ class User extends Authenticatable
         'status_active' => 'boolean',
     ];
 
-    // Accessor untuk avatar - jika kolom avatar belum ada
+    // Accessor untuk avatar
     public function getAvatarAttribute($value)
     {
-        // Jika ada value dari database, gunakan itu
         if ($value) {
             return $value;
         }
-
-        // Jika tidak ada, generate dari ui-avatars.com
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->full_name) . '&background=random&color=fff';
     }
 
-    // Atau bisa juga buat method terpisah
     public function getAvatarUrl()
     {
         if (!empty($this->attributes['avatar'])) {
             return $this->attributes['avatar'];
         }
-
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->full_name) . '&background=random&color=fff';
     }
 
-    // Relasi ke companies
+    // ===== RELASI COMPANY =====
     public function companies()
     {
         return $this->belongsToMany(Company::class, 'user_companies', 'user_id', 'company_id')
@@ -70,65 +65,113 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class, 'roles_id');
     }
 
-    // Relasi ke user_companies
     public function userCompanies()
     {
         return $this->hasMany(UserCompany::class, 'user_id');
     }
 
-    // relasi ke userWorkspaces
+    // ===== RELASI WORKSPACE =====
     public function userWorkspaces()
     {
         return $this->hasMany(UserWorkspace::class, 'user_id');
     }
 
+    /**
+     * ✅ TAMBAHAN BARU: Relationship untuk mendapatkan workspaces yang diikuti user
+     * Relationship many-to-many melalui tabel user_workspaces
+     */
+    public function workspaces()
+    {
+        return $this->belongsToMany(
+            Workspace::class,
+            'user_workspaces',
+            'user_id',
+            'workspace_id'
+        )
+            ->withPivot('roles_id', 'status_active', 'join_date')
+            ->wherePivot('status_active', true)
+            ->withTimestamps();
+    }
+
+    /**
+     * ✅ TAMBAHAN BARU: Mendapatkan semua workspaces (termasuk yang inactive)
+     */
+    public function allWorkspaces()
+    {
+        return $this->belongsToMany(
+            Workspace::class,
+            'user_workspaces',
+            'user_id',
+            'workspace_id'
+        )
+            ->withPivot('roles_id', 'status_active', 'join_date')
+            ->withTimestamps();
+    }
+
+    // ===== HELPER METHODS COMPANY =====
     public function getRoleName($companyId)
     {
         $userCompany = $this->userCompanies->where('company_id', $companyId)->first();
         return $userCompany && $userCompany->role ? $userCompany->role->name : null;
     }
 
-    // /**
-    //  * Ambil role user dalam company (id)
-    //  */
-    // public function getRoleId($companyId)
-    // {
-    //     return $this->userCompanies()
-    //         ->where('company_id', $companyId)
-    //         ->value('roles_id');
-    // }
-
-
-    /**
-     * Cek apakah user punya role tertentu
-     */
     public function hasCompanyRole($companyId, $roles = [])
     {
         $roleName = $this->getRoleName($companyId);
         return in_array($roleName, (array) $roles);
     }
 
-    // App\Models\User.php
     public function hasRoleInCompany(array $roleNames, $companyId)
     {
         return $this->userCompanies()
             ->where('company_id', $companyId)
-            ->whereHas('role', function($q) use ($roleNames) {
+            ->whereHas('role', function ($q) use ($roleNames) {
                 $q->whereIn('name', $roleNames);
             })
             ->exists();
     }
 
-    /**
-     * Cek apakah user boleh manage workspace roles
-     * -> hanya Super Admin & Admin
-     */
     public function canManageWorkspaceRoles($companyId)
     {
         $allowed = ['Super Admin', 'SuperAdmin', 'Admin'];
-
         return $this->hasCompanyRole($companyId, $allowed);
     }
 
+    // ===== HELPER METHODS WORKSPACE =====
 
+    /**
+     * ✅ TAMBAHAN BARU: Cek apakah user adalah member dari workspace tertentu
+     */
+    public function isMemberOf($workspaceId)
+    {
+        return $this->workspaces()->where('workspace_id', $workspaceId)->exists();
+    }
+
+    /**
+     * ✅ TAMBAHAN BARU: Cek apakah user adalah admin/manager di company tertentu
+     */
+    public function isCompanyAdmin($companyId)
+    {
+        $userCompany = $this->userCompanies()
+            ->where('company_id', $companyId)
+            ->with('role')
+            ->first();
+
+        $roleName = $userCompany?->role?->name;
+
+        return in_array($roleName, ['SuperAdmin', 'Administrator', 'Admin', 'Manager']);
+    }
+
+    /**
+     * ✅ TAMBAHAN BARU: Get role user di workspace tertentu
+     */
+    public function getWorkspaceRole($workspaceId)
+    {
+        $userWorkspace = $this->userWorkspaces()
+            ->where('workspace_id', $workspaceId)
+            ->with('role')
+            ->first();
+
+        return $userWorkspace?->role;
+    }
 }

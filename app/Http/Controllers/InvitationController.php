@@ -15,7 +15,32 @@ use Illuminate\Support\Facades\Mail;
 
 class InvitationController extends Controller
 {
-    // Kirim undangan
+    // ✅ Helper: Ambil role user di company
+    private function getUserRole($companyId, $userId = null)
+    {
+        $userId = $userId ?? Auth::id();
+
+        $userCompany = UserCompany::where('user_id', $userId)
+            ->where('company_id', $companyId)
+            ->with('role')
+            ->first();
+
+        return $userCompany?->role?->name ?? null;
+    }
+
+    // ✅ Helper: Check permission untuk undang member
+    private function canInviteMember($role)
+    {
+        // ❌ AdminSistem tidak bisa undang member
+        if ($role === 'AdminSistem') {
+            return false;
+        }
+
+        // Hanya SuperAdmin, Admin, dan Manager yang bisa undang
+        return in_array($role, ['SuperAdmin', 'Super Admin', 'Admin', 'Administrator', 'Manager']);
+    }
+
+    // ✅ Kirim undangan dengan permission check
     public function send(Request $request)
     {
         $request->validate([
@@ -25,11 +50,25 @@ class InvitationController extends Controller
         $user = Auth::user();
         $companyId = session('active_company_id');
 
+        if (!$companyId) {
+            return response()->json(['error' => 'Company tidak ditemukan.'], 400);
+        }
+
+        // ✅ Check permission - apakah boleh undang member?
+        $currentUserRole = $this->getUserRole($companyId);
+
+        if (!$this->canInviteMember($currentUserRole)) {
+            return response()->json([
+                'error' => 'Anda tidak memiliki izin untuk mengundang anggota! Hanya SuperAdmin, Admin, dan Manager yang dapat mengundang.'
+            ], 403);
+        }
+
         // 🔍 Debug
         Log::info('Sending invitation:', [
             'email' => $request->email_target,
             'company_id' => $companyId,
-            'invited_by' => $user->id
+            'invited_by' => $user->id,
+            'inviter_role' => $currentUserRole
         ]);
 
         // Cek apakah email sudah ada di perusahaan
@@ -76,10 +115,23 @@ class InvitationController extends Controller
         return response()->json(['success' => true]);
     }
 
-    // Batalkan undangan
+    // ✅ Batalkan undangan dengan permission check
     public function cancel($id)
     {
         $companyId = session('active_company_id');
+
+        if (!$companyId) {
+            return response()->json(['error' => 'Company tidak ditemukan'], 400);
+        }
+
+        // ✅ Check permission
+        $currentUserRole = $this->getUserRole($companyId);
+
+        if (!$this->canInviteMember($currentUserRole)) {
+            return response()->json([
+                'error' => 'Anda tidak memiliki izin untuk membatalkan undangan!'
+            ], 403);
+        }
 
         $invitation = Invitation::where('id', $id)
             ->where('company_id', $companyId)
@@ -93,12 +145,26 @@ class InvitationController extends Controller
         // Update status menjadi cancelled
         $invitation->update(['status' => 'cancelled']);
 
+        Log::info("Invitation cancelled by {$currentUserRole}: {$invitation->email_target}");
+
         return response()->json(['success' => true]);
     }
 
+    // ✅ Hapus undangan dengan permission check
     public function delete($id)
     {
         $companyId = session('active_company_id');
+
+        if (!$companyId) {
+            return redirect()->back()->with('error', 'Company tidak ditemukan.');
+        }
+
+        // ✅ Check permission
+        $currentUserRole = $this->getUserRole($companyId);
+
+        if (!$this->canInviteMember($currentUserRole)) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki izin untuk menghapus undangan! Hanya SuperAdmin, Admin, dan Manager yang dapat menghapus undangan.');
+        }
 
         $invitation = Invitation::where('id', $id)
             ->where('company_id', $companyId)
@@ -110,11 +176,12 @@ class InvitationController extends Controller
 
         $invitation->delete();
 
+        Log::info("Invitation deleted by {$currentUserRole}: {$invitation->email_target}");
+
         return redirect()->back()->with('success', 'Undangan berhasil dihapus.');
     }
 
-
-    // Terima undangan
+    // Terima undangan (tidak perlu permission check karena ini untuk yang diundang)
     public function accept($token)
     {
         // Cari invitation berdasarkan token
@@ -174,7 +241,7 @@ class InvitationController extends Controller
                 ->with('info', 'Anda sudah menjadi anggota perusahaan ini.');
         }
 
-        // 🔥 Ambil role "Member"
+        // 🔥 Ambil role "Member" (role default untuk yang diundang)
         $memberRole = Role::where('name', 'Member')->first();
 
         if (!$memberRole) {
@@ -197,6 +264,8 @@ class InvitationController extends Controller
 
         // Set perusahaan yang baru dimasuki sebagai active
         session(['active_company_id' => $invitation->company_id]);
+
+        Log::info("User {$user->email} accepted invitation and joined company {$invitation->company_id}");
 
         return redirect()->route('dashboard')
             ->with('success', 'Selamat! Anda berhasil bergabung ke perusahaan ' . $invitation->company->name);
