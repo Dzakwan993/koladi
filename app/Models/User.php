@@ -60,13 +60,12 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
-    public function getAvatarUrlAttribute()
-    {
-        return $this->avatar
-            ? asset('storage/' . $this->avatar) // path avatar di storage
-            : asset('images/dk.jpg');          // default jika tidak ada
-    }
-
+    // public function getAvatarUrlAttribute()
+    // {
+    //     return $this->avatar
+    //         ? asset('storage/' . $this->avatar) // path avatar di storage
+    //         : asset('images/dk.jpg');          // default jika tidak ada
+    // }
 
     public function role()
     {
@@ -85,7 +84,7 @@ class User extends Authenticatable
     }
 
     /**
-     * ✅ TAMBAHAN BARU: Relationship untuk mendapatkan workspaces yang diikuti user
+     * ✅ Relationship untuk mendapatkan workspaces yang diikuti user
      * Relationship many-to-many melalui tabel user_workspaces
      */
     public function workspaces()
@@ -102,7 +101,7 @@ class User extends Authenticatable
     }
 
     /**
-     * ✅ TAMBAHAN BARU: Mendapatkan semua workspaces (termasuk yang inactive)
+     * ✅ Mendapatkan semua workspaces (termasuk yang inactive)
      */
     public function allWorkspaces()
     {
@@ -114,6 +113,14 @@ class User extends Authenticatable
         )
             ->withPivot('roles_id', 'status_active', 'join_date')
             ->withTimestamps();
+    }
+
+    /**
+     * ✅ Relationship untuk workspaces yang dimiliki user (sebagai creator)
+     */
+    public function ownedWorkspaces()
+    {
+        return $this->hasMany(Workspace::class, 'user_id');
     }
 
     // ===== HELPER METHODS COMPANY =====
@@ -148,7 +155,7 @@ class User extends Authenticatable
     // ===== HELPER METHODS WORKSPACE =====
 
     /**
-     * ✅ TAMBAHAN BARU: Cek apakah user adalah member dari workspace tertentu
+     * ✅ Cek apakah user adalah member dari workspace tertentu
      */
     public function isMemberOf($workspaceId)
     {
@@ -156,7 +163,7 @@ class User extends Authenticatable
     }
 
     /**
-     * ✅ TAMBAHAN BARU: Cek apakah user adalah admin/manager di company tertentu
+     * ✅ Cek apakah user adalah admin/manager di company tertentu
      */
     public function isCompanyAdmin($companyId)
     {
@@ -171,7 +178,7 @@ class User extends Authenticatable
     }
 
     /**
-     * ✅ TAMBAHAN BARU: Get role user di workspace tertentu
+     * ✅ Get role user di workspace tertentu
      */
     public function getWorkspaceRole($workspaceId)
     {

@@ -127,8 +127,6 @@
                         </div>
                     </div>
 
-                    {{-- ❌ HAPUS SECTION STATUS PESERTA - TIDAK DIPERLUKAN LAGI --}}
-
                     <!-- Mode Rapat -->
                     <div class="flex items-start gap-4" x-data="{ openPopup: false }">
                         <img src="{{ asset('images/icons/hbj1.svg') }}" alt="Icon Rapat" class="w-5 h-5 mt-1">

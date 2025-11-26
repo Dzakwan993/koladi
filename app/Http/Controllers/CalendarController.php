@@ -45,16 +45,35 @@ class CalendarController extends Controller
             return 'https://ui-avatars.com/api/?name=User&background=3B82F6&color=fff&bold=true&size=128';
         }
 
-        if ($user->avatar && Str::startsWith($user->avatar, ['http://', 'https://'])) {
-            return $user->avatar;
-        }
-
+        // Pastikan ada avatar dari storage
         if ($user->avatar) {
+            if (Str::startsWith($user->avatar, ['http://', 'https://'])) {
+                return $user->avatar;
+            }
             return asset('storage/' . $user->avatar);
         }
 
+        // Fallback ke UI Avatars dengan validasi ketat
         $name = $user->full_name ?? $user->name ?? 'User';
-        return 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=3B82F6&color=fff&bold=true&size=128';
+
+        // Bersihkan nama dari karakter khusus
+        $cleanName = preg_replace('/[^a-zA-Z\s]/', '', $name);
+        $cleanName = trim($cleanName);
+
+        // Jika nama kosong setelah dibersihkan, gunakan 'User'
+        if (empty($cleanName)) {
+            $cleanName = 'User';
+        }
+
+        // Ambil inisial jika nama panjang
+        if (str_word_count($cleanName) > 1) {
+            $words = explode(' ', $cleanName);
+            $cleanName = $words[0][0] . (isset($words[1]) ? $words[1][0] : '');
+        } else {
+            $cleanName = substr($cleanName, 0, 2);
+        }
+
+        return 'https://ui-avatars.com/api/?name=' . urlencode($cleanName) . '&background=3B82F6&color=fff&bold=true&size=128';
     }
 
     // ✅ Helper: Check permission untuk buat jadwal COMPANY (Jadwal Umum)

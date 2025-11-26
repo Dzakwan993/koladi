@@ -16,6 +16,7 @@
      <!-- Alpine.js dan Collapse Plugin -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 

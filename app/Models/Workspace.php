@@ -181,4 +181,9 @@ class Workspace extends Model
 
         return $userWorkspace?->role;
     }
+    //relasi mindmap
+    public function mindmaps()
+    {
+        return $this->hasMany(Mindmap::class, 'workspace_id');
+    }
 }
