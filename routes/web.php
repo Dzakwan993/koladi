@@ -23,6 +23,8 @@ use App\Http\Controllers\DocumentCommentController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\CompanyChatController;
 use App\Http\Controllers\MindmapController;
+use App\Http\Controllers\AdminController;
+
 
 // 🔥 Broadcasting Routes
 Broadcast::routes(['middleware' => ['web', 'auth']]);
@@ -31,6 +33,10 @@ Broadcast::routes(['middleware' => ['web', 'auth']]);
 // ✅ Route Landing Page
 Route::get('/', function () {
     if (Auth::check()) {
+        // 🔥 CEK APAKAH USER ADALAH ADMIN SISTEM
+        if (Auth::user()->isSystemAdmin()) {
+            return redirect()->route('admin.dashboard');
+        }
         return redirect()->route('dashboard');
     }
     return redirect()->route('masuk');
@@ -62,6 +68,16 @@ Route::get('/reset-password/verify', [AuthController::class, 'showResetPasswordV
 Route::post('/reset-password/verify', [AuthController::class, 'verifyResetOtp'])->name('reset-password.verify-otp-submit');
 Route::get('/reset-password', [AuthController::class, 'showResetPasswordForm'])->name('reset-password.form');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('reset-password.submit');
+
+
+// ============================================
+// 🔥 ADMIN SISTEM ROUTES (SEBELUM AUTH MIDDLEWARE)
+// ============================================
+Route::middleware(['auth', 'check.system.admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/companies/{id}', [AdminController::class, 'showCompany'])->name('companies.show');
+    Route::post('/companies/{id}/toggle-status', [AdminController::class, 'toggleCompanyStatus'])->name('companies.toggle-status');
+});
 
 // ============================================
 // 🔐 AUTHENTICATED ROUTES

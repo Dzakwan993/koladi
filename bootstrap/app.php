@@ -12,7 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // 🔥 TAMBAHKAN DI SINI
+        $middleware->alias([
+            'check.system.admin' => \App\Http\Middleware\CheckSystemAdmin::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

@@ -248,9 +248,15 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
+
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             $user = Auth::user();
+
+            if ($user->isSystemAdmin()) {
+                return redirect()->route('admin.dashboard')
+                    ->with('success', 'Selamat datang, Admin Sistem!');
+            }
 
             $pendingToken = session('pending_invitation_token');
             if ($pendingToken) {
