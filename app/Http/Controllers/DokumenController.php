@@ -92,7 +92,10 @@ class DokumenController extends Controller
                 'documentRecipients',
                 'files' => function ($query) use ($fileAccess) {
                     $query->where($fileAccess)
-                        ->with('documentRecipients');
+                        ->with(
+                            'uploader',    
+                            'documentRecipients'
+                        );
                 }
             ])
             ->withCount([
