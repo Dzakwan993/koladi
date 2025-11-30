@@ -9,6 +9,7 @@
                     'cursor-pointer': true
                 }"
                 class="flex flex-col items-center text-center p-4 border rounded-lg transition relative">
+                
                 <!-- Checkbox untuk select mode -->
                 <div x-show="selectMode" class="absolute top-2 right-2">
                     <div :class="isDocumentSelected(document.id) ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300'"
@@ -19,28 +20,56 @@
                     </div>
                 </div>
 
-                <img :src="document.icon" :alt="document.type" class="w-14 h-14 mb-3">
-                <div class="flex items-center gap-1">
-                    <span class="text-xs text-gray-600 truncate w-full" x-text="document.name"></span>
+                <!-- =========================== -->
+                <!-- PREVIEW / ICON              -->
+                <!-- =========================== -->
+                <div class="w-14 h-14 mb-3 flex items-center justify-center overflow-hidden">
+
+                    <!-- IMAGE THUMBNAIL -->
+                    <template x-if="document.type === 'Image'">
+                        <img 
+                            :src="document.file_url" 
+                            alt="Image"
+                            class="w-full h-full object-cover rounded">
+                    </template>
+
+                    <!-- VIDEO THUMBNAIL -->
+                    <template x-if="document.type === 'Video'">
+                        <video 
+                            :src="document.file_url"
+                            class="w-full h-full object-cover rounded"
+                            muted
+                        ></video>
+                    </template>
+
+                    <!-- DEFAULT ICON (Folder, PDF, dll) -->
+                    <template x-if="document.type !== 'Image' && document.type !== 'Video'">
+                        <img 
+                            :src="document.icon" 
+                            :alt="document.type" 
+                            class="w-14 h-14">
+                    </template>
+
+                </div>
+
+                <!-- Nama File/Folder dengan word-break -->
+                <span 
+                    class="text-xs text-gray-600 w-full break-words line-clamp-2" 
+                    x-text="document.name"
+                    :title="document.name">
+                </span>
+                
+                <!-- Tipe File dengan icon secret -->
+                <div class="flex items-center gap-1 mt-1">
+                    <span class="text-xs text-gray-400" x-text="document.type"></span>
                     <template x-if="document.isSecret">
                         <svg class="w-3 h-3 text-yellow-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
                     </template>
                 </div>
-                <span class="text-xs text-gray-400 mt-1" x-text="document.type"></span>
             </div>
         </template>
-    </div>
-</template>
-
-{{-- Empty State untuk Pencarian --}}
-<template x-if="filteredDocuments.length === 0 && searchQuery.length > 0 && !currentFolder && !currentFile">
-    <div class="flex-1 flex flex-col items-center justify-center text-gray-500">
-        <svg class="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-        </svg>
-        <p class="text-lg font-medium mb-2">Tidak ada hasil ditemukan</p>
-        <p class="text-sm">Coba gunakan kata kunci lain atau <button @click="clearSearch()" class="text-blue-600 hover:text-blue-800">bersihkan pencarian</button></p>
     </div>
 </template>

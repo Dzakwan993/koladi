@@ -47,8 +47,8 @@ window.assetPath = "{{ asset('') }}";
             {{-- Komponen-komponen --}}
             @include('components.dokumen-header')
             @include('components.dokumen-breadcrumb')
-            @include('components.dokumen-grid')
             @include('components.dokumen-search-info')
+            @include('components.dokumen-grid')
             @include('components.dokumen-selection-header')
             <!-- 2 components di bawah ini dipanggil set berbarengan -->
             @include('components.dokumen-file-header')

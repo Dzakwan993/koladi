@@ -417,36 +417,66 @@ export default function documentSearch() {
 
         // Search Functions
         filterDocuments() {
-            console.log("%c🔥 filterDocuments terpanggil!", "color: orange");
-            console.log("search Query:", this.searchQuery);
-            if (this.searchQuery.trim() === "") {
-                this.filteredDocuments = [];
-                return;
-            }
+        console.log("%c🔥 filterDocuments terpanggil!", "color: orange");
+        console.log("searchQuery:", this.searchQuery);
+        console.log("searchQuery length:", this.searchQuery.length);
+        
+        // ✅ Kosongkan hasil jika query kosong
+        if (this.searchQuery.trim() === "") {
+            this.filteredDocuments = [];
+            return;
+        }
 
-            const query = this.searchQuery.toLowerCase();
+        // ✅ TAMBAHAN: Minimal 2 karakter baru filter
+        if (this.searchQuery.trim().length < 2) {
+            console.log("⚠️ Query terlalu pendek, minimal 2 karakter");
+            this.filteredDocuments = [];
+            return;
+        }
 
-            // Ambil semua folder (semua level)
+        const query = this.searchQuery.toLowerCase();
+        let documentsToSearch = [];
+
+        if (this.currentFolder) {
+            // ✅ Jika di dalam folder, hanya search isi folder tersebut
+            console.log("🔍 Searching inside folder:", this.currentFolder.name);
+            
+            // Gunakan data yang sudah ada di currentFolder
+            documentsToSearch = [
+                ...this.currentFolder.subFolders,
+                ...this.currentFolder.files
+            ];
+            
+            console.log("📁 documentsToSearch dalam folder:", documentsToSearch.length);
+        } else {
+            // ✅ Jika di root, search semua dokumen
+            console.log("🏠 Searching in root");
+            
             const allFolders = this.getAllFolders(this.folders);
-
-            // Ambil semua file (semua level)
             const allFiles = this.getAllFiles(this.folders);
-
-            // Ambil file di root (kalau ada)
             const rootFiles = this.allFiles || [];
+            
+            documentsToSearch = [...allFolders, ...allFiles, ...rootFiles];
+            
+            console.log("📁 allFolders:", allFolders.length);
+            console.log("📄 allFiles:", allFiles.length);
+            console.log("📄 rootFiles:", rootFiles.length);
+        }
 
-            // Gabungkan semua dokumen
-            const allDocuments = [...allFolders, ...allFiles, ...rootFiles];
+        console.log("🔎 Total documentsToSearch:", documentsToSearch.length);
 
-            console.log("allDocuments:", allDocuments);
-
-            // Filter berdasarkan nama atau tipe
-            this.filteredDocuments = allDocuments.filter(
-                (doc) =>
-                    doc.name.toLowerCase().includes(query) ||
-                    (doc.type && doc.type.toLowerCase().includes(query))
-            );
-        },
+        // Filter berdasarkan nama atau tipe
+        this.filteredDocuments = documentsToSearch.filter(
+            (doc) => {
+                const matchName = doc.name.toLowerCase().includes(query);
+                const matchType = doc.type && doc.type.toLowerCase().includes(query);
+                
+                return matchName || matchType;
+            }
+        );
+        
+        console.log("✨ filteredDocuments result:", this.filteredDocuments.length);
+    },
 
         getAllFiles(folders) {
             let result = [];
