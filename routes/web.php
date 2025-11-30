@@ -383,6 +383,11 @@ Route::middleware(['auth'])->group(function () {
     // ========================================
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 
+    Route::get('/admin/dashboard', function () {
+    return view('dashboard_admin');
+})->name('admin.dashboard');
+
+
 
     //mindmap
     Route::middleware(['auth'])->group(function () {
