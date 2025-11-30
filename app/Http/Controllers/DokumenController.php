@@ -112,6 +112,16 @@ class DokumenController extends Controller
             ->orderBy('uploaded_at', 'desc')
             ->get();
 
+            // 🔹 DEBUG: log apa yang di-pass ke view
+                \Log::info('DokumenController@index called', [
+                    'workspace_id' => $workspace->id,
+                    'user_id' => $userId,
+                    'folders_count' => $folders->count(),
+                    'rootFiles_count' => $rootFiles->count(),
+                    'session_alert' => session('alert'),
+                    'session_keys' => session()->all(),
+                ]);
+
         return view('dokumen-dan-file', compact('workspace', 'folders', 'rootFiles'));
     }
 
@@ -309,22 +319,23 @@ class DokumenController extends Controller
         
         public function destroyFolder(Folder $folder)
         {
-            // Hapus semua file dalam folder ini
-            foreach ($folder->files as $file) {
-                $file->delete();
-            }
+            $workspaceId = $folder->workspace_id;
+            $parentId = $folder->parent_id; // bisa null
 
-            // Hapus semua subfolder (rekursif)
-            $this->deleteSubfolders($folder);
-
-            // Hapus folder utama
+            // hapus folder (atau soft-delete)
             $folder->delete();
 
-            return redirect()->back()->with('alert', [
-                'icon'  => 'success',
-                'title' => 'Folder berhasil dihapus!',
-                'text'  => 'Semua data di dalam folder sudah terhapus.',
-            ])->with('alert_once', true);
+            // build redirect ke workspace + parent folder (jika ada)
+            $url = route('dokumen-dan-file', ['workspace' => $workspaceId]);
+            if ($parentId) {
+                $url .= '?folder=' . $parentId;
+            }
+
+            return redirect($url)->with('alert', [
+                'icon' => 'success',
+                'title' => 'Folder dihapus',
+                'text' => 'Folder berhasil dihapus.'
+            ]);
         }
 
         private function deleteSubfolders($folder)

@@ -531,6 +531,7 @@
 
                 <!-- Modal Edit File -->
                 <div x-show="showEditFileModal" x-cloak
+                
                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
 
                     <form method="POST" :action="`/files/${editingFile.id}/update`"
