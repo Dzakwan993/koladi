@@ -159,162 +159,211 @@ class DokumenController extends Controller
             'parent_id' => $validated['parent_id'] ?? null,
         ]);
 
-        return redirect()->back()->with('alert', [
-            'icon' => 'success',
-            'title' => 'Folder berhasil dibuat!',
-            'text' => 'Data folder baru sudah tersimpan.',
-        ])
-          ->with('alert_once', true);;
+        // 🔥 PERBAIKAN: Redirect dengan URL eksplisit
+        $workspaceId = $validated['workspace_id'];
+        $parentId = $validated['parent_id'] ?? null;
+        
+        $redirectUrl = route('dokumen-dan-file', ['workspace' => $workspaceId]);
+        
+        if ($parentId) {
+            $redirectUrl .= '?folder=' . $parentId;
+        }
+
+        return response()->json([
+            'success' => true,
+            'redirect_url' => $redirectUrl,
+            'alert' => [
+                'icon' => 'success',
+                'title' => 'Folder berhasil dibuat!',
+                'text' => 'Data folder baru sudah tersimpan.',
+            ]
+        ]);
     }
 
     public function storeFile(StoreFileRequest $request)
-        {
-            $validated = $request->validated();
-            $uploadedBy = auth()->id();
+    {
+        $validated = $request->validated();
+        $uploadedBy = auth()->id();
+        $uploaded = $request->file('file');
 
-            $uploaded = $request->file('file');
+        // --------- [1] Ambil nama awal ---------
+        $originalName = pathinfo($uploaded->getClientOriginalName(), PATHINFO_FILENAME);
+        $extension = $uploaded->getClientOriginalExtension();
 
-            // --------- [1] Ambil nama awal ---------
-            $originalName = pathinfo($uploaded->getClientOriginalName(), PATHINFO_FILENAME);
-            $extension = $uploaded->getClientOriginalExtension();
+        $workspaceId = $validated['workspace_id'];
+        $folderId = $validated['folder_id'] ?? null;
 
-            $workspaceId = $validated['workspace_id'];
-            $folderId = $validated['folder_id'] ?? null;
+        // --------- [2] Generate nama unik ---------
+        $newName = $originalName;
+        $counter = 1;
 
-            // --------- [2] Generate nama unik ---------
-            $newName = $originalName;
-            $counter = 1;
+        while (
+            File::where('workspace_id', $workspaceId)
+                ->where('folder_id', $folderId)
+                ->where('file_name', $newName . '.' . $extension)
+                ->exists()
+        ) {
+            $newName = $originalName . '(' . $counter . ')';
+            $counter++;
+        }
 
-            while (
-                File::where('workspace_id', $workspaceId)
-                    ->where('folder_id', $folderId)
-                    ->where('file_name', $newName . '.' . $extension)
-                    ->exists()
-            ) {
-                $newName = $originalName . '(' . $counter . ')';
-                $counter++;
-            }
+        $finalName = $newName . '.' . $extension;
 
-            $finalName = $newName . '.' . $extension;
+        // --------- [3] Simpan fisik dengan nama final ---------
+        $path = $uploaded->storeAs(
+            'files',
+            $finalName,
+            'public'
+        );
 
-            // --------- [3] Simpan fisik dengan nama final ---------
-            $path = $uploaded->storeAs(
-                'files',
-                $finalName,
-                'public' // ⬅️ Tambahkan disk public
-            );
+        // --------- [4] Simpan ke database ---------
+        $fileModel = File::create([
+            'workspace_id' => $workspaceId,
+            'folder_id' => $folderId,
+            'uploaded_by' => $uploadedBy,
+            'file_name' => $finalName,
+            'file_path' => $path,
+            'file_size' => $uploaded->getSize(),
+            'file_type' => $extension,
+            'file_url' => asset('storage/' . $path),
+            'is_private' => false,
+            'uploaded_at' => now(),
+        ]);
 
-            // --------- [4] Simpan ke database ---------
-            $fileModel = File::create([
-                'workspace_id' => $workspaceId,
-                'folder_id' => $folderId,
-                'uploaded_by' => $uploadedBy,
-                'file_name' => $finalName,
-                'file_path' => $path,
-                'file_size' => $uploaded->getSize(),
-                'file_type' => $extension,
-                'file_url' => asset('storage/' . $path),
-                'is_private' => false,
-                'uploaded_at' => now(),
-            ]);
+        $workspaceId = $validated['workspace_id'];
+        $folderId = $validated['folder_id'] ?? null;
+        
+        $redirectUrl = route('dokumen-dan-file', ['workspace' => $workspaceId]);
+        
+        if ($folderId) {
+            $redirectUrl .= '?folder=' . $folderId;
+        }
 
-            return redirect()->back()->with('alert', [
+        // 🔥 SOLUSI: Return JSON dengan redirect URL
+        return response()->json([
+            'success' => true,
+            'redirect_url' => $redirectUrl,
+            'alert' => [
                 'icon' => 'success',
                 'title' => 'File berhasil diunggah!',
                 'text' => 'File ' . $fileModel->file_name . ' sudah tersimpan.',
-            ])->with('alert_once', true);
+            ]
+        ]);
+    }
+
+
+    public function updateFolder(Request $request, $id)
+    {
+        $folder = Folder::findOrFail($id);
+
+        $oldName = $folder->name;
+        $oldPrivate = $folder->is_private;
+
+        $newName = $request->name;
+        $newPrivate = $request->is_private == 1;
+
+        $messages = [];
+
+        // Perubahan nama
+        if ($oldName !== $newName) {
+            $messages[] = "Nama folder diperbarui.";
         }
 
+        // Perubahan private/public
+        if ($oldPrivate !== $newPrivate) {
+            $messages[] = "Aturan privasi folder diperbarui.";
 
-       public function updateFolder(Request $request, $id)
-        {
-            $folder = Folder::findOrFail($id);
-
-            $oldName = $folder->name;
-            $oldPrivate = $folder->is_private;
-
-            $newName = $request->name;
-            $newPrivate = $request->is_private == 1;
-
-            $messages = [];
-
-            // Perubahan nama
-            if ($oldName !== $newName) {
-                $messages[] = "Nama folder diperbarui.";
+            // Jika dari true -> false, reset semua document_recipients
+            if ($oldPrivate === true && $newPrivate === false) {
+                $folder->documentRecipients()->update(['status' => false]);
             }
+        }
 
-            // Perubahan private/public
-            if ($oldPrivate !== $newPrivate) {
-                $messages[] = "Aturan privasi folder diperbarui.";
+        // Jika tidak ada perubahan sama sekali
+        if (empty($messages)) {
+            $messages[] = "Tidak ada perubahan pada folder.";
+        }
 
-                // Jika dari true -> false, reset semua document_recipients
-                if ($oldPrivate === true && $newPrivate === false) {
-                    $folder->documentRecipients()->update(['status' => false]);
-                }
-            }
+        // Update data folder
+        $folder->update([
+            'name' => $newName,
+            'is_private' => $newPrivate,
+        ]);
 
-            // Jika tidak ada perubahan sama sekali
-            if (empty($messages)) {
-                $messages[] = "Tidak ada perubahan pada folder.";
-            }
+        // 🔥 PERBAIKAN: Redirect dengan URL eksplisit
+        $redirectUrl = route('dokumen-dan-file', ['workspace' => $folder->workspace_id]);
+        $redirectUrl .= '?folder=' . $folder->id;
 
-            // Update data folder
-            $folder->update([
-                'name' => $newName,
-                'is_private' => $newPrivate,
-            ]);
-
-            return redirect()->back()->with('alert', [
-                'icon'  => 'success',
+        return response()->json([
+            'success' => true,
+            'redirect_url' => $redirectUrl,
+            'alert' => [
+                'icon' => 'success',
                 'title' => 'Folder berhasil diperbarui!',
-                'text'  => implode(" ", $messages),
-            ])->with('alert_once', true);
+                'text' => implode(" ", $messages),
+            ]
+        ]);
+    }
+
+
+    public function updateFile(Request $request, $id)
+    {
+        $file = File::findOrFail($id);
+
+        $oldName = $file->name;
+        $oldPrivate = $file->is_private;
+
+        $newName = $request->name;
+        $newPrivate = $request->is_private == 1;
+
+        $messages = [];
+
+        // Perubahan nama
+        if ($oldName !== $newName) {
+            $messages[] = "Nama file diperbarui.";
         }
 
-        public function updateFile(Request $request, $id)
-        {
-            $file = File::findOrFail($id);
+        // Perubahan private/public
+        if ($oldPrivate !== $newPrivate) {
+            $messages[] = "Aturan privasi file diperbarui.";
 
-            $oldName = $file->name;
-            $oldPrivate = $file->is_private;
-
-            $newName = $request->name;
-            $newPrivate = $request->is_private == 1;
-
-            $messages = [];
-
-            // Perubahan nama
-            if ($oldName !== $newName) {
-                $messages[] = "Nama file diperbarui.";
+            // Jika dari true -> false, reset semua document_recipients
+            if ($oldPrivate === true && $newPrivate === false) {
+                $file->documentRecipients()->update(['status' => false]);
             }
+        }
 
-            // Perubahan private/public
-            if ($oldPrivate !== $newPrivate) {
-                $messages[] = "Aturan privasi file diperbarui.";
+        // Jika tidak ada perubahan sama sekali
+        if (empty($messages)) {
+            $messages[] = "Tidak ada perubahan pada file.";
+        }
 
-                // Jika dari true -> false, reset semua document_recipients
-                if ($oldPrivate === true && $newPrivate === false) {
-                    $file->documentRecipients()->update(['status' => false]);
-                }
-            }
+        // Update data file
+        $file->update([
+            'name' => $newName,
+            'is_private' => $newPrivate,
+        ]);
 
-            // Jika tidak ada perubahan sama sekali
-            if (empty($messages)) {
-                $messages[] = "Tidak ada perubahan pada file.";
-            }
+        // 🔥 PERBAIKAN: Redirect dengan URL eksplisit
+       $workspaceId = $file->workspace_id;
+        $folderId = $file->folder_id;
+        
+        $redirectUrl = route('dokumen-dan-file', ['workspace' => $workspaceId]);
+        
+        if ($folderId) {
+            $redirectUrl .= '?folder=' . $folderId;
+        }
 
-            // Update data file
-            $file->update([
-                'name' => $newName,
-                'is_private' => $newPrivate,
-            ]);
-
-            return redirect()->back()->with('alert', [
-                'icon'  => 'success',
+        return response()->json([
+            'success' => true,
+            'redirect_url' => $redirectUrl,
+            'alert' => [
+                'icon' => 'success',
                 'title' => 'File berhasil diperbarui!',
-                'text'  => implode(" ", $messages),
-            ])->with('alert_once', true);
-        }
+                'text' => implode(" ", $messages),
+            ]
+        ]);
+    }
 
 
         public function destroy($id)

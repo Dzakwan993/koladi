@@ -1,77 +1,76 @@
-{{-- Modal Buat Folder --}}
-<div x-show="showCreateFolderModal" x-cloak 
-    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-lg w-full max-w-md" @click.outside="showCreateFolderModal = false">
-        {{-- Header Modal --}}
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-800"
-                x-text="currentFolder ? 'Buat Sub Folder' : 'Buat Folder'"></h3>
-        </div>
+        {{-- Modal Buat Folder --}}
+        <div x-show="showCreateFolderModal" x-cloak 
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-lg w-full max-w-md" @click.outside="showCreateFolderModal = false">
+                {{-- Header Modal --}}
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-800"
+                        x-text="currentFolder ? 'Buat Sub Folder' : 'Buat Folder'"></h3>
+                </div>
 
-        {{-- FORM: kirim langsung ke controller --}}
-        <form method="POST" action="{{ route('folder.store') }}" @submit="showCreateFolderModal = false">
-            @csrf
-            <input type="hidden" name="workspace_id" :value="currentWorkspaceId">
-            <input type="hidden" name="parent_id" :value="currentFolder ? currentFolder.id : null">
+                {{-- 🔥 UPDATED: Form dengan JavaScript handler --}}
+                <form method="POST" action="{{ route('folder.store') }}" @submit.prevent="handleCreateFolder($event)">
+                    @csrf
+                    <input type="hidden" name="workspace_id" :value="currentWorkspaceId">
+                    <input type="hidden" name="parent_id" :value="currentFolder ? currentFolder.id : null">
 
-            {{-- Content Modal --}}
-            <div class="px-6 py-4">
-                <p class="text-sm text-gray-600 mb-4"
-                    x-text="currentFolder ? 'Masukkan nama sub folder' : 'Masukkan nama folder'"></p>
+                    {{-- Content Modal --}}
+                    <div class="px-6 py-4">
+                        <p class="text-sm text-gray-600 mb-4"
+                            x-text="currentFolder ? 'Masukkan nama sub folder' : 'Masukkan nama folder'"></p>
 
-                <input type="text" name="name"
-                    x-model="newFolderName"
-                    :placeholder="currentFolder ? 'Nama sub folder' : 'Nama folder'"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition mb-4"
-                    required>
+                        <input type="text" name="name"
+                            x-model="newFolderName"
+                            :placeholder="currentFolder ? 'Nama sub folder' : 'Nama folder'"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition mb-4"
+                            required>
 
-                {{-- Switch untuk Folder Rahasia --}}
-                <div class="flex items-center justify-between py-2">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                            <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-700">Folder Rahasia</p>
-                            <p class="text-xs text-gray-500">Hanya yang berhak dapat melihat</p>
+                        {{-- Switch untuk Folder Rahasia --}}
+                        <div class="flex items-center justify-between py-2">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-700">Folder Rahasia</p>
+                                    <p class="text-xs text-gray-500">Hanya yang berhak dapat melihat</p>
+                                </div>
+                            </div>
+
+                            <input type="hidden" name="is_private" :value="isSecretFolder ? 1 : 0">
+                            <button type="button" @click="isSecretFolder = !isSecretFolder"
+                                :class="isSecretFolder ? 'bg-blue-600' : 'bg-gray-200'"
+                                class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                                <span class="sr-only">Folder Rahasia</span>
+                                <span :class="isSecretFolder ? 'translate-x-5' : 'translate-x-0'"
+                                    class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
+                            </button>
                         </div>
                     </div>
 
-                    <input type="hidden" name="is_private" :value="isSecretFolder ? 1 : 0">
-                    <button type="button" @click="isSecretFolder = !isSecretFolder"
-                        :class="isSecretFolder ? 'bg-blue-600' : 'bg-gray-200'"
-                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                        <span class="sr-only">Folder Rahasia</span>
-                        <span :class="isSecretFolder ? 'translate-x-5' : 'translate-x-0'"
-                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
-                    </button>
-                </div>
+                    {{-- Footer Modal --}}
+                    <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+                        <button type="button"
+                            @click="showCreateFolderModal = false; newFolderName = ''; isSecretFolder = false"
+                            class="px-4 py-2 text-sm text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 transition">
+                            Batal
+                        </button>
+
+                        <button type="submit"
+                            :disabled="!newFolderName.trim()"
+                            :class="!newFolderName.trim() ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+                            class="px-4 py-2 text-sm text-white rounded-lg transition">
+                            Simpan
+                        </button>
+                    </div>
+                </form>
             </div>
-
-            {{-- Footer Modal --}}
-            <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-                <button type="button"
-                    @click="showCreateFolderModal = false; newFolderName = ''; isSecretFolder = false"
-                    class="px-4 py-2 text-sm text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 transition">
-                    Batal
-                </button>
-
-                <button type="submit"
-                    :disabled="!newFolderName.trim()"
-                    :class="!newFolderName.trim() ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
-                    class="px-4 py-2 text-sm text-white rounded-lg transition">
-                    Simpan
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
-   
+        </div>
+        
 
 
         {{-- Modal Pindah Berkas --}}
@@ -188,73 +187,73 @@
 
 
 
-         <!-- Modal Tambah Peserta -->
-            <div x-show="openAddMemberModal" x-cloak
-                class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4" x-transition>
+        {{-- Modal Tambah Peserta --}}
+        <div x-show="openAddMemberModal" x-cloak
+            class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4" x-transition>
 
-                <div class="bg-white rounded-xl w-full max-w-sm shadow-2xl">
+            <div class="bg-white rounded-xl w-full max-w-sm shadow-2xl">
 
-                    <form method="POST" action="{{ route('document.recipients.store') }}">
-                        @csrf
+                {{-- 🔥 UPDATED: Form dengan JavaScript handler --}}
+                <form method="POST" action="{{ route('document.recipients.store') }}" @submit.prevent="handleAddMembers($event)">
+                    @csrf
 
-                        <!-- Hidden Input: document_id -->
-                        <input type="hidden" name="document_id"
-                            x-bind:value="currentFolder ? currentFolder.id : (currentFile ? currentFile.id : '')">
+                    <!-- Hidden Input: document_id -->
+                    <input type="hidden" name="document_id"
+                        x-bind:value="currentFolder ? currentFolder.id : (currentFile ? currentFile.id : '')">
 
-                      
-                        <!-- Hidden Input: Selected Members as JSON -->
-                        <input type="hidden" name="selected_members"
-                            x-bind:value="JSON.stringify(members.filter(m => m.selected).map(m => m.id))">
+                    <!-- Hidden Input: Selected Members as JSON -->
+                    <input type="hidden" name="selected_members"
+                        x-bind:value="JSON.stringify(members.filter(m => m.selected).map(m => m.id))">
 
-                        <!-- Header -->
-                        <div class="px-6 py-4 border-b">
-                            <h2 class="text-center font-bold text-lg text-gray-800">Tambah Peserta</h2>
+                    <!-- Header -->
+                    <div class="px-6 py-4 border-b">
+                        <h2 class="text-center font-bold text-lg text-gray-800">Tambah Peserta</h2>
+                    </div>
+
+                    <!-- Isi Modal -->
+                    <div class="p-6 space-y-4">
+
+                        <!-- Input Cari -->
+                        <div class="relative">
+                            <input type="text" placeholder="Cari anggota..."
+                                class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                                x-model="searchMember">
                         </div>
 
-                        <!-- Isi Modal -->
-                        <div class="p-6 space-y-4">
+                        <!-- Pilih Semua -->
+                        <div class="flex items-center justify-between border-b pb-2">
+                            <span class="font-medium text-gray-700 text-sm">Pilih Semua</span>
+                            <input type="checkbox" x-model="selectAll" @change="toggleSelectAll">
+                        </div>
 
-                            <!-- Input Cari -->
-                            <div class="relative">
-                                <input type="text" placeholder="Cari anggota..."
-                                    class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                    x-model="searchMember">
-                            </div>
-
-                            <!-- Pilih Semua -->
-                            <div class="flex items-center justify-between border-b pb-2">
-                                <span class="font-medium text-gray-700 text-sm">Pilih Semua</span>
-                                <input type="checkbox" x-model="selectAll" @change="toggleSelectAll">
-                            </div>
-
-                            <!-- List Anggota -->
-                            <div class="space-y-3 max-h-60 overflow-y-auto">
-                                <template x-for="(member, index) in filteredMembers()" :key="index">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center gap-2">
-                                            <img :src="member.avatar" class="w-8 h-8 rounded-full" alt="">
-                                            <span class="text-sm font-medium text-gray-700" x-text="member.name"></span>
-                                        </div>
-                                        <input type="checkbox" x-model="member.selected">
+                        <!-- List Anggota -->
+                        <div class="space-y-3 max-h-60 overflow-y-auto">
+                            <template x-for="(member, index) in filteredMembers()" :key="index">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2">
+                                        <img :src="member.avatar" class="w-8 h-8 rounded-full" alt="">
+                                        <span class="text-sm font-medium text-gray-700" x-text="member.name"></span>
                                     </div>
-                                </template>
-                            </div>
+                                    <input type="checkbox" x-model="member.selected">
+                                </div>
+                            </template>
                         </div>
+                    </div>
 
-                        <!-- Footer -->
-                        <div class="flex justify-end gap-3 p-4 border-t">
-                            <button type="button" @click="openAddMemberModal = false"
-                                class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700">Batal</button>
+                    <!-- Footer -->
+                    <div class="flex justify-end gap-3 p-4 border-t">
+                        <button type="button" @click="openAddMemberModal = false"
+                            class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700">Batal</button>
 
-                            <button type="submit"
-                                class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">
-                                Simpan
-                            </button>
-                        </div>
+                        <button type="submit"
+                            class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">
+                            Simpan
+                        </button>
+                    </div>
 
-                    </form>
-                </div>
+                </form>
             </div>
+        </div>
 
 
 
@@ -264,8 +263,8 @@
                 <div x-show="showEditFolderModal" x-cloak
                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
 
-                    <!-- FORM MULAI -->
-                    <form method="POST" :action="`/folders/${editingFolder.id}/update`"
+                    {{-- 🔥 UPDATED: Form dengan JavaScript handler --}}
+                    <form method="POST" :action="`/folders/${editingFolder.id}/update`" @submit.prevent="handleUpdateFolder($event)"
                         @click.outside="showEditFolderModal = false"
                         class="bg-white rounded-lg w-full max-w-md">
 
@@ -347,8 +346,8 @@
                         </div>
 
                     </form>
-                    <!-- FORM END -->
                 </div>
+
 
 
                 <!-- Modal Hapus Folder -->
@@ -531,10 +530,10 @@
 
                 <!-- Modal Edit File -->
                 <div x-show="showEditFileModal" x-cloak
-                
                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
 
-                    <form method="POST" :action="`/files/${editingFile.id}/update`"
+                    {{-- 🔥 UPDATED: Form dengan JavaScript handler --}}
+                    <form method="POST" :action="`/files/${editingFile.id}/update`" @submit.prevent="handleUpdateFile($event)"
                         class="bg-white rounded-lg w-full max-w-md"
                         @click.outside="showEditFileModal = false">
                         

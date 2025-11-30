@@ -1,7 +1,43 @@
 console.log("✅ dokumen-script.js loaded");
 
+// ==========================================
+// 🔥 HELPER: Reusable SweetAlert
+// ==========================================
+function showCustomSwal({ icon, title, text, timer = 2000, showConfirmButton = false }) {
+    if (!window.Swal) {
+        console.warn('SweetAlert2 not loaded');
+        return;
+    }
+    
+    return Swal.fire({
+        icon: icon,
+        title: title,
+        text: text,
+        showConfirmButton: showConfirmButton,
+        timer: showConfirmButton ? undefined : timer,
+        timerProgressBar: !showConfirmButton,
+        position: 'center',
+        toast: false,
+        background: '#f7faff',
+        color: '#2b2b2b',
+        customClass: {
+            popup: 'swal-custom-popup',
+            title: 'swal-custom-title',
+            htmlContainer: 'swal-custom-text'
+        },
+        didOpen: (popup) => {
+            popup.classList.add('swal-fade-in');
+        },
+        willClose: (popup) => {
+            popup.classList.remove('swal-fade-in');
+            popup.classList.add('swal-fade-out');
+        }
+    });
+}
+
 // ===== DOKUMEN SEARCH FUNCTIONS =====
 export default function documentSearch() {
+     console.log('🚀 documentSearch() function LOADED');
     return {
         // State Properties
         searchQuery: "",
@@ -80,9 +116,14 @@ export default function documentSearch() {
                 console.log("=== POPSTATE TRIGGERED ===");
                 console.log("event.state:", event.state);
                 console.log("current URL:", window.location.href);
+                console.log("history.length:", history.length); // 🔥 TAMBAHKAN
                 console.log("currentFile sebelum:", this.currentFile);
                 console.log("currentFolder sebelum:", this.currentFolder);
 
+                // 🔥 TAMBAHKAN: Cek URL params jika state kosong
+                const url = new URL(window.location);
+                const folderIdFromUrl = url.searchParams.get("folder");
+                const fileIdFromUrl = url.searchParams.get("file");
                 // file state -> tampilkan file (JANGAN pertahankan breadcrumb/grid)
                 if (event.state && event.state.fileId) {
                     console.log(
@@ -176,12 +217,24 @@ export default function documentSearch() {
             const newUrl = `${window.location.pathname}${
                 params.toString() ? "?" + params.toString() : ""
             }`;
+
+            // 🔥 TAMBAHKAN LOGGING INI
+            console.log('📍 setHistoryState called:');
+            console.log('   - replace:', replace);
+            console.log('   - stateObj:', stateObj);
+            console.log('   - newUrl:', newUrl);
+            console.log('   - current URL:', window.location.href);
+            console.log('   - history.length BEFORE:', history.length);
+
             try {
                 if (replace) {
                     history.replaceState(stateObj, "", newUrl);
+                    console.log('   ✅ REPLACE executed');
                 } else {
                     history.pushState(stateObj, "", newUrl);
+                    console.log('   ✅ PUSH executed');
                 }
+                console.log('   - history.length AFTER:', history.length);
             } catch (e) {
                 console.warn("history set error", e);
             }
@@ -189,6 +242,11 @@ export default function documentSearch() {
 
         // Function untuk inisialisasi data
         initData(foldersData, rootFilesData, workspace) {
+            console.log('🚀 ========== initData START ==========');
+            console.log('📂 foldersData:', foldersData);
+            console.log('📄 rootFilesData:', rootFilesData);
+            console.log('🏢 workspace:', workspace);
+            console.log('🕐 Timestamp:', new Date().toISOString());
             console.log(
                 "DEBUG backend folders:",
                 JSON.parse(JSON.stringify(foldersData))
@@ -206,11 +264,15 @@ export default function documentSearch() {
 
             // Convert data Laravel Collection ke format yang diharapkan Alpine
             this.processBackendData();
-
-            // ✅ TAMBAHAN: Set ready flag
-            this.ready = true;
             
             console.log('✅ initData selesai, folders count:', this.folders.length);
+            console.log('🔄 Akan memanggil restoreFolderFromUrl...');
+
+            // ⬇️ TAMBAHKAN INI - restore state dari URL setelah data siap
+            this.$nextTick(() => {
+                console.log('🎯 $nextTick executed, calling restoreFolderFromUrl');
+                this.restoreFolderFromUrl();
+            });
         },
 
         closeFile() {
@@ -465,6 +527,389 @@ export default function documentSearch() {
             this.showSuccessMessage(`File "${file.name}" berhasil diunggah`);
         },
 
+        // ==========================================
+        // 🔥 FORM SUBMISSION HANDLERS
+        // ==========================================
+
+        // 1️⃣ Handle Upload File
+       async handleFileUpload(event) {
+        console.log('🚀 handleFileUpload called');
+        console.log('📍 history.length BEFORE upload:', history.length);
+
+        const form = event.target;
+        const formData = new FormData(form);
+        const url = form.action;
+
+        // Loading
+        showCustomSwal({
+            title: 'Mengunggah file...',
+            text: 'Mohon tunggu sebentar',
+            showConfirmButton: false
+        });
+
+        if (window.Swal) Swal.showLoading();
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            console.log('✅ Upload response:', data);
+
+            if (data.success && data.redirect_url) {
+                // Success alert
+                if (data.alert) {
+                    showCustomSwal({
+                        icon: data.alert.icon,
+                        title: data.alert.title,
+                        text: data.alert.text,
+                        timer: 1700,
+                        showConfirmButton: false
+                    });
+                }
+
+                // Redirect
+                setTimeout(() => {
+                    console.log('📍 history.length BEFORE replace:', history.length);
+                    window.location.replace(data.redirect_url);
+                }, 1000);
+
+            } else {
+                showCustomSwal({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Terjadi kesalahan saat upload file',
+                    showConfirmButton: true
+                });
+            }
+
+        } catch (error) {
+            console.error('❌ Upload error:', error);
+
+            showCustomSwal({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Terjadi kesalahan saat upload file',
+                showConfirmButton: true
+            });
+        }
+
+        form.reset();
+    },
+
+
+        // 2️⃣ Handle Create Folder
+       async handleCreateFolder(event) {
+        console.log('🚀 handleCreateFolder called');
+        console.log('📍 history.length BEFORE create:', history.length);
+
+        const form = event.target;
+        const formData = new FormData(form);
+        const url = form.action;
+
+        // Loading
+        showCustomSwal({
+            title: 'Membuat folder...',
+            showConfirmButton: false
+        });
+
+        if (window.Swal) Swal.showLoading();
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            console.log('✅ Create folder response:', data);
+
+            if (data.success && data.redirect_url) {
+                // Reset modal state
+                this.showCreateFolderModal = false;
+                this.newFolderName = '';
+                this.isSecretFolder = false;
+
+                // Success alert
+                if (data.alert) {
+                    showCustomSwal({
+                        icon: data.alert.icon,
+                        title: data.alert.title,
+                        text: data.alert.text,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+
+                // Redirect
+                setTimeout(() => {
+                    console.log('📍 history.length BEFORE replace:', history.length);
+                    window.location.replace(data.redirect_url);
+                }, 1000);
+
+            } else {
+                showCustomSwal({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Terjadi kesalahan saat membuat folder',
+                    showConfirmButton: true
+                });
+            }
+
+        } catch (error) {
+            console.error('❌ Create folder error:', error);
+
+            showCustomSwal({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Terjadi kesalahan saat membuat folder',
+                showConfirmButton: true
+            });
+        }
+    },
+
+
+        // 3️⃣ Handle Update Folder
+        async handleUpdateFolder(event) {
+        console.log('🚀 handleUpdateFolder called');
+        console.log('📍 history.length BEFORE update:', history.length);
+
+        const form = event.target;
+        const formData = new FormData(form);
+        const url = form.action;
+
+        // Loading
+        showCustomSwal({
+            title: 'Memperbarui folder...',
+            showConfirmButton: false
+        });
+
+        if (window.Swal) Swal.showLoading();
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            console.log('✅ Update folder response:', data);
+
+            if (data.success && data.redirect_url) {
+
+                // Reset modal state
+                this.showEditFolderModal = false;
+                this.editFolderName = '';
+                this.editIsSecretFolder = false;
+                this.editingFolder = null;
+
+                // Success alert
+                if (data.alert) {
+                    showCustomSwal({
+                        icon: data.alert.icon,
+                        title: data.alert.title,
+                        text: data.alert.text,
+                        timer: 1700,
+                        showConfirmButton: false
+                    });
+                }
+
+                // Redirect
+                setTimeout(() => {
+                    console.log('📍 history.length BEFORE replace:', history.length);
+                    window.location.replace(data.redirect_url);
+                }, 1000);
+
+            } else {
+                showCustomSwal({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Terjadi kesalahan saat memperbarui folder',
+                    showConfirmButton: true
+                });
+            }
+
+        } catch (error) {
+            console.error('❌ Update folder error:', error);
+
+            showCustomSwal({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Terjadi kesalahan saat memperbarui folder',
+                showConfirmButton: true
+            });
+        }
+    },
+
+
+        // 4️⃣ Handle Update File
+        async handleUpdateFile(event) {
+        console.log('🚀 handleUpdateFile called');
+        
+        const form = event.target;
+        const formData = new FormData(form);
+        const url = form.action;
+        
+        formData.append('_method', 'PUT');
+        
+        // Show loading
+        showCustomSwal({
+            title: 'Memperbarui file...',
+            text: 'Mohon tunggu sebentar',
+            showConfirmButton: false,
+            timer: undefined // no timer for loading
+        });
+        
+        if (window.Swal) {
+            Swal.showLoading();
+        }
+        
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+            
+            const data = await response.json();
+            
+            console.log('✅ Update file response:', data);
+            
+            if (data.success && data.redirect_url) {
+                // Close modal
+                this.showEditFileModal = false;
+                this.editFileIsSecret = false;
+                this.editingFile = null;
+                
+                // 🔥 Show success alert dengan helper
+                if (data.alert) {
+                    showCustomSwal({
+                        icon: data.alert.icon,
+                        title: data.alert.title,
+                        text: data.alert.text,
+                        timer: 1700,
+                        showConfirmButton: false
+                    });
+                }
+                
+                // 🔥 Redirect dengan location.replace()
+                setTimeout(() => {
+                    console.log('📍 history.length BEFORE replace:', history.length);
+                    window.location.replace(data.redirect_url);
+                }, 1500);
+            } else {
+                showCustomSwal({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Terjadi kesalahan saat memperbarui file',
+                    showConfirmButton: true
+                });
+            }
+        } catch (error) {
+            console.error('❌ Update file error:', error);
+            
+            showCustomSwal({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Terjadi kesalahan saat memperbarui file',
+                showConfirmButton: true
+            });
+        }
+    },
+
+        // 5️⃣ Handle Add Members
+        async handleAddMembers(event) {
+        console.log('🚀 handleAddMembers called');
+        console.log('📍 history.length BEFORE add members:', history.length);
+
+        const form = event.target;
+        const formData = new FormData(form);
+        const url = form.action;
+
+        // Loading
+        showCustomSwal({
+            title: 'Menambahkan peserta...',
+            showConfirmButton: false
+        });
+
+        if (window.Swal) Swal.showLoading();
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            console.log('✅ Add members response:', data);
+
+            if (data.success && data.redirect_url) {
+
+                // Reset modal state
+                this.openAddMemberModal = false;
+                this.searchMember = '';
+                this.selectAll = false;
+
+                // Success alert
+                if (data.alert) {
+                    showCustomSwal({
+                        icon: data.alert.icon,
+                        title: data.alert.title,
+                        text: data.alert.text,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+
+                // Redirect
+                setTimeout(() => {
+                    console.log('📍 history.length BEFORE replace:', history.length);
+                    window.location.replace(data.redirect_url);
+                }, 1500);
+
+            } else {
+                showCustomSwal({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Terjadi kesalahan saat menambahkan peserta',
+                    showConfirmButton: true
+                });
+            }
+
+        } catch (error) {
+            console.error('❌ Add members error:', error);
+
+            showCustomSwal({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Terjadi kesalahan saat menambahkan peserta',
+                showConfirmButton: true
+            });
+        }
+    },
+
+
         // Selection Functions
         toggleSelectMode() {
             this.selectMode = !this.selectMode;
@@ -514,38 +959,48 @@ export default function documentSearch() {
 
         // Folder Navigation
         openFolder(folder) {
-            console.log("openFolder dipanggil", folder);
-            this.currentFile = null;
-            this.currentFolderCreatedBy = null;
-            this.currentFileUploadedBy = null;
+    console.log("✅ openFolder START, folder:", folder.name);
+    console.log("📍 history.length BEFORE openFolder:", history.length);
+    
+    this.currentFile = null;
+    this.currentFolderCreatedBy = null;
+    this.currentFileUploadedBy = null;
 
-            this.$nextTick(() => {
-                this.currentFolderCreatedBy =
-                    folder.creator?.id || folder.creator_id || null;
+    this.$nextTick(() => {
+        this.currentFolderCreatedBy =
+            folder.creator?.id || folder.creator_id || null;
 
-                // push new folder state
-                this.setHistoryState(
-                    { folderId: folder.id, folderName: folder.name },
-                    false
-                );
+        // 🔥 FIX: Definisikan variable isFromRestore
+        const isFromRestore = this._restoring === true;
+        
+        console.log("📍 isFromRestore:", isFromRestore);
+        console.log("📍 Calling setHistoryState with replace:", isFromRestore);
 
-                if (!this.currentFolder) {
-                    this.folderHistory = [];
-                } else {
-                    const isAlreadyInHistory = this.folderHistory.some(
-                        (f) => f.id === this.currentFolder.id
-                    );
-                    if (!isAlreadyInHistory) {
-                        this.folderHistory.push({ ...this.currentFolder });
-                    }
-                }
+        // Push state HANYA jika dari user click (bukan dari restore)
+        this.setHistoryState(
+            { folderId: folder.id, folderName: folder.name },
+            isFromRestore  // false = PUSH (user click), true = REPLACE (dari restore)
+        );
 
-                this.loadMembersFromAPI();
-                this.currentFolder = folder;
-                this.currentFile = null;
-                this.updateBreadcrumbs();
-            });
-        },
+        if (!this.currentFolder) {
+            this.folderHistory = [];
+        } else {
+            const isAlreadyInHistory = this.folderHistory.some(
+                (f) => f.id === this.currentFolder.id
+            );
+            if (!isAlreadyInHistory) {
+                this.folderHistory.push({ ...this.currentFolder });
+            }
+        }
+
+        this.loadMembersFromAPI();
+        this.currentFolder = folder;
+        this.currentFile = null;
+        this.updateBreadcrumbs();
+        
+        console.log("✅ openFolder END, history.length:", history.length);
+    });
+},
 
         navigateToFolder(folder) {
             const folderIndex = this.breadcrumbs.findIndex(
@@ -579,137 +1034,127 @@ export default function documentSearch() {
         },
 
         restoreFolderFromUrl() {
-                console.log("restoreFolderFromUrl dipanggil");
+    console.log('🔥🔥🔥 ========== restoreFolderFromUrl START ==========');
+    console.log('🕐 Time:', new Date().toISOString());
+    console.log('📍 Current URL:', window.location.href);
+    console.log('📂 Folders available:', this.folders.length);
+    console.log('🚪 _restoring flag BEFORE:', this._restoring);
 
-                const url = new URL(window.location);
-                const folderIdFromUrl = url.searchParams.get("folder");
-                const fileIdFromUrl = url.searchParams.get("file");
+    if (this._restoring) {
+        console.warn('⚠️ restoreFolderFromUrl already running, skipping...');
+        return;
+    }
+    
+    this._restoring = true;
+    console.log('🚪 _restoring flag SET TO:', this._restoring);
 
-                // jika ada file param -> tampilkan file saja (jangan set currentFolder)
-                if (fileIdFromUrl) {
-                    console.log("🔹 Found file param in URL:", fileIdFromUrl);
-                    const allFiles = this.getAllFiles(this.folders);
-                    const file = allFiles.find(
-                        (f) => String(f.id) === String(fileIdFromUrl)
-                    );
+    const url = new URL(window.location);
+    const folderIdFromUrl = url.searchParams.get("folder");
+    const fileIdFromUrl = url.searchParams.get("file");
 
-                    if (file) {
-                        console.log('📄 File found:', file);
-                        console.log('👤 file.uploaded_by:', file.uploaded_by);
-                        console.log('👤 file.uploader:', file.uploader);
-                        
-                        this.currentFile = {
-                            ...file,
-                            folder: null,
-                            folderPath: [],
-                        };
+    console.log("🔑 URL Params - folder:", folderIdFromUrl, "file:", fileIdFromUrl);
 
-                        // ✅ CRITICAL: Set uploaded_by SEBELUM nextTick
-                        this.currentFileUploadedBy = file.uploaded_by || file.uploader?.id || null;
-                        this.currentFolderCreatedBy = null; // ⬅️ TAMBAHKAN INI (penting!)
-                        
-                        console.log('✅ currentFileUploadedBy set to:', this.currentFileUploadedBy);
-                        console.log('✅ currentFolderCreatedBy set to:', this.currentFolderCreatedBy);
+    // === HANDLE FILE ===
+    if (fileIdFromUrl) {
+        console.log("🔹 Found file param in URL:", fileIdFromUrl);
 
-                        this.currentFolder = null;
-                        this.breadcrumbs = [];
+        const allFiles = [
+            ...this.getAllFiles(this.folders),
+            ...this.allFiles
+        ];
+        
+        console.log("📄 All files found:", allFiles.length);
+        
+        const file = allFiles.find(
+            (f) => String(f.id) === String(fileIdFromUrl)
+        );
 
-                        // ✅ Tunggu state update
-                        this.$nextTick(() => {
-                            console.log('🔄 BEFORE loadMembersFromAPI:');
-                            console.log('  - currentFileUploadedBy:', this.currentFileUploadedBy);
-                            console.log('  - currentFolderCreatedBy:', this.currentFolderCreatedBy);
-                            console.log('  - currentWorkspaceId:', this.currentWorkspaceId);
-                            
-                            this.loadMembersFromAPI();
-                        });
-                
-                        this.setHistoryState(
-                            { fileId: file.id, folderId: folderIdFromUrl || null },
-                            true
-                        );
-                        console.log(
-                            "✅ Restored file from URL (replace state):",
-                            fileIdFromUrl
-                        );
-                    } else {
-                        console.warn('⚠️ File NOT found with ID:', fileIdFromUrl);
-                        this.currentFile = null;
-                        // no file found -> fallback to folder handling
-                        if (folderIdFromUrl) {
-                            const folder = this.folders.find(
-                                (f) => String(f.id) === String(folderIdFromUrl)
-                            );
-                            if (folder) {
-                                this.currentFolder = folder;
-                                this.currentFolderCreatedBy = folder.creator?.id || folder.creator_id || null;
-                                this.currentFileUploadedBy = null; // ⬅️ TAMBAHKAN
-                                this.currentFile = null;
-                                this.updateBreadcrumbs();
-                                
-                                this.$nextTick(() => {
-                                    this.loadMembersFromAPI();
-                                });
-                                
-                                this.setHistoryState({ folderId: folder.id }, true);
-                                console.log(
-                                    "✅ Fallback: restored folder from URL (replace state):",
-                                    folder.id
-                                );
-                            } else {
-                                this.currentFolder = null;
-                                this.currentFolderCreatedBy = null;
-                                this.currentFileUploadedBy = null;
-                                this.setHistoryState({}, true);
-                            }
-                        } else {
-                            this.currentFolder = null;
-                            this.currentFolderCreatedBy = null;
-                            this.currentFileUploadedBy = null;
-                            this.setHistoryState({}, true);
-                        }
-                    }
-                    return;
-                }
+        console.log("🎯 File found:", file ? file.name : 'NOT FOUND');
 
-            // jika tidak ada file param -> fallback folder param
+        if (file) {
+            console.log('📄 Restoring file:', file.name);
+            
+            this.currentFile = {
+                ...file,
+                folder: null,
+                folderPath: [],
+            };
+
+            this.currentFileUploadedBy = file.uploaded_by || file.uploader?.id || null;
+            this.currentFolderCreatedBy = null;
+            this.currentFolder = null;
+            this.breadcrumbs = [];
+
+            this.$nextTick(() => {
+                this.loadMembersFromAPI();
+                this.ready = true;
+                this._restoring = false;  // ⬅️ RESET FLAG
+                console.log('✅ File restored, history.length:', history.length);
+            });
+            
+            // 🔥 FIX: Hapus baris ini, tidak perlu set state lagi
+            // this.setHistoryState({ fileId: file.id, folderId: folderId }, true);
+            
+        } else {
+            console.warn('⚠️ File not found');
+            this.currentFile = null;
+            this.ready = true;
+            this._restoring = false;  // ⬅️ RESET FLAG
+            
+            // fallback to folder or root
             if (folderIdFromUrl) {
                 const folder = this.folders.find(
                     (f) => String(f.id) === String(folderIdFromUrl)
                 );
                 if (folder) {
-                    this.currentFolder = folder;
-                    this.currentFolderCreatedBy = folder.creator?.id || folder.creator_id || null;
-                    this.currentFileUploadedBy = null; // ⬅️ TAMBAHKAN
-                    this.currentFile = null;
-                    this.updateBreadcrumbs();
-                    
-                    this.$nextTick(() => {
-                        this.loadMembersFromAPI();
-                    });
-                    
-                    this.setHistoryState({ folderId: folder.id }, true); // normalize history entry
-                    console.log(
-                        "✅ Folder restored dari URL ?folder=",
-                        folderIdFromUrl,
-                        folder.name
-                    );
-                } else {
-                    this.currentFolder = null;
-                    this.currentFolderCreatedBy = null;
-                    this.currentFileUploadedBy = null;
-                    this.setHistoryState({}, true);
+                    this._restoring = true;  // ⬅️ SET LAGI untuk openFolder
+                    this.openFolder(folder);  // akan auto set state dengan replace=true
                 }
-                return;
             }
+        }
+        return;
+    }
 
-            // tidak ada param -> normal state (root)
-            this.currentFolder = null;
-            this.currentFile = null;
-            this.currentFolderCreatedBy = null;
-            this.currentFileUploadedBy = null;
-            this.setHistoryState({}, true);
-        },
+    // === HANDLE FOLDER ===
+    if (folderIdFromUrl) {
+        console.log("🔹 Found folder param:", folderIdFromUrl);
+        
+        const folder = this.folders.find(
+            (f) => String(f.id) === String(folderIdFromUrl)
+        );
+        
+        if (folder) {
+            console.log("📂 Restoring folder:", folder.name);
+            
+            // 🔥 openFolder akan cek this._restoring dan pakai replace=true
+            this.openFolder(folder);
+            
+            this.$nextTick(() => {
+                this.ready = true;
+                this._restoring = false;  // ⬅️ RESET FLAG
+                console.log("✅ Folder restored, history.length:", history.length);
+            });
+        } else {
+            console.warn('⚠️ Folder not found');
+            this.ready = true;
+            this._restoring = false;  // ⬅️ RESET FLAG
+        }
+        return;
+    }
+
+    // === ROOT STATE ===
+    console.log("🔹 No params -> going root");
+    this.currentFolder = null;
+    this.currentFile = null;
+    this.currentFolderCreatedBy = null;
+    this.currentFileUploadedBy = null;
+    this.ready = true;
+    
+    this.$nextTick(() => {
+        this._restoring = false;  // ⬅️ RESET FLAG
+        console.log("✅ Root restored, history.length:", history.length);
+    });
+},
 
         updateBreadcrumbs() {
             this.breadcrumbs = [...this.folderHistory];
@@ -1441,6 +1886,7 @@ window.documentCommentSection = function () {
         },
 
         init() {
+            
             this.resetAllModals();
 
             this.$watch(
