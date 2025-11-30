@@ -206,6 +206,11 @@ export default function documentSearch() {
 
             // Convert data Laravel Collection ke format yang diharapkan Alpine
             this.processBackendData();
+
+            // ✅ TAMBAHAN: Set ready flag
+            this.ready = true;
+            
+            console.log('✅ initData selesai, folders count:', this.folders.length);
         },
 
         closeFile() {
@@ -286,6 +291,9 @@ export default function documentSearch() {
             return (files || []).map((file) => {
                 // Ambil nama dari properti yang ada, atau ekstrak dari URL
                 console.log("Isi file URL kamu adlah:", file.file_url);
+                console.log('👤 Raw uploaded_by:', file.uploaded_by);
+                console.log('👤 Raw uploader:', file.uploader);
+
                 const originalName = file.name || file.file_name || null;
                 const extractedName = file.file_url
                     ? file.file_url.split("/").pop()
@@ -296,6 +304,8 @@ export default function documentSearch() {
 
                 // Dapatkan type dari displayName (getFileType harus mampu menerima nama)
                 const type = this.getFileType(displayName);
+
+                const uploaderId = file.uploaded_by || file.uploader?.id || null;
 
                 return {
                     id: file.id,
@@ -308,22 +318,17 @@ export default function documentSearch() {
                     file_url: file.file_url, // ⬅⬅ WAJIB
 
                     // 🔥 Tambahkan ID uploader
-                    uploaded_by: file.uploaded_by || file.uploader?.id || null,
+                    uploaded_by: uploaderId,
                     creator: {
                         // perhatikan properti uploader: kamu pakai full_name di data
-                        name:
-                            file.uploader?.full_name ||
-                            file.uploader?.name ||
-                            "Zaki",
-                        avatar:
-                            file.uploader?.avatar ||
-                            "https://i.pravatar.cc/32?img=8",
-                    },
-                    createdAt: file.created_at || file.uploaded_at,
-                    isSecret: file.is_private || false,
-                    comments: file.comments || [],
-                    recipients: [],
-                };
+                        name: file.uploader?.full_name || file.uploader?.name || 'Unknown',
+                        avatar: file.uploader?.avatar || 'https://i.pravatar.cc/32?img=8'
+                            },
+                            createdAt: file.created_at || file.uploaded_at,
+                            isSecret: file.is_private || false,
+                            comments: file.comments || [],
+                            recipients: [],
+                        };
             });
         },
 
@@ -574,66 +579,98 @@ export default function documentSearch() {
         },
 
         restoreFolderFromUrl() {
-            console.log("restoreFolderFromUrl dipanggil");
+                console.log("restoreFolderFromUrl dipanggil");
 
-            const url = new URL(window.location);
-            const folderIdFromUrl = url.searchParams.get("folder");
-            const fileIdFromUrl = url.searchParams.get("file");
+                const url = new URL(window.location);
+                const folderIdFromUrl = url.searchParams.get("folder");
+                const fileIdFromUrl = url.searchParams.get("file");
 
-            // jika ada file param -> tampilkan file saja (jangan set currentFolder)
-            if (fileIdFromUrl) {
-                console.log("🔹 Found file param in URL:", fileIdFromUrl);
-                const allFiles = this.getAllFiles(this.folders);
-                const file = allFiles.find(
-                    (f) => String(f.id) === String(fileIdFromUrl)
-                );
-                if (file) {
-                    this.currentFile = {
-                        ...file,
-                        folder: null,
-                        folderPath: [],
-                    };
-                    this.currentFileUploadedBy =
-                        file.uploaded_by || file.uploader?.id || null;
-                    this.currentFolder = null;
-                    this.breadcrumbs = [];
-                    this.loadMembersFromAPI();
-                    // replace history so this page load does NOT create duplicate entry
-                    this.setHistoryState(
-                        { fileId: file.id, folderId: folderIdFromUrl || null },
-                        true
+                // jika ada file param -> tampilkan file saja (jangan set currentFolder)
+                if (fileIdFromUrl) {
+                    console.log("🔹 Found file param in URL:", fileIdFromUrl);
+                    const allFiles = this.getAllFiles(this.folders);
+                    const file = allFiles.find(
+                        (f) => String(f.id) === String(fileIdFromUrl)
                     );
-                    console.log(
-                        "✅ Restored file from URL (replace state):",
-                        fileIdFromUrl
-                    );
-                } else {
-                    this.currentFile = null;
-                    // no file found -> fallback to folder handling
-                    if (folderIdFromUrl) {
-                        const folder = this.folders.find(
-                            (f) => String(f.id) === String(folderIdFromUrl)
+
+                    if (file) {
+                        console.log('📄 File found:', file);
+                        console.log('👤 file.uploaded_by:', file.uploaded_by);
+                        console.log('👤 file.uploader:', file.uploader);
+                        
+                        this.currentFile = {
+                            ...file,
+                            folder: null,
+                            folderPath: [],
+                        };
+
+                        // ✅ CRITICAL: Set uploaded_by SEBELUM nextTick
+                        this.currentFileUploadedBy = file.uploaded_by || file.uploader?.id || null;
+                        this.currentFolderCreatedBy = null; // ⬅️ TAMBAHKAN INI (penting!)
+                        
+                        console.log('✅ currentFileUploadedBy set to:', this.currentFileUploadedBy);
+                        console.log('✅ currentFolderCreatedBy set to:', this.currentFolderCreatedBy);
+
+                        this.currentFolder = null;
+                        this.breadcrumbs = [];
+
+                        // ✅ Tunggu state update
+                        this.$nextTick(() => {
+                            console.log('🔄 BEFORE loadMembersFromAPI:');
+                            console.log('  - currentFileUploadedBy:', this.currentFileUploadedBy);
+                            console.log('  - currentFolderCreatedBy:', this.currentFolderCreatedBy);
+                            console.log('  - currentWorkspaceId:', this.currentWorkspaceId);
+                            
+                            this.loadMembersFromAPI();
+                        });
+                
+                        this.setHistoryState(
+                            { fileId: file.id, folderId: folderIdFromUrl || null },
+                            true
                         );
-                        if (folder) {
-                            this.currentFolder = folder;
-                            this.currentFile = null;
-                            this.updateBreadcrumbs();
-                            this.setHistoryState({ folderId: folder.id }, true);
-                            console.log(
-                                "✅ Fallback: restored folder from URL (replace state):",
-                                folder.id
+                        console.log(
+                            "✅ Restored file from URL (replace state):",
+                            fileIdFromUrl
+                        );
+                    } else {
+                        console.warn('⚠️ File NOT found with ID:', fileIdFromUrl);
+                        this.currentFile = null;
+                        // no file found -> fallback to folder handling
+                        if (folderIdFromUrl) {
+                            const folder = this.folders.find(
+                                (f) => String(f.id) === String(folderIdFromUrl)
                             );
+                            if (folder) {
+                                this.currentFolder = folder;
+                                this.currentFolderCreatedBy = folder.creator?.id || folder.creator_id || null;
+                                this.currentFileUploadedBy = null; // ⬅️ TAMBAHKAN
+                                this.currentFile = null;
+                                this.updateBreadcrumbs();
+                                
+                                this.$nextTick(() => {
+                                    this.loadMembersFromAPI();
+                                });
+                                
+                                this.setHistoryState({ folderId: folder.id }, true);
+                                console.log(
+                                    "✅ Fallback: restored folder from URL (replace state):",
+                                    folder.id
+                                );
+                            } else {
+                                this.currentFolder = null;
+                                this.currentFolderCreatedBy = null;
+                                this.currentFileUploadedBy = null;
+                                this.setHistoryState({}, true);
+                            }
                         } else {
                             this.currentFolder = null;
+                            this.currentFolderCreatedBy = null;
+                            this.currentFileUploadedBy = null;
                             this.setHistoryState({}, true);
                         }
-                    } else {
-                        this.currentFolder = null;
-                        this.setHistoryState({}, true);
                     }
+                    return;
                 }
-                return;
-            }
 
             // jika tidak ada file param -> fallback folder param
             if (folderIdFromUrl) {
@@ -642,8 +679,15 @@ export default function documentSearch() {
                 );
                 if (folder) {
                     this.currentFolder = folder;
+                    this.currentFolderCreatedBy = folder.creator?.id || folder.creator_id || null;
+                    this.currentFileUploadedBy = null; // ⬅️ TAMBAHKAN
                     this.currentFile = null;
                     this.updateBreadcrumbs();
+                    
+                    this.$nextTick(() => {
+                        this.loadMembersFromAPI();
+                    });
+                    
                     this.setHistoryState({ folderId: folder.id }, true); // normalize history entry
                     console.log(
                         "✅ Folder restored dari URL ?folder=",
@@ -652,6 +696,8 @@ export default function documentSearch() {
                     );
                 } else {
                     this.currentFolder = null;
+                    this.currentFolderCreatedBy = null;
+                    this.currentFileUploadedBy = null;
                     this.setHistoryState({}, true);
                 }
                 return;
@@ -660,6 +706,8 @@ export default function documentSearch() {
             // tidak ada param -> normal state (root)
             this.currentFolder = null;
             this.currentFile = null;
+            this.currentFolderCreatedBy = null;
+            this.currentFileUploadedBy = null;
             this.setHistoryState({}, true);
         },
 
@@ -1139,6 +1187,11 @@ export default function documentSearch() {
         },
 
         loadMembersFromAPI() {
+            console.log('🔄 loadMembersFromAPI called');
+            console.log('📋 currentFolderCreatedBy:', this.currentFolderCreatedBy);
+            console.log('📋 currentFileUploadedBy:', this.currentFileUploadedBy);
+            console.log('📋 currentWorkspaceId:', this.currentWorkspaceId);
+
             this.isLoadingPermission = true;
 
             const params = new URLSearchParams({
@@ -1146,16 +1199,21 @@ export default function documentSearch() {
                 file_uploaded_by: this.currentFileUploadedBy ?? "",
             });
 
+            console.log('🔗 Fetching:', `/workspaces/${this.currentWorkspaceId}/members?${params}`);
+
             fetch(`/workspaces/${this.currentWorkspaceId}/members?${params}`)
                 .then(async (res) => {
+                    console.log('✅ Response status:', res.status);
                     this.memberListAllowed = res.status === 200;
                     if (!this.memberListAllowed) {
+                        console.warn('⚠️ memberListAllowed = false, response:', res.status);
                         this.members = [];
                         return null;
                     }
                     return await res.json();
                 })
                 .then(async (data) => {
+                    console.log('📦 Members data:', data);
                     if (!data?.members) return;
 
                     // Fetch recipients status=true dari backend
@@ -1179,11 +1237,13 @@ export default function documentSearch() {
                         this.members.every((m) => m.selected);
                 })
                 .catch(() => {
+                    console.error('❌ Error loading members:', error);
                     this.memberListAllowed = false;
                     this.members = [];
                 })
                 .finally(() => {
                     this.isLoadingPermission = false;
+                    console.log('✅ loadMembersFromAPI selesai, memberListAllowed:', this.memberListAllowed);
                 });
         },
 

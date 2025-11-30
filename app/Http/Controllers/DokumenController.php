@@ -125,6 +125,21 @@ class DokumenController extends Controller
                     'session_keys' => session()->all(),
                 ]);
 
+                // ✅ TAMBAHAN: Log untuk debug
+                \Log::info('Root files with uploader:', [
+                    'count' => $rootFiles->count(),
+                    'sample' => $rootFiles->first() ? [
+                        'id' => $rootFiles->first()->id,
+                        'name' => $rootFiles->first()->name,
+                        'uploaded_by' => $rootFiles->first()->uploaded_by,
+                        'uploader' => $rootFiles->first()->uploader ? [
+                            'id' => $rootFiles->first()->uploader->id,
+                            'name' => $rootFiles->first()->uploader->full_name,
+                        ] : null
+                    ] : null
+                ]);
+
+
         return view('dokumen-dan-file', compact('workspace', 'folders', 'rootFiles'));
     }
 
