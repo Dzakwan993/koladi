@@ -76,8 +76,8 @@
 
                     </div>
 
-        {{-- Halaman Balas Komentar --}}
-            @include('components.balas-komentar')
+                    {{-- Halaman Balas Komentar --}}
+                    @include('components.balas-komentar')
 
                     {{-- All Modals --}}
                     @include('components.modal-tugas')
@@ -1145,19 +1145,19 @@
                     }
                 </style>
 
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
-    <script>
-            ['todo', 'inprogress', 'done', 'cancel'].forEach(id => {
-                let el = document.getElementById(id);
-                if (el) {
-                    new Sortable(el, {
-                        group: 'kanban',
-                        animation: 150,
-                        ghostClass: 'bg-blue-300'
+                <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+                <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+                <script>
+                    ['todo', 'inprogress', 'done', 'cancel'].forEach(id => {
+                        let el = document.getElementById(id);
+                        if (el) {
+                            new Sortable(el, {
+                                group: 'kanban',
+                                animation: 150,
+                                ghostClass: 'bg-blue-300'
+                            });
+                        }
                     });
-                }
-            });
 
                     function kanbanApp() {
                         return {
@@ -1847,10 +1847,10 @@
                                         }
 
                                         this.currentTask.checklist.splice(index, 1);
-                                        this.showNotification('Item checklist berhasil dihapus', 'success');
+                                        // this.showNotification('Item checklist berhasil dihapus', 'success');
                                     } catch (error) {
                                         console.error('Error deleting checklist item:', error);
-                                        this.showNotification('Gagal menghapus item checklist', 'error');
+                                        // this.showNotification('Gagal menghapus item checklist', 'error');
                                     }
                                 }
                             },
@@ -1925,7 +1925,7 @@
                                         if (data.success) {
                                             // Ganti ID temporary dengan ID real
                                             item.id = data.checklist.id;
-                                            this.showNotification('Checklist berhasil ditambahkan', 'success');
+                                            // this.showNotification('Checklist berhasil ditambahkan', 'success');
                                         } else {
                                             throw new Error('Gagal membuat checklist');
                                         }
@@ -1965,7 +1965,7 @@
                                         this.deleteAttachmentFromServer(file.id);
                                     }
                                     this.currentTask.attachments.splice(index, 1);
-                                    this.showNotification('File berhasil dihapus', 'success');
+                                    // this.showNotification('File berhasil dihapus', 'success');
                                 }
                             },
 
@@ -2082,9 +2082,9 @@
                                                     'bold', 'italic', 'underline', 'strikethrough', '|',
                                                     'fontColor', 'fontBackgroundColor', '|',
                                                     'link', 'blockQuote', 'code', '|',
-                                                    'bulletedList', 'numberedList', 'outdent', 'indent',
+                                                    'bulletedList', 'numberedList', 
                                                     '|',
-                                                    'insertTable', 'imageUpload', 'mediaEmbed'
+                                                    'insertTable', 
                                                 ],
                                                 shouldNotGroupWhenFull: true
                                             },
@@ -2165,7 +2165,7 @@
                                 const editorElement = document.getElementById(editorId);
                                 if (editorElement) {
                                     editorElement.innerHTML = `
-            <textarea id="${editorId}-fallback"
+            <textarea id="${editorId}-fallback" 
                       class="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg bg-white resize-none"
                       x-model="currentTask.description">${this.currentTask?.description || ''}</textarea>
         `;
@@ -2235,7 +2235,7 @@
                                             url: '/storage/' + data.attachment.file_url
                                         });
 
-                                        this.showNotification(`File ${file.name} berhasil diupload`, 'success');
+                                        // this.showNotification(`File ${file.name} berhasil diupload`, 'success');
                                     } else {
                                         throw new Error(data.message || 'Upload gagal');
                                     }
@@ -2271,7 +2271,7 @@
 
                                     if (data.success) {
                                         this.currentTask.labels = data.labels;
-                                        this.showNotification('Label berhasil dihapus', 'success');
+                                        // this.showNotification('Label berhasil dihapus', 'success');
                                     } else {
                                         throw new Error(data.message || 'Gagal menghapus label');
                                     }
@@ -2303,7 +2303,7 @@
                                     const data = await response.json();
 
                                     if (data.success) {
-                                        this.showNotification('Judul berhasil diperbarui', 'success');
+                                        // this.showNotification('Judul berhasil diperbarui', 'success');
                                     } else {
                                         throw new Error(data.message || 'Gagal memperbarui judul');
                                     }
@@ -2338,108 +2338,158 @@
                             // Create new task
                             // Di dalam kanbanApp() - perbaiki method createTask
                             async createTask() {
+    try {
+        const catatanContent = this.getCKEditorContent('editor-catatan');
+        this.taskForm.description = catatanContent;
 
-                                try {
-                                    const catatanContent = this.getCKEditorContent('editor-catatan');
-                                    this.taskForm.description = catatanContent;
+        console.log('CKEditor content:', catatanContent);
 
-                                    console.log('CKEditor content:', catatanContent); // Debug
-                                } catch (error) {
-                                    console.error('Error getting CKEditor content:', error);
-                                    this.taskForm.description = ''; // Fallback
-                                }
+        // Validasi
+        if (!this.taskForm.title?.trim()) {
+            this.showNotification('Judul tugas harus diisi', 'error');
+            return;
+        }
 
-                                // Validasi
-                                if (!this.taskForm.title?.trim()) {
-                                    this.showNotification('Judul tugas harus diisi', 'error');
-                                    return;
-                                }
+        if (!this.taskForm.phase?.trim()) {
+            this.showNotification('Phase harus diisi', 'error');
+            return;
+        }
+
+        if (!this.currentColumnId) {
+            this.showNotification('Kolom tujuan tidak ditemukan', 'error');
+            return;
+        }
+
+        try {
+            const workspaceId = this.getCurrentWorkspaceId();
+            if (!workspaceId) {
+                this.showNotification('Workspace tidak valid', 'error');
+                return;
+            }
+
+            // Siapkan data untuk backend
+            const formData = {
+                workspace_id: this.getCurrentWorkspaceId(),
+                board_column_id: this.currentColumnId,
+                title: this.taskForm.title,
+                description: this.taskForm.description,
+                phase: this.taskForm.phase,
+                user_ids: this.taskForm.members.map(m => m.id),
+                is_secret: this.taskForm.is_secret,
+                label_ids: this.taskForm.labels.map(l => l.id),
+                checklists: this.taskForm.checklists.map(item => ({
+                    title: item.title,
+                    is_done: item.is_done || false
+                })),
+                attachment_ids: this.taskForm.attachments.map(att => att.id)
+            };
+
+            // Tambahkan datetime jika ada
+            if (this.taskForm.startDate && this.taskForm.startTime) {
+                formData.start_datetime = `${this.taskForm.startDate} ${this.taskForm.startTime}:00`;
+            }
+            if (this.taskForm.dueDate && this.taskForm.dueTime) {
+                formData.due_datetime = `${this.taskForm.dueDate} ${this.taskForm.dueTime}:00`;
+            }
+
+            // Hapus null values
+            Object.keys(formData).forEach(key => {
+                if (formData[key] === null || formData[key] === undefined || formData[key] === '') {
+                    delete formData[key];
+                }
+            });
+
+            console.log('Sending task data:', formData);
+
+            const response = await fetch('/tasks/create-with-assignments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': this.getCsrfToken(),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || `HTTP error! status: ${response.status}`);
+            }
+
+            if (data.success) {
+                this.showNotification('Tugas berhasil dibuat!', 'success');
+                
+                // ✅ TAMBAHKAN: Update state Alpine.js dengan tugas baru
+                this.addNewTaskToKanban(data.task);
+                
+                this.resetTaskForm();
+                this.openTaskModal = false;
+
+            } else {
+                throw new Error(data.message || 'Gagal membuat tugas');
+            }
+
+        } catch (error) {
+            console.error('Error creating task:', error);
+            this.showNotification(`Gagal membuat tugas: ${error.message}`, 'error');
+        }
+    } catch (error) {
+        console.error('Error in createTask:', error);
+        this.showNotification('Terjadi kesalahan saat membuat tugas', 'error');
+    }
+},
 
 
-                                if (!this.taskForm.phase?.trim()) {
-                                    this.showNotification('Phase harus diisi', 'error');
-                                    return;
-                                }
 
-                                if (!this.currentColumnId) {
-                                    this.showNotification('Kolom tujuan tidak ditemukan', 'error');
-                                    return;
-                                }
+// ✅ UPDATE: Method untuk menambahkan tugas baru ke kanban
+addNewTaskToKanban(newTaskData) {
+    console.log('🔄 Adding new task to kanban:', newTaskData);
+    
+    // Transform data dari backend ke format frontend
+    const newTask = {
+        id: newTaskData.id,
+        title: newTaskData.title,
+        phase: newTaskData.phase,
+        status: newTaskData.board_column_id, // Gunakan board_column_id sebagai status
+        board_column_id: newTaskData.board_column_id,
+        members: newTaskData.assignees || [], // ✅ Gunakan assignees dari backend
+        secret: newTaskData.is_secret,
+        is_secret: newTaskData.is_secret,
+        notes: newTaskData.description,
+        description: newTaskData.description,
+        attachments: newTaskData.attachments || [],
+        labels: newTaskData.labels || [],
+        checklist: (newTaskData.checklists || []).map(cl => ({
+            id: cl.id,
+            name: cl.title,
+            title: cl.title,
+            done: cl.is_done,
+            is_done: cl.is_done,
+            position: cl.position
+        })),
+        startDate: newTaskData.start_datetime ? newTaskData.start_datetime.split('T')[0] : '',
+        startTime: newTaskData.start_datetime ? newTaskData.start_datetime.split('T')[1]?.substring(0, 5) : '',
+        dueDate: newTaskData.due_datetime ? newTaskData.due_datetime.split('T')[0] : '',
+        dueTime: newTaskData.due_datetime ? newTaskData.due_datetime.split('T')[1]?.substring(0, 5) : '',
+        priority: newTaskData.priority,
+        progress_percentage: newTaskData.progress_percentage || 0,
+        is_overdue: newTaskData.is_overdue || false,
+        created_at: newTaskData.created_at,
+        updated_at: newTaskData.updated_at
+    };
 
-                                try {
-                                    const workspaceId = this.getCurrentWorkspaceId();
-                                    if (!workspaceId) {
-                                        this.showNotification('Workspace tidak valid', 'error');
-                                        return;
-                                    }
-
-                                    // Siapkan data untuk backend
-                                    const formData = {
-                                        workspace_id: this.getCurrentWorkspaceId(),
-                                        board_column_id: this.currentColumnId, // ← KIRIM INI
-                                        title: this.taskForm.title,
-                                        description: this.taskForm.description,
-                                        phase: this.taskForm.phase,
-                                        user_ids: this.taskForm.members.map(m => m.id),
-                                        is_secret: this.taskForm.is_secret,
-                                        label_ids: this.taskForm.labels.map(l => l.id),
-                                        checklists: this.taskForm.checklists.map(item => ({
-                                            title: item.title,
-                                            is_done: item.is_done || false
-                                        })),
-                                        attachment_ids: this.taskForm.attachments.map(att => att.id)
-                                    };
-
-                                    // Tambahkan datetime jika ada
-                                    if (this.taskForm.startDate && this.taskForm.startTime) {
-                                        formData.start_datetime = `${this.taskForm.startDate} ${this.taskForm.startTime}:00`;
-                                    }
-                                    if (this.taskForm.dueDate && this.taskForm.dueTime) {
-                                        formData.due_datetime = `${this.taskForm.dueDate} ${this.taskForm.dueTime}:00`;
-                                    }
-
-                                    // Hapus null values
-                                    Object.keys(formData).forEach(key => {
-                                        if (formData[key] === null || formData[key] === undefined || formData[key] === '') {
-                                            delete formData[key];
-                                        }
-                                    });
-
-                                    console.log('Sending task data:', formData);
-
-                                    const response = await fetch('/tasks/create-with-assignments', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'X-CSRF-TOKEN': this.getCsrfToken(),
-                                            'Accept': 'application/json'
-                                        },
-                                        body: JSON.stringify(formData)
-                                    });
-
-                                    const data = await response.json();
-
-                                    if (!response.ok) {
-                                        throw new Error(data.message || `HTTP error! status: ${response.status}`);
-                                    }
-
-                                    if (data.success) {
-                                        this.showNotification('Tugas berhasil dibuat!', 'success');
-                                        this.resetTaskForm();
-                                        this.openTaskModal = false;
-
-                                        // Reload data
-                                        await this.loadTasksWithAccess();
-                                        await this.loadBoardColumns();
-                                    } else {
-                                        throw new Error(data.message || 'Gagal membuat tugas');
-                                    }
-
-                                } catch (error) {
-                                    console.error('Error creating task:', error);
-                                    this.showNotification(`Gagal membuat tugas: ${error.message}`, 'error');
-                                }
-                            },
+    // Tambahkan tugas baru ke array tasks
+    this.tasks.push(newTask);
+    
+    console.log('✅ New task added to kanban:', newTask);
+    console.log('📊 Total tasks now:', this.tasks.length);
+    
+    // Trigger Alpine.js reactivity
+    this.$nextTick(() => {
+        console.log('🔄 Kanban board updated with new task');
+    });
+},
 
 
 
@@ -2613,6 +2663,9 @@ resetTaskForm() {
 
     this.uploading = false;
     this.uploadProgress = 0;
+    
+    // Reset current column ID
+    this.currentColumnId = null;
     
     // ✅ TAMBAHKAN: Re-initialize editor setelah reset
     this.$nextTick(() => {
@@ -3774,7 +3827,7 @@ resetTaskForm() {
 
 
 
-                            // untuk label dan color
+                            // untuk label dan color 
 
                             // ✅ PERBAIKI: Method loadLabels dengan error handling
                             async loadLabels() {
@@ -3950,7 +4003,7 @@ resetTaskForm() {
 
                                         this.taskForm.labels = selectedLabels;
                                         this.openLabelModal = false;
-                                        this.showNotification('Label berhasil dipilih', 'success');
+                                        // this.showNotification('Label berhasil dipilih', 'success');
                                         return;
                                     }
 
@@ -4271,7 +4324,7 @@ resetTaskForm() {
                                             serverId: data.attachment.id
                                         });
 
-                                        this.showNotification(`File ${file.name} berhasil diupload`, 'success');
+                                        // this.showNotification(`File ${file.name} berhasil diupload`, 'success');
                                         return data.attachment.id;
                                     } else {
                                         throw new Error(data.message || 'Upload gagal');
@@ -4657,8 +4710,8 @@ resetTaskForm() {
                     'bold', 'italic', 'underline', 'strikethrough', '|',
                     'fontColor', 'fontBackgroundColor', '|',
                     'link', 'blockQuote', 'code', '|',
-                    'bulletedList', 'numberedList', 'outdent', 'indent', '|',
-                    'insertTable', 'imageUpload', 'mediaEmbed'
+                    'bulletedList', 'numberedList', '|',
+                    'insertTable',
                 ],
                 shouldNotGroupWhenFull: true
             },

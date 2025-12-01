@@ -16,7 +16,7 @@
                                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                         <div>
-                            <div class="font-medium text-gray-700">Mulai Phase</div>
+                            <div class="font-medium text-gray-700">Mulai Fase</div>
                             <div class="text-gray-600" x-text="formatDate(phaseModal.start_date)"></div>
                         </div>
                     </div>
@@ -28,7 +28,7 @@
                                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <div>
-                            <div class="font-medium text-gray-700">Selesai Phase</div>
+                            <div class="font-medium text-gray-700">Selesai Fase</div>
                             <div class="text-gray-600" x-text="formatDate(phaseModal.end_date)"></div>
                         </div>
                     </div>
@@ -58,7 +58,7 @@
             <!-- Progress Overview -->
             <div class="mt-4 bg-gray-50 rounded-lg p-4">
                 <div class="flex items-center justify-between mb-2">
-                    <span class="font-medium text-gray-700">Progress Phase</span>
+                    <span class="font-medium text-gray-700">Progress Fase</span>
                     <span class="font-bold text-lg"
                         :class="{
                             'text-green-600': phaseModal.progress === 100,
@@ -276,17 +276,19 @@
              <!-- PHASE INPUT -->
              <!-- Di modal tambah tugas -->
              <div>
-                 <label class="text-sm font-medium text-gray-700 mb-2 block">Phase <span
+                 <label class="text-sm font-medium text-gray-700 mb-2 block">Fase <span
                          class="text-red-500">*</span></label>
                  <input type="text" x-model="taskForm.phase" placeholder="Masukkan nama phase" required
                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                 <p x-show="!taskForm.phase" class="text-red-500 text-xs mt-1">Phase wajib diisi</p>
+                 {{-- <p x-show="!taskForm.phase" class="text-red-500 text-xs mt-1">Phase wajib diisi</p> --}}
              </div>
 
              <!-- Anggota & Tugas Rahasia -->
              <!-- Di dalam modal tambah tugas, setelah section Anggota -->
              <div class="mb-4">
-                 <label class="text-sm font-medium text-gray-700 mb-2 block">Anggota</label>
+                 <label class="text-sm font-medium text-gray-700 mb-2 block">Anggota<span
+                         class="text-red-500"> *</span></label>
+                 
                  <div class="flex items-center justify-between">
                      <div class="flex items-center gap-2">
                          <template x-for="(member, index) in taskForm.members" :key="member?.id || index">
@@ -335,7 +337,7 @@
                              <p class="text-xs text-blue-800 font-medium">Tugas ini hanya akan terlihat oleh:</p>
                              <ul class="text-xs text-blue-700 mt-1 list-disc list-inside">
                                  <li>Anggota yang ditugaskan</li>
-                                 <li>Super Admin & Administrator</li>
+                                 <li>Super Admin, Administrator dan Manajer</li>
                                  <li>Pembuat tugas</li>
                              </ul>
                          </div>
@@ -349,7 +351,8 @@
              <!-- Catatan -->
              <!-- Di modal tambah tugas -->
 <div class="mb-4">
-    <label class="text-sm font-medium text-gray-700 mb-2 block">Catatan</label>
+    <label class="text-sm font-medium text-gray-700 mb-2 block">Catatan<span
+                         class="text-red-500">*</span></label>
     <div class="border rounded-lg overflow-hidden">
         <!-- ✅ PASTIKAN ID INI ADA -->
         <textarea id="editor-catatan" x-model="taskForm.description"></textarea>
@@ -868,23 +871,27 @@
              <!-- Tanggal & Jam - TAMBAHKAN x-model -->
              <div class="grid grid-cols-2 gap-4">
                  <div>
-                     <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Mulai</label>
+                     <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Mulai<span
+                         class="text-red-500">*</span></label>
                      <input type="date" x-model="taskForm.startDate"
                          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
                  </div>
                  <div>
-                     <label class="block text-sm font-medium text-gray-700 mb-2">Jam Mulai</label>
+                     <label class="block text-sm font-medium text-gray-700 mb-2">Jam Mulai<span
+                         class="text-red-500">*</span></label>
                      <!-- ✅ UBAH LABEL -->
                      <input type="time" x-model="taskForm.startTime"
                          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
                  </div>
                  <div>
-                     <label class="block text-sm font-medium text-gray-700 mb-2">Tenggat</label>
+                     <label class="block text-sm font-medium text-gray-700 mb-2">Tenggat<span
+                         class="text-red-500">*</span></label>
                      <input type="date" x-model="taskForm.dueDate"
                          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
                  </div>
                  <div>
-                     <label class="block text-sm font-medium text-gray-700 mb-2">Jam Tenggat</label>
+                     <label class="block text-sm font-medium text-gray-700 mb-2">Jam Tenggat<span
+                         class="text-red-500">*</span></label>
                      <!-- ✅ UBAH LABEL -->
                      <input type="time" x-model="taskForm.dueTime"
                          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
@@ -1041,7 +1048,7 @@
 
              <!-- PHASE INFORMATION -->
              <div class="mb-4">
-                 <label class="text-sm font-medium text-gray-700 mb-2 block">Phase</label>
+                 <label class="text-sm font-medium text-gray-700 mb-2 block">Fase</label>
                  <div class="flex items-center gap-2">
                      <template x-if="!isEditMode">
                          <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
