@@ -132,4 +132,54 @@ class Attachment extends Model
             default => '📎'
         };
     }
+
+
+    // Di App\Models\Attachment.php
+
+// 🔥 Accessor untuk nama file
+public function getFileNameAttribute()
+{
+    // Jika file_name sudah ada, gunakan itu
+    if ($this->attributes['file_name'] ?? null) {
+        return $this->attributes['file_name'];
+    }
+    
+    // Jika tidak, ekstrak dari file_url
+    if ($this->file_url) {
+        return basename($this->file_url);
+    }
+    
+    return 'unknown';
+}
+
+// 🔥 Accessor untuk file extension
+public function getFileExtensionAttribute()
+{
+    $fileName = $this->file_name;
+    return pathinfo($fileName, PATHINFO_EXTENSION);
+}
+
+// 🔥 Accessor untuk tipe file yang lebih spesifik
+public function getFileTypeAttribute()
+{
+    if ($this->is_image) {
+        return 'image';
+    }
+    
+    $extension = strtolower($this->file_extension);
+    
+    $documentTypes = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'];
+    $archiveTypes = ['zip', 'rar', '7z'];
+    $codeTypes = ['js', 'php', 'html', 'css', 'json', 'xml'];
+    
+    if (in_array($extension, $documentTypes)) {
+        return 'document';
+    } elseif (in_array($extension, $archiveTypes)) {
+        return 'archive';
+    } elseif (in_array($extension, $codeTypes)) {
+        return 'code';
+    }
+    
+    return 'other';
+}
 }

@@ -1162,35 +1162,50 @@
                  </template>
 
                  <!-- List File Attachments -->
-                 <div class="space-y-2">
-                     <template x-for="(file, index) in currentTask?.attachments || []" :key="index">
-                         <div class="flex items-center justify-between border border-gray-300 rounded-lg p-3">
-                             <div class="flex items-center gap-2">
-                                 <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                     <path fill-rule="evenodd"
-                                         d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
-                                 </svg>
-                                 <div>
-                                     <p class="text-sm font-medium text-gray-700" x-text="file.name"></p>
-                                     <p class="text-xs text-gray-500" x-text="formatFileSize(file.size)"></p>
-                                 </div>
-                             </div>
-                             <div class="flex items-center gap-3 text-xs">
-                                 <a :href="file.url" target="_blank"
-                                     class="text-blue-600 hover:underline">Lihat</a>
-                                 <button x-show="isEditMode" @click="removeAttachmentFromDetail(index)"
-                                     class="text-red-600 hover:underline">Hapus</button>
-                             </div>
-                         </div>
-                     </template>
+                 <!-- Di modal-tugas.blade.php - bagian lampiran -->
+<div class="space-y-2">
+    <template x-for="(file, index) in currentTask?.attachments || []" :key="file.id">
+        <div class="flex items-center justify-between border border-gray-300 rounded-lg p-3">
+            <div class="flex items-center gap-2">
+                <!-- File Icon berdasarkan tipe -->
+                <template x-if="file.type === 'image'">
+                    <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
+                    </svg>
+                </template>
+                <template x-if="file.type === 'pdf'">
+                    <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                    </svg>
+                </template>
+                <template x-if="!['image', 'pdf'].includes(file.type)">
+                    <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                    </svg>
+                </template>
+                
+                <div>
+                    <!-- ✅ PERBAIKAN: Gunakan file.name yang sudah benar dari backend -->
+                    <p class="text-sm font-medium text-gray-700" x-text="file.name || 'Unknown File'"></p>
+                    <p class="text-xs text-gray-500" 
+                       x-text="file.size ? formatFileSize(file.size) : ''"></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-xs">
+                <a :href="file.url" target="_blank" 
+                   class="text-blue-600 hover:underline">Lihat</a>
+                <button x-show="isEditMode" @click="removeAttachmentFromDetail(index)"
+                        class="text-red-600 hover:underline">Hapus</button>
+            </div>
+        </div>
+    </template>
 
-                     <template x-if="!currentTask?.attachments || currentTask.attachments.length === 0">
-                         <div
-                             class="text-center py-4 text-gray-500 text-sm border border-dashed border-gray-300 rounded-lg">
-                             Tidak ada lampiran
-                         </div>
-                     </template>
-                 </div>
+    <template x-if="!currentTask?.attachments || currentTask.attachments.length === 0">
+        <div class="text-center py-4 text-gray-500 text-sm border border-dashed border-gray-300 rounded-lg">
+            Tidak ada lampiran
+        </div>
+    </template>
+</div>
              </div>
 
              <!-- Label Section dengan Edit di Edit Mode -->
