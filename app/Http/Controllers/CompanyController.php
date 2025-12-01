@@ -425,7 +425,7 @@ class CompanyController extends Controller
             ]);
 
             // 🔍 DEBUG: Cek data tersimpan
-            \Log::info('Company Created:', [
+            Log::info('Company Created:', [
                 'id' => $company->id,
                 'name' => $company->name,
                 'status' => $company->status,
@@ -451,7 +451,7 @@ class CompanyController extends Controller
             session(['active_company_id' => $company->id]);
 
             // 🔍 DEBUG: Cek session
-            \Log::info('Session Set:', [
+            Log::info('Session Set:', [
                 'active_company_id' => session('active_company_id'),
                 'company_found' => Company::find(session('active_company_id')) ? 'YES' : 'NO'
             ]);
@@ -462,7 +462,7 @@ class CompanyController extends Controller
                 ->with('success', 'Perusahaan berhasil dibuat dengan 7 hari trial gratis!');
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Gagal membuat perusahaan: ' . $e->getMessage());
+            Log::error('Gagal membuat perusahaan: ' . $e->getMessage());
             return back()->with('error', 'Gagal membuat perusahaan: ' . $e->getMessage());
         }
     }

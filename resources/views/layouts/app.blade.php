@@ -7,8 +7,9 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     {{-- ✅ Hanya aktifkan CSP di production --}}
-    @unless(app()->environment('local'))
-        <meta http-equiv="Content-Security-Policy" content="
+    @unless (app()->environment('local'))
+        <meta http-equiv="Content-Security-Policy"
+            content="
             default-src 'self';
             script-src 'self' 'unsafe-inline' 'unsafe-eval'
                 https://app.midtrans.com
@@ -50,6 +51,10 @@
             width: 100%;
             overflow-x: hidden;
         }
+
+        [x-cloak] {
+            display: none !important;
+        }
     </style>
 </head>
 
@@ -82,8 +87,7 @@
     <script src="https://js.pusher.com/7.2/pusher.min.js"></script>
 
     <!-- Midtrans Snap -->
-    <script src="https://app.sandbox.midtrans.com/snap/snap.js"
-            data-client-key="{{ config('midtrans.client_key') }}">
+    <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.client_key') }}">
     </script>
 
     <script>
