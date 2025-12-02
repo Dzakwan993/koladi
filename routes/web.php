@@ -16,6 +16,7 @@ use App\Http\Controllers\DokumenController;
 use App\Http\Controllers\MindmapController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\WorkspaceController;
 use App\Http\Middleware\CheckWorkspaceAccess;
 use App\Http\Controllers\AttachmentController;
@@ -76,7 +77,7 @@ Route::middleware(['auth'])->group(function () {
     // ============================================
 
     // Dashboard (Bisa diakses, tapi kasih warning kalau expired)
-    Route::get('/dashboard', [CompanyController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Company Creation Routes
     Route::get('/buat-perusahaan', [CompanyController::class, 'create'])->name('buat-perusahaan.create');
@@ -103,6 +104,11 @@ Route::middleware(['auth'])->group(function () {
     // 🔒 ROUTES DENGAN CheckSubscription
     // ============================================
     Route::middleware(['check.subscription'])->group(function () {
+
+        // Tambahkan di routes/web.php dalam group middleware 'auth' dan 'check.subscription'
+
+        Route::get('/dashboard/schedules/{date}', [CompanyController::class, 'getSchedulesByDate'])
+            ->name('dashboard.schedules.by-date');
 
         // Dashboard Awal
         Route::get('/member-removed', [CompanyController::class, 'memberRemoved'])->name('member.removed');

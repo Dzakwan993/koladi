@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Workspace')
+@section('title', 'Pengumuman')
 
 @section('content')
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -11,7 +11,6 @@
 
 
     <div class="bg-[#e9effd] min-h-screen font-[Inter,sans-serif] text-black relative">
-        @include('components.workspace-nav')
 
         <div class="max-w-5xl mx-auto py-8 px-4">
             <!-- Tombol Buat Pengumuman -->

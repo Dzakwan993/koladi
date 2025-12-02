@@ -78,44 +78,6 @@ class CompanyController extends Controller
         return in_array($role, ['SuperAdmin', 'Super Admin', 'Admin', 'Administrator', 'Manager']);
     }
 
-    // Method untuk dashboard
-    public function dashboard()
-    {
-        $user = Auth::user();
-        $companies = $user->companies()->get();
-
-        if ($companies->isEmpty()) {
-            return redirect()->route('buat-perusahaan')
-                ->with('info', 'Anda belum memiliki perusahaan. Silakan buat perusahaan baru.');
-        }
-
-        $activeCompany = null;
-        $companyIdSession = session('active_company_id');
-
-        if ($companyIdSession) {
-            $hasAccess = UserCompany::where('user_id', $user->id)
-                ->where('company_id', $companyIdSession)
-                ->exists();
-
-            if ($hasAccess) {
-                $activeCompany = Company::find($companyIdSession);
-            } else {
-                session()->forget('active_company_id');
-                $removedCompany = Company::find($companyIdSession);
-                session(['removed_from_company' => $removedCompany->name ?? 'Perusahaan']);
-                return redirect()->route('member.removed');
-            }
-        } else {
-            $activeCompany = $companies->first();
-        }
-
-        if ($activeCompany) {
-            session(['active_company_id' => $activeCompany->id]);
-        }
-
-        return view('dashboard', compact('companies', 'activeCompany'));
-    }
-
     // Halaman notifikasi member dihapus
     public function memberRemoved()
     {
@@ -502,4 +464,3 @@ class CompanyController extends Controller
         return null;
     }
 }
-

@@ -36,7 +36,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
         x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full">
         {{-- Logo --}}
         <div class="h-16 flex items-center justify-center px-4 border-b border-gray-200">
-            <img src="{{ asset('images/logo-koladi.png') }}" class="h-28 mt-12" alt="Koladi Logo">
+            <img src="{{ asset('images/logo-koladi.svg') }}" class="h-9 object-cover object-center" alt="Logo Koladi">
         </div>
 
         {{-- Navigation --}}
@@ -72,7 +72,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                     <span class="text-sm">Pengumuman</span>
                 </a>
             @endif
-            
+
             {{-- Chat Perusahaan --}}
             @auth
                 @php

@@ -465,72 +465,103 @@
 
 @push('scripts')
     <script>
-        document.addEventListener('alpine:init', () => {
-            Alpine.data('activeUsersComponent', () => ({
-                users: [],
-                loading: true,
-                showAllUsers: false,
-                channel: null,
-                companyId: null,
+       document.addEventListener('alpine:init', () => {
+    Alpine.data('activeUsersComponent', () => ({
+        users: [],
+        loading: true,
+        showAllUsers: false,
+        channel: null,
+        companyId: null,
 
-                init(companyId) {
-                    this.companyId = companyId;
+        init(companyId) {
+            this.companyId = companyId;
 
-                    if (!companyId) {
-                        console.warn('⚠️ No active company selected');
+            if (!companyId) {
+                console.warn('⚠️ No active company selected');
+                this.loading = false;
+                return;
+            }
+
+            console.log('🚀 Subscribing to company:', companyId);
+            this.subscribeToPresenceChannel(companyId);
+        },
+
+        // ✅ Helper function untuk memproses avatar URL
+        processAvatarUrl(user) {
+            if (!user.avatar) {
+                // Jika tidak ada avatar, gunakan UI Avatars
+                return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=4F46E5&color=fff&bold=true`;
+            }
+
+            // Jika sudah URL lengkap (http/https), return as is
+            if (user.avatar.startsWith('http://') || user.avatar.startsWith('https://')) {
+                return user.avatar;
+            }
+
+            // Jika path relatif, tambahkan base URL
+            // Pastikan tidak ada double slash
+            const cleanPath = user.avatar.startsWith('/') ? user.avatar : `/${user.avatar}`;
+
+            // Cek apakah path sudah mengandung 'storage/' atau tidak
+            if (user.avatar.includes('storage/')) {
+                return `${window.location.origin}${cleanPath}`;
+            } else {
+                return `${window.location.origin}/storage${cleanPath}`;
+            }
+        },
+
+        subscribeToPresenceChannel(companyId) {
+            try {
+                // Join presence channel
+                this.channel = window.Echo.join(`presence-company.${companyId}`)
+                    .here((users) => {
+                        // ✅ Process avatar untuk setiap user
+                        console.log('✅ Users currently online:', users);
+                        this.users = users.map(user => ({
+                            ...user,
+                            avatar: this.processAvatarUrl(user)
+                        }));
                         this.loading = false;
-                        return;
-                    }
+                    })
+                    .joining((user) => {
+                        console.log('👋 User joined:', user);
 
-                    console.log('🚀 Subscribing to company:', companyId);
-                    this.subscribeToPresenceChannel(companyId);
-                },
+                        // ✅ Process avatar sebelum push
+                        const processedUser = {
+                            ...user,
+                            avatar: this.processAvatarUrl(user)
+                        };
 
-                subscribeToPresenceChannel(companyId) {
-                    try {
-                        // Join presence channel
-                        this.channel = window.Echo.join(`presence-company.${companyId}`)
-                            .here((users) => {
-                                // Callback pertama kali join - dapat list user yang sudah online
-                                console.log('✅ Users currently online:', users);
-                                this.users = users;
-                                this.loading = false;
-                            })
-                            .joining((user) => {
-                                // Callback saat ada user baru join
-                                console.log('👋 User joined:', user);
-
-                                // Cek apakah user sudah ada di list (prevent duplicate)
-                                const exists = this.users.find(u => u.id === user.id);
-                                if (!exists) {
-                                    this.users.push(user);
-                                }
-                            })
-                            .leaving((user) => {
-                                // Callback saat ada user yang leave
-                                console.log('👋 User left:', user);
-                                this.users = this.users.filter(u => u.id !== user.id);
-                            })
-                            .error((error) => {
-                                console.error('❌ Presence channel error:', error);
-                                this.loading = false;
-                            });
-
-                    } catch (error) {
-                        console.error('❌ Failed to subscribe:', error);
+                        // Cek apakah user sudah ada di list (prevent duplicate)
+                        const exists = this.users.find(u => u.id === processedUser.id);
+                        if (!exists) {
+                            this.users.push(processedUser);
+                        }
+                    })
+                    .leaving((user) => {
+                        console.log('👋 User left:', user);
+                        this.users = this.users.filter(u => u.id !== user.id);
+                    })
+                    .error((error) => {
+                        console.error('❌ Presence channel error:', error);
                         this.loading = false;
-                    }
-                },
+                    });
 
-                destroy() {
-                    // Cleanup saat component di-destroy
-                    if (this.channel && this.companyId) {
-                        console.log('🔌 Leaving presence channel...');
-                        window.Echo.leave(`presence-company.${this.companyId}`);
-                        this.channel = null;
-                    }
-                }
-            }));
-        });
+            } catch (error) {
+                console.error('❌ Failed to subscribe:', error);
+                this.loading = false;
+            }
+        },
+
+        destroy() {
+            // Cleanup saat component di-destroy
+            if (this.channel && this.companyId) {
+                console.log('🔌 Leaving presence channel...');
+                window.Echo.leave(`presence-company.${this.companyId}`);
+                this.channel = null;
+            }
+        }
+    }));
+}); 
     </script>
 @endpush
