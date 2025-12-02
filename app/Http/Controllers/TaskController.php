@@ -660,11 +660,15 @@ class TaskController extends Controller
             }
 
             if (!empty($request->attachment_ids)) {
-                Attachment::whereIn('id', $request->attachment_ids)
-                    ->where('attachable_type', 'App\\Models\\Task')
-                    ->whereNull('attachable_id')
-                    ->update(['attachable_id' => $task->id]);
-            }
+    // ✅ PERBAIKAN: Update attachments tanpa mass assignment
+    foreach ($request->attachment_ids as $attachmentId) {
+        $attachment = Attachment::find($attachmentId);
+        if ($attachment) {
+            $attachment->attachable_id = $task->id;
+            $attachment->save();
+        }
+    }
+}
 
             DB::commit();
 
@@ -1324,82 +1328,95 @@ class TaskController extends Controller
     /**
      * Upload attachment untuk task
      */
-    public function uploadAttachment(Request $request)
-    {
-        $request->validate([
-            'file' => 'required|file|max:10240',
-            'attachable_type' => 'required|string',
-            // HAPUS: 'attachable_id' => 'required' - karena belum ada ID tugas
-        ]);
+   public function uploadAttachment(Request $request)
+{
+    $request->validate([
+        'file' => 'required|file|max:10240',
+        'attachable_type' => 'required|string',
+    ]);
 
-        try {
-            $user = Auth::user();
-            $file = $request->file('file');
+    try {
+        $user = Auth::user();
+        $file = $request->file('file');
 
-            // Validasi tipe file
-            $allowedMimeTypes = [
-                'image/jpeg',
-                'image/jpg',
-                'image/png',
-                'image/gif',
-                'image/webp',
-                'application/pdf',
-                'application/msword',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'application/vnd.ms-powerpoint',
-                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                'text/plain',
-                'application/zip',
-                'application/x-rar-compressed'
-            ];
+        // Validasi tipe file
+        $allowedMimeTypes = [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'text/plain',
+            'application/zip',
+            'application/x-rar-compressed'
+        ];
 
-            if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Tipe file tidak didukung.'
-                ], 400);
-            }
-
-            // Generate unique filename
-            $fileName = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
-
-            // Simpan file
-            $path = $file->storeAs('attachments', $fileName, 'public');
-
-            // ✅ BUAT ATTACHMENT TANPA attachable_id (akan diupdate nanti)
-            $attachment = Attachment::create([
-                'id' => Str::uuid()->toString(),
-                'attachable_type' => $request->attachable_type,
-                'attachable_id' => null, // Biarkan null untuk sementara
-                'file_url' => $path,
-                'uploaded_by' => $user->id,
-                'uploaded_at' => now()
-            ]);
-
-            $attachment->load('uploader');
-
-            Log::info('File berhasil diupload (sementara):', [
-                'attachment_id' => $attachment->id,
-                'file_url' => $attachment->file_url,
-                'attachable_id' => $attachment->attachable_id // Masih null
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'attachment' => $attachment,
-                'message' => 'File berhasil diupload'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error uploading attachment: ' . $e->getMessage());
-
+        if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal upload file: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Tipe file tidak didukung.'
+            ], 400);
         }
+
+        // Generate unique filename
+        $originalName = $file->getClientOriginalName();
+        $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+
+        // Simpan file
+        $path = $file->storeAs('attachments', $fileName, 'public');
+
+        // ✅ PERBAIKAN: Buat attachment TANPA field file_type (karena ada accessor di model)
+        $attachment = new Attachment();
+        $attachment->id = Str::uuid()->toString();
+        $attachment->attachable_type = $request->attachable_type;
+        $attachment->attachable_id = $request->attachable_id ?? null;
+        $attachment->file_url = $path;
+        $attachment->file_name = $originalName;
+        $attachment->file_size = $file->getSize();
+        $attachment->uploaded_by = $user->id;
+        $attachment->uploaded_at = now();
+        
+        // ✅ Save tanpa mass assignment untuk avoid error
+        $attachment->save();
+
+        Log::info('File uploaded successfully:', [
+            'id' => $attachment->id,
+            'file_name' => $originalName,
+            'file_size' => $file->getSize(),
+            'path' => $path
+        ]);
+
+        // ✅ Return data lengkap untuk frontend
+        return response()->json([
+            'success' => true,
+            'attachment' => [
+                'id' => $attachment->id,
+                'file_url' => $path,
+                'file_name' => $originalName,
+                'file_size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'uploaded_at' => $attachment->uploaded_at->toISOString(),
+                'uploaded_by' => $attachment->uploaded_by
+            ],
+            'message' => 'File berhasil diupload'
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error uploading attachment: ' . $e->getMessage());
+        Log::error('Stack trace: ' . $e->getTraceAsString());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal upload file: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Get attachments untuk task
@@ -1726,27 +1743,23 @@ class TaskController extends Controller
 
                 // 🆕 Attachments mapping
                 'attachments' => $task->attachments->map(function ($attachment) {
-                // ✅ SIMPLE FIX: Ambil nama file dari file_url, hapus timestamp
-                $fileName = basename($attachment->file_url);
-                
-                // ✅ HAPUS ANGKA + UNDERSCORE DI AWAL NAMA FILE
-                // Pattern: angka_timestamp_namafile.ext → namafile.ext
-                $cleanName = preg_replace('/^\d+_/', '', $fileName);
-                
-                return [
-                    'id' => $attachment->id,
-                    'name' => $cleanName, // ✅ Nama file sudah bersih
-                    'url' => (Storage::disk('public')->exists($attachment->file_url)
-                        ? Storage::disk('public')->url($attachment->file_url)
-                        : $attachment->file_url),
-                    'type' => pathinfo($cleanName, PATHINFO_EXTENSION),
-                    'size' => $attachment->file_size,
-                    'uploaded_by' => $attachment->uploader ? [
-                        'name' => $attachment->uploader->full_name
-                    ] : null,
-                    'uploaded_at' => $attachment->uploaded_at?->toIso8601String()
-                ];
-            })->toArray(),
+    // ✅ PERBAIKAN: Ambil nama file dari attribute atau file_url
+    $fileName = $attachment->file_name ?? basename($attachment->file_url);
+    
+    return [
+        'id' => $attachment->id,
+        'name' => $fileName,
+        'url' => (Storage::disk('public')->exists($attachment->file_url)
+            ? Storage::disk('public')->url($attachment->file_url)
+            : $attachment->file_url),
+        'type' => pathinfo($fileName, PATHINFO_EXTENSION),
+        'size' => $attachment->file_size ?? 0,
+        'uploaded_by' => $attachment->uploader ? [
+            'name' => $attachment->uploader->full_name
+        ] : null,
+        'uploaded_at' => $attachment->uploaded_at?->toIso8601String()
+    ];
+})->toArray(),
 
                 'progress_percentage' => $this->calculateTaskProgress($task),
                 'is_overdue' => $task->due_datetime && $task->due_datetime->lt(now()) && !in_array($task->status, ['done', 'cancel']),
@@ -1830,105 +1843,140 @@ class TaskController extends Controller
 
 
     // ✅ NEW: Update task detail dengan semua field
-    public function updateTaskDetail(Request $request, $taskId)
-    {
-        try {
-            $task = Task::findOrFail($taskId);
-            $user = Auth::user();
+   public function updateTaskDetail(Request $request, $taskId)
+{
+    try {
+        $task = Task::findOrFail($taskId);
+        $user = Auth::user();
 
-            // Validasi akses
-            if (!$this->canAccessWorkspace($task->workspace_id)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke task ini'
-                ], 403);
-            }
-
-            $validator = Validator::make($request->all(), [
-                'title' => 'sometimes|string|max:255',
-                'phase' => 'sometimes|string|max:255', // ✅ TAMBAHKAN VALIDASI PHASE
-                'description' => 'nullable|string',
-                'is_secret' => 'boolean',
-                'start_datetime' => 'nullable|date',
-                'due_datetime' => 'nullable|date|after:start_datetime',
-                'board_column_id' => 'sometimes|exists:board_columns,id',
-                'user_ids' => 'array',
-                'user_ids.*' => 'exists:users,id',
-                'label_ids' => 'array',
-                'label_ids.*' => 'exists:labels,id'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validasi gagal',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            DB::beginTransaction();
-
-            // Update task data - ✅ TAMBAHKAN PHASE
-            $taskData = $request->only([
-                'title',
-                'phase', // ✅ INI YANG DITAMBAHKAN
-                'description',
-                'is_secret'
-            ]);
-
-            // Handle datetime fields
-            if ($request->has('start_datetime')) {
-                $taskData['start_datetime'] = $request->start_datetime;
-            }
-
-            if ($request->has('due_datetime')) {
-                $taskData['due_datetime'] = $request->due_datetime;
-            }
-
-            // Update board column jika ada
-            if ($request->has('board_column_id')) {
-                $taskData['board_column_id'] = $request->board_column_id;
-            }
-
-            $task->update($taskData);
-
-            // Update assignments jika ada
-            if ($request->has('user_ids')) {
-                $task->assignments()->delete();
-                foreach ($request->user_ids as $userId) {
-                    TaskAssignment::create([
-                        'id' => Str::uuid()->toString(),
-                        'task_id' => $task->id,
-                        'user_id' => $userId,
-                        'assigned_at' => now()
-                    ]);
-                }
-            }
-
-            // Update labels jika ada
-            if ($request->has('label_ids')) {
-                $task->labels()->sync($request->label_ids);
-            }
-
-            DB::commit();
-
-            // Reload task dengan relasi
-            $task->load(['assignments.user', 'labels.color', 'checklists', 'attachments', 'boardColumn']);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Tugas berhasil diperbarui',
-                'task' => $task
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error updating task detail: ' . $e->getMessage());
+        // Validasi akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal memperbarui tugas: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
         }
+
+        $validator = Validator::make($request->all(), [
+            'title' => 'sometimes|string|max:255',
+            'phase' => 'sometimes|string|max:255',
+            'description' => 'nullable|string',
+            'is_secret' => 'boolean',
+            'start_datetime' => 'nullable|date',
+            'due_datetime' => 'nullable|date|after:start_datetime',
+            'board_column_id' => 'sometimes|exists:board_columns,id',
+            'user_ids' => 'array',
+            'user_ids.*' => 'exists:users,id',
+            'label_ids' => 'array',
+            'label_ids.*' => 'exists:labels,id'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        // Update task data
+        $taskData = $request->only([
+            'title',
+            'phase',
+            'description',
+            'is_secret'
+        ]);
+
+        // Handle datetime fields
+        if ($request->has('start_datetime')) {
+            $taskData['start_datetime'] = $request->start_datetime;
+        }
+
+        if ($request->has('due_datetime')) {
+            $taskData['due_datetime'] = $request->due_datetime;
+        }
+
+        // Update board column jika ada
+        if ($request->has('board_column_id')) {
+            $taskData['board_column_id'] = $request->board_column_id;
+        }
+
+        $task->update($taskData);
+
+        // Update assignments jika ada
+        if ($request->has('user_ids')) {
+            $task->assignments()->delete();
+            foreach ($request->user_ids as $userId) {
+                TaskAssignment::create([
+                    'id' => Str::uuid()->toString(),
+                    'task_id' => $task->id,
+                    'user_id' => $userId,
+                    'assigned_at' => now()
+                ]);
+            }
+        }
+
+        // Update labels jika ada
+        if ($request->has('label_ids')) {
+            $task->labels()->sync($request->label_ids);
+        }
+
+        DB::commit();
+
+        // ✅ PERBAIKAN: Reload task dengan relasi lengkap
+        $task->load([
+            'assignments.user', 
+            'labels.color', 
+            'checklists', 
+            'attachments', 
+            'boardColumn',
+            'creator'
+        ]);
+
+        // ✅ PERBAIKAN: Return response yang jelas
+        return response()->json([
+            'success' => true,
+            'message' => 'Tugas berhasil diperbarui',
+            'task' => [
+                'id' => $task->id,
+                'title' => $task->title,
+                'phase' => $task->phase,
+                'description' => $task->description,
+                'is_secret' => $task->is_secret,
+                'status' => $task->status,
+                'priority' => $task->priority,
+                'start_datetime' => $task->start_datetime,
+                'due_datetime' => $task->due_datetime,
+                'board_column' => $task->boardColumn,
+                'labels' => $task->labels,
+                'assigned_members' => $task->assignments->map(fn($a) => [
+                    'id' => $a->user->id,
+                    'name' => $a->user->full_name,
+                    'email' => $a->user->email,
+                    'avatar' => $a->user->avatar
+                ]),
+                'checklists' => $task->checklists,
+                'attachments' => $task->attachments
+            ]
+        ], 200); // ✅ Explicit 200 status
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        Log::error('Error updating task detail:', [
+            'task_id' => $taskId,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memperbarui tugas: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     // ✅ NEW: Update checklist item
     public function updateChecklistItem(Request $request, $checklistId)
@@ -2114,83 +2162,96 @@ class TaskController extends Controller
     }
 
     // ✅ NEW: Add attachment to task
-    public function addAttachmentToTask(Request $request, $taskId)
-    {
-        $request->validate([
-            'file' => 'required|file|max:10240',
-        ]);
+   public function addAttachmentToTask(Request $request, $taskId)
+{
+    $request->validate([
+        'file' => 'required|file|max:10240',
+    ]);
 
-        try {
-            $task = Task::findOrFail($taskId);
-            $user = Auth::user();
+    try {
+        $task = Task::findOrFail($taskId);
+        $user = Auth::user();
 
-            // Validasi akses
-            if (!$this->canAccessWorkspace($task->workspace_id)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke task ini'
-                ], 403);
-            }
-
-            $file = $request->file('file');
-
-            // Validasi tipe file
-            $allowedMimeTypes = [
-                'image/jpeg',
-                'image/jpg',
-                'image/png',
-                'image/gif',
-                'image/webp',
-                'application/pdf',
-                'application/msword',
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                'application/vnd.ms-excel',
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                'application/vnd.ms-powerpoint',
-                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                'text/plain',
-                'application/zip',
-                'application/x-rar-compressed'
-            ];
-
-            if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Tipe file tidak didukung.'
-                ], 400);
-            }
-
-            // Generate unique filename
-            $fileName = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
-
-            // Simpan file
-            $path = $file->storeAs('attachments', $fileName, 'public');
-
-            // Buat attachment
-            $attachment = Attachment::create([
-                'id' => Str::uuid()->toString(),
-                'attachable_type' => 'App\\Models\\Task',
-                'attachable_id' => $taskId,
-                'file_url' => $path,
-                'uploaded_by' => $user->id,
-                'uploaded_at' => now()
-            ]);
-
-            $attachment->load('uploader');
-
-            return response()->json([
-                'success' => true,
-                'attachment' => $attachment,
-                'message' => 'File berhasil diupload'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error adding attachment to task: ' . $e->getMessage());
+        // Validasi akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal upload file: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
         }
+
+        $file = $request->file('file');
+
+        // Validasi tipe file
+        $allowedMimeTypes = [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'image/webp',
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/vnd.ms-powerpoint',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'text/plain',
+            'application/zip',
+            'application/x-rar-compressed'
+        ];
+
+        if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tipe file tidak didukung.'
+            ], 400);
+        }
+
+        // Generate unique filename
+        $originalName = $file->getClientOriginalName();
+        $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+
+        // Simpan file
+        $path = $file->storeAs('attachments', $fileName, 'public');
+
+        // ✅ PERBAIKAN: Buat attachment tanpa file_type
+        $attachment = new Attachment();
+        $attachment->id = Str::uuid()->toString();
+        $attachment->attachable_type = 'App\\Models\\Task';
+        $attachment->attachable_id = $taskId;
+        $attachment->file_url = $path;
+        $attachment->file_name = $originalName;
+        $attachment->file_size = $file->getSize();
+        $attachment->uploaded_by = $user->id;
+        $attachment->uploaded_at = now();
+        
+        $attachment->save();
+
+        $attachment->load('uploader');
+
+        return response()->json([
+            'success' => true,
+            'attachment' => [
+                'id' => $attachment->id,
+                'file_url' => $path,
+                'file_name' => $originalName,
+                'file_size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'uploaded_at' => $attachment->uploaded_at->toISOString()
+            ],
+            'message' => 'File berhasil diupload'
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error adding attachment to task: ' . $e->getMessage());
+        Log::error('Stack trace: ' . $e->getTraceAsString());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal upload file: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     // ✅ NEW: Update task labels dengan modal label yang sama seperti tambah tugas
     // Di TaskController - pastikan method ini sudah ada

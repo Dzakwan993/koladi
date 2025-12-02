@@ -92,20 +92,29 @@ class Attachment extends Model
 
     // 🔥 Accessor untuk cek apakah file adalah gambar
     public function getIsImageAttribute()
-    {
-        if (!$this->file_type) return false;
-
-        $imageMimes = [
-            'image/jpeg',
-            'image/jpg',
-            'image/png',
-            'image/gif',
-            'image/webp',
-            'image/svg+xml'
-        ];
-
-        return in_array($this->file_type, $imageMimes);
+{
+    // ✅ JANGAN panggil $this->file_type (CIRCULAR!)
+    // Langsung cek dari attributes
+    
+    // Cek dari database column 'file_type' (ini adalah mime_type)
+    $fileType = $this->attributes['file_type'] ?? null;
+    
+    if ($fileType) {
+        // Cek apakah mime type adalah image
+        return str_starts_with($fileType, 'image/');
     }
+
+    // Fallback: cek dari nama file
+    $fileName = $this->attributes['file_name'] ?? $this->attributes['file_url'] ?? null;
+    
+    if ($fileName) {
+        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        $imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
+        return in_array($ext, $imageExts);
+    }
+
+    return false;
+}
 
     // 🔥 Accessor untuk icon file
     public function getFileIconAttribute()
@@ -162,22 +171,36 @@ public function getFileExtensionAttribute()
 // 🔥 Accessor untuk tipe file yang lebih spesifik
 public function getFileTypeAttribute()
 {
-    if ($this->is_image) {
-        return 'image';
+    // ✅ JANGAN panggil $this->is_image (CIRCULAR!)
+    // Langsung cek dari attributes
+    
+    // Cek dari database column 'file_type' (ini adalah mime_type)
+    $mimeType = $this->attributes['file_type'] ?? null;
+    
+    if ($mimeType) {
+        if (str_starts_with($mimeType, 'image/')) return 'image';
+        if (str_starts_with($mimeType, 'video/')) return 'video';
+        if (str_starts_with($mimeType, 'audio/')) return 'audio';
+        if ($mimeType === 'application/pdf') return 'pdf';
     }
     
-    $extension = strtolower($this->file_extension);
+    // Fallback: cek dari extension
+    $fileName = $this->attributes['file_name'] ?? $this->attributes['file_url'] ?? null;
     
-    $documentTypes = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'];
-    $archiveTypes = ['zip', 'rar', '7z'];
-    $codeTypes = ['js', 'php', 'html', 'css', 'json', 'xml'];
-    
-    if (in_array($extension, $documentTypes)) {
-        return 'document';
-    } elseif (in_array($extension, $archiveTypes)) {
-        return 'archive';
-    } elseif (in_array($extension, $codeTypes)) {
-        return 'code';
+    if ($fileName) {
+        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        
+        $imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
+        $docExts = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'];
+        $archiveExts = ['zip', 'rar', '7z', 'tar', 'gz'];
+        $videoExts = ['mp4', 'avi', 'mov', 'mkv', 'flv', 'wmv'];
+        $audioExts = ['mp3', 'wav', 'ogg', 'flac', 'm4a'];
+        
+        if (in_array($ext, $imageExts)) return 'image';
+        if (in_array($ext, $docExts)) return 'document';
+        if (in_array($ext, $archiveExts)) return 'archive';
+        if (in_array($ext, $videoExts)) return 'video';
+        if (in_array($ext, $audioExts)) return 'audio';
     }
     
     return 'other';
