@@ -3,7 +3,6 @@
 @section('title', 'Jadwal Umum')
 
 @section('content')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
 
@@ -26,19 +25,20 @@
                         {{-- Button Actions --}}
                         <div class="flex gap-3">
                             <button onclick="window.location.href='{{ route('notulensi-umum') }}'"
-                                    class="inline-flex items-center justify-center gap-2 text-sm bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                                class="inline-flex items-center justify-center gap-2 text-sm bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                                 <i class="fas fa-file-alt"></i>
                                 <span class="hidden sm:inline">Notulensi</span>
                             </button>
 
                             @if (isset($canCreateSchedule) && $canCreateSchedule)
                                 <a href="{{ route('jadwal-umum.buat') }}"
-                                   class="inline-flex items-center justify-center gap-2 text-sm bg-gradient-to-r from-[#225AD6] to-[#1e40af] hover:from-[#1e40af] hover:to-[#225AD6] text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                                    class="inline-flex items-center justify-center gap-2 text-sm bg-gradient-to-r from-[#225AD6] to-[#1e40af] hover:from-[#1e40af] hover:to-[#225AD6] text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                                     <i class="fas fa-plus"></i>
                                     <span>Buat Jadwal</span>
                                 </a>
                             @else
-                                <div class="inline-flex items-center justify-center gap-2 text-sm bg-gray-100 text-gray-500 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold cursor-not-allowed">
+                                <div
+                                    class="inline-flex items-center justify-center gap-2 text-sm bg-gray-100 text-gray-500 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold cursor-not-allowed">
                                     <i class="fas fa-lock"></i>
                                     <span class="hidden sm:inline">Tidak dapat membuat jadwal</span>
                                 </div>
@@ -53,7 +53,8 @@
                     {{-- Calendar Section (3/7 on large screens) --}}
                     <div class="lg:col-span-3 flex flex-col">
                         <div class="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                            <div
+                                class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
                                 <i class="fas fa-calendar-alt text-white text-base sm:text-lg"></i>
                             </div>
                             <div>
@@ -62,7 +63,8 @@
                             </div>
                         </div>
 
-                        <div class="bg-white rounded-2xl shadow-lg p-3 sm:p-4 lg:p-5 border border-gray-100 h-[320px] sm:h-[400px] lg:h-[450px]">
+                        <div
+                            class="bg-white rounded-2xl shadow-lg p-3 sm:p-4 lg:p-5 border border-gray-100 h-[320px] sm:h-[400px] lg:h-[450px]">
                             <div id="calendar" class="w-full h-full"></div>
                         </div>
                     </div>
@@ -71,7 +73,8 @@
                     <div class="lg:col-span-4 flex flex-col">
                         <div class="flex items-center justify-between mb-3 sm:mb-4">
                             <div class="flex items-center gap-2 sm:gap-3">
-                                <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                                <div
+                                    class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
                                     <i class="fas fa-list-check text-white text-base sm:text-lg"></i>
                                 </div>
                                 <div>
@@ -83,11 +86,13 @@
                             </div>
                         </div>
 
-                        <div class="bg-white rounded-2xl shadow-lg p-4 sm:p-5 lg:p-6 flex flex-col border border-gray-100 min-h-[400px] max-h-[600px] lg:h-[calc(100vh-280px)]">
+                        <div
+                            class="bg-white rounded-2xl shadow-lg p-4 sm:p-5 lg:p-6 flex flex-col border border-gray-100 min-h-[400px] max-h-[600px] lg:h-[calc(100vh-280px)]">
                             <div class="overflow-y-auto flex-1 pr-2 py-2 custom-scrollbar">
                                 <div class="space-y-3 sm:space-y-4 px-1" id="scheduleList">
                                     <div class="text-center py-12 sm:py-16">
-                                        <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-blue-50 mb-4">
+                                        <div
+                                            class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-blue-50 mb-4">
                                             <i class="fas fa-spinner fa-spin text-3xl sm:text-4xl text-blue-500"></i>
                                         </div>
                                         <p class="text-sm sm:text-base font-semibold text-gray-700">Memuat jadwal...</p>
@@ -106,14 +111,17 @@
         .custom-scrollbar::-webkit-scrollbar {
             width: 5px;
         }
+
         .custom-scrollbar::-webkit-scrollbar-track {
             background: #f1f5f9;
             border-radius: 10px;
         }
+
         .custom-scrollbar::-webkit-scrollbar-thumb {
             background: linear-gradient(180deg, #225ad6 0%, #1e40af 100%);
             border-radius: 10px;
         }
+
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: linear-gradient(180deg, #1e40af 0%, #1a46a0 100%);
         }
@@ -131,7 +139,6 @@
             background: transparent !important;
         }
 
-        /* ✅ Fix: Hilangkan scrollbar ganda di kalender */
         .fc .fc-scroller {
             overflow: hidden !important;
         }
@@ -156,7 +163,9 @@
         }
 
         @media (min-width: 640px) {
-            .fc .fc-toolbar-title { font-size: 16px; }
+            .fc .fc-toolbar-title {
+                font-size: 16px;
+            }
         }
 
         .fc .fc-button {
@@ -175,7 +184,10 @@
         }
 
         @media (min-width: 640px) {
-            .fc .fc-button { width: 32px; height: 32px; }
+            .fc .fc-button {
+                width: 32px;
+                height: 32px;
+            }
         }
 
         .fc .fc-button:hover {
@@ -255,7 +267,6 @@
             box-shadow: 0 2px 4px rgba(251, 191, 36, 0.4);
         }
 
-        /* Group hover effects */
         .group {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -263,6 +274,33 @@
         .group:hover {
             box-shadow: 0 20px 40px -12px rgba(37, 99, 235, 0.3) !important;
             border-color: #60a5fa !important;
+        }
+
+        /* ✅ Badge Rahasia */
+        .badge-private {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+            animation: pulse-private 2s infinite;
+        }
+
+        @keyframes pulse-private {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.9;
+            }
         }
     </style>
 
@@ -312,14 +350,15 @@
                 if (!fullName) return 'User';
                 return fullName.trim().split(' ')[0];
             }
-
             calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 locale: 'id',
                 selectable: true,
                 fixedWeekCount: false,
                 height: '100%',
-                dayHeaderFormat: { weekday: 'short' },
+                dayHeaderFormat: {
+                    weekday: 'short'
+                },
                 headerToolbar: {
                     left: 'prev',
                     center: 'title',
@@ -328,7 +367,9 @@
                 displayEventTime: false,
                 displayEventEnd: false,
                 eventDisplay: 'none',
-                buttonText: { today: 'Hari Ini' },
+                buttonText: {
+                    today: 'Hari Ini'
+                },
                 dayHeaderContent: function(arg) {
                     const dayNames = ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'];
                     return dayNames[arg.dow];
@@ -337,31 +378,32 @@
                 events: function(info, successCallback, failureCallback) {
                     const startDate = info.start.toISOString().split('T')[0] + ' 00:00:00';
                     const endDate = info.end.toISOString().split('T')[0] + ' 23:59:59';
-                    const url = `/jadwal-umum/events?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`;
+                    const url =
+                        `/jadwal-umum/events?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`;
 
                     fetch(url, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                    .then(response => {
-                        if (!response.ok) throw new Error(`Server error: ${response.status}`);
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (!Array.isArray(data)) data = [];
-                        allEvents = data;
-                        eventCountByDate = calculateEventCountByDate(data);
-                        successCallback(data);
-                        renderScheduleList(data);
-                        setTimeout(() => renderDayMarkers(eventCountByDate), 150);
-                    })
-                    .catch(error => {
-                        console.error('❌ Error loading events:', error);
-                        failureCallback(error);
-                        showErrorMessage(error.message);
-                    });
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error(`Server error: ${response.status}`);
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (!Array.isArray(data)) data = [];
+                            allEvents = data;
+                            eventCountByDate = calculateEventCountByDate(data);
+                            successCallback(data);
+                            renderScheduleList(data);
+                            setTimeout(() => renderDayMarkers(eventCountByDate), 150);
+                        })
+                        .catch(error => {
+                            console.error('❌ Error loading events:', error);
+                            failureCallback(error);
+                            showErrorMessage(error.message);
+                        });
                 },
 
                 dateClick: function(info) {
@@ -471,70 +513,127 @@
                 scheduleList.innerHTML = html;
             }
 
+
+
             function renderScheduleCard(event) {
                 try {
                     const startDate = new Date(event.start);
                     const endDate = new Date(event.end);
                     const timeDisplay = formatTimeDisplay(startDate, endDate, event);
-                    const bgColor = event.extendedProps?.is_creator ? 'from-[#bbcff9] to-[#a8bef5]' : 'from-[#E9EFFD] to-[#dce6fc]';
+
+                    // ✅ Ubah warna background berdasarkan status rahasia
+                    const bgColor = event.extendedProps?.is_private ?
+                        'from-[#fee2e2] to-[#fecaca]' // Red shade untuk rahasia
+                        :
+                        (event.extendedProps?.is_creator ? 'from-[#bbcff9] to-[#a8bef5]' :
+                            'from-[#E9EFFD] to-[#dce6fc]');
+
                     const creatorAvatar = event.extendedProps?.creator_avatar || '/images/default-avatar.png';
                     const creatorFullName = event.extendedProps?.creator_name || 'User';
                     const creatorFirstName = getFirstName(creatorFullName);
 
-                    const isOnlineMeeting = event.extendedProps?.is_online === true || event.extendedProps?.is_online === 1;
+                    const isOnlineMeeting = event.extendedProps?.is_online === true || event.extendedProps
+                        ?.is_online === 1;
                     const meetingLink = event.extendedProps?.meeting_link;
+                    const location = event.extendedProps?.location;
                     const hasMeetingLink = meetingLink && meetingLink.trim() !== '' && meetingLink !== 'null';
-                    const meetingIcon = (isOnlineMeeting && hasMeetingLink) ? '<i class="fas fa-video text-blue-600 mr-1.5"></i>' : '';
+                    const hasLocation = location && location.trim() !== '' && location !== 'null';
 
                     const commentsCount = event.extendedProps?.comments_count || 0;
+                    const isPrivate = event.extendedProps?.is_private || false;
+
+                    // ✅ IMPROVED: Meeting Type Badge - SELALU TAMPIL (Online ATAU Offline)
+                    let meetingTypeBadge = '';
+                    let locationInfo = '';
+
+                    if (isOnlineMeeting && hasMeetingLink) {
+                        // ONLINE MEETING
+                        meetingTypeBadge = `
+                <div class="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 px-2.5 py-1 rounded-lg text-xs font-semibold shadow-sm">
+                    <i class="fas fa-video"></i>
+                    <span>Online Meeting</span>
+                </div>
+            `;
+                        locationInfo = `
+                <div class="flex items-center gap-1.5 text-xs text-blue-600">
+                    <i class="fas fa-external-link-alt"></i>
+                    <span class="truncate max-w-[200px]">Link tersedia</span>
+                </div>
+            `;
+                    } else {
+                        // OFFLINE MEETING (default jika bukan online)
+                        meetingTypeBadge = `
+                <div class="inline-flex items-center gap-1.5 bg-red-50 border border-red-200 text-red-700 px-2.5 py-1 rounded-lg text-xs font-semibold shadow-sm">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>Offline Meeting</span>
+                </div>
+            `;
+
+                        if (hasLocation) {
+                            locationInfo = `
+                    <div class="flex items-center gap-1.5 text-xs text-gray-600">
+                        <i class="fas fa-map-pin text-red-500"></i>
+                        <span class="truncate max-w-[200px]">${location}</span>
+                    </div>
+                `;
+                        }
+                    }
 
                     return `
-                        <a href="/jadwal-umum/${event.id}"
-                            class="group bg-gradient-to-br ${bgColor} rounded-xl shadow-md p-3 sm:p-4 hover:shadow-2xl transition-all duration-300 cursor-pointer block border border-blue-100 hover:border-blue-400">
-                            <div class="flex justify-between items-start gap-3">
-                                <div class="flex items-start space-x-3 flex-1 min-w-0">
-                                    <div class="relative">
-                                        <img src="${creatorAvatar}"
-                                             alt="${creatorFirstName}"
-                                             class="rounded-full w-10 h-10 sm:w-11 sm:h-11 object-cover border-3 border-white shadow-lg bg-gray-100 flex-shrink-0 ring-2 ring-blue-200">
-                                        ${meetingIcon ? '<div class="absolute -bottom-1 -right-1 bg-blue-600 rounded-full w-5 h-5 flex items-center justify-center shadow-md"><i class="fas fa-video text-white text-[10px]"></i></div>' : ''}
-                                    </div>
+            <a href="/jadwal-umum/${event.id}"
+                class="group bg-gradient-to-br ${bgColor} rounded-xl shadow-md p-3 sm:p-4 hover:shadow-2xl transition-all duration-300 cursor-pointer block border ${isPrivate ? 'border-red-300' : 'border-blue-100'} ${isPrivate ? 'hover:border-red-400' : 'hover:border-blue-400'}">
+                <div class="flex justify-between items-start gap-3">
+                    <div class="flex items-start space-x-3 flex-1 min-w-0">
+                        <!-- Avatar -->
+                        <div class="relative flex-shrink-0">
+                            <img src="${creatorAvatar}"
+                                 alt="${creatorFirstName}"
+                                 class="rounded-full w-10 h-10 sm:w-11 sm:h-11 object-cover border-3 border-white shadow-lg bg-gray-100 ring-2 ${isPrivate ? 'ring-red-300' : 'ring-blue-200'}">
+                        </div>
 
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-start gap-2 mb-2">
-                                            <span class="font-bold text-[#090909] text-sm sm:text-base leading-tight flex-1 group-hover:text-blue-700 transition-colors line-clamp-2">
-                                                ${event.title || 'Untitled'}
+                        <!-- Content -->
+                        <div class="flex-1 min-w-0">
+                            <!-- Title & Private Badge -->
+                            <div class="flex items-start gap-2 mb-2 flex-wrap">
+                                <span class="font-bold text-[#090909] text-sm sm:text-base leading-tight flex-1 group-hover:text-blue-700 transition-colors line-clamp-2">
+                                    ${event.title || 'Untitled'}
+                                </span>
+                                ${isPrivate ? `
+                                            <span class="badge-private whitespace-nowrap">
+                                                <i class="fas fa-lock text-[10px]"></i>
+                                                <span>RAHASIA</span>
                                             </span>
-                                        </div>
+                                        ` : ''}
+                            </div>
 
-                                        <div class="flex flex-col gap-1.5">
-                                            <div class="flex items-center gap-1.5 text-xs text-gray-600">
-                                                <i class="far fa-clock text-blue-500"></i>
-                                                <span class="font-medium">${timeDisplay}</span>
-                                            </div>
-                                            ${event.extendedProps?.location ? `
-                                                <div class="flex items-center gap-1.5 text-xs text-gray-600">
-                                                    <i class="fas fa-map-marker-alt text-red-500"></i>
-                                                    <span class="truncate">${event.extendedProps.location}</span>
-                                                </div>
-                                            ` : ''}
+                            <!-- Time -->
+                            <div class="flex items-center gap-1.5 text-xs text-gray-600 mb-2">
+                                <i class="far fa-clock text-blue-500"></i>
+                                <span class="font-medium">${timeDisplay}</span>
+                            </div>
+
+                            <!-- Meeting Type Badge & Location -->
+                            <div class="flex flex-wrap items-center gap-2">
+                                ${meetingTypeBadge}
+                                ${locationInfo}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comments Badge -->
+                    ${commentsCount > 0 ? `
+                                <div class="flex-shrink-0">
+                                    <div class="relative">
+                                        <div class="bg-gradient-to-br from-yellow-400 to-yellow-500 text-gray-800 text-xs font-bold rounded-lg w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                            ${commentsCount}
                                         </div>
+                                        <div class="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-500 rounded-full animate-pulse"></div>
                                     </div>
                                 </div>
-
-                                ${commentsCount > 0 ? `
-                                    <div class="flex-shrink-0">
-                                        <div class="relative">
-                                            <div class="bg-gradient-to-br from-yellow-400 to-yellow-500 text-gray-800 text-xs font-bold rounded-lg w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                                                ${commentsCount}
-                                            </div>
-                                            <div class="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-500 rounded-full animate-pulse"></div>
-                                        </div>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </a>
-                    `;
+                            ` : ''}
+                </div>
+            </a>
+        `;
                 } catch (e) {
                     console.error('Error rendering schedule card:', e);
                     return '';
@@ -549,8 +648,14 @@
                 if (isMultiDay) {
                     return `${startDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} - ${endDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`;
                 } else {
-                    const startTime = startDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                    const endTime = endDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    const startTime = startDate.toLocaleTimeString('id-ID', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    const endTime = endDate.toLocaleTimeString('id-ID', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
                     return `${startTime} - ${endTime} WIB`;
                 }
             }

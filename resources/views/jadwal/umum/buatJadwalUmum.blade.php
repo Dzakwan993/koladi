@@ -10,8 +10,13 @@
                 class="bg-white rounded-xl shadow-xl p-4 md:p-6 w-full max-w-4xl flex flex-col gap-4 md:gap-5 h-fit">
                 @csrf
 
-                <!-- Judul -->
-                <h2 class="text-lg md:text-xl font-inter font-bold text-[#102a63] border-b-2 border-black pb-3">Buat Jadwal Umum</h2>
+                <!-- Header dengan Tombol Kembali -->
+                <div class="flex items-center justify-between border-b-2 border-black pb-3">
+                    <h2 class="text-lg md:text-xl font-inter font-bold text-[#102a63]">Buat Jadwal Umum</h2>
+                    <a href="{{ route('jadwal-umum') }}"
+                        class="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition text-sm md:text-base">
+                    </a>
+                </div>
 
                 <!-- Nama Jadwal -->
                 <div class="flex flex-col font-inter">
@@ -147,15 +152,13 @@
                             return this.selectedParticipants.includes(userId);
                         }
                     }">
-                        <!-- Display selected participants -->
                         <div class="flex items-center gap-2 flex-wrap">
                             <template x-for="participant in displayedParticipants" :key="participant.id">
                                 <div class="relative">
                                     <img :src="participant.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(participant.full_name) + '&background=3B82F6&color=fff&bold=true&size=128'"
                                         :alt="participant.full_name"
                                         class="rounded-full border-2 border-gray-200 w-10 h-10 object-cover"
-                                        :title="participant.full_name"
-                                        onerror="this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent(this.alt) + '&background=3B82F6&color=fff&bold=true&size=128'" />
+                                        :title="participant.full_name" />
                                 </div>
                             </template>
 
@@ -167,7 +170,6 @@
                             </button>
                         </div>
 
-                        <!-- Hidden inputs for selected participants -->
                         <template x-for="participantId in selectedParticipants" :key="participantId">
                             <input type="hidden" name="participants[]" :value="participantId">
                         </template>
@@ -215,42 +217,75 @@
                     </div>
                 </div>
 
-                <!-- Privasi & Rapat -->
-                <div class="flex flex-col gap-4">
-                    <div class="flex flex-col gap-2" x-data="{ isPrivate: {{ old('is_private', 0) }} }">
-                        <label class="mb-1 font-medium text-sm md:text-base text-black font-inter">Privasi</label>
-                        <div class="flex items-center gap-3">
-                            <input type="hidden" name="is_private" :value="isPrivate ? 1 : 0">
-                            <button type="button" @click="isPrivate = !isPrivate"
-                                :class="isPrivate ? 'bg-[#102a63]' : 'bg-gray-300'"
-                                class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors">
-                                <span :class="isPrivate ? 'translate-x-6' : 'translate-x-1'"
-                                    class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform"></span>
-                            </button>
-                            <span class="text-sm font-medium text-[#102a63] font-inter">Rahasia</span>
-                        </div>
-                        <span class="text-xs md:text-sm text-gray-500 font-inter">Hanya peserta yang diundang bisa melihat</span>
+                <!-- Privasi -->
+                <div class="flex flex-col gap-2" x-data="{ isPrivate: {{ old('is_private', 0) }} }">
+                    <label class="mb-1 font-medium text-sm md:text-base text-black font-inter">Privasi</label>
+                    <div class="flex items-center gap-3">
+                        <input type="hidden" name="is_private" :value="isPrivate ? 1 : 0">
+                        <button type="button" @click="isPrivate = !isPrivate"
+                            :class="isPrivate ? 'bg-[#102a63]' : 'bg-gray-300'"
+                            class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors">
+                            <span :class="isPrivate ? 'translate-x-6' : 'translate-x-1'"
+                                class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform"></span>
+                        </button>
+                        <span class="text-sm font-medium text-[#102a63] font-inter">Rahasia</span>
+                    </div>
+                    <span class="text-xs md:text-sm text-gray-500 font-inter">Hanya peserta yang diundang bisa melihat</span>
+                </div>
+
+                <!-- ✅ MODE RAPAT: ONLINE (DEFAULT) / OFFLINE -->
+                <div class="flex flex-col gap-3" x-data="{ meetingMode: '{{ old('meeting_mode', 'online') }}' }">
+                    <span class="font-medium text-sm md:text-base text-black font-inter">
+                        Mode Rapat <span class="text-red-500">*</span>
+                    </span>
+
+                    <!-- Radio Buttons -->
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="meeting_mode" value="online"
+                                @click="meetingMode = 'online'"
+                                :checked="meetingMode === 'online'"
+                                class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm font-medium text-gray-700">Online</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="meeting_mode" value="offline"
+                                @click="meetingMode = 'offline'"
+                                :checked="meetingMode === 'offline'"
+                                class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm font-medium text-gray-700">Offline</span>
+                        </label>
                     </div>
 
-                    <div class="flex flex-col gap-2" x-data="{ isOnlineMeeting: {{ old('is_online_meeting', 0) }} }">
-                        <span class="font-medium text-sm md:text-base text-black font-inter">Apakah anda akan mengadakan rapat?</span>
-                        <div class="flex items-center gap-3">
-                            <input type="hidden" name="is_online_meeting" :value="isOnlineMeeting ? 1 : 0">
-                            <button type="button" @click="isOnlineMeeting = !isOnlineMeeting"
-                                :class="isOnlineMeeting ? 'bg-[#102a63]' : 'bg-gray-300'"
-                                class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors">
-                                <span :class="isOnlineMeeting ? 'translate-x-6' : 'translate-x-1'"
-                                    class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform"></span>
-                            </button>
-                            <span class="text-sm font-medium text-[#102a63] font-inter">Rapat</span>
-                        </div>
-                        <div x-show="isOnlineMeeting" x-transition class="flex flex-col mt-2">
-                            <label class="mb-1 font-medium font-inter text-sm md:text-base">Link Rapat (Opsional)</label>
-                            <input type="url" name="meeting_link" value="{{ old('meeting_link') }}"
-                                placeholder="Masukkan link rapat anda..."
-                                class="border rounded-md pl-5 py-2 focus:outline-none font-inter text-sm placeholder-[#6B7280] border-[#6B7280]" />
-                            <span class="text-xs text-gray-400 font-inter mt-1">Opsional - isi jika rapat dilakukan online</span>
-                        </div>
+                    <!-- Input Link Rapat (Online) -->
+                    <div x-show="meetingMode === 'online'" x-transition class="flex flex-col">
+                        <label class="mb-1 font-medium font-inter text-sm md:text-base">
+                            Link Rapat <span class="text-red-500">*</span>
+                        </label>
+                        <input type="url" name="meeting_link" value="{{ old('meeting_link') }}"
+                            placeholder="https://zoom.us/j/..."
+                            :required="meetingMode === 'online'"
+                            class="border rounded-md px-4 py-2 focus:outline-none font-inter text-sm placeholder-[#6B7280] border-[#6B7280] focus:ring-2 focus:ring-blue-500" />
+                        <span class="text-xs text-gray-400 font-inter mt-1">Masukkan link Zoom, Google Meet, dll.</span>
+                        @error('meeting_link')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Input Lokasi (Offline) -->
+                    <div x-show="meetingMode === 'offline'" x-transition class="flex flex-col">
+                        <label class="mb-1 font-medium font-inter text-sm md:text-base">
+                            Lokasi Rapat <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="location" value="{{ old('location') }}"
+                            placeholder="Contoh: Ruang Meeting Lt. 3"
+                            :required="meetingMode === 'offline'"
+                            class="border rounded-md px-4 py-2 focus:outline-none font-inter text-sm placeholder-[#6B7280] border-[#6B7280] focus:ring-2 focus:ring-blue-500" />
+                        <span class="text-xs text-gray-400 font-inter mt-1">Masukkan lokasi tempat rapat</span>
+                        @error('location')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
 

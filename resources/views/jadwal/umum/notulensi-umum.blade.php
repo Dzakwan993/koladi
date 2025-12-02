@@ -3,7 +3,6 @@
 @section('title', 'Notulensi Rapat')
 
 @section('content')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
@@ -58,7 +57,7 @@
     </style>
 
     <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <!-- Header -->
+        <!-- Header dengan Tombol Kembali -->
         <div class="bg-white rounded-lg shadow-md p-6 mb-6">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
@@ -71,6 +70,7 @@
                     </div>
                 </div>
 
+                <!-- ✅ Tombol Kembali -->
                 <a href="{{ route('jadwal-umum') }}"
                     class="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition">
                     <i class="fas fa-arrow-left"></i>
@@ -236,7 +236,6 @@
             <p class="text-gray-500 mb-6">Tidak ada notulensi untuk filter yang dipilih</p>
         </div>
     </div>
-    </div>
 
     <script>
         function filterNotulensi(type) {
@@ -284,7 +283,6 @@
                 }
             });
 
-            // Show/hide empty state
             const notulensiList = document.getElementById('notulensiList');
             const emptyState = document.getElementById('emptyFilterState');
             const totalCount = document.getElementById('totalNotulensi');

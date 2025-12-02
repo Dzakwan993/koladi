@@ -243,7 +243,6 @@ class CalendarController extends Controller
      */
     public function companyStore(Request $request)
     {
-        // ✅ Check permission
         if (!$this->canCreateCompanySchedule()) {
             return back()->with('error', 'Anda tidak memiliki izin untuk membuat jadwal.');
         }
@@ -255,8 +254,9 @@ class CalendarController extends Controller
             'end_datetime' => 'required|date|after:start_datetime',
             'recurrence' => 'nullable|string',
             'is_private' => 'nullable|boolean',
-            'is_online_meeting' => 'nullable|boolean',
-            'meeting_link' => 'nullable|url',
+            'meeting_mode' => 'required|in:online,offline', // ✅ TAMBAH VALIDASI
+            'meeting_link' => 'required_if:meeting_mode,online|nullable|url', // ✅ WAJIB JIKA ONLINE
+            'location' => 'required_if:meeting_mode,offline|nullable|string|max:255', // ✅ WAJIB JIKA OFFLINE
             'participants' => 'nullable|array',
             'participants.*' => 'uuid|exists:users,id',
         ]);
@@ -264,7 +264,7 @@ class CalendarController extends Controller
         DB::beginTransaction();
         try {
             $isPrivate = filter_var($validated['is_private'] ?? false, FILTER_VALIDATE_BOOLEAN);
-            $isOnlineMeeting = filter_var($validated['is_online_meeting'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $isOnlineMeeting = $validated['meeting_mode'] === 'online'; // ✅ DARI meeting_mode
 
             $recurrence = $validated['recurrence'] ?? 'Jangan Ulangi';
             if ($recurrence === 'Jangan Ulangi') {
@@ -274,9 +274,8 @@ class CalendarController extends Controller
             $startDatetime = Carbon::parse($validated['start_datetime'], 'Asia/Jakarta');
             $endDatetime = Carbon::parse($validated['end_datetime'], 'Asia/Jakarta');
 
-            // ✅ workspace_id = NULL untuk jadwal company
             $event = CalendarEvent::create([
-                'workspace_id' => null, // NULL = Jadwal Company
+                'workspace_id' => null,
                 'company_id' => session('active_company_id'),
                 'created_by' => Auth::id(),
                 'title' => $validated['title'],
@@ -286,7 +285,8 @@ class CalendarController extends Controller
                 'recurrence' => $recurrence,
                 'is_private' => $isPrivate,
                 'is_online_meeting' => $isOnlineMeeting,
-                'meeting_link' => $validated['meeting_link'] ?? null,
+                'meeting_link' => $isOnlineMeeting ? ($validated['meeting_link'] ?? null) : null, // ✅ HANYA JIKA ONLINE
+                'location' => !$isOnlineMeeting ? ($validated['location'] ?? null) : null, // ✅ HANYA JIKA OFFLINE
             ]);
 
             // Creator langsung accepted
@@ -296,7 +296,6 @@ class CalendarController extends Controller
                 'status' => 'accepted',
             ]);
 
-            // Semua peserta langsung accepted
             if (!empty($validated['participants'])) {
                 foreach ($validated['participants'] as $userId) {
                     if ($userId !== Auth::id()) {
@@ -354,7 +353,6 @@ class CalendarController extends Controller
                 }
             }
 
-            // ✅ Query untuk jadwal company (workspace_id = NULL)
             $query = CalendarEvent::whereNull('workspace_id')
                 ->where('company_id', $activeCompanyId)
                 ->whereNull('deleted_at');
@@ -370,11 +368,11 @@ class CalendarController extends Controller
                 });
             }
 
-            // Filter based on user access to company
-            $query->whereHas('participants', function ($q) use ($user, $activeCompanyId) {
-                $q->where('user_id', $user->id)
-                    ->whereHas('user.userCompanies', function ($q2) use ($activeCompanyId) {
-                        $q2->where('company_id', $activeCompanyId);
+            // ✅ FILTER: User hanya melihat jadwal yang tidak rahasia ATAU jadwal dimana dia peserta
+            $query->where(function ($q) use ($user) {
+                $q->where('is_private', false) // Jadwal publik
+                    ->orWhereHas('participants', function ($q2) use ($user) {
+                        $q2->where('user_id', $user->id); // Atau jadwal dimana user adalah peserta
                     });
             });
 
@@ -417,6 +415,8 @@ class CalendarController extends Controller
                             'description' => $event->description ?? '',
                             'is_online' => $event->is_online_meeting ?? false,
                             'meeting_link' => $event->meeting_link ?? '',
+                            'location' => $event->location ?? '', // ✅ TAMBAH LOCATION
+                            'is_private' => $event->is_private ?? false, // ✅ TAMBAH IS_PRIVATE
                             'participants_count' => $event->participants->count(),
                             'participants' => $participants,
                             'creator_name' => $event->creator->full_name ?? 'Unknown',
@@ -531,7 +531,7 @@ class CalendarController extends Controller
         $activeCompanyId = session('active_company_id');
 
         $event = CalendarEvent::whereNull('workspace_id')
-            ->where('company_id', $activeCompanyId) // ✅ Validasi company
+            ->where('company_id', $activeCompanyId)
             ->findOrFail($id);
 
         if ($event->created_by !== Auth::id()) {
@@ -545,8 +545,9 @@ class CalendarController extends Controller
             'end_datetime' => 'required|date|after:start_datetime',
             'recurrence' => 'nullable|string',
             'is_private' => 'nullable|boolean',
-            'is_online_meeting' => 'nullable|boolean',
-            'meeting_link' => 'nullable|url',
+            'meeting_mode' => 'required|in:online,offline',
+            'meeting_link' => 'required_if:meeting_mode,online|nullable|url',
+            'location' => 'required_if:meeting_mode,offline|nullable|string|max:255',
             'participants' => 'nullable|array',
             'participants.*' => 'uuid|exists:users,id',
         ]);
@@ -554,7 +555,7 @@ class CalendarController extends Controller
         DB::beginTransaction();
         try {
             $isPrivate = filter_var($validated['is_private'] ?? false, FILTER_VALIDATE_BOOLEAN);
-            $isOnlineMeeting = filter_var($validated['is_online_meeting'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $isOnlineMeeting = $validated['meeting_mode'] === 'online';
 
             $recurrence = $validated['recurrence'] ?? 'Jangan Ulangi';
             if ($recurrence === 'Jangan Ulangi') {
@@ -573,6 +574,7 @@ class CalendarController extends Controller
                 'is_private' => $isPrivate,
                 'is_online_meeting' => $isOnlineMeeting,
                 'meeting_link' => $isOnlineMeeting ? ($validated['meeting_link'] ?? null) : null,
+                'location' => !$isOnlineMeeting ? ($validated['location'] ?? null) : null,
             ]);
 
             if (isset($validated['participants'])) {
@@ -606,6 +608,7 @@ class CalendarController extends Controller
                 ->with('error', 'Gagal mengupdate jadwal: ' . $e->getMessage());
         }
     }
+
 
     /**
      * ✅ BARU: Delete Jadwal Umum

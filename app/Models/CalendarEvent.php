@@ -23,6 +23,7 @@ class CalendarEvent extends Model
         'recurrence',
         'is_private',
         'is_online_meeting',
+        'location',
         'meeting_link',
         'deleted_at',
     ];
