@@ -29,6 +29,10 @@ use App\Http\Controllers\DocumentCommentController;
 // 🔥 Broadcasting Routes
 Broadcast::routes(['middleware' => ['web', 'auth']]);
 
+Route::get('/landing', function () {
+    return view('landingpage');
+})->name('landing.page');
+
 // ✅ Route Landing Page
 Route::get('/', function () {
     if (Auth::check()) {
