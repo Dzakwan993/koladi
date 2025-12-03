@@ -34,7 +34,7 @@ Route::get('/', function () {
     if (Auth::check()) {
         return redirect()->route('dashboard');
     }
-    return redirect()->route('masuk');
+    return view('landingpage');
 });
 
 // ✅ Authentication Routes
@@ -413,4 +413,5 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/mindmap/nodes/{node}', [MindmapController::class, 'updateNode'])->name('mindmap.nodes.update');
         Route::delete('/mindmap/nodes/{node}', [MindmapController::class, 'deleteNode'])->name('mindmap.nodes.delete');
     });
+
 });
