@@ -181,7 +181,7 @@
                         <div id="document-main-comment-editor" class="min-h-[120px] bg-white"></div>
                         
                         <div class="flex justify-end gap-2 mt-4">
-                            <button @click="destroyDocumentMainEditor()" 
+                            <button @click="resetMainEditor()" 
                                 class="px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded-lg hover:text-gray-800 transition">
                                 Batal
                             </button>

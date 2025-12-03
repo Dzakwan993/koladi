@@ -8,3 +8,75 @@
     display: none !important; 
 }
 
+/* ✅ Container editor harus flexible */
+.ck-editor__editable {
+    min-height: 200px !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+/* ✅ Gambar di dalam editor - responsive */
+.ck-content img,
+.ck-content .image > img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+}
+
+/* ✅ Image block container */
+.ck-content .image {
+    display: table !important;
+    clear: both !important;
+    text-align: center !important;
+    margin: 0.9em auto !important;
+}
+
+/* ✅ PENTING: Jangan override image yang sedang di-resize */
+.ck-content .image.ck-widget_selected img {
+    max-width: none !important; /* ← UBAH dari 100% ke none */
+}
+
+/* ✅ PENTING: Pastikan resize handles terlihat */
+.ck-widget__resizer {
+    display: block !important;
+    position: absolute !important;
+}
+
+.ck-widget__resizer__handle {
+    display: block !important;
+    position: absolute !important;
+}
+
+/* ✅ Gambar yang sudah di-resize dengan percentage */
+.ck-content .image[style*="width"] img {
+    width: 100% !important;
+    height: auto !important;
+}
+
+/* ✅ Styling link */
+.ck-content a {
+    color: #2563eb !important;
+    text-decoration: underline !important;
+}
+
+.ck-content a:hover {
+    color: #1d4ed8 !important;
+}
+
+/* ✅ Styling link di konten yang sudah di-render */
+.prose a, .text-gray-700 a, [x-html] a {
+    color: #2563eb !important;
+    text-decoration: underline !important;
+}
+
+.prose a:hover, .text-gray-700 a:hover, [x-html] a:hover {
+    color: #1d4ed8 !important;
+}
+
+/* ✅ Gambar di konten yang sudah di-render juga responsive */
+.prose img, .text-gray-700 img, [x-html] img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+    margin: 1em auto !important;
+}

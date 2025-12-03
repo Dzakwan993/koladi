@@ -42,7 +42,7 @@ window.assetPath = "{{ asset('') }}";
         <div x-show="ready" 
             x-transition
             class="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 max-w-7xl mx-auto">
-            <div class="border border-gray-200 rounded-lg bg-white p-4 sm:p-6 flex flex-col h-[calc(100vh-140px)] sm:h-[calc(100vh-160px)] lg:h-[calc(100vh-200px)]">
+            <div class="border border-gray-200 rounded-lg bg-white p-4 sm:p-6 flex flex-col min-h-[calc(100vh-140px)] sm:min-h-[calc(100vh-160px)] lg:min-h-[calc(100vh-200px)]">
 
             {{-- Komponen-komponen --}}
             @include('components.dokumen-header')
