@@ -1,10 +1,8 @@
-<!-- Tambahkan font Inter -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <!-- POPUP -->
 <div id="popupForm" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-50 font-[Inter,sans-serif]">
     <div class="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 md:p-8 w-full max-w-[95%] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl pt-6 sm:pt-8 md:pt-10 max-h-[90vh] overflow-y-auto">
-        
+
         <!-- Judul Utama -->
         <div class="mb-4 sm:mb-5 md:mb-6">
             <h2 class="text-base sm:text-lg font-bold text-black mb-2">Insight rutinan apa yang ingin kamu tanyakan?</h2>
@@ -30,7 +28,7 @@
         <div class="mb-4 sm:mb-5 md:mb-6">
             <h3 class="text-base sm:text-lg font-bold text-black mb-2 sm:mb-3">Jam berapa?</h3>
             <div class="relative inline-block">
-                <input type="time" value="12:00" 
+                <input type="time" value="12:00"
                     class="w-32 sm:w-40 border border-gray-300 rounded-lg px-3 sm:px-4 py-1.5 sm:py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs sm:text-sm appearance-none" />
             </div>
         </div>

@@ -1,5 +1,5 @@
 <!-- Modal Popup Atur Akses -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
 
 <!-- ✅ TAMBAHKAN: class "hidden" di awal -->
 <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden font-[Inter,sans-serif]"

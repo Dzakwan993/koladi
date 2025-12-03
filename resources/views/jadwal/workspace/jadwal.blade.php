@@ -1,9 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Jadwal')
+@section('title', 'Jadwal Workspace')
 
 @section('content')
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
 
     <div class="min-h-screen bg-gradient-to-br from-[#f3f6fc] to-[#e9effd] font-[Inter,sans-serif]">
@@ -20,9 +19,9 @@
                 <div class="mb-6 pb-4">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div class="flex-1 min-w-0">
-                            <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#1E1E1E] mb-2">
+                            <h1 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#1E1E1E] mb-2">
                                 Jadwal Workspace 📅
-                            </h2>
+                            </h1>
                             <p class="text-xs sm:text-sm md:text-base text-[#6B7280]">
                                 Kelola dan lihat semua jadwal workspace Anda dalam satu tempat
                             </p>
@@ -30,8 +29,7 @@
 
                         {{-- Button Actions --}}
                         <div class="flex gap-3">
-                            <button
-                                onclick="window.location.href='{{ route('notulensi', ['workspaceId' => $workspaceId]) }}'"
+                            <button onclick="window.location.href='{{ route('notulensi', ['workspaceId' => $workspaceId]) }}'"
                                 class="inline-flex items-center justify-center gap-2 text-sm bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                                 <i class="fas fa-file-alt"></i>
                                 <span class="hidden sm:inline">Notulensi</span>
@@ -146,7 +144,6 @@
             background: transparent !important;
         }
 
-        /* ✅ Fix: Hilangkan scrollbar ganda di kalender */
         .fc .fc-scroller {
             overflow: hidden !important;
         }
@@ -275,14 +272,50 @@
             box-shadow: 0 2px 4px rgba(251, 191, 36, 0.4);
         }
 
-        /* Group hover effects */
-        .group {
+        /* ✅ IMPROVED: Schedule Card Styles */
+        .schedule-card {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .group:hover {
-            box-shadow: 0 20px 40px -12px rgba(37, 99, 235, 0.3) !important;
-            border-color: #60a5fa !important;
+        .schedule-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        /* ✅ Badge Rahasia - Clean & Subtle */
+        .badge-private {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: #ef4444;
+            color: white;
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.375rem;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        /* ✅ Meeting Type Badge - Compact */
+        .badge-meeting {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .badge-meeting.online {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .badge-meeting.offline {
+            background: #6b7280;
+            color: white;
         }
     </style>
 
@@ -384,7 +417,6 @@
                 events: function(info, successCallback, failureCallback) {
                     const startDate = info.start.toISOString().split('T')[0] + ' 00:00:00';
                     const endDate = info.end.toISOString().split('T')[0] + ' 23:59:59';
-                    // ✅ UBAH DARI /jadwal/events MENJADI /calendar/events
                     const url =
                         `/workspace/${workspaceId}/calendar/events?start=${encodeURIComponent(startDate)}&end=${encodeURIComponent(endDate)}`;
 
@@ -525,65 +557,104 @@
                     const startDate = new Date(event.start);
                     const endDate = new Date(event.end);
                     const timeDisplay = formatTimeDisplay(startDate, endDate, event);
-                    const bgColor = event.extendedProps?.is_creator ? 'from-[#bbcff9] to-[#a8bef5]' :
-                        'from-[#E9EFFD] to-[#dce6fc]';
+
                     const creatorAvatar = event.extendedProps?.creator_avatar || '/images/default-avatar.png';
                     const creatorFullName = event.extendedProps?.creator_name || 'User';
                     const creatorFirstName = getFirstName(creatorFullName);
 
-                    const isOnlineMeeting = event.extendedProps?.is_online === true || event.extendedProps
-                        ?.is_online === 1;
+                    const isOnlineMeeting = event.extendedProps?.is_online === true || event.extendedProps?.is_online === 1;
                     const meetingLink = event.extendedProps?.meeting_link;
+                    const location = event.extendedProps?.location;
                     const hasMeetingLink = meetingLink && meetingLink.trim() !== '' && meetingLink !== 'null';
-                    const meetingIcon = (isOnlineMeeting && hasMeetingLink) ?
-                        '<i class="fas fa-video text-blue-600 mr-1.5"></i>' : '';
+                    const hasLocation = location && location.trim() !== '' && location !== 'null';
 
                     const commentsCount = event.extendedProps?.comments_count || 0;
+                    const isPrivate = event.extendedProps?.is_private || false;
+
+                    // ✅ Border color berdasarkan status
+                    const borderColor = isPrivate ? 'border-l-red-500' : 'border-l-blue-500';
+                    const avatarRing = isPrivate ? 'border-red-200' : 'border-blue-200';
+
+                    // ✅ Meeting Type Badge - Compact
+                    let meetingTypeBadge = '';
+                    let locationInfo = '';
+
+                    if (isOnlineMeeting && hasMeetingLink) {
+                        meetingTypeBadge = `
+                            <div class="badge-meeting online">
+                                <i class="fas fa-video text-[9px]"></i>
+                                <span>Online</span>
+                            </div>
+                        `;
+                        locationInfo = `
+                            <div class="flex items-center gap-1 text-[10px] text-blue-600">
+                                <i class="fas fa-link"></i>
+                                <span>Link tersedia</span>
+                            </div>
+                        `;
+                    } else {
+                        meetingTypeBadge = `
+                            <div class="badge-meeting offline">
+                                <i class="fas fa-map-marker-alt text-[9px]"></i>
+                                <span>Offline</span>
+                            </div>
+                        `;
+                        if (hasLocation) {
+                            locationInfo = `
+                                <div class="flex items-center gap-1 text-[10px] text-gray-600">
+                                    <i class="fas fa-map-pin"></i>
+                                    <span class="truncate max-w-[150px]">${location}</span>
+                                </div>
+                            `;
+                        }
+                    }
 
                     return `
                         <a href="/workspace/${workspaceId}/jadwal/${event.id}"
-                            class="group bg-gradient-to-br ${bgColor} rounded-xl shadow-md p-3 sm:p-4 hover:shadow-2xl transition-all duration-300 cursor-pointer block border border-blue-100 hover:border-blue-400">
-                            <div class="flex justify-between items-start gap-3">
-                                <div class="flex items-start space-x-3 flex-1 min-w-0">
-                                    <div class="relative">
-                                        <img src="${creatorAvatar}"
-                                             alt="${creatorFirstName}"
-                                             class="rounded-full w-10 h-10 sm:w-11 sm:h-11 object-cover border-3 border-white shadow-lg bg-gray-100 flex-shrink-0 ring-2 ring-blue-200">
-                                        ${meetingIcon ? '<div class="absolute -bottom-1 -right-1 bg-blue-600 rounded-full w-5 h-5 flex items-center justify-center shadow-md"><i class="fas fa-video text-white text-[10px]"></i></div>' : ''}
-                                    </div>
-
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-start gap-2 mb-2">
-                                            <span class="font-bold text-[#090909] text-sm sm:text-base leading-tight flex-1 group-hover:text-blue-700 transition-colors line-clamp-2">
-                                                ${event.title || 'Untitled'}
-                                            </span>
+                            class="schedule-card block bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer border-l-4 ${borderColor} border-t border-r border-b border-gray-200 hover:border-gray-300">
+                            <div class="p-4">
+                                <div class="flex justify-between items-start gap-3">
+                                    <div class="flex items-start space-x-3 flex-1 min-w-0">
+                                        <!-- Avatar -->
+                                        <div class="relative flex-shrink-0">
+                                            <img src="${creatorAvatar}"
+                                                 alt="${creatorFirstName}"
+                                                 class="rounded-full w-10 h-10 object-cover border-2 ${avatarRing}">
                                         </div>
 
-                                        <div class="flex flex-col gap-1.5">
-                                            <div class="flex items-center gap-1.5 text-xs text-gray-600">
-                                                <i class="far fa-clock text-blue-500"></i>
-                                                <span class="font-medium">${timeDisplay}</span>
+                                        <!-- Content -->
+                                        <div class="flex-1 min-w-0">
+                                            <!-- Title Row with Private Badge -->
+                                            <div class="flex items-center gap-2 mb-1.5">
+                                                <h3 class="font-semibold text-gray-900 text-sm leading-tight flex-1 line-clamp-1">
+                                                    ${event.title || 'Untitled'}
+                                                </h3>
+                                                ${isPrivate ? `<span class="badge-private"><i class="fas fa-lock text-[8px]"></i> RAHASIA</span>` : ''}
                                             </div>
-                                            ${event.extendedProps?.location ? `
-                                                    <div class="flex items-center gap-1.5 text-xs text-gray-600">
-                                                        <i class="fas fa-map-marker-alt text-red-500"></i>
-                                                        <span class="truncate">${event.extendedProps.location}</span>
-                                                    </div>
-                                                ` : ''}
+
+                                            <!-- Time -->
+                                            <div class="flex items-center gap-1.5 text-xs text-gray-500 mb-2">
+                                                <i class="far fa-clock text-[10px]"></i>
+                                                <span>${timeDisplay}</span>
+                                            </div>
+
+                                            <!-- Meeting Info -->
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                ${meetingTypeBadge}
+                                                ${locationInfo}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                ${commentsCount > 0 ? `
+                                    <!-- Comments Counter -->
+                                    ${commentsCount > 0 ? `
                                         <div class="flex-shrink-0">
-                                            <div class="relative">
-                                                <div class="bg-gradient-to-br from-yellow-400 to-yellow-500 text-gray-800 text-xs font-bold rounded-lg w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                                                    ${commentsCount}
-                                                </div>
-                                                <div class="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-500 rounded-full animate-pulse"></div>
+                                            <div class="bg-amber-400 text-gray-900 text-xs font-bold rounded-lg w-7 h-7 flex items-center justify-center shadow-sm">
+                                                ${commentsCount}
                                             </div>
                                         </div>
                                     ` : ''}
+                                </div>
                             </div>
                         </a>
                     `;

@@ -3,7 +3,6 @@
 @section('title', 'Jadwal Umum')
 
 @section('content')
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
 
     <div class="min-h-screen bg-gradient-to-br from-[#f3f6fc] to-[#e9effd] font-[Inter,sans-serif]">
@@ -267,40 +266,50 @@
             box-shadow: 0 2px 4px rgba(251, 191, 36, 0.4);
         }
 
-        .group {
+        /* ✅ IMPROVED: Schedule Card Styles */
+        .schedule-card {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .group:hover {
-            box-shadow: 0 20px 40px -12px rgba(37, 99, 235, 0.3) !important;
-            border-color: #60a5fa !important;
+        .schedule-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1) !important;
         }
 
-        /* ✅ Badge Rahasia */
+        /* ✅ Badge Rahasia - Clean & Subtle */
         .badge-private {
             display: inline-flex;
             align-items: center;
             gap: 0.25rem;
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            background: #ef4444;
             color: white;
-            padding: 0.25rem 0.5rem;
-            border-radius: 0.5rem;
-            font-size: 0.7rem;
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.375rem;
+            font-size: 9px;
             font-weight: 700;
-            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
-            animation: pulse-private 2s infinite;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
         }
 
-        @keyframes pulse-private {
+        /* ✅ Meeting Type Badge - Compact */
+        .badge-meeting {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 10px;
+            font-weight: 600;
+        }
 
-            0%,
-            100% {
-                opacity: 1;
-            }
+        .badge-meeting.online {
+            background: #3b82f6;
+            color: white;
+        }
 
-            50% {
-                opacity: 0.9;
-            }
+        .badge-meeting.offline {
+            background: #6b7280;
+            color: white;
         }
     </style>
 
@@ -350,6 +359,7 @@
                 if (!fullName) return 'User';
                 return fullName.trim().split(' ')[0];
             }
+
             calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 locale: 'id',
@@ -513,27 +523,17 @@
                 scheduleList.innerHTML = html;
             }
 
-
-
             function renderScheduleCard(event) {
                 try {
                     const startDate = new Date(event.start);
                     const endDate = new Date(event.end);
                     const timeDisplay = formatTimeDisplay(startDate, endDate, event);
 
-                    // ✅ Ubah warna background berdasarkan status rahasia
-                    const bgColor = event.extendedProps?.is_private ?
-                        'from-[#fee2e2] to-[#fecaca]' // Red shade untuk rahasia
-                        :
-                        (event.extendedProps?.is_creator ? 'from-[#bbcff9] to-[#a8bef5]' :
-                            'from-[#E9EFFD] to-[#dce6fc]');
-
                     const creatorAvatar = event.extendedProps?.creator_avatar || '/images/default-avatar.png';
                     const creatorFullName = event.extendedProps?.creator_name || 'User';
                     const creatorFirstName = getFirstName(creatorFullName);
 
-                    const isOnlineMeeting = event.extendedProps?.is_online === true || event.extendedProps
-                        ?.is_online === 1;
+                    const isOnlineMeeting = event.extendedProps?.is_online === true || event.extendedProps?.is_online === 1;
                     const meetingLink = event.extendedProps?.meeting_link;
                     const location = event.extendedProps?.location;
                     const hasMeetingLink = meetingLink && meetingLink.trim() !== '' && meetingLink !== 'null';
@@ -542,98 +542,93 @@
                     const commentsCount = event.extendedProps?.comments_count || 0;
                     const isPrivate = event.extendedProps?.is_private || false;
 
-                    // ✅ IMPROVED: Meeting Type Badge - SELALU TAMPIL (Online ATAU Offline)
+                    // ✅ Border color berdasarkan status
+                    const borderColor = isPrivate ? 'border-l-red-500' : 'border-l-blue-500';
+                    const avatarRing = isPrivate ? 'border-red-200' : 'border-blue-200';
+
+                    // ✅ Meeting Type Badge - Compact
                     let meetingTypeBadge = '';
                     let locationInfo = '';
 
                     if (isOnlineMeeting && hasMeetingLink) {
-                        // ONLINE MEETING
                         meetingTypeBadge = `
-                <div class="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 px-2.5 py-1 rounded-lg text-xs font-semibold shadow-sm">
-                    <i class="fas fa-video"></i>
-                    <span>Online Meeting</span>
-                </div>
-            `;
+                            <div class="badge-meeting online">
+                                <i class="fas fa-video text-[9px]"></i>
+                                <span>Online</span>
+                            </div>
+                        `;
                         locationInfo = `
-                <div class="flex items-center gap-1.5 text-xs text-blue-600">
-                    <i class="fas fa-external-link-alt"></i>
-                    <span class="truncate max-w-[200px]">Link tersedia</span>
-                </div>
-            `;
+                            <div class="flex items-center gap-1 text-[10px] text-blue-600">
+                                <i class="fas fa-link"></i>
+                                <span>Link tersedia</span>
+                            </div>
+                        `;
                     } else {
-                        // OFFLINE MEETING (default jika bukan online)
                         meetingTypeBadge = `
-                <div class="inline-flex items-center gap-1.5 bg-red-50 border border-red-200 text-red-700 px-2.5 py-1 rounded-lg text-xs font-semibold shadow-sm">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <span>Offline Meeting</span>
-                </div>
-            `;
-
+                            <div class="badge-meeting offline">
+                                <i class="fas fa-map-marker-alt text-[9px]"></i>
+                                <span>Offline</span>
+                            </div>
+                        `;
                         if (hasLocation) {
                             locationInfo = `
-                    <div class="flex items-center gap-1.5 text-xs text-gray-600">
-                        <i class="fas fa-map-pin text-red-500"></i>
-                        <span class="truncate max-w-[200px]">${location}</span>
-                    </div>
-                `;
+                                <div class="flex items-center gap-1 text-[10px] text-gray-600">
+                                    <i class="fas fa-map-pin"></i>
+                                    <span class="truncate max-w-[150px]">${location}</span>
+                                </div>
+                            `;
                         }
                     }
 
                     return `
-            <a href="/jadwal-umum/${event.id}"
-                class="group bg-gradient-to-br ${bgColor} rounded-xl shadow-md p-3 sm:p-4 hover:shadow-2xl transition-all duration-300 cursor-pointer block border ${isPrivate ? 'border-red-300' : 'border-blue-100'} ${isPrivate ? 'hover:border-red-400' : 'hover:border-blue-400'}">
-                <div class="flex justify-between items-start gap-3">
-                    <div class="flex items-start space-x-3 flex-1 min-w-0">
-                        <!-- Avatar -->
-                        <div class="relative flex-shrink-0">
-                            <img src="${creatorAvatar}"
-                                 alt="${creatorFirstName}"
-                                 class="rounded-full w-10 h-10 sm:w-11 sm:h-11 object-cover border-3 border-white shadow-lg bg-gray-100 ring-2 ${isPrivate ? 'ring-red-300' : 'ring-blue-200'}">
-                        </div>
-
-                        <!-- Content -->
-                        <div class="flex-1 min-w-0">
-                            <!-- Title & Private Badge -->
-                            <div class="flex items-start gap-2 mb-2 flex-wrap">
-                                <span class="font-bold text-[#090909] text-sm sm:text-base leading-tight flex-1 group-hover:text-blue-700 transition-colors line-clamp-2">
-                                    ${event.title || 'Untitled'}
-                                </span>
-                                ${isPrivate ? `
-                                            <span class="badge-private whitespace-nowrap">
-                                                <i class="fas fa-lock text-[10px]"></i>
-                                                <span>RAHASIA</span>
-                                            </span>
-                                        ` : ''}
-                            </div>
-
-                            <!-- Time -->
-                            <div class="flex items-center gap-1.5 text-xs text-gray-600 mb-2">
-                                <i class="far fa-clock text-blue-500"></i>
-                                <span class="font-medium">${timeDisplay}</span>
-                            </div>
-
-                            <!-- Meeting Type Badge & Location -->
-                            <div class="flex flex-wrap items-center gap-2">
-                                ${meetingTypeBadge}
-                                ${locationInfo}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Comments Badge -->
-                    ${commentsCount > 0 ? `
-                                <div class="flex-shrink-0">
-                                    <div class="relative">
-                                        <div class="bg-gradient-to-br from-yellow-400 to-yellow-500 text-gray-800 text-xs font-bold rounded-lg w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                                            ${commentsCount}
+                        <a href="/jadwal-umum/${event.id}"
+                            class="schedule-card block bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer border-l-4 ${borderColor} border-t border-r border-b border-gray-200 hover:border-gray-300">
+                            <div class="p-4">
+                                <div class="flex justify-between items-start gap-3">
+                                    <div class="flex items-start space-x-3 flex-1 min-w-0">
+                                        <!-- Avatar -->
+                                        <div class="relative flex-shrink-0">
+                                            <img src="${creatorAvatar}"
+                                                 alt="${creatorFirstName}"
+                                                 class="rounded-full w-10 h-10 object-cover border-2 ${avatarRing}">
                                         </div>
-                                        <div class="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-500 rounded-full animate-pulse"></div>
+
+                                        <!-- Content -->
+                                        <div class="flex-1 min-w-0">
+                                            <!-- Title Row with Private Badge -->
+                                            <div class="flex items-center gap-2 mb-1.5">
+                                                <h3 class="font-semibold text-gray-900 text-sm leading-tight flex-1 line-clamp-1">
+                                                    ${event.title || 'Untitled'}
+                                                </h3>
+                                                ${isPrivate ? `<span class="badge-private"><i class="fas fa-lock text-[8px]"></i> RAHASIA</span>` : ''}
+                                            </div>
+
+                                            <!-- Time -->
+                                            <div class="flex items-center gap-1.5 text-xs text-gray-500 mb-2">
+                                                <i class="far fa-clock text-[10px]"></i>
+                                                <span>${timeDisplay}</span>
+                                            </div>
+
+                                            <!-- Meeting Info -->
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                ${meetingTypeBadge}
+                                                ${locationInfo}
+                                            </div>
+                                        </div>
                                     </div>
+
+                                    <!-- Comments Counter -->
+                                    ${commentsCount > 0 ? `
+                                        <div class="flex-shrink-0">
+                                            <div class="bg-amber-400 text-gray-900 text-xs font-bold rounded-lg w-7 h-7 flex items-center justify-center shadow-sm">
+                                                ${commentsCount}
+                                            </div>
+                                        </div>
+                                    ` : ''}
                                 </div>
-                            ` : ''}
-                </div>
-            </a>
-        `;
+                            </div>
+                        </a>
+                    `;
                 } catch (e) {
                     console.error('Error rendering schedule card:', e);
                     return '';

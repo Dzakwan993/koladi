@@ -3,9 +3,6 @@
 @section('title', 'Workspace')
 
 @section('content')
-    <!-- Tambahkan font Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
     <div class="bg-[#e9effd] min-h-screen font-[Inter,sans-serif] text-black relative">
         @include('components.workspace-nav')
 
