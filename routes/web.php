@@ -229,6 +229,9 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/{taskId}/force', [TaskController::class, 'forceDeleteTask'])->name('tasks.force-delete');
     Route::post('/{taskId}/restore', [TaskController::class, 'restoreTask'])->name('tasks.restore');
 
+    Route::delete('/custom-columns/{columnId}', [TaskController::class, 'deleteCustomColumn'])
+    ->name('tasks.custom-columns.delete');
+
         
     });
 

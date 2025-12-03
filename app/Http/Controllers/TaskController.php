@@ -2883,7 +2883,130 @@ public function restoreTask($taskId)
 
 
 
+/**
+ * ✅ Hapus kolom kanban custom
+ */
+public function deleteCustomColumn($columnId)
+{
+    try {
+        $user = Auth::user();
+        $column = BoardColumn::with('workspace')->findOrFail($columnId);
 
+        // ✅ VALIDASI: Gunakan method helper untuk cek akses workspace
+        if (!$this->canAccessWorkspace($column->workspace_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke workspace ini'
+            ], 403);
+        }
+
+        // ✅ Cegah penghapusan kolom default
+        $defaultColumns = ['To Do List', 'Dikerjakan', 'Selesai', 'Batal'];
+        
+        if (in_array($column->name, $defaultColumns)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kolom default tidak dapat dihapus'
+            ], 400);
+        }
+
+        // ✅ Pastikan tidak ada tugas di kolom ini sebelum dihapus
+        $taskCount = Task::where('board_column_id', $columnId)->count();
+        
+        if ($taskCount > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak dapat menghapus kolom yang masih berisi tugas. Pindahkan semua tugas terlebih dahulu.'
+            ], 400);
+        }
+
+        DB::beginTransaction();
+
+        // Log sebelum menghapus
+        Log::info('Deleting custom column', [
+            'column_id' => $column->id,
+            'column_name' => $column->name,
+            'workspace_id' => $column->workspace_id,
+            'deleted_by' => $user->id
+        ]);
+
+        // Hapus kolom
+        $column->delete();
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kolom custom berhasil dihapus'
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error deleting custom column: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menghapus kolom: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+// Method alternatif di TaskController
+public function deleteColumnWithTasksTransfer(Request $request, $columnId)
+{
+    $request->validate([
+        'target_column_id' => 'required|exists:board_columns,id'
+    ]);
+
+    try {
+        $user = Auth::user();
+        $column = BoardColumn::with('workspace')->findOrFail($columnId);
+        $targetColumn = BoardColumn::findOrFail($request->target_column_id);
+
+        // Validasi akses
+        if (!$this->canAccessWorkspace($column->workspace_id) || 
+            !$this->canAccessWorkspace($targetColumn->workspace_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak'
+            ], 403);
+        }
+
+        // Pastikan kedua kolom dalam workspace yang sama
+        if ($column->workspace_id !== $targetColumn->workspace_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kolom target harus dalam workspace yang sama'
+            ], 400);
+        }
+
+        DB::beginTransaction();
+
+        // Pindahkan semua tugas ke kolom target
+        Task::where('board_column_id', $columnId)
+            ->update(['board_column_id' => $request->target_column_id]);
+
+        // Hapus kolom
+        $column->delete();
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kolom berhasil dihapus dan tugas dipindahkan'
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error deleting column with transfer: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menghapus kolom: ' . $e->getMessage()
+        ], 500);
+    }
+}
 
 
 
