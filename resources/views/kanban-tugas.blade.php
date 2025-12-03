@@ -1685,148 +1685,157 @@
 
                             // Di method saveTaskEdit() di Alpine.js
                             async saveTaskEdit() {
-    if (!this.currentTask) return;
+                                if (!this.currentTask) return;
 
-    try {
-        // Validasi
-        if (!this.currentTask.title?.trim()) {
-            this.showNotification('Judul tugas harus diisi', 'error');
-            return;
-        }
+                                try {
+                                    // ✅ VALIDASI
+                                    if (!this.currentTask.title?.trim()) {
+                                        this.showNotification('Judul tugas harus diisi', 'error');
+                                        return;
+                                    }
 
-        console.log('🔄 Saving task edit for:', this.currentTask.id);
+                                    console.log('🔄 Saving task edit for:', this.currentTask.id);
 
-        // ✅ PERBAIKAN: Dapatkan content CKEditor dengan fallback yang lebih baik
-        let description = '';
-        const editorId = 'editor-catatan-edit';
+                                    // ✅ DAPATKAN CONTENT CKEDITOR
+                                    let description = '';
+                                    const editorId = 'editor-catatan-edit';
 
-        // Try multiple methods to get editor content
-        if (window.taskEditors && window.taskEditors[editorId]) {
-            description = window.taskEditors[editorId].getData();
-            console.log('✅ Got description from global taskEditors');
-        } else {
-            const editorElement = document.querySelector(`#${editorId} + .ck-editor .ck-content`);
-            if (editorElement) {
-                description = editorElement.innerHTML;
-                console.log('✅ Got description from editor element');
-            } else {
-                description = this.currentTask.description || '';
-                console.log('✅ Using existing description from currentTask');
-            }
-        }
+                                    // Try multiple methods to get editor content
+                                    if (window.taskEditors && window.taskEditors[editorId]) {
+                                        description = window.taskEditors[editorId].getData();
+                                        console.log('✅ Got description from global taskEditors');
+                                    } else {
+                                        const editorElement = document.querySelector(`#${editorId} + .ck-editor .ck-content`);
+                                        if (editorElement) {
+                                            description = editorElement.innerHTML;
+                                            console.log('✅ Got description from editor element');
+                                        } else {
+                                            description = this.currentTask.description || '';
+                                            console.log('✅ Using existing description from currentTask');
+                                        }
+                                    }
 
-        console.log('📝 Description length:', description.length);
+                                    console.log('📝 Description length:', description.length);
 
-        // Simpan judul jika berubah
-        await this.saveTitleChange();
+                                    // Simpan judul jika berubah
+                                    await this.saveTitleChange();
 
-        // ✅ PERBAIKAN: Format data untuk backend
-        const formData = {
-            title: this.currentTask.title,
-            phase: this.currentTask.phase,
-            description: description,
-            is_secret: this.currentTask.is_secret,
-            user_ids: this.assignedMembers.map(member => member.id),
-            label_ids: this.currentTask.labels.map(label => label.id),
-            board_column_id: this.currentTask.board_column?.id
-        };
+                                    // ✅ FORMAT DATA UNTUK BACKEND
+                                    const formData = {
+                                        title: this.currentTask.title,
+                                        phase: this.currentTask.phase,
+                                        description: description,
+                                        is_secret: this.currentTask.is_secret,
+                                        user_ids: this.assignedMembers.map(member => member.id),
+                                        label_ids: this.currentTask.labels.map(label => label.id), // ✅ KIRIM LABEL IDS
+                                        board_column_id: this.currentTask.board_column?.id
+                                    };
 
-        // Tambahkan datetime jika ada
-        if (this.currentTask.startDate && this.currentTask.startTime) {
-            formData.start_datetime = `${this.currentTask.startDate} ${this.currentTask.startTime}:00`;
-        }
+                                    // ✅ TAMBAHKAN DATETIME JIKA ADA
+                                    if (this.currentTask.startDate && this.currentTask.startTime) {
+                                        formData.start_datetime = `${this.currentTask.startDate} ${this.currentTask.startTime}:00`;
+                                    }
 
-        if (this.currentTask.dueDate && this.currentTask.dueTime) {
-            formData.due_datetime = `${this.currentTask.dueDate} ${this.currentTask.dueTime}:00`;
-        }
+                                    if (this.currentTask.dueDate && this.currentTask.dueTime) {
+                                        formData.due_datetime = `${this.currentTask.dueDate} ${this.currentTask.dueTime}:00`;
+                                    }
 
-        console.log('📤 Sending update request:', formData);
+                                    console.log('📤 Sending update request:', formData);
 
-        // ✅ PERBAIKAN: Request dengan proper error handling
-        const response = await fetch(`/tasks/${this.currentTask.id}/update`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': this.getCsrfToken(),
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(formData)
-        });
+                                    // ✅ REQUEST KE BACKEND
+                                    const response = await fetch(`/tasks/${this.currentTask.id}/update`, {
+                                        method: 'PUT',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': this.getCsrfToken(),
+                                            'Accept': 'application/json'
+                                        },
+                                        body: JSON.stringify(formData)
+                                    });
 
-        console.log('📥 Response status:', response.status);
-        console.log('📥 Response ok:', response.ok);
+                                    console.log('📥 Response status:', response.status);
+                                    console.log('📥 Response ok:', response.ok);
 
-        // ✅ PERBAIKAN: Cek response.ok terlebih dahulu
-        if (!response.ok) {
-            // Try to get error message from response
-            let errorMessage = 'Gagal memperbarui tugas';
-            
-            try {
-                const errorData = await response.json();
-                errorMessage = errorData.message || errorMessage;
-            } catch (e) {
-                // If response is not JSON, use status text
-                errorMessage = `HTTP Error ${response.status}: ${response.statusText}`;
-            }
-            
-            console.error('❌ HTTP Error:', response.status, errorMessage);
-            throw new Error(errorMessage);
-        }
+                                    // ✅ CEK RESPONSE STATUS
+                                    if (!response.ok) {
+                                        let errorMessage = 'Gagal memperbarui tugas';
 
-        // ✅ PERBAIKAN: Parse JSON response
-        let data;
-        try {
-            const responseText = await response.text();
-            console.log('📥 Raw response:', responseText.substring(0, 200)); // Log first 200 chars
-            
-            data = JSON.parse(responseText);
-            console.log('📥 Parsed response:', data);
-        } catch (parseError) {
-            console.error('❌ JSON Parse Error:', parseError);
-            throw new Error('Response bukan format JSON yang valid');
-        }
+                                        try {
+                                            const errorData = await response.json();
+                                            errorMessage = errorData.message || errorMessage;
+                                        } catch (e) {
+                                            errorMessage = `HTTP Error ${response.status}: ${response.statusText}`;
+                                        }
 
-        // ✅ PERBAIKAN: Check success flag
-        if (data.success) {
-            this.showNotification('Tugas berhasil diperbarui', 'success');
-            this.isEditMode = false;
+                                        console.error('❌ HTTP Error:', response.status, errorMessage);
+                                        throw new Error(errorMessage);
+                                    }
 
-            // Update currentTask dengan data terbaru
-            if (data.task) {
-                Object.assign(this.currentTask, {
-                    ...data.task,
-                    description: data.task.description || description
-                });
-            }
+                                    // ✅ PARSE JSON RESPONSE
+                                    let data;
+                                    try {
+                                        const responseText = await response.text();
+                                        console.log('📥 Raw response:', responseText.substring(0, 200));
 
-            // Refresh kanban data
-            await this.loadKanbanTasks();
+                                        data = JSON.parse(responseText);
+                                        console.log('📥 Parsed response:', data);
+                                    } catch (parseError) {
+                                        console.error('❌ JSON Parse Error:', parseError);
+                                        throw new Error('Response bukan format JSON yang valid');
+                                    }
 
-            console.log('✅ Task updated successfully');
-        } else {
-            throw new Error(data.message || 'Gagal memperbarui tugas');
-        }
+                                    // ✅ CHECK SUCCESS FLAG
+                                    if (data.success) {
+                                        this.showNotification('Tugas berhasil diperbarui', 'success');
+                                        this.isEditMode = false;
 
-    } catch (error) {
-        console.error('❌ Error in saveTaskEdit:', error);
-        console.error('❌ Error stack:', error.stack);
+                                        // ✅ UPDATE CURRENTTASK DENGAN DATA TERBARU
+                                        if (data.task) {
+                                            Object.assign(this.currentTask, {
+                                                ...data.task,
+                                                description: data.task.description || description,
+                                                labels: data.task.labels || this.currentTask.labels, // ✅ UPDATE LABELS
+                                                // ✅ PASTIKAN SEMUA FIELD DI-UPDATE
+                                                members: data.task.assigned_members || this.currentTask.members,
+                                                checklists: data.task.checklists || this.currentTask.checklists,
+                                                attachments: data.task.attachments || this.currentTask.attachments
+                                            });
 
-        // ✅ PERBAIKAN: Error message yang lebih spesifik
-        let errorMessage = 'Gagal memperbarui tugas';
-        
-        if (error.message) {
-            if (error.message.includes('HTTP')) {
-                errorMessage += ' - Terjadi masalah koneksi';
-            } else if (error.message.includes('JSON')) {
-                errorMessage += ' - Response tidak valid';
-            } else {
-                errorMessage += `: ${error.message}`;
-            }
-        }
+                                            // ✅ SYNC ASSIGNED MEMBERS
+                                            if (data.task.assigned_members) {
+                                                this.assignedMembers = data.task.assigned_members;
+                                                this.selectedMemberIds = data.task.assigned_members.map(m => m.id);
+                                            }
+                                        }
 
-        this.showNotification(errorMessage, 'error');
-    }
-},
+                                        // ✅ REFRESH KANBAN DATA
+                                        await this.loadKanbanTasks();
+
+                                        console.log('✅ Task updated successfully with all changes');
+                                    } else {
+                                        throw new Error(data.message || 'Gagal memperbarui tugas');
+                                    }
+
+                                } catch (error) {
+                                    console.error('❌ Error in saveTaskEdit:', error);
+                                    console.error('❌ Error stack:', error.stack);
+
+                                    // ✅ ERROR MESSAGE YANG LEBIH SPESIFIK
+                                    let errorMessage = 'Gagal memperbarui tugas';
+
+                                    if (error.message) {
+                                        if (error.message.includes('HTTP')) {
+                                            errorMessage += ' - Terjadi masalah koneksi';
+                                        } else if (error.message.includes('JSON')) {
+                                            errorMessage += ' - Response tidak valid';
+                                        } else {
+                                            errorMessage += `: ${error.message}`;
+                                        }
+                                    }
+
+                                    this.showNotification(errorMessage, 'error');
+                                }
+                            },
 
                             // ✅ NEW: Method untuk menghapus checklist item
                             async removeChecklistItemFromDetail(index) {
@@ -2218,89 +2227,88 @@
                             },
 
                             async uploadFileDetail(file) {
-    if (!this.currentTask || !this.currentTask.id) {
-        this.showNotification('Task ID tidak ditemukan', 'error');
-        return;
-    }
+                                if (!this.currentTask || !this.currentTask.id) {
+                                    this.showNotification('Task ID tidak ditemukan', 'error');
+                                    return;
+                                }
 
-    this.uploadingDetail = true;
-    this.uploadProgressDetail = 0;
+                                this.uploadingDetail = true;
+                                this.uploadProgressDetail = 0;
 
-    try {
-        // Validasi
-        const allowedTypes = [
-            'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/vnd.ms-powerpoint',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'text/plain',
-            'application/zip',
-            'application/x-rar-compressed'
-        ];
+                                try {
+                                    // Validasi
+                                    const allowedTypes = [
+                                        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+                                        'application/pdf',
+                                        'application/msword',
+                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                        'application/vnd.ms-excel',
+                                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                        'application/vnd.ms-powerpoint',
+                                        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                                        'text/plain',
+                                        'application/zip',
+                                        'application/x-rar-compressed'
+                                    ];
 
-        if (!allowedTypes.includes(file.type)) {
-            throw new Error('Tipe file tidak didukung');
-        }
+                                    if (!allowedTypes.includes(file.type)) {
+                                        throw new Error('Tipe file tidak didukung');
+                                    }
 
-        if (file.size > 10 * 1024 * 1024) {
-            throw new Error('File terlalu besar. Maksimal 10MB');
-        }
+                                    if (file.size > 10 * 1024 * 1024) {
+                                        throw new Error('File terlalu besar. Maksimal 10MB');
+                                    }
 
-        const formData = new FormData();
-        formData.append('file', file);
+                                    const formData = new FormData();
+                                    formData.append('file', file);
 
-        console.log('📤 Uploading to task:', this.currentTask.id);
+                                    console.log('📤 Uploading to task:', this.currentTask.id);
 
-        const response = await fetch(`/tasks/${this.currentTask.id}/attachments/add`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': this.getCsrfToken()
-            },
-            body: formData
-        });
+                                    const response = await fetch(`/tasks/${this.currentTask.id}/attachments/add`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRF-TOKEN': this.getCsrfToken()
+                                        },
+                                        body: formData
+                                    });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `HTTP ${response.status}`);
-        }
+                                    if (!response.ok) {
+                                        const errorData = await response.json();
+                                        throw new Error(errorData.message || `HTTP ${response.status}`);
+                                    }
 
-        const data = await response.json();
+                                    const data = await response.json();
 
-        if (data.success && data.attachment) {
-            if (!this.currentTask.attachments) {
-                this.currentTask.attachments = [];
-            }
+                                    if (data.success && data.attachment) {
+                                        if (!this.currentTask.attachments) {
+                                            this.currentTask.attachments = [];
+                                        }
 
-            const uploadedFile = {
-                id: data.attachment.id,
-                name: data.attachment.file_name || file.name,
-                size: data.attachment.file_size || file.size,
-                type: this.getFileTypeFromMime(data.attachment.mime_type || file.type),
-                url: data.attachment.file_url.startsWith('http') 
-                    ? data.attachment.file_url 
-                    : '/storage/' + data.attachment.file_url,
-                uploaded_at: data.attachment.uploaded_at || new Date().toISOString()
-            };
+                                        const uploadedFile = {
+                                            id: data.attachment.id,
+                                            name: data.attachment.file_name || file.name,
+                                            size: data.attachment.file_size || file.size,
+                                            type: this.getFileTypeFromMime(data.attachment.mime_type || file.type),
+                                            url: data.attachment.file_url.startsWith('http') ?
+                                                data.attachment.file_url : '/storage/' + data.attachment.file_url,
+                                            uploaded_at: data.attachment.uploaded_at || new Date().toISOString()
+                                        };
 
-            this.currentTask.attachments.push(uploadedFile);
-            
-            console.log('✅ File added to task:', uploadedFile);
-            // this.showNotification(`File ${file.name} berhasil diupload`, 'success');
-        } else {
-            throw new Error(data.message || 'Upload gagal');
-        }
-    } catch (error) {
-        console.error('❌ Error uploading file:', error);
-        this.showNotification(`Gagal upload file: ${error.message}`, 'error');
-    } finally {
-        this.uploadingDetail = false;
-        this.uploadProgressDetail = 0;
-    }
-},
+                                        this.currentTask.attachments.push(uploadedFile);
+
+                                        console.log('✅ File added to task:', uploadedFile);
+                                        // this.showNotification(`File ${file.name} berhasil diupload`, 'success');
+                                    } else {
+                                        throw new Error(data.message || 'Upload gagal');
+                                    }
+                                } catch (error) {
+                                    console.error('❌ Error uploading file:', error);
+                                    this.showNotification(`Gagal upload file: ${error.message}`, 'error');
+                                } finally {
+                                    this.uploadingDetail = false;
+                                    this.uploadProgressDetail = 0;
+                                }
+                            },
 
                             // ✅ NEW: Remove label dari task
                             async removeLabelFromTask(labelId) {
@@ -2560,22 +2568,24 @@
                             },
 
                             // Method untuk show notification yang lebih baik
+                            // Di dalam kanbanApp() - UPDATE method showNotification
                             showNotification(message, type = 'info') {
-                                // Anda bisa menggunakan library notification seperti Toastify
-                                // atau implementasi custom notification
                                 const bgColor = type === 'success' ? 'bg-green-500' :
                                     type === 'error' ? 'bg-red-500' :
+                                    type === 'warning' ? 'bg-yellow-500' :
                                     'bg-blue-500';
 
-                                // Simple alert untuk sementara
+                                // Untuk sementara pakai alert
+                                // Nanti bisa diganti dengan toast notification library
                                 if (type === 'error') {
-                                    alert('Error: ' + message);
+                                    alert('❌ ' + message);
+                                } else if (type === 'warning') {
+                                    alert('⚠️ ' + message);
+                                } else if (type === 'info') {
+                                    alert('ℹ️ ' + message);
                                 } else {
-                                    alert(message);
+                                    alert('✅ ' + message);
                                 }
-
-                                // Untuk implementasi yang lebih baik, gunakan:
-                                // this.showToastNotification(message, type);
                             },
 
                             filteredLabels() {
@@ -3675,27 +3685,27 @@
 
                             // ✅ CSRF Token Method - TEMPATKAN DI SINI
                             getCsrfToken() {
-    // Try meta tag first
-    const metaTag = document.querySelector('meta[name="csrf-token"]');
-    if (metaTag) {
-        return metaTag.getAttribute('content');
-    }
+                                // Try meta tag first
+                                const metaTag = document.querySelector('meta[name="csrf-token"]');
+                                if (metaTag) {
+                                    return metaTag.getAttribute('content');
+                                }
 
-    // Try input field
-    const inputTag = document.querySelector('input[name="_token"]');
-    if (inputTag) {
-        return inputTag.value;
-    }
+                                // Try input field
+                                const inputTag = document.querySelector('input[name="_token"]');
+                                if (inputTag) {
+                                    return inputTag.value;
+                                }
 
-    // Try script data attribute
-    const scriptTag = document.querySelector('script[data-csrf]');
-    if (scriptTag) {
-        return scriptTag.dataset.csrf;
-    }
+                                // Try script data attribute
+                                const scriptTag = document.querySelector('script[data-csrf]');
+                                if (scriptTag) {
+                                    return scriptTag.dataset.csrf;
+                                }
 
-    console.error('❌ CSRF Token not found!');
-    return '';
-},
+                                console.error('❌ CSRF Token not found!');
+                                return '';
+                            },
 
 
 
@@ -4073,6 +4083,7 @@
                             },
                             // ✅ PERBAIKI: Method saveTaskLabels dengan handling yang lebih baik
                             // Di Alpine.js - perbaiki method saveTaskLabels untuk edit mode
+                            // Di dalam kanbanApp() - GANTI method saveTaskLabels
                             async saveTaskLabels(taskId = null) {
                                 try {
                                     const selectedLabelIds = this.labelData.labels
@@ -4081,7 +4092,7 @@
 
                                     console.log('Menyimpan labels:', selectedLabelIds, 'untuk task:', taskId);
 
-                                    // Jika taskId null (task baru), simpan di form data
+                                    // ✅ UNTUK TASK BARU (belum ada ID)
                                     if (!taskId) {
                                         const selectedLabels = this.labelData.labels
                                             .filter(label => label.selected)
@@ -4093,11 +4104,35 @@
 
                                         this.taskForm.labels = selectedLabels;
                                         this.openLabelModal = false;
-                                        // this.showNotification('Label berhasil dipilih', 'success');
+                                        this.showNotification('Label berhasil dipilih', 'success');
                                         return;
                                     }
 
-                                    // Untuk task yang sudah ada (EDIT MODE)
+                                    // ✅ UNTUK TASK YANG SUDAH ADA (EDIT MODE)
+                                    // HANYA UPDATE STATE LOKAL, TIDAK LANGSUNG SAVE KE DATABASE
+                                    if (this.isEditMode && this.currentTask) {
+                                        const selectedLabels = this.labelData.labels
+                                            .filter(label => label.selected)
+                                            .map(label => ({
+                                                id: label.id,
+                                                name: label.name,
+                                                color: label.color.rgb
+                                            }));
+
+                                        // Update currentTask.labels (state lokal)
+                                        this.currentTask.labels = selectedLabels;
+
+                                        // Reset selection
+                                        this.labelData.labels.forEach(label => label.selected = false);
+                                        this.openLabelModal = false;
+
+                                        console.log('✅ Label di-stage (belum tersimpan ke database):', selectedLabels);
+                                        this.showNotification('Label berhasil dipilih. Klik "Simpan Perubahan" untuk menyimpan.',
+                                            'info');
+                                        return;
+                                    }
+
+                                    // ✅ FALLBACK: Jika bukan edit mode, langsung save
                                     const response = await fetch(`/tasks/${taskId}/labels/update`, {
                                         method: 'PUT',
                                         headers: {
@@ -4112,21 +4147,14 @@
                                     const data = await response.json();
 
                                     if (data.success) {
-                                        // Update current task labels
                                         if (this.currentTask) {
                                             this.currentTask.labels = data.labels;
                                         }
 
-                                        // Reset selection
                                         this.labelData.labels.forEach(label => label.selected = false);
                                         this.openLabelModal = false;
 
                                         this.showNotification('Label berhasil disimpan', 'success');
-
-                                        // Refresh task detail
-                                        if (this.currentTask) {
-                                            await this.openDetail(this.currentTask.id);
-                                        }
                                     } else {
                                         alert('Gagal menyimpan label: ' + data.message);
                                     }
@@ -4184,17 +4212,30 @@
 
                             // Open label modal
                             // ✅ PERBAIKI: Method untuk membuka modal label
+                            // Di dalam kanbanApp() - UPDATE method openLabelModalForTask
                             openLabelModalForTask(task = null) {
                                 this.openLabelModal = true;
                                 this.labelData.searchLabel = '';
 
                                 if (task && task.id) {
-                                    // Untuk task yang sudah ada - load labels dari database
-                                    this.loadTaskLabels(task.id);
+                                    // ✅ UNTUK EDIT MODE: Sync selected state dari currentTask.labels
+                                    if (this.isEditMode && this.currentTask) {
+                                        this.labelData.labels.forEach(label => {
+                                            // Cek apakah label ini ada di currentTask.labels
+                                            const isSelected = this.currentTask.labels.some(selectedLabel =>
+                                                selectedLabel.id === label.id
+                                            );
+                                            label.selected = isSelected;
+                                        });
+
+                                        console.log('✅ Synced label selection from currentTask');
+                                    } else {
+                                        // Load dari database jika bukan edit mode
+                                        this.loadTaskLabels(task.id);
+                                    }
                                 } else {
-                                    // Untuk task baru - sync selected state dengan taskForm.labels
+                                    // Untuk task baru - sync dengan taskForm.labels
                                     this.labelData.labels.forEach(label => {
-                                        // Cek apakah label ini sudah ada di taskForm.labels
                                         const isSelected = this.taskForm.labels.some(selectedLabel =>
                                             selectedLabel.id === label.id
                                         );
@@ -4375,103 +4416,103 @@
                             // Di dalam kanbanApp() - perbaiki method uploadFile
                             // Di dalam kanbanApp() - perbaiki method uploadFile
                             async uploadFile(file) {
-    this.uploading = true;
-    this.uploadProgress = 0;
+                                this.uploading = true;
+                                this.uploadProgress = 0;
 
-    try {
-        // Validasi
-        const allowedTypes = [
-            'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/vnd.ms-powerpoint',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'text/plain',
-            'application/zip',
-            'application/x-rar-compressed'
-        ];
+                                try {
+                                    // Validasi
+                                    const allowedTypes = [
+                                        'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+                                        'application/pdf',
+                                        'application/msword',
+                                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                        'application/vnd.ms-excel',
+                                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                        'application/vnd.ms-powerpoint',
+                                        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                                        'text/plain',
+                                        'application/zip',
+                                        'application/x-rar-compressed'
+                                    ];
 
-        if (!allowedTypes.includes(file.type)) {
-            throw new Error('Tipe file tidak didukung');
-        }
+                                    if (!allowedTypes.includes(file.type)) {
+                                        throw new Error('Tipe file tidak didukung');
+                                    }
 
-        if (file.size > 10 * 1024 * 1024) {
-            throw new Error('File terlalu besar. Maksimal 10MB');
-        }
+                                    if (file.size > 10 * 1024 * 1024) {
+                                        throw new Error('File terlalu besar. Maksimal 10MB');
+                                    }
 
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('attachable_type', 'App\\Models\\Task');
+                                    const formData = new FormData();
+                                    formData.append('file', file);
+                                    formData.append('attachable_type', 'App\\Models\\Task');
 
-        console.log('📤 Uploading file:', file.name, file.size, 'bytes');
+                                    console.log('📤 Uploading file:', file.name, file.size, 'bytes');
 
-        const response = await fetch('/tasks/attachments/upload', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': this.getCsrfToken()
-            },
-            body: formData
-        });
+                                    const response = await fetch('/tasks/attachments/upload', {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRF-TOKEN': this.getCsrfToken()
+                                        },
+                                        body: formData
+                                    });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error('❌ Upload error:', response.status, errorData);
-            throw new Error(errorData.message || `Upload gagal: ${response.status}`);
-        }
+                                    if (!response.ok) {
+                                        const errorData = await response.json();
+                                        console.error('❌ Upload error:', response.status, errorData);
+                                        throw new Error(errorData.message || `Upload gagal: ${response.status}`);
+                                    }
 
-        const data = await response.json();
-        console.log('✅ Upload response:', data);
+                                    const data = await response.json();
+                                    console.log('✅ Upload response:', data);
 
-        if (data.success && data.attachment) {
-            // ✅ Gunakan data dari backend response
-            const uploadedFile = {
-                id: data.attachment.id,
-                name: data.attachment.file_name || file.name,
-                size: data.attachment.file_size || file.size,
-                type: this.getFileTypeFromMime(data.attachment.mime_type || file.type),
-                url: data.attachment.file_url.startsWith('http') 
-                    ? data.attachment.file_url 
-                    : '/storage/' + data.attachment.file_url,
-                serverId: data.attachment.id,
-                uploaded_at: data.attachment.uploaded_at || new Date().toISOString()
-            };
+                                    if (data.success && data.attachment) {
+                                        // ✅ Gunakan data dari backend response
+                                        const uploadedFile = {
+                                            id: data.attachment.id,
+                                            name: data.attachment.file_name || file.name,
+                                            size: data.attachment.file_size || file.size,
+                                            type: this.getFileTypeFromMime(data.attachment.mime_type || file.type),
+                                            url: data.attachment.file_url.startsWith('http') ?
+                                                data.attachment.file_url : '/storage/' + data.attachment.file_url,
+                                            serverId: data.attachment.id,
+                                            uploaded_at: data.attachment.uploaded_at || new Date().toISOString()
+                                        };
 
-            this.taskForm.attachments.push(uploadedFile);
-            
-            console.log('✅ File added:', uploadedFile);
-            console.log('📊 Total attachments:', this.taskForm.attachments.length);
+                                        this.taskForm.attachments.push(uploadedFile);
 
-            // this.showNotification(`File ${file.name} berhasil diupload`, 'success');
-            return uploadedFile;
-        } else {
-            throw new Error(data.message || 'Upload gagal');
-        }
-    } catch (error) {
-        console.error('❌ Error uploading file:', error);
-        this.showNotification(`Gagal upload file: ${error.message}`, 'error');
-        return null;
-    } finally {
-        this.uploading = false;
-        this.uploadProgress = 0;
-    }
-},
+                                        console.log('✅ File added:', uploadedFile);
+                                        console.log('📊 Total attachments:', this.taskForm.attachments.length);
 
-// ✅ TAMBAHKAN helper method ini jika belum ada
-getFileTypeFromMime(mimeType) {
-    if (!mimeType) return 'other';
-    
-    if (mimeType.startsWith('image/')) return 'image';
-    if (mimeType === 'application/pdf') return 'pdf';
-    if (mimeType.includes('word') || mimeType.includes('document')) return 'doc';
-    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'xls';
-    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'ppt';
-    if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('compressed')) return 'archive';
-    
-    return 'other';
-},
+                                        // this.showNotification(`File ${file.name} berhasil diupload`, 'success');
+                                        return uploadedFile;
+                                    } else {
+                                        throw new Error(data.message || 'Upload gagal');
+                                    }
+                                } catch (error) {
+                                    console.error('❌ Error uploading file:', error);
+                                    this.showNotification(`Gagal upload file: ${error.message}`, 'error');
+                                    return null;
+                                } finally {
+                                    this.uploading = false;
+                                    this.uploadProgress = 0;
+                                }
+                            },
+
+                            // ✅ TAMBAHKAN helper method ini jika belum ada
+                            getFileTypeFromMime(mimeType) {
+                                if (!mimeType) return 'other';
+
+                                if (mimeType.startsWith('image/')) return 'image';
+                                if (mimeType === 'application/pdf') return 'pdf';
+                                if (mimeType.includes('word') || mimeType.includes('document')) return 'doc';
+                                if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'xls';
+                                if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'ppt';
+                                if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('compressed'))
+                                    return 'archive';
+
+                                return 'other';
+                            },
 
                             // ✅ TAMBAHKAN: Helper untuk extract nama file dari URL
                             getFileNameFromUrl(fileUrl) {
