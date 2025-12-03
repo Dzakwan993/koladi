@@ -2424,213 +2424,467 @@ public function deleteChecklist($checklistId)
      * Get phase date range and duration
      */
     private function calculatePhaseDateRange($tasks)
-    {
-        if (empty($tasks)) {
-            return [
-                'start_date' => null,
-                'end_date' => null,
-                'duration' => 0
-            ];
-        }
-
-        // Cari tanggal mulai paling awal dan tanggal selesai paling akhir
-        $startDates = [];
-        $endDates = [];
-
-        foreach ($tasks as $task) {
-            if ($task->start_datetime) {
-                $startDates[] = $task->start_datetime;
-            }
-            if ($task->due_datetime) {
-                $endDates[] = $task->due_datetime;
-            }
-        }
-
-        // Jika tidak ada tanggal, return null
-        if (empty($startDates) && empty($endDates)) {
-            return [
-                'start_date' => null,
-                'end_date' => null,
-                'duration' => 0
-            ];
-        }
-
-        // Hitung tanggal mulai paling awal
-        $earliestStart = !empty($startDates) ? min($startDates) : null;
-
-        // Hitung tanggal selesai paling akhir
-        $latestEnd = !empty($endDates) ? max($endDates) : null;
-
-        // Jika hanya ada start date, gunakan start date sebagai end date juga
-        if ($earliestStart && !$latestEnd) {
-            $latestEnd = $earliestStart;
-        }
-        // Jika hanya ada end date, gunakan end date sebagai start date juga
-        if (!$earliestStart && $latestEnd) {
-            $earliestStart = $latestEnd;
-        }
-
-        // Hitung durasi dalam hari
-        $duration = 0;
-        if ($earliestStart && $latestEnd) {
-            $start = \Carbon\Carbon::parse($earliestStart);
-            $end = \Carbon\Carbon::parse($latestEnd);
-            $duration = $start->diffInDays($end) + 1; // +1 untuk include both start and end date
-        }
-
+{
+    if (empty($tasks)) {
         return [
-            'start_date' => $earliestStart,
-            'end_date' => $latestEnd,
-            'duration' => $duration
+            'start_date' => null,
+            'end_date' => null,
+            'duration' => 0
         ];
     }
+
+    $startDates = [];
+    $endDates = [];
+
+    foreach ($tasks as $task) {
+        // ✅ PERBAIKAN: Validasi tanggal lebih ketat
+        if ($task->start_datetime && $task->start_datetime instanceof \Carbon\Carbon) {
+            $startDates[] = $task->start_datetime;
+        } elseif ($task->start_datetime && is_string($task->start_datetime)) {
+            try {
+                $startDates[] = \Carbon\Carbon::parse($task->start_datetime);
+            } catch (\Exception $e) {
+                Log::warning("Invalid start_datetime for task {$task->id}: {$task->start_datetime}");
+            }
+        }
+
+        if ($task->due_datetime && $task->due_datetime instanceof \Carbon\Carbon) {
+            $endDates[] = $task->due_datetime;
+        } elseif ($task->due_datetime && is_string($task->due_datetime)) {
+            try {
+                $endDates[] = \Carbon\Carbon::parse($task->due_datetime);
+            } catch (\Exception $e) {
+                Log::warning("Invalid due_datetime for task {$task->id}: {$task->due_datetime}");
+            }
+        }
+    }
+
+    // Jika tidak ada tanggal valid
+    if (empty($startDates) && empty($endDates)) {
+        return [
+            'start_date' => null,
+            'end_date' => null,
+            'duration' => 0
+        ];
+    }
+
+    // Tentukan earliest start dan latest end
+    $earliestStart = !empty($startDates) ? min($startDates) : null;
+    $latestEnd = !empty($endDates) ? max($endDates) : null;
+
+    // Fallback logic
+    if ($earliestStart && !$latestEnd) {
+        $latestEnd = $earliestStart;
+    }
+    if (!$earliestStart && $latestEnd) {
+        $earliestStart = $latestEnd;
+    }
+
+    // Calculate duration
+    $duration = 0;
+    if ($earliestStart && $latestEnd) {
+        $duration = $earliestStart->diffInDays($latestEnd) + 1;
+    }
+
+    return [
+        'start_date' => $earliestStart ? $earliestStart->toDateTimeString() : null,
+        'end_date' => $latestEnd ? $latestEnd->toDateTimeString() : null,
+        'duration' => max(0, $duration) // Pastikan tidak negatif
+    ];
+}
 
     // Update method getTimelineData untuk include date range
     // Di TaskController.php - update method getTimelineData
 
-    public function getTimelineData($workspaceId)
-    {
-        try {
-            $user = Auth::user();
+  /**
+ * ✅ FIXED: Get timeline data dengan normalisasi phase yang benar
+ */
+public function getTimelineData($workspaceId)
+{
+    try {
+        $user = Auth::user();
 
-            // Validasi akses workspace
-            if (!$this->canAccessWorkspace($workspaceId)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke workspace ini'
-                ], 403);
-            }
+        // Validasi akses workspace
+        if (!$this->canAccessWorkspace($workspaceId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke workspace ini'
+            ], 403);
+        }
 
-            // Ambil semua tasks dari workspace
-            $tasks = Task::where('workspace_id', $workspaceId)
-                ->with(['assignments.user', 'boardColumn'])
-                ->get();
+        // Ambil semua tasks dari workspace
+        $tasks = Task::where('workspace_id', $workspaceId)
+            ->with(['assignments.user', 'boardColumn'])
+            ->get();
 
-            // Jika tidak ada tasks
-            if ($tasks->isEmpty()) {
-                return response()->json([
-                    'success' => true,
-                    'timeline_data' => [],
-                    'total_phases' => 0,
+        // Jika tidak ada tasks
+        if ($tasks->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'timeline_data' => [],
+                'total_phases' => 0,
+                'total_tasks' => 0,
+                'completed_tasks' => 0,
+                'message' => 'Tidak ada tugas di workspace ini'
+            ]);
+        }
+
+        // ✅ PERBAIKAN 1: Group tasks dengan normalisasi yang lebih ketat
+        $phaseGroups = [];
+
+        foreach ($tasks as $task) {
+            if (!$task->phase) continue;
+
+            // ✅ NORMALISASI LENGKAP:
+            // 1. Lowercase
+            // 2. Trim whitespace
+            // 3. Hapus spasi ganda
+            // 4. Hapus karakter non-alphanumeric kecuali spasi
+            $normalizedPhase = strtolower(
+                trim(
+                    preg_replace('/\s+/', ' ', 
+                        preg_replace('/[^a-zA-Z0-9\s]/', '', $task->phase)
+                    )
+                )
+            );
+
+            // ✅ PERBAIKAN 2: Skip jika normalized phase kosong
+            if (empty($normalizedPhase)) continue;
+
+            if (!isset($phaseGroups[$normalizedPhase])) {
+                $phaseGroups[$normalizedPhase] = [
+                    'original_name' => $this->getStandardizedPhaseName($task->phase),
+                    'normalized_name' => $normalizedPhase,
+                    'tasks' => [],
                     'total_tasks' => 0,
                     'completed_tasks' => 0,
-                    'message' => 'Tidak ada tugas di workspace ini'
-                ]);
-            }
-
-            // Group tasks by phase (case-insensitive dan trim whitespace)
-            $phaseGroups = [];
-
-            foreach ($tasks as $task) {
-                if (!$task->phase) continue;
-
-                // Normalize phase name: lowercase, trim, remove extra spaces
-                $normalizedPhase = strtolower(trim(preg_replace('/\s+/', ' ', $task->phase)));
-
-                if (!isset($phaseGroups[$normalizedPhase])) {
-                    $phaseGroups[$normalizedPhase] = [
-                        'original_name' => $task->phase,
-                        'normalized_name' => $normalizedPhase,
-                        'tasks' => [],
-                        'total_tasks' => 0,
-                        'completed_tasks' => 0,
-                        'progress_percentage' => 0
-                    ];
-                }
-
-                $phaseGroups[$normalizedPhase]['tasks'][] = $task;
-                $phaseGroups[$normalizedPhase]['total_tasks']++;
-
-                // Hitung tugas yang selesai (hanya status 'done')
-                if ($task->status === 'done') {
-                    $phaseGroups[$normalizedPhase]['completed_tasks']++;
-                }
-            }
-
-            // Hitung progress percentage dan date range untuk setiap phase
-            $durations = []; // Untuk menyimpan semua durasi
-            foreach ($phaseGroups as &$phase) {
-                $phase['progress_percentage'] = $phase['total_tasks'] > 0
-                    ? round(($phase['completed_tasks'] / $phase['total_tasks']) * 100)
-                    : 0;
-
-                // Hitung date range untuk phase ini
-                $dateRange = $this->calculatePhaseDateRange($phase['tasks']);
-                $phase['start_date'] = $dateRange['start_date'];
-                $phase['end_date'] = $dateRange['end_date'];
-                $phase['duration'] = $dateRange['duration'];
-
-                // Simpan durasi untuk perhitungan relatif nanti
-                if ($dateRange['duration'] > 0) {
-                    $durations[] = $dateRange['duration'];
-                }
-            }
-
-            // Hitung durasi maksimum untuk normalisasi
-            $maxDuration = !empty($durations) ? max($durations) : 1;
-
-            // Format response
-            $timelineData = [];
-            $phaseId = 1;
-
-            foreach ($phaseGroups as $phase) {
-                // Hitung width percentage berdasarkan durasi relatif terhadap durasi maksimum
-                $duration_percentage = $phase['duration'] > 0
-                    ? ($phase['duration'] / $maxDuration) * 100
-                    : 5; // Minimal 5% jika tidak ada durasi
-
-                // Batasi maksimum 100%
-                $duration_percentage = min($duration_percentage, 100);
-
-                // Minimal 10% untuk phase yang memiliki durasi
-                if ($phase['duration'] > 0 && $duration_percentage < 10) {
-                    $duration_percentage = 10;
-                }
-
-                $timelineData[] = [
-                    'id' => $phaseId++,
-                    'name' => $phase['original_name'],
-                    'normalized_name' => $phase['normalized_name'],
-                    'total_tasks' => $phase['total_tasks'],
-                    'completed_tasks' => $phase['completed_tasks'],
-                    'progress_percentage' => $phase['progress_percentage'],
-                    'start_date' => $phase['start_date'],
-                    'end_date' => $phase['end_date'],
-                    'duration' => $phase['duration'],
-                    'duration_percentage' => $duration_percentage, // Persentase untuk width timeline bar
-                    'tasks' => array_map(function ($task) {
-                        return [
-                            'id' => $task->id,
-                            'title' => $task->title,
-                            'status' => $task->status,
-                            'is_done' => $task->status === 'done',
-                            'start_datetime' => $task->start_datetime,
-                            'due_datetime' => $task->due_datetime,
-                            'assignees' => $task->assignments->map(function ($assignment) {
-                                return [
-                                    'name' => $assignment->user->full_name,
-                                    'avatar' => $assignment->user->avatar ?: 'https://i.pravatar.cc/32?img=' . rand(1, 70)
-                                ];
-                            })->toArray()
-                        ];
-                    }, $phase['tasks'])
+                    'progress_percentage' => 0
                 ];
             }
 
-            return response()->json([
-                'success' => true,
-                'timeline_data' => $timelineData,
-                'total_phases' => count($timelineData),
-                'total_tasks' => $tasks->count(),
-                'completed_tasks' => $tasks->where('status', 'done')->count(),
-                'max_duration' => $maxDuration // Untuk debugging
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error getting timeline data: ' . $e->getMessage());
+            $phaseGroups[$normalizedPhase]['tasks'][] = $task;
+            $phaseGroups[$normalizedPhase]['total_tasks']++;
+
+            // Hitung tugas yang selesai
+            if ($task->status === 'done') {
+                $phaseGroups[$normalizedPhase]['completed_tasks']++;
+            }
+        }
+
+        // ✅ PERBAIKAN 3: Hitung progress dan date range dengan validasi
+        $durations = [];
+        
+        foreach ($phaseGroups as &$phase) {
+            // Progress percentage
+            $phase['progress_percentage'] = $phase['total_tasks'] > 0
+                ? round(($phase['completed_tasks'] / $phase['total_tasks']) * 100)
+                : 0;
+
+            // Date range calculation dengan validasi
+            $dateRange = $this->calculatePhaseDateRange($phase['tasks']);
+            
+            $phase['start_date'] = $dateRange['start_date'];
+            $phase['end_date'] = $dateRange['end_date'];
+            $phase['duration'] = $dateRange['duration'];
+
+            if ($dateRange['duration'] > 0) {
+                $durations[] = $dateRange['duration'];
+            }
+        }
+
+        // Hitung durasi maksimum
+        $maxDuration = !empty($durations) ? max($durations) : 1;
+
+        // ✅ PERBAIKAN 4: Format response dengan ID yang konsisten
+        $timelineData = [];
+        $phaseId = 1;
+
+        foreach ($phaseGroups as $phase) {
+            // Hitung width percentage
+            $duration_percentage = $phase['duration'] > 0
+                ? min(($phase['duration'] / $maxDuration) * 100, 100)
+                : 5;
+
+            // Minimal 10% untuk phase yang memiliki durasi
+            if ($phase['duration'] > 0 && $duration_percentage < 10) {
+                $duration_percentage = 10;
+            }
+
+            $timelineData[] = [
+                'id' => $phaseId++,
+                'name' => $phase['original_name'],
+                'normalized_name' => $phase['normalized_name'],
+                'total_tasks' => $phase['total_tasks'],
+                'completed_tasks' => $phase['completed_tasks'],
+                'progress_percentage' => $phase['progress_percentage'],
+                'start_date' => $phase['start_date'],
+                'end_date' => $phase['end_date'],
+                'duration' => $phase['duration'],
+                'duration_percentage' => $duration_percentage,
+                'tasks' => array_map(function ($task) {
+                    return [
+                        'id' => $task->id,
+                        'title' => $task->title,
+                        'status' => $task->status,
+                        'is_done' => $task->status === 'done',
+                        'start_datetime' => $task->start_datetime,
+                        'due_datetime' => $task->due_datetime,
+                        'assignees' => $task->assignments->map(function ($assignment) {
+                            return [
+                                'name' => $assignment->user->full_name,
+                                'avatar' => $assignment->user->avatar ?: 'https://i.pravatar.cc/32?img=' . rand(1, 70)
+                            ];
+                        })->toArray()
+                    ];
+                }, $phase['tasks'])
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'timeline_data' => $timelineData,
+            'total_phases' => count($timelineData),
+            'total_tasks' => $tasks->count(),
+            'completed_tasks' => $tasks->where('status', 'done')->count(),
+            'max_duration' => $maxDuration
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error getting timeline data: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil data timeline: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * ✅ NEW: Helper method untuk standardize phase name
+ * Mengubah variasi nama phase menjadi format standar
+ */
+private function getStandardizedPhaseName($phaseName)
+{
+    // Mapping nama phase yang umum ke format standar
+    $standardNames = [
+        'design' => 'Design',
+        'desain' => 'Design',
+        'development' => 'Development',
+        'develop' => 'Development',
+        'testing' => 'Testing',
+        'test' => 'Testing',
+        'deployment' => 'Deployment',
+        'deploy' => 'Deployment',
+        'planning' => 'Planning',
+        'perencanaan' => 'Planning',
+        'analysis' => 'Analysis',
+        'analisis' => 'Analysis',
+        'analisa' => 'Analysis'
+    ];
+
+    // Normalize input
+    $normalized = strtolower(
+        trim(
+            preg_replace('/\s+/', ' ', 
+                preg_replace('/[^a-zA-Z0-9\s]/', '', $phaseName)
+            )
+        )
+    );
+
+    // Cek apakah ada di mapping
+    if (isset($standardNames[$normalized])) {
+        return $standardNames[$normalized];
+    }
+
+    // Jika tidak ada, gunakan Title Case dari input asli
+    return ucwords(strtolower(trim($phaseName)));
+}
+
+
+
+// Di App\Http\Controllers\TaskController
+
+/**
+ * Delete task (hanya untuk yang punya akses)
+ */
+public function deleteTask($taskId)
+{
+    try {
+        $task = Task::findOrFail($taskId);
+        $user = Auth::user();
+
+        // ✅ VALIDASI: Gunakan method helper untuk cek akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data timeline: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
         }
+
+        // Cek apakah user memiliki izin untuk menghapus
+        // SuperAdmin/Administrator/Admin/Manager bisa hapus
+        // Creator juga bisa hapus tugasnya sendiri
+        $userCompany = $user->userCompanies()
+            ->where('company_id', session('active_company_id'))
+            ->with('role')
+            ->first();
+
+        $userRole = $userCompany?->role?->name ?? 'Member';
+        $isCreator = $task->created_by === $user->id;
+
+        if (!in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager']) && !$isCreator) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki izin untuk menghapus tugas ini'
+            ], 403);
+        }
+
+        DB::beginTransaction();
+
+        // Log sebelum menghapus untuk audit trail
+        Log::info('Deleting task', [
+            'task_id' => $task->id,
+            'title' => $task->title,
+            'deleted_by' => $user->id,
+            'deleted_at' => now()
+        ]);
+
+        // Hapus task (akan trigger soft delete karena ada SoftDeletes trait)
+        $task->delete();
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tugas berhasil dihapus'
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error deleting task: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menghapus tugas: ' . $e->getMessage()
+        ], 500);
     }
+}
+
+/**
+ * Permanently delete task (hanya untuk SuperAdmin/Administrator)
+ */
+public function forceDeleteTask($taskId)
+{
+    try {
+        $task = Task::withTrashed()->findOrFail($taskId);
+        $user = Auth::user();
+
+        // Hanya SuperAdmin/Administrator yang bisa permanent delete
+        $userCompany = $user->userCompanies()
+            ->where('company_id', session('active_company_id'))
+            ->with('role')
+            ->first();
+
+        $userRole = $userCompany?->role?->name ?? 'Member';
+
+        if (!in_array($userRole, ['SuperAdmin', 'Administrator'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya SuperAdmin/Administrator yang dapat menghapus permanen'
+            ], 403);
+        }
+
+        DB::beginTransaction();
+
+        // Delete all related data
+        $task->assignments()->delete();
+        $task->checklists()->delete();
+        $task->labels()->detach();
+        
+        // Delete attachments files
+        foreach ($task->attachments as $attachment) {
+            if (Storage::disk('public')->exists($attachment->file_url)) {
+                Storage::disk('public')->delete($attachment->file_url);
+            }
+            $attachment->delete();
+        }
+
+        // Delete comments
+        $task->comments()->delete();
+
+        // Force delete task
+        $task->forceDelete();
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tugas berhasil dihapus permanen'
+        ]);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error force deleting task: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menghapus permanen: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Restore deleted task (hanya untuk SuperAdmin/Administrator/Admin)
+ */
+public function restoreTask($taskId)
+{
+    try {
+        $task = Task::withTrashed()->findOrFail($taskId);
+        $user = Auth::user();
+
+        // Validasi akses workspace
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
+        }
+
+        // Hanya admin yang bisa restore
+        $userCompany = $user->userCompanies()
+            ->where('company_id', session('active_company_id'))
+            ->with('role')
+            ->first();
+
+        $userRole = $userCompany?->role?->name ?? 'Member';
+
+        if (!in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya admin yang dapat mengembalikan tugas'
+            ], 403);
+        }
+
+        $task->restore();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tugas berhasil dikembalikan'
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Error restoring task: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengembalikan tugas: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+
+
+
+
 }

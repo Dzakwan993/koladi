@@ -1837,6 +1837,134 @@
                                 }
                             },
 
+
+
+                            // Di dalam kanbanApp() - tambahkan method ini
+
+// ✅ NEW: Method untuk konfirmasi dan hapus tugas
+async confirmDeleteTask() {
+    if (!this.currentTask || !this.currentTask.id) {
+        this.showNotification('Task tidak ditemukan', 'error');
+        return;
+    }
+
+    // Konfirmasi sebelum hapus
+    if (!confirm(`Apakah Anda yakin ingin menghapus tugas "${this.currentTask.title}"?`)) {
+        return;
+    }
+
+    // Konfirmasi tambahan untuk tugas penting
+    if (this.currentTask.is_secret || this.currentTask.priority === 'high' || this.currentTask.priority === 'urgent') {
+        const confirmed = confirm('⚠️ Tugas ini memiliki prioritas tinggi/rahasia. Anda yakin ingin menghapus?');
+        if (!confirmed) return;
+    }
+
+    await this.deleteTask(this.currentTask.id);
+},
+
+// ✅ NEW: Method untuk hapus tugas via API
+async deleteTask(taskId) {
+    try {
+        console.log('🔄 Deleting task:', taskId);
+
+        const response = await fetch(`/tasks/${taskId}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': this.getCsrfToken(),
+                'Accept': 'application/json'
+            }
+        });
+
+        // ✅ Check response status
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            this.showNotification('Tugas berhasil dihapus', 'success');
+            
+            // ✅ Tutup modal detail
+            this.openTaskDetail = false;
+            
+            // ✅ Hapus dari array tasks lokal
+            const taskIndex = this.tasks.findIndex(t => t.id === taskId);
+            if (taskIndex !== -1) {
+                this.tasks.splice(taskIndex, 1);
+            }
+            
+            // ✅ Refresh kanban board
+            await this.loadKanbanTasks();
+            
+            console.log('✅ Task deleted successfully');
+        } else {
+            throw new Error(data.message || 'Gagal menghapus tugas');
+        }
+    } catch (error) {
+        console.error('❌ Error deleting task:', error);
+        this.showNotification('Gagal menghapus tugas: ' + error.message, 'error');
+    }
+},
+
+// ✅ OPTIONAL: Method untuk force delete (permanen)
+async forceDeleteTask(taskId) {
+    if (!confirm('⚠️ Hapus permanen? Tugas tidak dapat dikembalikan!')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/tasks/${taskId}/force`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': this.getCsrfToken()
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            this.showNotification('Tugas berhasil dihapus permanen', 'success');
+            this.openTaskDetail = false;
+            await this.loadKanbanTasks();
+        } else {
+            alert('Gagal menghapus permanen: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error force deleting task:', error);
+        alert('Terjadi kesalahan saat menghapus permanen');
+    }
+},
+
+// ✅ OPTIONAL: Method untuk restore task
+async restoreTask(taskId) {
+    try {
+        const response = await fetch(`/tasks/${taskId}/restore`, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': this.getCsrfToken()
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            this.showNotification('Tugas berhasil dikembalikan', 'success');
+            await this.loadKanbanTasks();
+        } else {
+            alert('Gagal mengembalikan tugas: ' + data.message);
+        }
+    } catch (error) {
+        console.error('Error restoring task:', error);
+        alert('Terjadi kesalahan saat mengembalikan tugas');
+    }
+},
+
+
+
+                            
+
                             // ✅ NEW: Method untuk menghapus checklist item
                            // Di dalam kanbanApp() - GANTI method removeChecklistItemFromDetail
 async removeChecklistItemFromDetail(index) {
@@ -4729,32 +4857,33 @@ async updateChecklistItemInDetail(item) {
                             },
 
                             // 🔧 PERBAIKI: Method getTasksByPhaseId
-                            getTasksByPhaseId(phaseId) {
-                                if (this.timelineData && this.timelineData.length > 0) {
-                                    const phase = this.timelineData.find(p => p.id === phaseId);
-                                    return phase ? phase.tasks : [];
-                                }
+                            // Di dalam kanbanApp() - UPDATE method ini
+getTasksByPhaseId(phaseId) {
+    // ✅ GUNAKAN DATA DARI BACKEND
+    if (this.timelineData && this.timelineData.length > 0) {
+        const phase = this.timelineData.find(p => p.id === phaseId);
+        return phase ? phase.tasks : [];
+    }
 
-                                // Fallback ke data dummy dengan normalize yang benar
-                                const phaseMap = {
-                                    1: 'Perencanaan',
-                                    2: 'Analisis',
-                                    3: 'Desain',
-                                    4: 'Development',
-                                    5: 'Testing',
-                                    6: 'Deployment'
-                                };
+    // ✅ FALLBACK: Filter dengan normalisasi case-insensitive
+    // Cari phase dengan ID yang cocok
+    const targetPhase = this.getProjectPhases().find(p => p.id === phaseId);
+    if (!targetPhase) return [];
 
-                                const phaseName = phaseMap[phaseId];
-                                return this.tasks.filter(task => {
-                                    if (!task.phase) return false;
+    // Normalisasi nama phase target
+    const normalizedTarget = targetPhase.normalized_name || 
+        targetPhase.name.toLowerCase().trim().replace(/\s+/g, ' ');
 
-                                    // 🔧 PERBAIKI: Gunakan JavaScript string methods, bukan PHP functions
-                                    const taskPhase = task.phase.toLowerCase().trim().replace(/\s+/g, ' ');
-                                    const targetPhase = phaseName.toLowerCase().trim().replace(/\s+/g, ' ');
-                                    return taskPhase === targetPhase;
-                                });
-                            },
+    // Filter tasks dengan normalisasi yang sama
+    return this.tasks.filter(task => {
+        if (!task.phase) return false;
+        
+        // Normalisasi phase name dari task
+        const taskPhaseNormalized = task.phase.toLowerCase().trim().replace(/\s+/g, ' ');
+        
+        return taskPhaseNormalized === normalizedTarget;
+    });
+},
 
                             // Update method showPhaseTasks() untuk menggunakan data real
                             // Di dalam kanbanApp() - tambahkan method ini

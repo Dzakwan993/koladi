@@ -223,6 +223,13 @@ Route::middleware(['auth'])->group(function () {
 
         // Timeline
         Route::get('/workspace/{workspaceId}/timeline', [TaskController::class, 'getTimelineData'])->name('tasks.timeline');
+
+        // Task deletion routes
+    Route::delete('/{taskId}', [TaskController::class, 'deleteTask'])->name('tasks.delete');
+    Route::delete('/{taskId}/force', [TaskController::class, 'forceDeleteTask'])->name('tasks.force-delete');
+    Route::post('/{taskId}/restore', [TaskController::class, 'restoreTask'])->name('tasks.restore');
+
+        
     });
 
     // ========================================
