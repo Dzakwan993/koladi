@@ -1140,80 +1140,76 @@ class TaskController extends Controller
     }
 
     // ✅ NEW: Update checklist item
-    public function updateChecklist(Request $request, $checklistId)
-    {
-        $request->validate([
-            'title' => 'sometimes|string|max:255',
-            'is_done' => 'sometimes|boolean'
-        ]);
+    // Di TaskController.php - PERBAIKI method updateChecklist
+public function updateChecklist(Request $request, $checklistId)
+{
+    $request->validate([
+        'title' => 'sometimes|string|max:255',
+        'is_done' => 'sometimes|boolean'
+    ]);
 
-        try {
-            $checklist = Checklist::findOrFail($checklistId);
-            $task = Task::findOrFail($checklist->task_id);
-            $user = Auth::user();
+    try {
+        $checklist = Checklist::findOrFail($checklistId);
+        $task = Task::findOrFail($checklist->task_id);
+        $user = Auth::user();
 
-            // Validasi akses user ke workspace task
-            $userWorkspace = UserWorkspace::where('user_id', $user->id)
-                ->where('workspace_id', $task->workspace_id)
-                ->first();
-
-            if (!$userWorkspace) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke task ini'
-                ], 403);
-            }
-
-            $checklist->update($request->only(['title', 'is_done']));
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Checklist berhasil diupdate',
-                'checklist' => $checklist
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error updating checklist: ' . $e->getMessage());
+        // ✅ PERBAIKI: Gunakan method helper untuk cek akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengupdate checklist: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
         }
+
+        // ✅ UPDATE CHECKLIST
+        $checklist->update($request->only(['title', 'is_done']));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Checklist berhasil diupdate',
+            'checklist' => $checklist
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error updating checklist: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengupdate checklist: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     // ✅ NEW: Delete checklist item
-    public function deleteChecklist($checklistId)
-    {
-        try {
-            $checklist = Checklist::findOrFail($checklistId);
-            $task = Task::findOrFail($checklist->task_id);
-            $user = Auth::user();
+    // Di TaskController.php - PERBAIKI method deleteChecklist
+public function deleteChecklist($checklistId)
+{
+    try {
+        $checklist = Checklist::findOrFail($checklistId);
+        $task = Task::findOrFail($checklist->task_id);
+        $user = Auth::user();
 
-            // Validasi akses user ke workspace task
-            $userWorkspace = UserWorkspace::where('user_id', $user->id)
-                ->where('workspace_id', $task->workspace_id)
-                ->first();
-
-            if (!$userWorkspace) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke task ini'
-                ], 403);
-            }
-
-            $checklist->delete();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Checklist berhasil dihapus'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error deleting checklist: ' . $e->getMessage());
+        // ✅ PERBAIKI: Gunakan method helper untuk cek akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menghapus checklist: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
         }
+
+        // ✅ DELETE CHECKLIST
+        $checklist->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Checklist berhasil dihapus'
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error deleting checklist: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menghapus checklist: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     // ✅ NEW: Update checklist positions
     public function updateChecklistPositions(Request $request)
