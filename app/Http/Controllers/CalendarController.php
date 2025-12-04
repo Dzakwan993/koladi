@@ -734,6 +734,7 @@ class CalendarController extends Controller
             $members = $activeUsers;
         }
 
+        // ✅ PASTIKAN INI ADA - MAPPING AVATAR
         $members = $members->map(function ($member) {
             $member->avatar_url = $this->getAvatarUrl($member);
             return $member;
@@ -745,7 +746,7 @@ class CalendarController extends Controller
             'pageTitle' => 'Buat Jadwal',
             'workspaceId' => $workspaceId,
             'workspace' => $workspace,
-            'members' => $members
+            'members' => $members // ✅ PASTIKAN $members SUDAH DI-MAP
         ]);
     }
 

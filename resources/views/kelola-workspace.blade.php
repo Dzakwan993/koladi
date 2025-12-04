@@ -361,7 +361,7 @@
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 12v.01M12 12v.01M19 12v.01
-                                                    M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                                                M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                                     </svg>
                                 </button>
                             </div>
@@ -373,10 +373,30 @@
                             <div class="mt-4">
                                 <div class="flex -space-x-2">
                                     @foreach ($workspace->userWorkspaces->take(4) as $userWorkspace)
-                                        <img src="https://i.pravatar.cc/32?img={{ $loop->index + 1 }}"
-                                            class="w-8 h-8 rounded-full border-2 border-white"
-                                            title="{{ $userWorkspace->user->full_name }}">
+                                        @php
+                                            // ✅ TAMBAHKAN LOGIC AVATAR INI
+                                            $member = $userWorkspace->user;
+                                            if (
+                                                $member->avatar &&
+                                                Str::startsWith($member->avatar, ['http://', 'https://'])
+                                            ) {
+                                                $memberAvatar = $member->avatar;
+                                            } elseif ($member->avatar) {
+                                                $memberAvatar = asset('storage/' . $member->avatar);
+                                            } else {
+                                                $memberAvatar =
+                                                    'https://ui-avatars.com/api/?name=' .
+                                                    urlencode($member->full_name ?? 'User') .
+                                                    '&background=4F46E5&color=fff&bold=true';
+                                            }
+                                        @endphp
+
+                                        {{-- ✅ GANTI IMG TAG INI --}}
+                                        <img src="{{ $memberAvatar }}" alt="{{ $member->full_name }}"
+                                            class="w-8 h-8 rounded-full border-2 border-white object-cover"
+                                            title="{{ $member->full_name }}">
                                     @endforeach
+
                                     @if ($workspace->userWorkspaces->count() > 4)
                                         <div
                                             class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center">
@@ -456,7 +476,7 @@
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 12v.01M12 12v.01M19 12v.01
-                                                    M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                                                M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                                     </svg>
                                 </button>
                             </div>
@@ -468,10 +488,30 @@
                             <div class="mt-4">
                                 <div class="flex -space-x-2">
                                     @foreach ($workspace->userWorkspaces->take(4) as $userWorkspace)
-                                        <img src="https://i.pravatar.cc/32?img={{ $loop->index + 1 }}"
-                                            class="w-8 h-8 rounded-full border-2 border-white"
-                                            title="{{ $userWorkspace->user->full_name }}">
+                                        @php
+                                            // ✅ TAMBAHKAN LOGIC AVATAR INI
+                                            $member = $userWorkspace->user;
+                                            if (
+                                                $member->avatar &&
+                                                Str::startsWith($member->avatar, ['http://', 'https://'])
+                                            ) {
+                                                $memberAvatar = $member->avatar;
+                                            } elseif ($member->avatar) {
+                                                $memberAvatar = asset('storage/' . $member->avatar);
+                                            } else {
+                                                $memberAvatar =
+                                                    'https://ui-avatars.com/api/?name=' .
+                                                    urlencode($member->full_name ?? 'User') .
+                                                    '&background=4F46E5&color=fff&bold=true';
+                                            }
+                                        @endphp
+
+                                        {{-- ✅ GANTI IMG TAG INI --}}
+                                        <img src="{{ $memberAvatar }}" alt="{{ $member->full_name }}"
+                                            class="w-8 h-8 rounded-full border-2 border-white object-cover"
+                                            title="{{ $member->full_name }}">
                                     @endforeach
+
                                     @if ($workspace->userWorkspaces->count() > 4)
                                         <div
                                             class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center">
@@ -820,46 +860,48 @@
                 },
 
                 async deleteWorkspace(workspaceId) {
-            try {
-                // ✅ CEK PERMISSION SEBELUM MENGHAPUS
-                if (!this.canEditDeleteWorkspace) {
-                    alert('Anda tidak memiliki izin untuk menghapus workspace. Hanya SuperAdmin, Admin, dan Manager yang dapat menghapus workspace.');
-                    this.showWorkspaceMenu = false;
-                    return;
-                }
+                    try {
+                        // ✅ CEK PERMISSION SEBELUM MENGHAPUS
+                        if (!this.canEditDeleteWorkspace) {
+                            alert(
+                                'Anda tidak memiliki izin untuk menghapus workspace. Hanya SuperAdmin, Admin, dan Manager yang dapat menghapus workspace.'
+                            );
+                            this.showWorkspaceMenu = false;
+                            return;
+                        }
 
-                if (!confirm('Apakah Anda yakin ingin menghapus workspace ini?')) {
-                    return;
-                }
+                        if (!confirm('Apakah Anda yakin ingin menghapus workspace ini?')) {
+                            return;
+                        }
 
-                const csrfToken = this.getCsrfToken();
+                        const csrfToken = this.getCsrfToken();
 
-                const response = await fetch(`/workspace/${workspaceId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest'
+                        const response = await fetch(`/workspace/${workspaceId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            this.showWorkspaceMenu = false;
+                            location.reload();
+                        } else {
+                            // ✅ TAMPILKAN ERROR MESSAGE YANG DETAIL
+                            if (response.status === 403) {
+                                alert('Akses Ditolak: ' + result.message);
+                            } else {
+                                alert('Gagal menghapus workspace: ' + result.message);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Terjadi kesalahan saat menghapus workspace');
                     }
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    this.showWorkspaceMenu = false;
-                    location.reload();
-                } else {
-                    // ✅ TAMPILKAN ERROR MESSAGE YANG DETAIL
-                    if (response.status === 403) {
-                        alert('Akses Ditolak: ' + result.message);
-                    } else {
-                        alert('Gagal menghapus workspace: ' + result.message);
-                    }
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Terjadi kesalahan saat menghapus workspace');
-            }
-        },
+                },
                 // Methods untuk members
                 async loadAvailableMembers() {
                     try {
@@ -976,28 +1018,30 @@
 
                 // Helper methods
                 async openEditWorkspace(workspace) {
-            try {
-                // ✅ CEK PERMISSION SEBELUM MEMBUKA MODAL EDIT
-                if (!this.canEditDeleteWorkspace) {
-                    alert('Anda tidak memiliki izin untuk mengedit workspace. Hanya SuperAdmin, Admin, dan Manager yang dapat mengedit workspace.');
-                    this.showWorkspaceMenu = false;
-                    return;
-                }
+                    try {
+                        // ✅ CEK PERMISSION SEBELUM MEMBUKA MODAL EDIT
+                        if (!this.canEditDeleteWorkspace) {
+                            alert(
+                                'Anda tidak memiliki izin untuk mengedit workspace. Hanya SuperAdmin, Admin, dan Manager yang dapat mengedit workspace.'
+                            );
+                            this.showWorkspaceMenu = false;
+                            return;
+                        }
 
-                this.editWorkspaceData = {
-                    id: workspace.id,
-                    name: workspace.name,
-                    description: workspace.description || '',
-                    type: workspace.type
-                };
-                this.showEditWorkspaceModal = true;
-                this.showWorkspaceMenu = false;
-            } catch (error) {
-                console.error('Error opening edit workspace:', error);
-                alert('Terjadi kesalahan saat membuka form edit');
-                this.showWorkspaceMenu = false;
-            }
-        },
+                        this.editWorkspaceData = {
+                            id: workspace.id,
+                            name: workspace.name,
+                            description: workspace.description || '',
+                            type: workspace.type
+                        };
+                        this.showEditWorkspaceModal = true;
+                        this.showWorkspaceMenu = false;
+                    } catch (error) {
+                        console.error('Error opening edit workspace:', error);
+                        alert('Terjadi kesalahan saat membuka form edit');
+                        this.showWorkspaceMenu = false;
+                    }
+                },
 
                 async openManageMembers(workspace) {
                     this.activeWorkspace = workspace;
@@ -1036,37 +1080,37 @@
                 },
 
                 async saveWorkspaceChanges() {
-            try {
-                const csrfToken = this.getCsrfToken();
+                    try {
+                        const csrfToken = this.getCsrfToken();
 
-                const response = await fetch(`/workspace/${this.editWorkspaceData.id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify(this.editWorkspaceData)
-                });
+                        const response = await fetch(`/workspace/${this.editWorkspaceData.id}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify(this.editWorkspaceData)
+                        });
 
-                const result = await response.json();
+                        const result = await response.json();
 
-                if (result.success) {
-                    this.showEditWorkspaceModal = false;
-                    location.reload();
-                } else {
-                    // ✅ TAMPILKAN ERROR MESSAGE YANG DETAIL
-                    if (response.status === 403) {
-                        alert('Akses Ditolak: ' + result.message);
-                    } else {
-                        alert('Gagal mengupdate workspace: ' + result.message);
+                        if (result.success) {
+                            this.showEditWorkspaceModal = false;
+                            location.reload();
+                        } else {
+                            // ✅ TAMPILKAN ERROR MESSAGE YANG DETAIL
+                            if (response.status === 403) {
+                                alert('Akses Ditolak: ' + result.message);
+                            } else {
+                                alert('Gagal mengupdate workspace: ' + result.message);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Terjadi kesalahan saat mengupdate workspace');
                     }
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Terjadi kesalahan saat mengupdate workspace');
-            }
-        },
+                },
 
 
                 applyMembers() {
@@ -1123,5 +1167,29 @@
                 }
             }));
         });
+    </script>
+
+    @php
+        // ✅ DEFINISIKAN AVAILABLE ROLES UNTUK WORKSPACE (Manager & Member saja)
+        $workspaceRoles = \App\Models\Role::whereIn('id', [
+            'a688ef38-3030-45cb-9a4d-0407605bc322', // Manager
+            'ed81bd39-9041-43b8-a504-bf743b5c2919', // Member
+        ])->get(['id', 'name']);
+
+        // ✅ Fallback manual jika query gagal
+        if ($workspaceRoles->count() === 0) {
+            $workspaceRoles = collect([
+                (object) ['id' => 'a688ef38-3030-45cb-9a4d-0407605bc322', 'name' => 'Manager'],
+                (object) ['id' => 'ed81bd39-9041-43b8-a504-bf743b5c2919', 'name' => 'Member'],
+            ]);
+        }
+    @endphp
+
+    <script>
+        // ✅ SET GLOBAL VARIABLE UNTUK WORKSPACE ROLES
+        window.availableRolesForWorkspace = @json($workspaceRoles);
+
+        console.log('✅ Available roles for workspace:', window.availableRolesForWorkspace);
+        console.table(window.availableRolesForWorkspace);
     </script>
 @endsection

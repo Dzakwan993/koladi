@@ -7,10 +7,11 @@
     @include('components.sweet-alert')
     <!-- Tambahkan font Inter -->
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-
     <div class="bg-[#e9effd] min-h-screen font-[Inter,sans-serif] text-black relative">
-        @include('components.workspace-nav')
+        @include('components.workspace-nav', [
+            'workspace' => $workspace,
+            'active' => 'pengumuman',
+        ])
 
         <div class="max-w-5xl mx-auto py-8 px-4">
             <!-- Tombol Buat Pengumuman -->
@@ -137,7 +138,8 @@
             <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-3xl">
                 <h2 class="text-xl font-bold mb-4 text-[#102a63] border-b pb-2">Buat Pengumuman</h2>
 
-                <form action="{{ route('pengumuman.store', ['workspace' => $workspace->id]) }}" method="POST" class="space-y-5" id="pengumumanForm">
+                <form action="{{ route('pengumuman.store', ['workspace' => $workspace->id]) }}" method="POST"
+                    class="space-y-5" id="pengumumanForm">
                     @csrf
                     <!-- Judul -->
                     <div>
@@ -704,8 +706,7 @@
                                 <!-- Avatar list -->
                                 <div class="flex -space-x-2" id="selectedMembersAvatars">
                                     <template x-for="member in selectedMembers" :key="member.id">
-                                        <div
-                                            class="w-10 h-10 rounded-full border-2 border-white shadow-sm overflow-hidden">
+                                        <div class="w-10 h-10 rounded-full border-2 border-white shadow-sm overflow-hidden">
                                             <img :src="member.avatar" :alt="member.name" :title="member.name"
                                                 class="w-full h-full object-cover">
                                         </div>
@@ -893,129 +894,133 @@
         });
     </script>
 
-<script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('pengumumanMembers', () => ({
-            showManageMembersModal: false,
-            members: [],
-            tempSelectedMembers: [], // 🔹 Temp untuk centang sementara di modal
-            selectedMembers: [], // 🔹 Member yang sudah di-Terapkan
-            search: '',
-            isLoading: false,
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('pengumumanMembers', () => ({
+                showManageMembersModal: false,
+                members: [],
+                tempSelectedMembers: [], // 🔹 Temp untuk centang sementara di modal
+                selectedMembers: [], // 🔹 Member yang sudah di-Terapkan
+                search: '',
+                isLoading: false,
 
-            async init() {
-                console.log('🎯 Alpine members component initialized - CREATE');
-                await this.loadMembers();
+                async init() {
+                    console.log('🎯 Alpine members component initialized - CREATE');
+                    await this.loadMembers();
 
-                // 🔹 Tambahkan pembuat pengumuman otomatis
-                if (window.currentUser) {
-                    const creator = this.members.find(m => m.id === window.currentUser.id);
-                    if (creator && !this.isSelected(creator.id)) {
-                        this.selectedMembers.push(creator);
-                        this.tempSelectedMembers.push(creator);
-                        console.log('✅ Creator added:', creator.name);
+                    // 🔹 Tambahkan pembuat pengumuman otomatis
+                    if (window.currentUser) {
+                        const creator = this.members.find(m => m.id === window.currentUser.id);
+                        if (creator && !this.isSelected(creator.id)) {
+                            this.selectedMembers.push(creator);
+                            this.tempSelectedMembers.push(creator);
+                            console.log('✅ Creator added:', creator.name);
+                        }
                     }
-                }
-            },
+                },
 
-            async loadMembers() {
-                this.isLoading = true;
-                try {
-                    // ✅ DAPATKAN WORKSPACE ID DARI URL
-                    const workspaceId = window.location.pathname.split('/')[2];
-                    console.log('🏢 Workspace ID untuk create:', workspaceId);
+                async loadMembers() {
+                    this.isLoading = true;
+                    try {
+                        // ✅ DAPATKAN WORKSPACE ID DARI URL
+                        const workspaceId = window.location.pathname.split('/')[2];
+                        console.log('🏢 Workspace ID untuk create:', workspaceId);
 
-                    if (!workspaceId) {
-                        console.error('Workspace ID tidak ditemukan');
+                        if (!workspaceId) {
+                            console.error('Workspace ID tidak ditemukan');
+                            this.members = [];
+                            return;
+                        }
+
+                        // PERBAIKAN: Gunakan URL yang benar dengan workspace prefix
+                        const res = await fetch(
+                            `/workspace/${workspaceId}/pengumuman/anggota/${workspaceId}`);
+
+                        console.log('📡 Fetch URL:',
+                            `/workspace/${workspaceId}/pengumuman/anggota/${workspaceId}`);
+
+                        if (!res.ok) {
+                            throw new Error(
+                                `Gagal mengambil data anggota: ${res.status} ${res.statusText}`);
+                        }
+
+                        const data = await res.json();
+                        console.log('✅ Data anggota berhasil di-load:', data);
+
+                        this.members = Array.isArray(data) ? data : [];
+                        console.log('📊 Jumlah anggota create:', this.members.length);
+
+                    } catch (err) {
+                        console.error('❌ Gagal memuat anggota:', err);
                         this.members = [];
+                        // Tampilkan pesan error ke user
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Memuat Anggota',
+                            text: 'Tidak dapat mengambil data anggota workspace. Silakan refresh halaman.',
+                            timer: 3000
+                        });
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                toggleMember(member) {
+                    // ❗ Pembuat pengumuman tidak boleh dihapus
+                    if (window.currentUser && member.id === window.currentUser.id) {
                         return;
                     }
 
-                    // PERBAIKAN: Gunakan URL yang benar dengan workspace prefix
-                    const res = await fetch(`/workspace/${workspaceId}/pengumuman/anggota/${workspaceId}`);
-
-                    console.log('📡 Fetch URL:', `/workspace/${workspaceId}/pengumuman/anggota/${workspaceId}`);
-
-                    if (!res.ok) {
-                        throw new Error(`Gagal mengambil data anggota: ${res.status} ${res.statusText}`);
+                    const idx = this.tempSelectedMembers.findIndex(m => m.id === member.id);
+                    if (idx === -1) {
+                        this.tempSelectedMembers.push(member);
+                    } else {
+                        this.tempSelectedMembers.splice(idx, 1);
                     }
 
-                    const data = await res.json();
-                    console.log('✅ Data anggota berhasil di-load:', data);
+                    console.log('Anggota dipilih:', this.tempSelectedMembers.map(m => m.name));
+                },
 
-                    this.members = Array.isArray(data) ? data : [];
-                    console.log('📊 Jumlah anggota create:', this.members.length);
+                isSelected(id) {
+                    return this.tempSelectedMembers.some(m => m.id === id);
+                },
 
-                } catch (err) {
-                    console.error('❌ Gagal memuat anggota:', err);
-                    this.members = [];
-                    // Tampilkan pesan error ke user
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal Memuat Anggota',
-                        text: 'Tidak dapat mengambil data anggota workspace. Silakan refresh halaman.',
-                        timer: 3000
-                    });
-                } finally {
-                    this.isLoading = false;
+                get filteredMembers() {
+                    if (!this.search) return this.members;
+                    const term = this.search.toLowerCase();
+                    return this.members.filter(m =>
+                        m.name?.toLowerCase().includes(term) ||
+                        m.email?.toLowerCase().includes(term)
+                    );
+                },
+
+                applyMembers() {
+                    // 🔹 Terapkan pilihan dari temp ke selected
+                    this.selectedMembers = [...this.tempSelectedMembers];
+                    console.log('Anggota diterapkan:', this.selectedMembers.map(m => m.name));
+                    this.closeModal();
+                },
+
+                openMemberModal() {
+                    // 🔹 Saat buka modal, isi temp dengan yang sudah ada (biar centang tetap)
+                    this.tempSelectedMembers = [...this.selectedMembers];
+                    this.showManageMembersModal = true;
+                    this.search = ''; // Reset pencarian
+
+                    console.log('Modal dibuka, anggota sementara:', this.tempSelectedMembers.map(m => m
+                        .name));
+                },
+
+                closeModal() {
+                    this.showManageMembersModal = false;
+                    this.search = '';
                 }
-            },
+            }));
+        });
 
-            toggleMember(member) {
-                // ❗ Pembuat pengumuman tidak boleh dihapus
-                if (window.currentUser && member.id === window.currentUser.id) {
-                    return;
-                }
-
-                const idx = this.tempSelectedMembers.findIndex(m => m.id === member.id);
-                if (idx === -1) {
-                    this.tempSelectedMembers.push(member);
-                } else {
-                    this.tempSelectedMembers.splice(idx, 1);
-                }
-
-                console.log('Anggota dipilih:', this.tempSelectedMembers.map(m => m.name));
-            },
-
-            isSelected(id) {
-                return this.tempSelectedMembers.some(m => m.id === id);
-            },
-
-            get filteredMembers() {
-                if (!this.search) return this.members;
-                const term = this.search.toLowerCase();
-                return this.members.filter(m =>
-                    m.name?.toLowerCase().includes(term) ||
-                    m.email?.toLowerCase().includes(term)
-                );
-            },
-
-            applyMembers() {
-                // 🔹 Terapkan pilihan dari temp ke selected
-                this.selectedMembers = [...this.tempSelectedMembers];
-                console.log('Anggota diterapkan:', this.selectedMembers.map(m => m.name));
-                this.closeModal();
-            },
-
-            openMemberModal() {
-                // 🔹 Saat buka modal, isi temp dengan yang sudah ada (biar centang tetap)
-                this.tempSelectedMembers = [...this.selectedMembers];
-                this.showManageMembersModal = true;
-                this.search = ''; // Reset pencarian
-
-                console.log('Modal dibuka, anggota sementara:', this.tempSelectedMembers.map(m => m.name));
-            },
-
-            closeModal() {
-                this.showManageMembersModal = false;
-                this.search = '';
-            }
-        }));
-    });
-
-    // Inisialisasi currentUser global
-    window.currentUser = @json(auth()->user());
-    console.log('👤 Current user:', window.currentUser);
-</script>
+        // Inisialisasi currentUser global
+        window.currentUser = @json(auth()->user());
+        console.log('👤 Current user:', window.currentUser);
+    </script>
 
 @endsection

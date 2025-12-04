@@ -92,16 +92,28 @@
                 </div>
             @endif
 
-            {{-- Card Pengumuman --}}
-            <a href="{{ route('workspace.pengumuman', $workspace->id) }}"
-                @click="$store.workspace.selectedMenu = 'pengumuman'"
-                class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
-                <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
-                    <img src="{{ asset('images/icons/workspace_pengumuman.svg') }}" alt="Pengumuman Icon"
-                        class="w-full h-full">
+            {{-- Card Pengumuman - ✅ BENAR --}}
+            @if ($currentWorkspace)
+                <a href="{{ route('workspace.pengumuman', ['workspace' => $currentWorkspace->id]) }}"
+                    @click="$store.workspace.selectedMenu = 'pengumuman'"
+                    class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
+                    <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
+                        <img src="{{ asset('images/icons/workspace_pengumuman.svg') }}" alt="Pengumuman Icon"
+                            class="w-full h-full">
+                    </div>
+                    <span class="text-gray-700 font-medium">Pengumuman</span>
+                </a>
+            @else
+                <div
+                    class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center opacity-50 cursor-not-allowed">
+                    <div class="w-16 h-16 mb-4 text-gray-400">
+                        <img src="{{ asset('images/icons/workspace_pengumuman.svg') }}" alt="Pengumuman Icon"
+                            class="w-full h-full">
+                    </div>
+                    <span class="text-gray-700 font-medium">Pengumuman</span>
+                    <p class="text-xs text-gray-500 mt-2 text-center">Pilih workspace terlebih dahulu</p>
                 </div>
-                <span class="text-gray-700 font-medium">Pengumuman</span>
-            </a>
+            @endif
 
             {{-- Card Jadwal --}}
             @if ($currentWorkspace)

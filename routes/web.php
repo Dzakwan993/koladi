@@ -168,7 +168,13 @@ Route::middleware(['auth'])->group(function () {
             return view('workspace', ['workspace' => $workspace]);
         })->name('workspace');
 
-        Route::get('/workspace/{workspace}', [WorkspaceController::class, 'show'])->name('workspace.detail');
+        Route::get('/workspace/{workspace}', [WorkspaceController::class, 'show'])
+            ->name('workspace.show');
+
+        // ✅ Alias untuk backward compatibility (jika diperlukan)
+        Route::redirect('/workspace-detail/{workspace}', '/workspace/{workspace}')
+            ->name('workspace.detail');
+
 
         // ========================================
         // 🔥 CHAT ROUTES
@@ -396,6 +402,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/update-user-roles', [UserController::class, 'updateUserRoles'])->name('user.updateRoles');
         Route::post('/workspace/{workspaceId}/update-user-roles', [WorkspaceController::class, 'updateUserRoles'])->name('workspace.updateUserRoles');
         Route::get('/workspace/{workspaceId}/user-role', [UserController::class, 'getWorkspaceUserRole']);
+        // ✅ TAMBAHKAN ROUTE INI
+        Route::get('/workspace/available-roles', [WorkspaceController::class, 'getAvailableRolesForWorkspace'])
+            ->middleware('auth')
+            ->name('workspace.available-roles');
 
         // ========================================
         // 🔥 EVENTS API
@@ -417,5 +427,4 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/mindmap/nodes/{node}', [MindmapController::class, 'updateNode'])->name('mindmap.nodes.update');
         Route::delete('/mindmap/nodes/{node}', [MindmapController::class, 'deleteNode'])->name('mindmap.nodes.delete');
     });
-
 });

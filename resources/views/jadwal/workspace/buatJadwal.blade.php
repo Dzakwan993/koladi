@@ -14,7 +14,7 @@
 
                 <!-- Header dengan Tombol Kembali -->
                 <div class="flex items-center justify-between border-b-2 border-black pb-3">
-                    <h2 class="text-lg md:text-xl font-inter font-bold text-[#102a63]">Buat Jadwal</h2>
+                    <h2 class="text-lg md:text-xl font-inter font-bold text-[#102a63]">Buat Jadwal Workspace</h2>
                     <a href="{{ route('jadwal', ['workspaceId' => $workspaceId]) }}"
                         class="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition text-sm md:text-base">
                     </a>
@@ -157,10 +157,8 @@
                         <div class="flex items-center gap-2 flex-wrap">
                             <template x-for="participant in displayedParticipants" :key="participant.id">
                                 <div class="relative">
-                                    <img :src="participant.avatar_url ||
-                                        'https://ui-avatars.com/api/?name=' + encodeURIComponent(participant.full_name) + ' &
-                                        background = 3 B82F6 & color = fff & bold = true & size = 128 '"
-                                        :alt="participant.full_name"
+                                    <img :src="participant.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(participant.full_name) + '&background=3B82F6&color=fff&bold=true&size=128'"
+    :alt="participant.full_name"
                                         class="rounded-full border-2 border-gray-200 w-10 h-10 object-cover"
                                         :title="participant.full_name" />
                                 </div>
@@ -198,10 +196,8 @@
                                     <template x-for="member in filteredMembers" :key="member.id">
                                         <div class="flex items-center justify-between py-1">
                                             <div class="flex items-center gap-2">
-                                                <img :src="member.avatar_url ||
-                                                    'https://ui-avatars.com/api/?name=' + encodeURIComponent(member.full_name) + ' &
-                                                    background = 3 B82F6 & color = fff & bold = true & size = 128 '"
-                                                    class="w-8 h-8 rounded-full object-cover border border-gray-200"
+                                                <img :src="member.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(member.full_name) + '&background=3B82F6&color=fff&bold=true&size=128'"
+    class="w-8 h-8 rounded-full object-cover border border-gray-200"
                                                     :alt="member.full_name" />
                                                 <span class="text-sm" x-text="member.full_name"></span>
                                             </div>

@@ -128,13 +128,26 @@
                                 }
 
                                 $isUnchangeableRole = !$canChangeThisRole;
+
+                                // ✅ AMBIL AVATAR SEPERTI DI HALAMAN MEMBER
+                                if ($user->avatar && Str::startsWith($user->avatar, ['http://', 'https://'])) {
+                                    $avatarUrl = $user->avatar;
+                                } elseif ($user->avatar) {
+                                    $avatarUrl = asset('storage/' . $user->avatar);
+                                } else {
+                                    $avatarUrl =
+                                        'https://ui-avatars.com/api/?name=' .
+                                        urlencode($user->full_name ?? 'User') .
+                                        '&background=4F46E5&color=fff&bold=true';
+                                }
                             @endphp
 
                             <div
                                 class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 shadow-sm">
                                 <div class="flex items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
-                                    <img src="https://ui-avatars.com/api/?name={{ urlencode($user->full_name) }}&background=random"
-                                        alt="Avatar" class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex-shrink-0">
+                                    {{-- ✅ GUNAKAN AVATAR URL DARI PHP --}}
+                                    <img src="{{ $avatarUrl }}" alt="{{ $user->full_name }}"
+                                        class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex-shrink-0 object-cover ring-2 ring-gray-200">
 
                                     <div
                                         class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 min-w-0 flex-1">
@@ -212,7 +225,6 @@
         @endif
     </div>
 </div>
-
 
 <!-- SCRIPT -->
 <script>
@@ -300,14 +312,26 @@
                     const isUnchangeableRole = ['SuperAdmin', 'Administrator', 'AdminSistem'].includes(
                         roleName);
 
+                    // ✅ GANTI BAGIAN AVATAR INI:
+                    let avatarUrl = m.avatar;
+                    if (!avatarUrl || (!avatarUrl.startsWith('http://') && !avatarUrl.startsWith(
+                            'https://'))) {
+                        if (avatarUrl && avatarUrl.length > 0) {
+                            avatarUrl = `/storage/${avatarUrl}`;
+                        } else {
+                            avatarUrl =
+                                `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=4F46E5&color=fff&bold=true`;
+                        }
+                    }
+
                     const item = document.createElement('div');
                     item.className =
                         'bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 shadow-sm';
 
                     item.innerHTML = `
                     <div class="flex items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
-                        <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=random"
-                             class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex-shrink-0">
+                        <img src="${avatarUrl}" alt="${m.name}"
+                             class="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex-shrink-0 object-cover ring-2 ring-gray-200">
                         <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 min-w-0 flex-1">
                             <span class="font-semibold text-base sm:text-lg text-[#0F172A] truncate">${m.name}</span>
                             <span class="text-white text-xs font-semibold px-2 sm:px-3 py-0.5 rounded-bl-2xl rounded-tr-2xl whitespace-nowrap"
