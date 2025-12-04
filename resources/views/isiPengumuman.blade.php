@@ -252,14 +252,14 @@
                         <hr class="border-gray-200 my-6">
                         <div class="flex items-center gap-2 text-sm text-gray-600">
                             <!-- <span>Pengumuman ini diterima oleh 3 anggota</span>
-                                                                                                                                        <div class="flex -space-x-2">
-                                                                                                                                            <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
-                                                                                                                                                class="rounded-full w-8 h-8 border-2 border-white">
-                                                                                                                                            <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
-                                                                                                                                                class="rounded-full w-8 h-8 border-2 border-white">
-                                                                                                                                            <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
-                                                                                                                                                class="rounded-full w-8 h-8 border-2 border-white">
-                                                                                                                                        </div> -->
+                                                                                                                                            <div class="flex -space-x-2">
+                                                                                                                                                <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
+                                                                                                                                                    class="rounded-full w-8 h-8 border-2 border-white">
+                                                                                                                                                <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
+                                                                                                                                                    class="rounded-full w-8 h-8 border-2 border-white">
+                                                                                                                                                <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
+                                                                                                                                                    class="rounded-full w-8 h-8 border-2 border-white">
+                                                                                                                                            </div> -->
                         </div>
 
                     </div>

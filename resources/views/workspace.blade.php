@@ -65,8 +65,8 @@
         }
     @endphp
 
-    {{-- 🎨 UPDATED: Background gradient yang lebih soft --}}
-    <div x-data x-init="$store.workspace = { selectedMenu: '' }" class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
+    {{-- Background biru seperti semula --}}
+    <div x-data x-init="$store.workspace = { selectedMenu: '' }" class="bg-[#f3f6fc] min-h-screen">
         {{-- Workspace Nav --}}
         @include('components.workspace-nav', ['workspace' => $workspace, 'active' => ''])
 

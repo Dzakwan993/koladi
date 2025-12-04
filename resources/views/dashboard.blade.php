@@ -151,7 +151,7 @@
                     <div class="xl:col-span-3 flex flex-col order-1 xl:order-2">
                         {{-- Header Jadwal --}}
                         <div class="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
                                 <i class="fas fa-calendar-alt text-white text-base sm:text-lg" aria-hidden="true"></i>
                             </div>
                             <div>

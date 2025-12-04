@@ -68,7 +68,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 <a href="{{ route('pengumuman-perusahaan.index', ['company_id' => $company_id]) }}"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
    {{ Request::is('companies/*/pengumuman-perusahaan*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                    <img src="{{ asset('images/icons/workspace_pengumuman.svg') }}" class="w-5 h-5">
+                    <img src="{{ Request::is('companies/*/pengumuman-perusahaan*') ? asset('images/icons/workspace_pengumuman1.svg') : asset('images/icons/workspace_pengumuman.svg') }}" class="w-5 h-5">
                     <span class="text-sm">Pengumuman</span>
                 </a>
             @endif
