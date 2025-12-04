@@ -8,6 +8,12 @@
         'notulensi' => 'Notulensi',
         'detail-jadwal' => 'Detail Jadwal',
     ];
+
+    // ✅ TAMBAHAN: Sub-halaman untuk Pengumuman
+    $pengumumanSubPages = [
+        'buat-pengumuman' => 'Buat Pengumuman',
+        'detail-pengumuman' => 'Detail Pengumuman',
+    ];
 @endphp
 
 <div class="flex flex-wrap items-center justify-between px-4 sm:px-6 md:px-8 py-3 md:py-4 border-b bg-white gap-3">
@@ -39,6 +45,16 @@
                 @if (isset($jadwalSubPage) && isset($jadwalSubPages[$jadwalSubPage]))
                     <span class="text-gray-400">›</span>
                     <span class="text-gray-800 font-semibold">{{ $jadwalSubPages[$jadwalSubPage] }}</span>
+                @endif
+
+            {{-- ✅ TAMBAHAN: Cek apakah ini halaman Pengumuman dengan sub-menu --}}
+            @elseif ($active == 'pengumuman')
+                <a href="{{ route('workspace.pengumuman', ['workspace' => $currentWorkspaceId]) }}"
+                    class="text-gray-800 font-semibold hover:text-blue-600">Pengumuman</a>
+
+                @if (isset($pengumumanSubPage) && isset($pengumumanSubPages[$pengumumanSubPage]))
+                    <span class="text-gray-400">›</span>
+                    <span class="text-gray-800 font-semibold">{{ $pengumumanSubPages[$pengumumanSubPage] }}</span>
                 @endif
             @else
                 <span class="text-gray-800 font-semibold capitalize">{{ $active }}</span>
@@ -81,7 +97,7 @@
         <a href="{{ $currentWorkspaceId ? route('workspace.pengumuman', ['workspace' => $currentWorkspaceId]) : '#' }}"
             class="flex items-center gap-2 {{ $active == 'pengumuman' ? 'active text-blue-600 font-semibold border-b-2 border-blue-600 pb-1' : 'text-gray-600 hover:text-blue-600' }} {{ !$currentWorkspaceId ? 'opacity-50 cursor-not-allowed' : '' }}">
             <img src="{{ asset('images/icons/' . ($active == 'pengumuman' ? 'workspace_pengumuman1.svg' : 'workspace_pengumuman.svg')) }}"
-    alt="Pengumuman Icon" class="nav-icon w-4 h-4 sm:w-5 sm:h-5">
+                alt="Pengumuman Icon" class="nav-icon w-4 h-4 sm:w-5 sm:h-5">
             <span class="nav-text">Pengumuman</span>
         </a>
     </div>

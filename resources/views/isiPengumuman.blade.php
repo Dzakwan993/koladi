@@ -7,16 +7,17 @@
     @php
         \Carbon\Carbon::setLocale('id');
     @endphp
-
     <!-- Font Inter -->
     <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/41.3.1/classic/styles.css">
-
     <!-- Alpine.js & CKEditor -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
-
     <div class="bg-[#e9effd] min-h-screen font-[Inter,sans-serif] text-black relative" x-data="commentSection">
-        @include('components.workspace-nav')
+        @include('components.workspace-nav', [
+            'workspace' => $workspace,
+            'active' => 'pengumuman',
+            'pengumumanSubPage' => 'detail-pengumuman', // ✅ TAMBAHKAN INI
+        ])
 
         <div class="max-w-4xl mx-auto px-4 py-6">
             <div class="bg-white rounded-xl shadow-md p-6">
@@ -251,14 +252,14 @@
                         <hr class="border-gray-200 my-6">
                         <div class="flex items-center gap-2 text-sm text-gray-600">
                             <!-- <span>Pengumuman ini diterima oleh 3 anggota</span>
-                                                                                                                                    <div class="flex -space-x-2">
-                                                                                                                                        <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
-                                                                                                                                            class="rounded-full w-8 h-8 border-2 border-white">
-                                                                                                                                        <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
-                                                                                                                                            class="rounded-full w-8 h-8 border-2 border-white">
-                                                                                                                                        <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
-                                                                                                                                            class="rounded-full w-8 h-8 border-2 border-white">
-                                                                                                                                    </div> -->
+                                                                                                                                        <div class="flex -space-x-2">
+                                                                                                                                            <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
+                                                                                                                                                class="rounded-full w-8 h-8 border-2 border-white">
+                                                                                                                                            <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
+                                                                                                                                                class="rounded-full w-8 h-8 border-2 border-white">
+                                                                                                                                            <img src="{{ asset('images/dk.jpg') }}" alt="Avatar"
+                                                                                                                                                class="rounded-full w-8 h-8 border-2 border-white">
+                                                                                                                                        </div> -->
                         </div>
 
                     </div>

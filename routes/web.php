@@ -376,26 +376,6 @@ Route::middleware(['auth'])->group(function () {
         })->name('statistikRuangKerja');
 
         // ========================================
-        // 🔥 LEAVE MANAGEMENT ROUTES
-        // ========================================
-        Route::get('/cutikaryawan', function () {
-            return view('cutikaryawan');
-        })->name('cutikaryawan');
-        Route::get('/cutimanajer', function () {
-            return view('cutimanajer');
-        })->name('cutimanajer');
-
-        // ========================================
-        // 🔥 INSIGHT & MINDMAP ROUTES
-        // ========================================
-        Route::get('/insight', function () {
-            return view('insight');
-        })->name('insight');
-        Route::get('/isi-insight', function () {
-            return view('isi-insight');
-        })->name('isi-insight');
-
-        // ========================================
         // 🔥 ROLE MANAGEMENT ROUTES
         // ========================================
         Route::get('/hak-akses', [UserController::class, 'hakAkses'])->name('hakAkses');
