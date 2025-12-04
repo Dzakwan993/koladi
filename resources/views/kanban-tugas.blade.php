@@ -3601,33 +3601,33 @@ async removeAttachment(index) {
 
 
                             // Methods untuk Gantt Chart
-                            getProjectPhases() {
-                                return [{
-                                        id: 1,
-                                        name: 'Perencanaan',
-                                    },
-                                    {
-                                        id: 2,
-                                        name: 'Analisis',
-                                    },
-                                    {
-                                        id: 3,
-                                        name: 'Desain',
-                                    },
-                                    {
-                                        id: 4,
-                                        name: 'Development',
-                                    },
-                                    {
-                                        id: 5,
-                                        name: 'Testing',
-                                    },
-                                    {
-                                        id: 6,
-                                        name: 'Deployment',
-                                    }
-                                ];
-                            },
+                            // getProjectPhases() {
+                            //     return [{
+                            //             id: 1,
+                            //             name: 'Perencanaan',
+                            //         },
+                            //         {
+                            //             id: 2,
+                            //             name: 'Analisis',
+                            //         },
+                            //         {
+                            //             id: 3,
+                            //             name: 'Desain',
+                            //         },
+                            //         {
+                            //             id: 4,
+                            //             name: 'Development',
+                            //         },
+                            //         {
+                            //             id: 5,
+                            //             name: 'Testing',
+                            //         },
+                            //         {
+                            //             id: 6,
+                            //             name: 'Deployment',
+                            //         }
+                            //     ];
+                            // },
 
                             // Update method showPhaseTasks
                             showPhaseTasks(phaseId) {
@@ -5331,65 +5331,79 @@ if (!result.isConfirmed) return;
 
 
                             async loadTimelineData() {
-                                this.loadingTimeline = true;
-                                try {
-                                    const workspaceId = this.getCurrentWorkspaceId();
-                                    if (!workspaceId) return;
+    this.loadingTimeline = true;
+    try {
+        const workspaceId = this.getCurrentWorkspaceId();
+        if (!workspaceId) return;
 
-                                    const response = await fetch(`/tasks/workspace/${workspaceId}/timeline`);
-                                    const data = await response.json();
+        const response = await fetch(`/tasks/workspace/${workspaceId}/timeline`);
+        const data = await response.json();
 
-                                    if (data.success) {
-                                        this.timelineData = data.timeline_data;
-                                        console.log('Timeline data loaded:', this.timelineData);
-                                    } else {
-                                        console.error('Gagal memuat timeline data:', data.message);
-                                    }
-                                } catch (error) {
-                                    console.error('Error loading timeline data:', error);
-                                } finally {
-                                    this.loadingTimeline = false;
-                                }
-                            },
+        if (data.success) {
+            this.timelineData = data.timeline_data;
+            
+            // Debug log untuk melihat data yang diterima
+            console.log('📊 Timeline data loaded:', {
+                total_phases: data.timeline_data.length,
+                phases: data.timeline_data.map(p => ({
+                    name: p.name,
+                    total_tasks: p.total_tasks,
+                    start_date: p.start_date,
+                    end_date: p.end_date
+                })),
+                duplicate_check: this.checkForDuplicates(data.timeline_data)
+            });
+        } else {
+            console.error('Gagal memuat timeline data:', data.message);
+        }
+    } catch (error) {
+        console.error('Error loading timeline data:', error);
+    } finally {
+        this.loadingTimeline = false;
+    }
+},
+
+// Helper untuk mendeteksi duplicate
+checkForDuplicates(phases) {
+    const seen = new Set();
+    const duplicates = [];
+    
+    phases.forEach(phase => {
+        const key = phase.name.toLowerCase().trim();
+        if (seen.has(key)) {
+            duplicates.push(phase.name);
+        }
+        seen.add(key);
+    });
+    
+    return duplicates;
+},
 
                             // Update method getProjectPhases() untuk menggunakan data real
-                            getProjectPhases() {
-                                if (this.timelineData && this.timelineData.length > 0) {
-                                    return this.timelineData.map(phase => ({
-                                        id: phase.id,
-                                        name: phase.name,
-                                        normalized_name: phase.normalized_name,
-                                        total_tasks: phase.total_tasks,
-                                        completed_tasks: phase.completed_tasks,
-                                        progress_percentage: phase.progress_percentage,
-                                        start_date: phase.start_date,
-                                        end_date: phase.end_date,
-                                        duration: phase.duration,
-                                        duration_percentage: phase.duration_percentage || 10, // Fallback 10% jika tidak ada
-                                        description: `${phase.completed_tasks} dari ${phase.total_tasks} tugas selesai`
-                                    }));
-                                }
+                            // Di dalam kanbanApp() - update method getProjectPhases()
+getProjectPhases() {
+    if (this.timelineData && this.timelineData.length > 0) {
+        // Filter phase yang memiliki tasks
+        const phasesWithTasks = this.timelineData.filter(phase => phase.total_tasks > 0);
+        
+        return phasesWithTasks.map(phase => ({
+            id: phase.id,
+            name: phase.name,
+            normalized_name: phase.normalized_name || phase.name.toLowerCase().trim(),
+            total_tasks: phase.total_tasks,
+            completed_tasks: phase.completed_tasks,
+            progress_percentage: phase.progress_percentage,
+            start_date: phase.start_date,
+            end_date: phase.end_date,
+            duration: phase.duration,
+            duration_percentage: phase.duration_percentage || 10,
+            description: `${phase.completed_tasks}/${phase.total_tasks} tugas selesai`
+        }));
+    }
 
-                                // Fallback dummy data jika tidak ada data real
-                                return [{
-                                        id: 1,
-                                        name: 'Perencanaan',
-                                        description: '0 dari 0 tugas selesai',
-                                        total_tasks: 0,
-                                        completed_tasks: 0,
-                                        progress_percentage: 0
-                                    },
-                                    {
-                                        id: 2,
-                                        name: 'Analisis',
-                                        description: '0 dari 0 tugas selesai',
-                                        total_tasks: 0,
-                                        completed_tasks: 0,
-                                        progress_percentage: 0
-                                    }
-                                    // ... tambahkan phase lainnya sesuai kebutuhan
-                                ];
-                            },
+    // Fallback ke data kosong
+    return [];
+},
 
                             // 🔧 PERBAIKI: Method getTasksByPhaseId
                             // Di dalam kanbanApp() - UPDATE method ini
