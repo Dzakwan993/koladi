@@ -215,6 +215,12 @@ Route::get('/tasks/{workspace}/cleanup-phases', [TaskController::class, 'cleanup
     ->middleware('auth')
     ->name('tasks.cleanup-phases');
 
+
+    // routes/web.php - untuk testing
+Route::get('/tasks/{workspace}/debug-phases', [TaskController::class, 'debugPhases'])
+    ->middleware('auth')
+    ->name('tasks.debug-phases');
+
         // Attachments
         Route::post('/attachments/upload', [TaskController::class, 'uploadAttachment'])->name('tasks.attachments.upload');
         Route::get('/{taskId}/attachments', [TaskController::class, 'getTaskAttachments'])->name('tasks.attachments.get');

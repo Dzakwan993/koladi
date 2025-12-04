@@ -2454,6 +2454,19 @@ public function getTimelineData($workspaceId)
             ->with(['assignments.user', 'boardColumn'])
             ->get();
 
+        // ✅ DEBUG: Log semua phase yang ada di database
+        Log::info('=== TIMELINE DEBUG START ===');
+        Log::info('Total tasks: ' . $tasks->count());
+        Log::info('All tasks with phases:', $tasks->map(function($task) {
+            return [
+                'id' => $task->id,
+                'title' => $task->title,
+                'phase_original' => $task->phase,
+                'phase_normalized' => strtolower(trim($task->phase ?? '')),
+                'status' => $task->status
+            ];
+        })->toArray());
+
         // Jika tidak ada tasks
         if ($tasks->isEmpty()) {
             return response()->json([
@@ -2466,50 +2479,29 @@ public function getTimelineData($workspaceId)
             ]);
         }
 
-        // ✅ PERBAIKAN: Debug log untuk melihat semua phase termasuk yang kosong
-        Log::info('All tasks with phases:', [
-            'tasks' => $tasks->map(function($task) {
-                return [
-                    'id' => $task->id,
-                    'title' => $task->title,
-                    'phase' => $task->phase,
-                    'phase_is_null' => is_null($task->phase),
-                    'phase_is_empty' => empty(trim($task->phase ?? '')),
-                    'phase_trimmed' => trim($task->phase ?? '')
-                ];
-            })->toArray()
-        ]);
-
-        // ✅ PERBAIKAN: Group tasks dengan case-insensitive
+        // ✅ PERBAIKAN UTAMA: Group tasks dengan lebih hati-hati
         $phaseGroups = [];
-        
+
         foreach ($tasks as $task) {
-            // ✅ PERBAIKAN KRITIS: Handle phase yang kosong atau NULL
-            $originalPhase = $task->phase;
+            if (!$task->phase) {
+                // Jika phase kosong, gunakan default
+                $task->phase = 'Uncategorized';
+            }
+
+            // Normalisasi untuk grouping: lowercase dan trim
+            $originalPhaseName = trim($task->phase);
+            $normalizedKey = strtolower($originalPhaseName);
             
-            // Jika phase NULL atau kosong setelah trim, skip atau masukkan ke "Uncategorized"
-            if (is_null($originalPhase) || trim($originalPhase) === '') {
-                // Option 1: Skip task ini (tidak dimasukkan ke timeline)
-                // continue;
-                
-                // Option 2: Masukkan ke "Uncategorized"
-                $originalPhase = 'Uncategorized';
+            // Handle empty phase name
+            if (empty($normalizedKey)) {
+                $originalPhaseName = 'Uncategorized';
                 $normalizedKey = 'uncategorized';
-            } else {
-                // Normalisasi untuk grouping (case-insensitive)
-                $normalizedKey = strtolower(trim($originalPhase));
-                
-                // Pastikan normalized key tidak kosong
-                if (empty($normalizedKey)) {
-                    $originalPhase = 'Uncategorized';
-                    $normalizedKey = 'uncategorized';
-                }
             }
 
             // Jika phase belum ada di groups, buat entry baru
             if (!isset($phaseGroups[$normalizedKey])) {
-                // Pilih nama phase yang akan ditampilkan
-                $displayName = $this->getDisplayPhaseName($originalPhase);
+                // Gunakan display name yang konsisten
+                $displayName = $this->getDisplayPhaseName($originalPhaseName);
                 
                 $phaseGroups[$normalizedKey] = [
                     'original_name' => $displayName,
@@ -2518,18 +2510,15 @@ public function getTimelineData($workspaceId)
                     'total_tasks' => 0,
                     'completed_tasks' => 0,
                     'progress_percentage' => 0,
-                    'original_phases' => [] // Untuk tracking fase asli yang digabungkan
+                    'start_date' => null,
+                    'end_date' => null,
+                    'duration' => 0
                 ];
             }
 
-            // Tambahkan task ke phase group
+            // Tambahkan task ke group
             $phaseGroups[$normalizedKey]['tasks'][] = $task;
             $phaseGroups[$normalizedKey]['total_tasks']++;
-            
-            // Simpan original phase untuk debugging
-            if (!in_array($originalPhase, $phaseGroups[$normalizedKey]['original_phases'])) {
-                $phaseGroups[$normalizedKey]['original_phases'][] = $originalPhase;
-            }
 
             // Hitung tugas yang selesai
             if ($task->status === 'done') {
@@ -2537,23 +2526,22 @@ public function getTimelineData($workspaceId)
             }
         }
 
-        // ✅ PERBAIKAN: Debug phase grouping
-        Log::info('Phase grouping result:', [
-            'group_count' => count($phaseGroups),
-            'groups' => array_map(function($key, $group) {
-                return [
-                    'normalized_key' => $key,
-                    'display_name' => $group['original_name'],
-                    'task_count' => $group['total_tasks'],
-                    'original_phases' => $group['original_phases']
-                ];
-            }, array_keys($phaseGroups), $phaseGroups)
-        ]);
+        // ✅ DEBUG: Log hasil grouping
+        Log::info('Phase groups after processing:', array_map(function($group) {
+            return [
+                'key' => $group['normalized_key'],
+                'name' => $group['original_name'],
+                'task_count' => $group['total_tasks'],
+                'tasks' => array_map(function($task) {
+                    return $task->id . ': ' . $task->title;
+                }, $group['tasks'])
+            ];
+        }, $phaseGroups));
 
-        // ✅ PERBAIKAN: Hitung progress dan date range
+        // ✅ PERBAIKAN: Hitung progress dan date range untuk setiap phase
         $durations = [];
         
-        foreach ($phaseGroups as &$phase) {
+        foreach ($phaseGroups as $normalizedKey => &$phase) {
             // Progress percentage
             $phase['progress_percentage'] = $phase['total_tasks'] > 0
                 ? round(($phase['completed_tasks'] / $phase['total_tasks']) * 100)
@@ -2569,21 +2557,20 @@ public function getTimelineData($workspaceId)
             if ($dateRange['duration'] > 0) {
                 $durations[] = $dateRange['duration'];
             }
-            
-            // Hapus original_phases dari output final
-            unset($phase['original_phases']);
         }
+        
+        unset($phase); // Unset reference untuk menghindari bug
 
         // Hitung durasi maksimum untuk scaling
         $maxDuration = !empty($durations) ? max($durations) : 1;
 
-        // ✅ PERBAIKAN: Format response dengan ID yang konsisten
+        // ✅ PERBAIKAN CRITICAL: Format timeline data dengan cara yang benar
         $timelineData = [];
-        $phaseId = 1;
 
-        foreach ($phaseGroups as $phase) {
-            // Skip phase "Uncategorized" jika tidak ada tasks
-            if ($phase['normalized_key'] === 'uncategorized' && $phase['total_tasks'] === 0) {
+        foreach ($phaseGroups as $normalizedKey => $phase) {
+            // Skip phase tanpa tasks (safety check)
+            if ($phase['total_tasks'] === 0) {
+                Log::warning("Skipping phase '{$phase['original_name']}' with 0 tasks");
                 continue;
             }
 
@@ -2598,9 +2585,9 @@ public function getTimelineData($workspaceId)
             }
 
             $timelineData[] = [
-                'id' => $phaseId++,
+                'id' => null, // Akan di-set setelah sorting
                 'name' => $phase['original_name'],
-                'normalized_key' => $phase['normalized_key'],
+                'normalized_key' => $normalizedKey,
                 'total_tasks' => $phase['total_tasks'],
                 'completed_tasks' => $phase['completed_tasks'],
                 'progress_percentage' => $phase['progress_percentage'],
@@ -2608,34 +2595,79 @@ public function getTimelineData($workspaceId)
                 'end_date' => $phase['end_date'],
                 'duration' => $phase['duration'],
                 'duration_percentage' => $duration_percentage,
-                'tasks' => array_map(function ($task) {
-                    return [
-                        'id' => $task->id,
-                        'title' => $task->title,
-                        'status' => $task->status,
-                        'is_done' => $task->status === 'done',
-                        'start_datetime' => $task->start_datetime,
-                        'due_datetime' => $task->due_datetime,
-                        'assignees' => $task->assignments->map(function ($assignment) {
-                            return [
-                                'name' => $assignment->user->full_name,
-                                'avatar' => $assignment->user->avatar ?: 'https://i.pravatar.cc/32?img=' . rand(1, 70)
-                            ];
-                        })->toArray()
-                    ];
-                }, $phase['tasks'])
+                'tasks' => $phase['tasks'] // Simpan dulu object tasks
             ];
         }
 
-        // ✅ PERBAIKAN: Sort phases secara alfabetis untuk konsistensi
+        // ✅ PERBAIKAN: Sort phases by start date (yang paling awal dulu)
         usort($timelineData, function($a, $b) {
-            return strcasecmp($a['name'], $b['name']);
+            // Handle null dates
+            if (!$a['start_date'] && !$b['start_date']) return 0;
+            if (!$a['start_date']) return 1; // Yang null di akhir
+            if (!$b['start_date']) return -1; // Yang null di akhir
+            
+            // Convert to timestamp for comparison
+            $timeA = strtotime($a['start_date']);
+            $timeB = strtotime($b['start_date']);
+            
+            // Ascending order (earliest first)
+            return $timeA - $timeB;
         });
 
-        // Reset IDs setelah sorting
-        foreach ($timelineData as $index => &$phase) {
-            $phase['id'] = $index + 1;
+        // ✅ PERBAIKAN: Set IDs dan format tasks array setelah sorting
+        foreach ($timelineData as $index => &$phaseItem) {
+            $phaseItem['id'] = $index + 1;
+            
+            // Format tasks array
+            $phaseItem['tasks'] = array_map(function ($task) {
+                return [
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'status' => $task->status,
+                    'is_done' => $task->status === 'done',
+                    'start_datetime' => $task->start_datetime,
+                    'due_datetime' => $task->due_datetime,
+                    'assignees' => $task->assignments->map(function ($assignment) {
+                        return [
+                            'name' => $assignment->user->full_name,
+                            'avatar' => $assignment->user->avatar ?: 'https://i.pravatar.cc/32?img=' . rand(1, 70)
+                        ];
+                    })->toArray()
+                ];
+            }, $phaseItem['tasks']);
         }
+        
+        unset($phaseItem); // Unset reference
+
+        // ✅ DEBUG: Check for duplicates
+        $uniqueCheck = [];
+        $duplicates = [];
+        foreach ($timelineData as $phase) {
+            $key = $phase['normalized_key'];
+            if (isset($uniqueCheck[$key])) {
+                $duplicates[] = $phase['name'];
+            }
+            $uniqueCheck[$key] = true;
+        }
+
+        if (!empty($duplicates)) {
+            Log::warning('Duplicate phases found in timeline data:', $duplicates);
+        }
+
+        // ✅ DEBUG: Log final timeline data
+        Log::info('Final timeline data count: ' . count($timelineData));
+        Log::info('Final timeline phases:', array_map(function($phase) {
+            return [
+                'id' => $phase['id'],
+                'name' => $phase['name'],
+                'normalized_key' => $phase['normalized_key'],
+                'total_tasks' => $phase['total_tasks'],
+                'start_date' => $phase['start_date'],
+                'end_date' => $phase['end_date']
+            ];
+        }, $timelineData));
+        
+        Log::info('=== TIMELINE DEBUG END ===');
 
         return response()->json([
             'success' => true,
@@ -2645,19 +2677,14 @@ public function getTimelineData($workspaceId)
             'completed_tasks' => $tasks->where('status', 'done')->count(),
             'max_duration' => $maxDuration,
             'debug_info' => [
-                'total_tasks_in_db' => $tasks->count(),
-                'phases_in_timeline' => count($timelineData),
-                'phase_list' => array_map(function($phase) {
-                    return [
-                        'name' => $phase['name'],
-                        'task_count' => $phase['total_tasks']
-                    ];
-                }, $timelineData)
+                'phase_count' => count($timelineData),
+                'duplicates_found' => $duplicates
             ]
         ]);
         
     } catch (\Exception $e) {
         Log::error('Error getting timeline data: ' . $e->getMessage());
+        Log::error('Stack trace: ' . $e->getTraceAsString());
         return response()->json([
             'success' => false,
             'message' => 'Gagal mengambil data timeline: ' . $e->getMessage()
@@ -2718,45 +2745,12 @@ public function cleanupPhases($workspaceId)
 
 private function getDisplayPhaseName($originalPhaseName)
 {
-    // Jika kosong, kembalikan default
     if (empty(trim($originalPhaseName))) {
         return 'Uncategorized';
     }
-
-    // Trim whitespace
-    $originalPhaseName = trim($originalPhaseName);
     
-    // Split menjadi kata-kata
-    $words = explode(' ', $originalPhaseName);
-    $displayWords = [];
-    
-    foreach ($words as $word) {
-        if (empty($word)) {
-            continue;
-        }
-        
-        // Untuk setiap kata, buat huruf pertama kapital dan sisanya lowercase
-        // Contoh: "tEsting" -> "Testing", "iOS" -> "IOS" (karena i kecil, o kecil, S besar)
-        $displayWord = '';
-        
-        // Ambil karakter pertama
-        if (strlen($word) > 0) {
-            $firstChar = mb_substr($word, 0, 1);
-            $restOfWord = mb_substr($word, 1);
-            
-            // Huruf pertama selalu uppercase
-            $firstChar = mb_strtoupper($firstChar);
-            // Sisanya lowercase
-            $restOfWord = mb_strtolower($restOfWord);
-            
-            $displayWord = $firstChar . $restOfWord;
-        }
-        
-        $displayWords[] = $displayWord;
-    }
-    
-    // Gabungkan kembali dengan spasi
-    $displayName = implode(' ', $displayWords);
+    // Gunakan ucwords dengan delimiter spasi dan strip_tags untuk safety
+    $displayName = ucwords(strtolower(trim(strip_tags($originalPhaseName))));
     
     return $displayName;
 }
@@ -2782,7 +2776,7 @@ private function calculatePhaseDateRange($tasks)
             try {
                 $startDates[] = \Carbon\Carbon::parse($task->start_datetime);
             } catch (\Exception $e) {
-                // Skip invalid date
+                Log::warning("Invalid start_datetime for task {$task->id}: {$task->start_datetime}");
             }
         }
 
@@ -2790,7 +2784,7 @@ private function calculatePhaseDateRange($tasks)
             try {
                 $endDates[] = \Carbon\Carbon::parse($task->due_datetime);
             } catch (\Exception $e) {
-                // Skip invalid date
+                Log::warning("Invalid due_datetime for task {$task->id}: {$task->due_datetime}");
             }
         }
     }
@@ -2827,6 +2821,39 @@ private function calculatePhaseDateRange($tasks)
         'end_date' => $latestEnd ? $latestEnd->toDateTimeString() : null,
         'duration' => max(0, $duration)
     ];
+}
+
+
+// TaskController.php - method untuk debug
+public function debugPhases($workspaceId)
+{
+    $tasks = Task::where('workspace_id', $workspaceId)
+        ->select('id', 'title', 'phase', 'status')
+        ->get();
+    
+    $phases = $tasks->groupBy(function($task) {
+        return strtolower(trim($task->phase ?? ''));
+    })->map(function($group) {
+        return [
+            'display_name' => ucwords(strtolower(trim($group->first()->phase ?? ''))),
+            'task_count' => $group->count(),
+            'tasks' => $group->map(function($task) {
+                return [
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'phase_original' => $task->phase,
+                    'status' => $task->status
+                ];
+            })->values()
+        ];
+    });
+    
+    return response()->json([
+        'success' => true,
+        'phases' => $phases,
+        'total_phases' => $phases->count(),
+        'total_tasks' => $tasks->count()
+    ]);
 }
 
 /**
