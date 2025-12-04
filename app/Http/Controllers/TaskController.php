@@ -2433,6 +2433,9 @@ public function createChecklistForTask(Request $request, $taskId)
  * Phase yang sama secara case-insensitive dikelompokkan sebagai satu phase
  * Perbedaan 1 huruf = phase berbeda
  */
+/**
+ * ✅ FIXED: Get timeline data dengan handling phase kosong
+ */
 public function getTimelineData($workspaceId)
 {
     try {
@@ -2463,46 +2466,50 @@ public function getTimelineData($workspaceId)
             ]);
         }
 
-        // ✅ PERBAIKAN: Debug log untuk melihat phase yang ada di database
-        Log::info('Phase grouping analysis:', [
-            'all_phases' => $tasks->pluck('phase')->map(function($phase) {
+        // ✅ PERBAIKAN: Debug log untuk melihat semua phase termasuk yang kosong
+        Log::info('All tasks with phases:', [
+            'tasks' => $tasks->map(function($task) {
                 return [
-                    'original' => $phase,
-                    'lowercase' => strtolower(trim($phase ?? '')),
-                    'trimmed' => trim($phase ?? '')
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'phase' => $task->phase,
+                    'phase_is_null' => is_null($task->phase),
+                    'phase_is_empty' => empty(trim($task->phase ?? '')),
+                    'phase_trimmed' => trim($task->phase ?? '')
                 ];
-            })->toArray(),
-            'unique_lowercase' => $tasks->pluck('phase')
-                ->map(fn($p) => strtolower(trim($p ?? '')))
-                ->unique()
-                ->values()
-                ->toArray()
+            })->toArray()
         ]);
 
         // ✅ PERBAIKAN: Group tasks dengan case-insensitive
         $phaseGroups = [];
-        $phaseNameMapping = []; // Untuk mapping lowercase ke original name yang dipilih
-
+        
         foreach ($tasks as $task) {
-            if (!$task->phase) {
-                // Jika phase kosong, gunakan default
-                $task->phase = 'Uncategorized';
-            }
-
-            // ✅ PERBAIKAN: Normalisasi untuk grouping (case-insensitive)
-            $originalPhaseName = trim($task->phase);
-            $normalizedKey = strtolower($originalPhaseName); // Hanya lowercase untuk grouping
+            // ✅ PERBAIKAN KRITIS: Handle phase yang kosong atau NULL
+            $originalPhase = $task->phase;
             
-            // Skip jika normalized key kosong
-            if (empty($normalizedKey)) {
-                $originalPhaseName = 'Uncategorized';
+            // Jika phase NULL atau kosong setelah trim, skip atau masukkan ke "Uncategorized"
+            if (is_null($originalPhase) || trim($originalPhase) === '') {
+                // Option 1: Skip task ini (tidak dimasukkan ke timeline)
+                // continue;
+                
+                // Option 2: Masukkan ke "Uncategorized"
+                $originalPhase = 'Uncategorized';
                 $normalizedKey = 'uncategorized';
+            } else {
+                // Normalisasi untuk grouping (case-insensitive)
+                $normalizedKey = strtolower(trim($originalPhase));
+                
+                // Pastikan normalized key tidak kosong
+                if (empty($normalizedKey)) {
+                    $originalPhase = 'Uncategorized';
+                    $normalizedKey = 'uncategorized';
+                }
             }
 
             // Jika phase belum ada di groups, buat entry baru
             if (!isset($phaseGroups[$normalizedKey])) {
-                // ✅ PERBAIKAN: Pilih nama phase yang akan ditampilkan (gunakan Title Case dari original)
-                $displayName = $this->getDisplayPhaseName($originalPhaseName);
+                // Pilih nama phase yang akan ditampilkan
+                $displayName = $this->getDisplayPhaseName($originalPhase);
                 
                 $phaseGroups[$normalizedKey] = [
                     'original_name' => $displayName,
@@ -2510,15 +2517,19 @@ public function getTimelineData($workspaceId)
                     'tasks' => [],
                     'total_tasks' => 0,
                     'completed_tasks' => 0,
-                    'progress_percentage' => 0
+                    'progress_percentage' => 0,
+                    'original_phases' => [] // Untuk tracking fase asli yang digabungkan
                 ];
-                
-                // Simpan mapping
-                $phaseNameMapping[$normalizedKey] = $displayName;
             }
 
+            // Tambahkan task ke phase group
             $phaseGroups[$normalizedKey]['tasks'][] = $task;
             $phaseGroups[$normalizedKey]['total_tasks']++;
+            
+            // Simpan original phase untuk debugging
+            if (!in_array($originalPhase, $phaseGroups[$normalizedKey]['original_phases'])) {
+                $phaseGroups[$normalizedKey]['original_phases'][] = $originalPhase;
+            }
 
             // Hitung tugas yang selesai
             if ($task->status === 'done') {
@@ -2529,13 +2540,14 @@ public function getTimelineData($workspaceId)
         // ✅ PERBAIKAN: Debug phase grouping
         Log::info('Phase grouping result:', [
             'group_count' => count($phaseGroups),
-            'groups' => array_map(function($group) {
+            'groups' => array_map(function($key, $group) {
                 return [
-                    'original_name' => $group['original_name'],
-                    'normalized_key' => $group['normalized_key'],
-                    'task_count' => $group['total_tasks']
+                    'normalized_key' => $key,
+                    'display_name' => $group['original_name'],
+                    'task_count' => $group['total_tasks'],
+                    'original_phases' => $group['original_phases']
                 ];
-            }, $phaseGroups)
+            }, array_keys($phaseGroups), $phaseGroups)
         ]);
 
         // ✅ PERBAIKAN: Hitung progress dan date range
@@ -2557,6 +2569,9 @@ public function getTimelineData($workspaceId)
             if ($dateRange['duration'] > 0) {
                 $durations[] = $dateRange['duration'];
             }
+            
+            // Hapus original_phases dari output final
+            unset($phase['original_phases']);
         }
 
         // Hitung durasi maksimum untuk scaling
@@ -2567,8 +2582,8 @@ public function getTimelineData($workspaceId)
         $phaseId = 1;
 
         foreach ($phaseGroups as $phase) {
-            // Skip phase tanpa tasks (tidak akan terjadi, tapi safety check)
-            if ($phase['total_tasks'] === 0) {
+            // Skip phase "Uncategorized" jika tidak ada tasks
+            if ($phase['normalized_key'] === 'uncategorized' && $phase['total_tasks'] === 0) {
                 continue;
             }
 
@@ -2612,12 +2627,9 @@ public function getTimelineData($workspaceId)
             ];
         }
 
-        // ✅ PERBAIKAN: Sort phases by start date (yang paling awal dulu)
+        // ✅ PERBAIKAN: Sort phases secara alfabetis untuk konsistensi
         usort($timelineData, function($a, $b) {
-            if (!$a['start_date'] && !$b['start_date']) return 0;
-            if (!$a['start_date']) return 1;
-            if (!$b['start_date']) return -1;
-            return strtotime($a['start_date']) - strtotime($b['start_date']);
+            return strcasecmp($a['name'], $b['name']);
         });
 
         // Reset IDs setelah sorting
@@ -2633,11 +2645,12 @@ public function getTimelineData($workspaceId)
             'completed_tasks' => $tasks->where('status', 'done')->count(),
             'max_duration' => $maxDuration,
             'debug_info' => [
-                'phase_grouping' => array_map(function($group) {
+                'total_tasks_in_db' => $tasks->count(),
+                'phases_in_timeline' => count($timelineData),
+                'phase_list' => array_map(function($phase) {
                     return [
-                        'name' => $group['name'],
-                        'normalized_key' => $group['normalized_key'],
-                        'task_count' => $group['total_tasks']
+                        'name' => $phase['name'],
+                        'task_count' => $phase['total_tasks']
                     ];
                 }, $timelineData)
             ]
@@ -2653,9 +2666,56 @@ public function getTimelineData($workspaceId)
 }
 
 /**
- * ✅ NEW: Helper untuk mendapatkan nama phase yang akan ditampilkan
- * Contoh: "TESTING" -> "Testing", "TeSting" -> "Testing", "testing" -> "Testing"
+ * ✅ PERBAIKAN: Method untuk membersihkan data phase di database
+ * Jalankan sekali untuk fix data
  */
+public function cleanupPhases($workspaceId)
+{
+    try {
+        $tasks = Task::where('workspace_id', $workspaceId)
+            ->where(function($query) {
+                $query->whereNull('phase')
+                    ->orWhere('phase', '')
+                    ->orWhereRaw("TRIM(phase) = ''");
+            })
+            ->get();
+
+        $updates = [];
+        
+        foreach ($tasks as $task) {
+            $oldPhase = $task->phase;
+            $newPhase = 'Uncategorized';
+            
+            $updates[] = [
+                'task_id' => $task->id,
+                'title' => $task->title,
+                'old_phase' => $oldPhase ?? '(NULL)',
+                'new_phase' => $newPhase
+            ];
+            
+            $task->phase = $newPhase;
+            $task->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Phase cleanup completed',
+            'updated_count' => count($updates),
+            'updates' => $updates
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error cleaning up phases: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal membersihkan phase: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+
 private function getDisplayPhaseName($originalPhaseName)
 {
     // Jika kosong, kembalikan default
@@ -2663,27 +2723,40 @@ private function getDisplayPhaseName($originalPhaseName)
         return 'Uncategorized';
     }
 
-    // Ambil contoh dari tasks yang memiliki phase ini untuk menentukan nama yang tepat
-    // Untuk sekarang, gunakan Title Case dari original
-    $displayName = ucwords(strtolower(trim($originalPhaseName)));
+    // Trim whitespace
+    $originalPhaseName = trim($originalPhaseName);
     
-    // Tapi jika original sudah memiliki kapitalisasi yang tepat, pertahankan
-    // Contoh: "iOS Development" jangan diubah jadi "Ios Development"
-    
-    // Cek apakah sudah berupa Title Case (huruf pertama setiap kata kapital)
+    // Split menjadi kata-kata
     $words = explode(' ', $originalPhaseName);
-    $isTitleCase = true;
+    $displayWords = [];
+    
     foreach ($words as $word) {
-        if (!empty($word) && !ctype_upper($word[0]) && !ctype_lower($word[0])) {
-            $isTitleCase = false;
-            break;
+        if (empty($word)) {
+            continue;
         }
+        
+        // Untuk setiap kata, buat huruf pertama kapital dan sisanya lowercase
+        // Contoh: "tEsting" -> "Testing", "iOS" -> "IOS" (karena i kecil, o kecil, S besar)
+        $displayWord = '';
+        
+        // Ambil karakter pertama
+        if (strlen($word) > 0) {
+            $firstChar = mb_substr($word, 0, 1);
+            $restOfWord = mb_substr($word, 1);
+            
+            // Huruf pertama selalu uppercase
+            $firstChar = mb_strtoupper($firstChar);
+            // Sisanya lowercase
+            $restOfWord = mb_strtolower($restOfWord);
+            
+            $displayWord = $firstChar . $restOfWord;
+        }
+        
+        $displayWords[] = $displayWord;
     }
     
-    // Jika sudah Title Case atau mengandung singkatan/kode, kembalikan original
-    if ($isTitleCase || preg_match('/[A-Z]{2,}/', $originalPhaseName)) {
-        return trim($originalPhaseName);
-    }
+    // Gabungkan kembali dengan spasi
+    $displayName = implode(' ', $displayWords);
     
     return $displayName;
 }

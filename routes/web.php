@@ -210,6 +210,10 @@ Route::middleware(['auth'])->group(function () {
 
         //yang baru
         Route::get('/tasks/{taskId}/checklists/all', [TaskController::class, 'getAllChecklists'])->name('tasks.checklists.all');
+        // routes/web.php
+Route::get('/tasks/{workspace}/cleanup-phases', [TaskController::class, 'cleanupPhases'])
+    ->middleware('auth')
+    ->name('tasks.cleanup-phases');
 
         // Attachments
         Route::post('/attachments/upload', [TaskController::class, 'uploadAttachment'])->name('tasks.attachments.upload');
