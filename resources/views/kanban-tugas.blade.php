@@ -1147,21 +1147,21 @@
 
 
                     /* Checklist input styling */
-#detail-checklist-container input[type="text"] {
-    transition: all 0.2s ease;
-}
+                    #detail-checklist-container input[type="text"] {
+                        transition: all 0.2s ease;
+                    }
 
-#detail-checklist-container input[type="text"]:focus {
-    background-color: #f9fafb;
-    border-radius: 4px;
-    padding-left: 8px;
-}
+                    #detail-checklist-container input[type="text"]:focus {
+                        background-color: #f9fafb;
+                        border-radius: 4px;
+                        padding-left: 8px;
+                    }
 
-/* Checklist item hover effect */
-#detail-checklist-container .flex:hover {
-    background-color: #f8fafc;
-    border-radius: 6px;
-}
+                    /* Checklist item hover effect */
+                    #detail-checklist-container .flex:hover {
+                        background-color: #f8fafc;
+                        border-radius: 6px;
+                    }
                 </style>
 
                 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -1178,7 +1178,57 @@
                         }
                     });
 
-                    function kanbanApp() {
+                    function kanbanApp()                     {
+
+
+
+                    function showSwalAlert(message, type = 'info', confirmButton = false) {
+                        const iconMap = {
+                            'success': 'success',
+                            'error': 'error',
+                            'warning': 'warning',
+                            'info': 'info'
+                        };
+
+                        const titleMap = {
+                            'success': 'Berhasil!',
+                            'error': 'Gagal!',
+                            'warning': 'Perhatian!',
+                            'info': 'Informasi'
+                        };
+
+                        Swal.fire({
+                            icon: iconMap[type] || 'info',
+                            title: titleMap[type] || 'Notifikasi',
+                            text: message,
+                            showConfirmButton: confirmButton,
+                            timer: confirmButton ? undefined : 2000,
+                            timerProgressBar: !confirmButton,
+                            position: 'center',
+                            toast: false,
+                            background: '#f7faff',
+                            color: '#2b2b2b',
+                            customClass: {
+                                popup: 'swal-custom-popup',
+                                title: 'swal-custom-title',
+                                htmlContainer: 'swal-custom-text'
+                            },
+                            didOpen: (popup) => {
+                                popup.classList.add('swal-fade-in');
+                            },
+                            willClose: (popup) => {
+                                popup.classList.remove('swal-fade-in');
+                                popup.classList.add('swal-fade-out');
+                            }
+                        });
+                    }
+
+
+
+
+
+
+
                         return {
 
                             // --- Modal state ---
@@ -1868,17 +1918,48 @@
                                 }
 
                                 // Konfirmasi sebelum hapus
-                                if (!confirm(`Apakah Anda yakin ingin menghapus tugas "${this.currentTask.title}"?`)) {
-                                    return;
-                                }
+                                const result = await Swal.fire({
+    icon: 'warning',
+    title: 'Konfirmasi Hapus',
+    text: `Apakah Anda yakin ingin menghapus tugas "${this.currentTask.title}"?`,
+    showCancelButton: true,
+    confirmButtonText: 'Ya, Hapus',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
+    background: '#f7faff',
+    customClass: {
+        popup: 'swal-custom-popup',
+        title: 'swal-custom-title',
+        htmlContainer: 'swal-custom-text'
+    }
+});
+
+if (!result.isConfirmed) {
+    return;
+}
 
                                 // Konfirmasi tambahan untuk tugas penting
-                                if (this.currentTask.is_secret || this.currentTask.priority === 'high' || this.currentTask
-                                    .priority === 'urgent') {
-                                    const confirmed = confirm(
-                                        '⚠️ Tugas ini memiliki prioritas tinggi/rahasia. Anda yakin ingin menghapus?');
-                                    if (!confirmed) return;
-                                }
+                                if (this.currentTask.is_secret || this.currentTask.priority === 'high' || this.currentTask.priority === 'urgent') {
+    const result = await Swal.fire({
+        icon: 'warning',
+        title: 'Peringatan!',
+        text: 'Tugas ini memiliki prioritas tinggi/rahasia. Anda yakin ingin menghapus?',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        background: '#f7faff',
+        customClass: {
+            popup: 'swal-custom-popup',
+            title: 'swal-custom-title',
+            htmlContainer: 'swal-custom-text'
+        }
+    });
+    
+    if (!result.isConfirmed) return;
+}
 
                                 await this.deleteTask(this.currentTask.id);
                             },
@@ -1931,9 +2012,26 @@
 
                             // ✅ OPTIONAL: Method untuk force delete (permanen)
                             async forceDeleteTask(taskId) {
-                                if (!confirm('⚠️ Hapus permanen? Tugas tidak dapat dikembalikan!')) {
-                                    return;
-                                }
+                                const result = await Swal.fire({
+    icon: 'error',
+    title: 'Hapus Permanen?',
+    text: 'Tugas tidak dapat dikembalikan!',
+    showCancelButton: true,
+    confirmButtonText: 'Ya, Hapus Permanen',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    background: '#f7faff',
+    customClass: {
+        popup: 'swal-custom-popup',
+        title: 'swal-custom-title',
+        htmlContainer: 'swal-custom-text'
+    }
+});
+
+if (!result.isConfirmed) {
+    return;
+}
 
                                 try {
                                     const response = await fetch(`/tasks/${taskId}/force`, {
@@ -1989,241 +2087,242 @@
                             // ✅ NEW: Method untuk menghapus checklist item
                             // Di dalam kanbanApp() - GANTI method removeChecklistItemFromDetail
                             // ✅ PERBAIKI: Method untuk menghapus checklist item
-async removeChecklistItemFromDetail(index) {
-    if (!this.currentTask || !this.currentTask.checklist) return;
+                            async removeChecklistItemFromDetail(index) {
+                                if (!this.currentTask || !this.currentTask.checklist) return;
 
-    const item = this.currentTask.checklist[index];
-    
-    if (!item) return;
+                                const item = this.currentTask.checklist[index];
 
-    if (!confirm(`Hapus item "${item.title}"?`)) {
-        return;
+                                if (!item) return;
+
+                                const result = await Swal.fire({
+    icon: 'question',
+    title: 'Konfirmasi',
+    text: `Hapus item "${item.title}"?`,
+    showCancelButton: true,
+    confirmButtonText: 'Ya, Hapus',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
+    background: '#f7faff',
+    customClass: {
+        popup: 'swal-custom-popup',
+        title: 'swal-custom-title',
+        htmlContainer: 'swal-custom-text'
     }
+});
 
-    try {
-        // ✅ JIKA ITEM BARU (temp-), LANGSUNG HAPUS DARI ARRAY
-        if (item.id && item.id.toString().startsWith('temp-')) {
-            this.currentTask.checklist.splice(index, 1);
-            console.log('✅ Temporary item removed:', item.id);
-            return;
-        }
+if (!result.isConfirmed) {
+    return;
+}
 
-        // ✅ JIKA ITEM SUDAH ADA DI DATABASE, HAPUS VIA API
-        if (item.id && !item.id.toString().startsWith('temp-')) {
-            console.log('🔄 Deleting checklist item:', item.id);
+                                try {
+                                    // ✅ JIKA ITEM BARU (temp-), LANGSUNG HAPUS DARI ARRAY
+                                    if (item.id && item.id.toString().startsWith('temp-')) {
+                                        this.currentTask.checklist.splice(index, 1);
+                                        console.log('✅ Temporary item removed:', item.id);
+                                        return;
+                                    }
 
-            const response = await fetch(`/tasks/checklists/${item.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': this.getCsrfToken(),
-                    'Accept': 'application/json'
-                }
-            });
+                                    // ✅ JIKA ITEM SUDAH ADA DI DATABASE, HAPUS VIA API
+                                    if (item.id && !item.id.toString().startsWith('temp-')) {
+                                        console.log('🔄 Deleting checklist item:', item.id);
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-            }
+                                        const response = await fetch(`/tasks/checklists/${item.id}`, {
+                                            method: 'DELETE',
+                                            headers: {
+                                                'X-CSRF-TOKEN': this.getCsrfToken(),
+                                                'Accept': 'application/json'
+                                            }
+                                        });
 
-            const data = await response.json();
+                                        if (!response.ok) {
+                                            const errorData = await response.json().catch(() => ({}));
+                                            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                                        }
 
-            if (!data.success) {
-                throw new Error(data.message || 'Gagal menghapus checklist');
-            }
+                                        const data = await response.json();
 
-            // ✅ HAPUS DARI ARRAY JIKA API SUCCESS
-            this.currentTask.checklist.splice(index, 1);
-            console.log('✅ Checklist deleted successfully');
-            // this.showNotification('Checklist berhasil dihapus', 'success');
-        }
-    } catch (error) {
-        console.error('❌ Error deleting checklist item:', error);
-        this.showNotification('Gagal menghapus checklist: ' + error.message, 'error');
-    }
-},
+                                        if (!data.success) {
+                                            throw new Error(data.message || 'Gagal menghapus checklist');
+                                        }
+
+                                        // ✅ HAPUS DARI ARRAY JIKA API SUCCESS
+                                        this.currentTask.checklist.splice(index, 1);
+                                        console.log('✅ Checklist deleted successfully');
+                                        // this.showNotification('Checklist berhasil dihapus', 'success');
+                                    }
+                                } catch (error) {
+                                    console.error('❌ Error deleting checklist item:', error);
+                                    this.showNotification('Gagal menghapus checklist: ' + error.message, 'error');
+                                }
+                            },
                             // ✅ NEW: Method untuk menambah checklist item di detail
                             // ✅ PERBAIKI: Method untuk menambah checklist item di detail dengan API call
-// ✅ PERBAIKI: Method untuk menambah checklist item di detail dengan API call
-// ✅ PERBAIKI: Method untuk menambah checklist item di detail
-async addChecklistItemToDetail() {
-    console.log('🔄 Adding checklist item...');
-    
-    if (!this.currentTask || !this.currentTask.id) {
-        this.showNotification('Task tidak ditemukan', 'error');
-        return;
-    }
+                            // ✅ PERBAIKI: Method untuk menambah checklist item di detail dengan API call
+                            // ✅ PERBAIKI: Method untuk menambah checklist item di detail
+                            async addChecklistItemToDetail() {
+                                console.log('🔄 Adding checklist item...');
 
-    // Initialize checklist array jika belum ada
-    if (!this.currentTask.checklist) {
-        this.currentTask.checklist = [];
-    }
+                                if (!this.currentTask || !this.currentTask.id) {
+                                    this.showNotification('Task tidak ditemukan', 'error');
+                                    return;
+                                }
 
-    // Buat item sementara untuk feedback UI cepat
-    const tempId = 'temp-' + Date.now();
-    const newItem = {
-        id: tempId,
-        title: 'Item checklist baru',
-        is_done: false,
-        done: false,
-        position: this.currentTask.checklist.length
-    };
+                                // Initialize checklist array jika belum ada
+                                if (!this.currentTask.checklist) {
+                                    this.currentTask.checklist = [];
+                                }
 
-    console.log('📝 Adding checklist for task:', this.currentTask.id);
+                                // Buat item sementara untuk feedback UI cepat
+                                const tempId = 'temp-' + Date.now();
+                                const newItem = {
+                                    id: tempId,
+                                    title: 'Item checklist baru',
+                                    is_done: false,
+                                    done: false,
+                                    position: this.currentTask.checklist.length
+                                };
 
-    // ✅ TAMBAHKAN KE ARRAY LOKAL (untuk UI feedback)
-    this.currentTask.checklist.push(newItem);
-    
-    try {
-        // ✅ GUNAKAN ENDPOINT YANG SUDAH ADA: POST /tasks/{taskId}/checklists
-        const response = await fetch(`/tasks/${this.currentTask.id}/checklists`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': this.getCsrfToken(),
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                title: 'Item checklist baru',
-                is_done: false
-            })
-        });
+                                console.log('📝 Adding checklist for task:', this.currentTask.id);
 
-        console.log('📥 Response status:', response.status);
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('❌ Server error:', response.status, errorText);
-            
-            // Hapus item temporary jika error
-            const index = this.currentTask.checklist.findIndex(item => item.id === tempId);
-            if (index !== -1) {
-                this.currentTask.checklist.splice(index, 1);
-            }
-            
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
+                                // ✅ TAMBAHKAN KE ARRAY LOKAL (untuk UI feedback)
+                                this.currentTask.checklist.push(newItem);
 
-        const data = await response.json();
-        console.log('📥 Response data:', data);
+                                try {
+                                    // ✅ GUNAKAN ENDPOINT YANG SUDAH ADA: POST /tasks/{taskId}/checklists
+                                    const response = await fetch(`/tasks/${this.currentTask.id}/checklists`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': this.getCsrfToken(),
+                                            'Accept': 'application/json'
+                                        },
+                                        body: JSON.stringify({
+                                            title: 'Item checklist baru',
+                                            is_done: false
+                                        })
+                                    });
 
-        if (data.success && data.checklist) {
-            // ✅ GANTI ITEM TEMPORARY DENGAN DATA REAL DARI SERVER
-            const index = this.currentTask.checklist.findIndex(item => item.id === tempId);
-            if (index !== -1) {
-                this.currentTask.checklist[index] = {
-                    id: data.checklist.id,
-                    title: data.checklist.title,
-                    is_done: data.checklist.is_done,
-                    done: data.checklist.is_done,
-                    position: data.checklist.position || index
-                };
-            } else {
-                // Jika tidak ditemukan temporary item, tambahkan baru
-                this.currentTask.checklist.push({
-                    id: data.checklist.id,
-                    title: data.checklist.title,
-                    is_done: data.checklist.is_done,
-                    done: data.checklist.is_done,
-                    position: data.checklist.position || this.currentTask.checklist.length
-                });
-            }
-            
-            // this.showNotification('Checklist berhasil ditambahkan', 'success');
-            console.log('✅ Checklist added successfully');
-            
-            // ✅ FOCUS KE INPUT BARU
-            this.$nextTick(() => {
-                setTimeout(() => {
-                    const inputs = document.querySelectorAll('#detail-checklist-container input[type="text"]');
-                    if (inputs.length > 0) {
-                        const lastInput = inputs[inputs.length - 1];
-                        lastInput.focus();
-                        lastInput.select();
-                    }
-                }, 200);
-            });
-        } else {
-            throw new Error(data.message || 'Gagal menambahkan checklist');
-        }
-    } catch (error) {
-        console.error('❌ Error adding checklist:', error);
-        this.showNotification('Gagal menambahkan checklist: ' + error.message, 'error');
-    }
+                                    console.log('📥 Response status:', response.status);
+
+                                    if (!response.ok) {
+                                        const errorText = await response.text();
+                                        console.error('❌ Server error:', response.status, errorText);
+
+                                        // Hapus item temporary jika error
+                                        const index = this.currentTask.checklist.findIndex(item => item.id === tempId);
+                                        if (index !== -1) {
+                                            this.currentTask.checklist.splice(index, 1);
+                                        }
+
+                                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                                    }
+
+                                    const data = await response.json();
+                                    console.log('📥 Response data:', data);
+
+                                    if (data.success && data.checklist) {
+                                        // ✅ GANTI ITEM TEMPORARY DENGAN DATA REAL DARI SERVER
+                                        const index = this.currentTask.checklist.findIndex(item => item.id === tempId);
+                                        if (index !== -1) {
+                                            this.currentTask.checklist[index] = {
+                                                id: data.checklist.id,
+                                                title: data.checklist.title,
+                                                is_done: data.checklist.is_done,
+                                                done: data.checklist.is_done,
+                                                position: data.checklist.position || index
+                                            };
+                                        } else {
+                                            // Jika tidak ditemukan temporary item, tambahkan baru
+                                            this.currentTask.checklist.push({
+                                                id: data.checklist.id,
+                                                title: data.checklist.title,
+                                                is_done: data.checklist.is_done,
+                                                done: data.checklist.is_done,
+                                                position: data.checklist.position || this.currentTask.checklist.length
+                                            });
+                                        }
+
+                                        // this.showNotification('Checklist berhasil ditambahkan', 'success');
+                                        console.log('✅ Checklist added successfully');
+
+                                        // ✅ FOCUS KE INPUT BARU
+                                        this.$nextTick(() => {
+                                            setTimeout(() => {
+                                                const inputs = document.querySelectorAll(
+                                                    '#detail-checklist-container input[type="text"]');
+                                                if (inputs.length > 0) {
+                                                    const lastInput = inputs[inputs.length - 1];
+                                                    lastInput.focus();
+                                                    lastInput.select();
+                                                }
+                                            }, 200);
+                                        });
+                                    } else {
+                                        throw new Error(data.message || 'Gagal menambahkan checklist');
+                                    }
+                                } catch (error) {
+                                    console.error('❌ Error adding checklist:', error);
+                                    this.showNotification('Gagal menambahkan checklist: ' + error.message, 'error');
+                                }
+                            },
+
+
+                            // ✅ Helper untuk notification yang lebih baik
+                            showNotification(message, type = 'info') {
+    const confirmButton = type === 'error' || type === 'warning';
+    showSwalAlert(message, type, confirmButton);
 },
 
 
-// ✅ Helper untuk notification yang lebih baik
-showNotification(message, type = 'info') {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
-        type === 'success' ? 'bg-green-100 border-green-400 text-green-700' :
-        type === 'error' ? 'bg-red-100 border-red-400 text-red-700' :
-        'bg-blue-100 border-blue-400 text-blue-700'
-    }`;
-    
-    notification.innerHTML = `
-        <div class="flex items-center gap-2">
-            ${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}
-            <span>${message}</span>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto remove after 3 seconds
-    setTimeout(() => {
-        notification.remove();
-    }, 3000);
-},
 
                             // ✅ NEW: Method untuk update checklist item di detail
                             // Di dalam kanbanApp() - GANTI method updateChecklistItemInDetail
-                           // ✅ PERBAIKI: Method untuk update checklist item di detail
-async updateChecklistItemInDetail(item) {
-    // Skip jika item masih kosong atau temporary
-    if (!item.title?.trim() || (item.id && item.id.toString().startsWith('temp-'))) {
-        console.log('⏭️ Skip update for empty or temporary item');
-        return;
-    }
+                            // ✅ PERBAIKI: Method untuk update checklist item di detail
+                            async updateChecklistItemInDetail(item) {
+                                // Skip jika item masih kosong atau temporary
+                                if (!item.title?.trim() || (item.id && item.id.toString().startsWith('temp-'))) {
+                                    console.log('⏭️ Skip update for empty or temporary item');
+                                    return;
+                                }
 
-    try {
-        // ✅ GUNAKAN ENDPOINT YANG SUDAH ADA: PUT /tasks/checklists/{checklistId}
-        if (item.id && !item.id.toString().startsWith('temp-')) {
-            console.log('🔄 Updating checklist item:', item.id);
+                                try {
+                                    // ✅ GUNAKAN ENDPOINT YANG SUDAH ADA: PUT /tasks/checklists/{checklistId}
+                                    if (item.id && !item.id.toString().startsWith('temp-')) {
+                                        console.log('🔄 Updating checklist item:', item.id);
 
-            const response = await fetch(`/tasks/checklists/${item.id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': this.getCsrfToken(),
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    title: item.title,
-                    is_done: item.is_done
-                })
-            });
+                                        const response = await fetch(`/tasks/checklists/${item.id}`, {
+                                            method: 'PUT',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-CSRF-TOKEN': this.getCsrfToken(),
+                                                'Accept': 'application/json'
+                                            },
+                                            body: JSON.stringify({
+                                                title: item.title,
+                                                is_done: item.is_done
+                                            })
+                                        });
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-            }
+                                        if (!response.ok) {
+                                            const errorData = await response.json().catch(() => ({}));
+                                            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                                        }
 
-            const data = await response.json();
+                                        const data = await response.json();
 
-            if (!data.success) {
-                throw new Error(data.message || 'Gagal menyimpan perubahan');
-            }
+                                        if (!data.success) {
+                                            throw new Error(data.message || 'Gagal menyimpan perubahan');
+                                        }
 
-            console.log('✅ Checklist updated successfully');
-            // this.showNotification('Checklist berhasil diupdate', 'success');
-        }
-    } catch (error) {
-        console.error('❌ Error updating checklist item:', error);
-        this.showNotification('Gagal mengupdate checklist: ' + error.message, 'error');
-    }
-},
+                                        console.log('✅ Checklist updated successfully');
+                                        // this.showNotification('Checklist berhasil diupdate', 'success');
+                                    }
+                                } catch (error) {
+                                    console.error('❌ Error updating checklist item:', error);
+                                    this.showNotification('Gagal mengupdate checklist: ' + error.message, 'error');
+                                }
+                            },
 
                             // ✅ NEW: Calculate progress untuk task detail
                             calculateTaskProgress(task) {
@@ -2244,19 +2343,56 @@ async updateChecklistItemInDetail(item) {
                             },
 
                             // ✅ NEW: Method untuk menghapus attachment dari detail
-                            removeAttachmentFromDetail(index) {
-                                if (!this.currentTask?.attachments) return;
+                            async removeAttachmentFromDetail(index) {
+    if (!this.currentTask?.attachments || !this.currentTask.attachments[index]) {
+        console.error('❌ Invalid attachment index:', index);
+        return;
+    }
 
-                                const file = this.currentTask.attachments[index];
-                                if (confirm(`Hapus file ${file.name}?`)) {
-                                    // Hapus dari server jika perlu
-                                    if (file.id) {
-                                        this.deleteAttachmentFromServer(file.id);
-                                    }
-                                    this.currentTask.attachments.splice(index, 1);
-                                    // this.showNotification('File berhasil dihapus', 'success');
-                                }
-                            },
+    const file = this.currentTask.attachments[index];
+
+    // 🔄 SweetAlert2 konfirmasi
+    const result = await Swal.fire({
+        icon: 'question',
+        title: 'Konfirmasi',
+        text: `Hapus file ${file.name}?`,
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        background: '#f7faff',
+        customClass: {
+            popup: 'swal-custom-popup',
+            title: 'swal-custom-title',
+            htmlContainer: 'swal-custom-text'
+        }
+    });
+
+    if (!result.isConfirmed) {
+        console.log('❌ Batal hapus.');
+        return;
+    }
+
+    // 🔥 Hapus dari server jika ada ID
+    if (file.id) {
+        this.deleteAttachmentFromServer(file.id);
+    }
+
+    // 🗑 Hapus dari array
+    this.currentTask.attachments.splice(index, 1);
+
+    console.log('✅ File removed:', file.name);
+
+    // Notifikasi sukses
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: 'File berhasil dihapus.',
+        timer: 1500,
+        showConfirmButton: false
+    });
+},
 
                             openTaskModalForColumn(columnId = null) {
                                 this.currentColumnId = columnId;
@@ -2845,24 +2981,24 @@ async updateChecklistItemInDetail(item) {
 
                             // Method untuk show notification yang lebih baik
                             // Di dalam kanbanApp() - UPDATE method showNotification
-                            showNotification(message, type = 'info') {
-                                const bgColor = type === 'success' ? 'bg-green-500' :
-                                    type === 'error' ? 'bg-red-500' :
-                                    type === 'warning' ? 'bg-yellow-500' :
-                                    'bg-blue-500';
+                            // showNotification(message, type = 'info') {
+                            //     const bgColor = type === 'success' ? 'bg-green-500' :
+                            //         type === 'error' ? 'bg-red-500' :
+                            //         type === 'warning' ? 'bg-yellow-500' :
+                            //         'bg-blue-500';
 
-                                // Untuk sementara pakai alert
-                                // Nanti bisa diganti dengan toast notification library
-                                if (type === 'error') {
-                                    alert('❌ ' + message);
-                                } else if (type === 'warning') {
-                                    alert('⚠️ ' + message);
-                                } else if (type === 'info') {
-                                    alert('ℹ️ ' + message);
-                                } else {
-                                    alert('✅ ' + message);
-                                }
-                            },
+                            //     // Untuk sementara pakai alert
+                            //     // Nanti bisa diganti dengan toast notification library
+                            //     if (type === 'error') {
+                            //         alert('❌ ' + message);
+                            //     } else if (type === 'warning') {
+                            //         alert('⚠️ ' + message);
+                            //     } else if (type === 'info') {
+                            //         alert('ℹ️ ' + message);
+                            //     } else {
+                            //         alert('✅ ' + message);
+                            //     }
+                            // },
 
                             filteredLabels() {
                                 if (!this.labelData.searchLabel) {
@@ -3108,26 +3244,57 @@ async updateChecklistItemInDetail(item) {
                             },
 
                             // Attachments
-                            removeAttachment(index) {
-                                if (!this.taskForm.attachments || !this.taskForm.attachments[index]) {
-                                    console.error('❌ Invalid attachment index:', index);
-                                    return;
-                                }
+async removeAttachment(index) {
+    if (!this.taskForm.attachments || !this.taskForm.attachments[index]) {
+        console.error('❌ Invalid attachment index:', index);
+        return;
+    }
 
-                                const file = this.taskForm.attachments[index];
+    const file = this.taskForm.attachments[index];
 
-                                if (confirm(`Hapus file ${file.name}?`)) {
-                                    // Hapus dari server jika sudah ada ID
-                                    if (file.id && !file.id.toString().startsWith('temp-')) {
-                                        this.deleteAttachmentFromServer(file.id);
-                                    }
+    // 🔄 SweetAlert2 konfirmasi
+    const result = await Swal.fire({
+        icon: 'question',
+        title: 'Konfirmasi',
+        text: `Hapus file ${file.name}?`,
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        background: '#f7faff',
+        customClass: {
+            popup: 'swal-custom-popup',
+            title: 'swal-custom-title',
+            htmlContainer: 'swal-custom-text'
+        }
+    });
 
-                                    // Hapus dari array
-                                    this.taskForm.attachments.splice(index, 1);
-                                    console.log('✅ File removed:', file.name);
-                                    console.log('📊 Remaining attachments:', this.taskForm.attachments.length);
-                                }
-                            },
+    if (!result.isConfirmed) {
+        console.log('❌ Batal hapus.');
+        return;
+    }
+
+    // 🔥 Hapus dari server jika bukan file temp
+    if (file.id && !file.id.toString().startsWith('temp-')) {
+        this.deleteAttachmentFromServer(file.id);
+    }
+
+    // 🗑 Hapus dari array
+    this.taskForm.attachments.splice(index, 1);
+
+    console.log('✅ File removed:', file.name);
+    console.log('📊 Remaining attachments:', this.taskForm.attachments.length);
+
+    // Notifikasi sukses
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: 'File berhasil dihapus.',
+        timer: 1500,
+        showConfirmButton: false
+    });
+},
 
                             // Add new list
                             // Add new list
@@ -3237,7 +3404,7 @@ async updateChecklistItemInDetail(item) {
                                 this.replyView.parentComment.replies.push(newReply);
                                 this.closeReplyView();
 
-                                alert('Balasan berhasil dikirim!');
+                                // alert('Balasan berhasil dikirim!');
                             },
 
                             // Format tanggal untuk komentar
@@ -3639,17 +3806,18 @@ async updateChecklistItemInDetail(item) {
                             // Di dalam kanbanApp() - PERBAIKI method addNewColumn
                             async addNewColumn() {
                                 if (!this.newListName.trim()) {
-                                    alert('Nama kolom tidak boleh kosong');
-                                    return;
-                                }
+    showSwalAlert('Nama kolom tidak boleh kosong', 'warning', true);
+    return;
+}
+
 
                                 try {
                                     this.addingColumn = true;
                                     const workspaceId = this.getCurrentWorkspaceId();
                                     if (!workspaceId) {
-                                        alert('Workspace tidak valid');
-                                        return;
-                                    }
+    showSwalAlert('Workspace tidak valid', 'error', true);
+    return;
+}
 
                                     const response = await fetch('/tasks/board-columns', {
                                         method: 'POST',
@@ -3682,20 +3850,36 @@ async updateChecklistItemInDetail(item) {
 
                                         this.showNotification('Kolom berhasil ditambahkan', 'success');
                                     } else {
-                                        alert('Gagal menambahkan kolom: ' + data.message);
-                                    }
+    showSwalAlert('Gagal menambahkan kolom: ' + data.message, 'error', true);
+}
                                 } catch (error) {
-                                    console.error('Error adding column:', error);
-                                    alert('Terjadi kesalahan saat menambahkan kolom');
-                                } finally {
+    console.error('Error adding column:', error);
+    showSwalAlert('Terjadi kesalahan saat menambahkan kolom', 'error', true);
+} finally {
                                     this.addingColumn = false;
                                 }
                             },
 
                             // ✅ NEW: Method untuk menghapus kolom
                             async deleteColumn(columnId) {
-                                if (!confirm('Hapus kolom ini?')) return;
+const result = await Swal.fire({
+    icon: 'warning',
+    title: 'Konfirmasi',
+    text: 'Hapus kolom ini?',
+    showCancelButton: true,
+    confirmButtonText: 'Ya, Hapus',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
+    background: '#f7faff',
+    customClass: {
+        popup: 'swal-custom-popup',
+        title: 'swal-custom-title',
+        htmlContainer: 'swal-custom-text'
+    }
+});
 
+if (!result.isConfirmed) return;
                                 try {
                                     const response = await fetch(`/tasks/board-columns/${columnId}`, {
                                         method: 'DELETE',
@@ -3716,215 +3900,216 @@ async updateChecklistItemInDetail(item) {
 
                             // ✅ NEW: Initialize Sortable untuk semua kolom
                             // Di dalam kanbanApp() - PERBAIKI method initializeSortable
-initializeSortable() {
-    // Tunggu DOM siap
-    this.$nextTick(() => {
-        setTimeout(() => {
-            this.boardColumns.forEach(column => {
-                this.initializeSortableForColumn(column.id);
-            });
-        }, 300);
-    });
-},
+                            initializeSortable() {
+                                // Tunggu DOM siap
+                                this.$nextTick(() => {
+                                    setTimeout(() => {
+                                        this.boardColumns.forEach(column => {
+                                            this.initializeSortableForColumn(column.id);
+                                        });
+                                    }, 300);
+                                });
+                            },
 
                             // Di kanbanApp() - update method initializeSortableForColumn
                             // Di dalam kanbanApp() - PERBAIKI method ini
                             // Di dalam kanbanApp() - PERBAIKI method initializeSortableForColumn
-initializeSortableForColumn(columnId) {
-    // Tunggu sedikit untuk memastikan DOM sudah dirender
-    this.$nextTick(() => {
-        setTimeout(() => {
-            const el = document.getElementById(`column-${columnId}`);
-            
-            if (el && !el._sortableInstance) {
-                el._sortableInstance = new Sortable(el, {
-                    group: {
-                        name: 'kanban',
-                        pull: true,
-                        put: true
-                    },
-                    animation: 150,
-                    ghostClass: 'sortable-ghost',
-                    chosenClass: 'sortable-chosen',
-                    dragClass: 'sortable-drag',
-                    filter: '.ignore-elements', // Filter elemen yang tidak bisa didrag
-                    preventOnFilter: false,
-                    forceFallback: false, // Gunakan native HTML5 DnD
-                    fallbackClass: 'sortable-fallback',
-                    fallbackOnBody: true,
-                    fallbackTolerance: 0,
-                    scroll: true,
-                    scrollSensitivity: 30,
-                    scrollSpeed: 10,
-                    bubbleScroll: true,
-                    
-                    // Event handlers
-                    onStart: (evt) => {
-                        evt.item.classList.add('dragging-active');
-                        console.log('Drag started:', evt.item.dataset.taskId);
-                    },
-                    
-                    onEnd: (evt) => {
-                        evt.item.classList.remove('dragging-active');
-                        this.handleTaskMove(evt, columnId);
-                    },
-                    
-                    onAdd: (evt) => {
-                        console.log('Task added to column:', columnId);
-                    },
-                    
-                    onRemove: (evt) => {
-                        console.log('Task removed from column:', columnId);
-                    },
-                    
-                    // Untuk mengatasi blur text
-                    setData: (dataTransfer, dragEl) => {
-                        // Gunakan text/plain untuk mencegah browser rendering default
-                        dataTransfer.setData('text/plain', dragEl.dataset.taskId);
-                    },
-                    
-                    // Optional: Custom drag image
-                    dragImage: (dragEl) => {
-                        // Buat custom drag image untuk visual yang lebih baik
-                        const dragImage = dragEl.cloneNode(true);
-                        dragImage.style.opacity = '0.7';
-                        dragImage.style.transform = 'rotate(5deg)';
-                        dragImage.style.width = dragEl.offsetWidth + 'px';
-                        dragImage.style.height = dragEl.offsetHeight + 'px';
-                        return dragImage;
-                    }
-                });
+                            initializeSortableForColumn(columnId) {
+                                // Tunggu sedikit untuk memastikan DOM sudah dirender
+                                this.$nextTick(() => {
+                                    setTimeout(() => {
+                                        const el = document.getElementById(`column-${columnId}`);
 
-                console.log('✅ Sortable initialized for column:', columnId);
-            }
-        }, 300);
-    });
-},
+                                        if (el && !el._sortableInstance) {
+                                            el._sortableInstance = new Sortable(el, {
+                                                group: {
+                                                    name: 'kanban',
+                                                    pull: true,
+                                                    put: true
+                                                },
+                                                animation: 150,
+                                                ghostClass: 'sortable-ghost',
+                                                chosenClass: 'sortable-chosen',
+                                                dragClass: 'sortable-drag',
+                                                filter: '.ignore-elements', // Filter elemen yang tidak bisa didrag
+                                                preventOnFilter: false,
+                                                forceFallback: false, // Gunakan native HTML5 DnD
+                                                fallbackClass: 'sortable-fallback',
+                                                fallbackOnBody: true,
+                                                fallbackTolerance: 0,
+                                                scroll: true,
+                                                scrollSensitivity: 30,
+                                                scrollSpeed: 10,
+                                                bubbleScroll: true,
 
+                                                // Event handlers
+                                                onStart: (evt) => {
+                                                    evt.item.classList.add('dragging-active');
+                                                    console.log('Drag started:', evt.item.dataset.taskId);
+                                                },
 
+                                                onEnd: (evt) => {
+                                                    evt.item.classList.remove('dragging-active');
+                                                    this.handleTaskMove(evt, columnId);
+                                                },
 
+                                                onAdd: (evt) => {
+                                                    console.log('Task added to column:', columnId);
+                                                },
 
-// Di dalam kanbanApp() - tambahkan methods ini
-onDragStart(event, taskId) {
-    console.log('Drag start for task:', taskId);
-    
-    // Tambahkan class untuk styling drag
-    event.currentTarget.classList.add('dragging');
-    
-    // Set data transfer
-    event.dataTransfer.setData('text/plain', taskId.toString());
-    event.dataTransfer.effectAllowed = 'move';
-    
-    // Optional: Set custom drag image
-    setTimeout(() => {
-        event.currentTarget.style.opacity = '0.4';
-    }, 0);
-},
+                                                onRemove: (evt) => {
+                                                    console.log('Task removed from column:', columnId);
+                                                },
 
-onDragEnd(event) {
-    console.log('Drag end');
-    event.currentTarget.classList.remove('dragging');
-    event.currentTarget.style.opacity = '1';
-},
+                                                // Untuk mengatasi blur text
+                                                setData: (dataTransfer, dragEl) => {
+                                                    // Gunakan text/plain untuk mencegah browser rendering default
+                                                    dataTransfer.setData('text/plain', dragEl.dataset
+                                                        .taskId);
+                                                },
 
-onDragOver(event) {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
-    event.currentTarget.classList.add('drag-over');
-},
+                                                // Optional: Custom drag image
+                                                dragImage: (dragEl) => {
+                                                    // Buat custom drag image untuk visual yang lebih baik
+                                                    const dragImage = dragEl.cloneNode(true);
+                                                    dragImage.style.opacity = '0.7';
+                                                    dragImage.style.transform = 'rotate(5deg)';
+                                                    dragImage.style.width = dragEl.offsetWidth + 'px';
+                                                    dragImage.style.height = dragEl.offsetHeight + 'px';
+                                                    return dragImage;
+                                                }
+                                            });
 
-onDragLeave(event) {
-    event.currentTarget.classList.remove('drag-over');
-},
-
-onDrop(event, columnId) {
-    event.preventDefault();
-    event.currentTarget.classList.remove('drag-over');
-    
-    const taskId = event.dataTransfer.getData('text/plain');
-    console.log('Drop task:', taskId, 'to column:', columnId);
-    
-    // Handle task move
-    if (taskId) {
-        this.moveTaskToColumn(taskId, columnId);
-    }
-},
+                                            console.log('✅ Sortable initialized for column:', columnId);
+                                        }
+                                    }, 300);
+                                });
+                            },
 
 
-// Di dalam kanbanApp() - tambahkan method ini
-async moveTaskToColumn(taskId, columnId) {
-    try {
-        console.log('Moving task:', taskId, 'to column:', columnId);
 
-        const response = await fetch('/tasks/update-column', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': this.getCsrfToken()
-            },
-            body: JSON.stringify({
-                task_id: taskId,
-                board_column_id: columnId
-            })
-        });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('HTTP Error:', response.status, errorText);
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
+                            // Di dalam kanbanApp() - tambahkan methods ini
+                            onDragStart(event, taskId) {
+                                console.log('Drag start for task:', taskId);
 
-        const data = await response.json();
+                                // Tambahkan class untuk styling drag
+                                event.currentTarget.classList.add('dragging');
 
-        if (data.success) {
-            // Update local state
-            const taskIndex = this.tasks.findIndex(t => t.id == taskId);
-            if (taskIndex !== -1) {
-                this.tasks[taskIndex].board_column_id = columnId;
-                this.tasks[taskIndex].status = data.new_status;
+                                // Set data transfer
+                                event.dataTransfer.setData('text/plain', taskId.toString());
+                                event.dataTransfer.effectAllowed = 'move';
 
-                this.showNotification(`Tugas dipindahkan ke ${data.new_column_name}`, 'success');
-                console.log('Task moved successfully:', data);
-            }
-        } else {
-            console.error('Failed to move task:', data.message);
-            this.showNotification(`Gagal memindahkan tugas: ${data.message}`, 'error');
-            
-            // Reload tasks untuk sync ulang
-            this.$nextTick(() => {
-                this.loadKanbanTasks();
-            });
-        }
-    } catch (error) {
-        console.error('Error moving task:', error);
-        this.showNotification('Gagal memindahkan tugas: ' + error.message, 'error');
-        
-        // Reload tasks untuk sync ulang
-        this.$nextTick(() => {
-            this.loadKanbanTasks();
-        });
-    }
-},
+                                // Optional: Set custom drag image
+                                setTimeout(() => {
+                                    event.currentTarget.style.opacity = '0.4';
+                                }, 0);
+                            },
+
+                            onDragEnd(event) {
+                                console.log('Drag end');
+                                event.currentTarget.classList.remove('dragging');
+                                event.currentTarget.style.opacity = '1';
+                            },
+
+                            onDragOver(event) {
+                                event.preventDefault();
+                                event.dataTransfer.dropEffect = 'move';
+                                event.currentTarget.classList.add('drag-over');
+                            },
+
+                            onDragLeave(event) {
+                                event.currentTarget.classList.remove('drag-over');
+                            },
+
+                            onDrop(event, columnId) {
+                                event.preventDefault();
+                                event.currentTarget.classList.remove('drag-over');
+
+                                const taskId = event.dataTransfer.getData('text/plain');
+                                console.log('Drop task:', taskId, 'to column:', columnId);
+
+                                // Handle task move
+                                if (taskId) {
+                                    this.moveTaskToColumn(taskId, columnId);
+                                }
+                            },
+
+
+                            // Di dalam kanbanApp() - tambahkan method ini
+                            async moveTaskToColumn(taskId, columnId) {
+                                try {
+                                    console.log('Moving task:', taskId, 'to column:', columnId);
+
+                                    const response = await fetch('/tasks/update-column', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': this.getCsrfToken()
+                                        },
+                                        body: JSON.stringify({
+                                            task_id: taskId,
+                                            board_column_id: columnId
+                                        })
+                                    });
+
+                                    if (!response.ok) {
+                                        const errorText = await response.text();
+                                        console.error('HTTP Error:', response.status, errorText);
+                                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                                    }
+
+                                    const data = await response.json();
+
+                                    if (data.success) {
+                                        // Update local state
+                                        const taskIndex = this.tasks.findIndex(t => t.id == taskId);
+                                        if (taskIndex !== -1) {
+                                            this.tasks[taskIndex].board_column_id = columnId;
+                                            this.tasks[taskIndex].status = data.new_status;
+
+                                            this.showNotification(`Tugas dipindahkan ke ${data.new_column_name}`, 'success');
+                                            console.log('Task moved successfully:', data);
+                                        }
+                                    } else {
+                                        console.error('Failed to move task:', data.message);
+                                        this.showNotification(`Gagal memindahkan tugas: ${data.message}`, 'error');
+
+                                        // Reload tasks untuk sync ulang
+                                        this.$nextTick(() => {
+                                            this.loadKanbanTasks();
+                                        });
+                                    }
+                                } catch (error) {
+                                    console.error('Error moving task:', error);
+                                    this.showNotification('Gagal memindahkan tugas: ' + error.message, 'error');
+
+                                    // Reload tasks untuk sync ulang
+                                    this.$nextTick(() => {
+                                        this.loadKanbanTasks();
+                                    });
+                                }
+                            },
 
                             // Update method handleTaskMove
                             // Di kanbanApp() - perbaiki method handleTaskMove
                             async handleTaskMove(evt, columnId) {
-    const taskId = evt.item.dataset.taskId;
-    const fromColumnId = evt.from.id.replace('column-', '');
-    const toColumnId = evt.to.id.replace('column-', '');
+                                const taskId = evt.item.dataset.taskId;
+                                const fromColumnId = evt.from.id.replace('column-', '');
+                                const toColumnId = evt.to.id.replace('column-', '');
 
-    console.log('🔄 Drag & Drop Event:', {
-        taskId,
-        fromColumnId,
-        toColumnId,
-        oldIndex: evt.oldIndex,
-        newIndex: evt.newIndex
-    });
+                                console.log('🔄 Drag & Drop Event:', {
+                                    taskId,
+                                    fromColumnId,
+                                    toColumnId,
+                                    oldIndex: evt.oldIndex,
+                                    newIndex: evt.newIndex
+                                });
 
-    if (fromColumnId === toColumnId) {
-        console.log('⚠️ Task dipindahkan dalam kolom yang sama');
-        return;
-    }
+                                if (fromColumnId === toColumnId) {
+                                    console.log('⚠️ Task dipindahkan dalam kolom yang sama');
+                                    return;
+                                }
 
                                 try {
                                     console.log('Memindahkan task:', taskId, 'dari:', fromColumnId, 'ke:', toColumnId);
@@ -4014,10 +4199,10 @@ async moveTaskToColumn(taskId, columnId) {
                             },
 
                             // ✅ NEW: Helper untuk notification
-                            showNotification(message, type = 'info') {
-                                // Implementasi notification system Anda
-                                alert(message); // Sementara pakai alert, bisa diganti dengan toast notification
-                            },
+                            // showNotification(message, type = 'info') {
+                            //     // Implementasi notification system Anda
+                            //     alert(message); // Sementara pakai alert, bisa diganti dengan toast notification
+                            // },
 
                             // ✅ Update method addList yang lama
                             async addList() {
@@ -4026,65 +4211,65 @@ async moveTaskToColumn(taskId, columnId) {
 
                             // ✅ Initialize ketika component mounted
                             // Update method init() untuk inisialisasi yang lebih baik
-init() {
-    try {
-        // Inisialisasi state dengan nilai default
-        this.currentTask = {
-            is_secret: false,
-            labels: [],
-            startDate: '',
-            startTime: '',
-            dueDate: '',
-            dueTime: '',
-            members: []
-        };
+                            init() {
+                                try {
+                                    // Inisialisasi state dengan nilai default
+                                    this.currentTask = {
+                                        is_secret: false,
+                                        labels: [],
+                                        startDate: '',
+                                        startTime: '',
+                                        dueDate: '',
+                                        dueTime: '',
+                                        members: []
+                                    };
 
-        this.taskForm = {
-            title: '',
-            phase: '',
-            members: [],
-            is_secret: false,
-            notes: '',
-            description: '',
-            attachments: [],
-            checklists: [],
-            labels: [],
-            startDate: '',
-            startTime: '',
-            dueDate: '',
-            dueTime: ''
-        };
+                                    this.taskForm = {
+                                        title: '',
+                                        phase: '',
+                                        members: [],
+                                        is_secret: false,
+                                        notes: '',
+                                        description: '',
+                                        attachments: [],
+                                        checklists: [],
+                                        labels: [],
+                                        startDate: '',
+                                        startTime: '',
+                                        dueDate: '',
+                                        dueTime: ''
+                                    };
 
-        this.labelData = {
-            labels: [],
-            colors: [],
-            selectedLabelIds: [],
-            newLabelName: '',
-            newLabelColor: null,
-            searchLabel: ''
-        };
+                                    this.labelData = {
+                                        labels: [],
+                                        colors: [],
+                                        selectedLabelIds: [],
+                                        newLabelName: '',
+                                        newLabelColor: null,
+                                        searchLabel: ''
+                                    };
 
-        // Load data
-        this.loadBoardColumns();
-        this.loadKanbanTasks();
-        this.loadTimelineData();
-        this.loadWorkspaceMembers();
-        this.loadLabels();
-        this.loadColors();
-        this.uploadingDetail = false;
-        this.uploadProgressDetail = 0;
+                                    // Load data
+                                    this.loadBoardColumns();
+                                    this.loadKanbanTasks();
+                                    this.loadTimelineData();
+                                    this.loadWorkspaceMembers();
+                                    this.loadLabels();
+                                    this.loadColors();
+                                    this.uploadingDetail = false;
+                                    this.uploadProgressDetail = 0;
 
-        console.log('✅ Aplikasi initialized dengan semua state');
-        
-        // Inisialisasi Sortable setelah semua data dimuat
-        setTimeout(() => {
-            this.initializeSortable();
-        }, 1000);
-        
-    } catch (error) {
-        console.error('❌ Error initializing app:', error);
-    }
-},
+                                    console.log('✅ Aplikasi initialized dengan semua state');
+
+                                    // Inisialisasi Sortable setelah semua data dimuat
+                                    setTimeout(() => {
+                                        this.initializeSortable();
+                                    }, 1000);
+
+                                } catch (error) {
+                                    console.error('❌ Error initializing app:', error);
+                                }
+                            },
 
                             // ✅ NEW: Method untuk load tasks dari database
                             async loadTasks() {
@@ -4481,9 +4666,9 @@ init() {
                             // ✅ PERBAIKI: Method createNewLabel dengan debugging
                             async createNewLabel() {
                                 if (!this.labelData.newLabelName.trim()) {
-                                    alert('Nama label harus diisi');
-                                    return null;
-                                }
+    showSwalAlert('Nama label harus diisi', 'warning', true);
+    return null;
+}
 
                                 if (!this.labelData.newLabelColor) {
                                     alert('Warna label harus dipilih');
@@ -4575,7 +4760,7 @@ init() {
 
                                         this.taskForm.labels = selectedLabels;
                                         this.openLabelModal = false;
-                                        this.showNotification('Label berhasil dipilih', 'success');
+                                        // this.showNotification('Label berhasil dipilih', 'success');
                                         return;
                                     }
 
@@ -4598,8 +4783,8 @@ init() {
                                         this.openLabelModal = false;
 
                                         console.log('✅ Label di-stage (belum tersimpan ke database):', selectedLabels);
-                                        this.showNotification('Label berhasil dipilih. Klik "Simpan Perubahan" untuk menyimpan.',
-                                            'info');
+                                        // this.showNotification('Label berhasil dipilih. Klik "Simpan Perubahan" untuk menyimpan.',
+                                        //     'info');
                                         return;
                                     }
 
@@ -4738,19 +4923,57 @@ init() {
                                 });
                             },
 
-                            removeChecklistItem(index) {
-                                if (confirm('Hapus item checklist ini?')) {
-                                    const item = this.taskForm.checklists[index];
+                            async removeChecklistItem(index) {
+    if (!this.taskForm.checklists || !this.taskForm.checklists[index]) {
+        console.error('❌ Invalid checklist index:', index);
+        return;
+    }
 
-                                    // Jika item sudah ada di database, hapus via API
-                                    if (item.id && !item.id.startsWith('temp-')) {
-                                        this.deleteChecklistFromAPI(item.id);
-                                    }
+    const item = this.taskForm.checklists[index];
 
-                                    this.taskForm.checklists.splice(index, 1);
-                                    this.updateChecklistPositions();
-                                }
-                            },
+    // 🔄 SweetAlert2 konfirmasi
+    const result = await Swal.fire({
+        icon: 'question',
+        title: 'Konfirmasi',
+        text: 'Hapus item checklist ini?',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        background: '#f7faff',
+        customClass: {
+            popup: 'swal-custom-popup',
+            title: 'swal-custom-title',
+            htmlContainer: 'swal-custom-text'
+        }
+    });
+
+    if (!result.isConfirmed) {
+        console.log('❌ Batal hapus checklist.');
+        return;
+    }
+
+    // 🔥 Hapus dari server jika sudah ada ID (bukan temp)
+    if (item.id && !item.id.toString().startsWith('temp-')) {
+        this.deleteChecklistFromAPI(item.id);
+    }
+
+    // 🗑 Hapus dari array
+    this.taskForm.checklists.splice(index, 1);
+
+    // 📌 Update posisi checklist di UI / DB
+    this.updateChecklistPositions();
+
+    // Notifikasi sukses
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: 'Checklist berhasil dihapus.',
+        timer: 1500,
+        showConfirmButton: false
+    });
+},
 
                             async updateChecklistItem(item) {
                                 // Jika item sudah ada di database, update via API
@@ -5006,16 +5229,16 @@ init() {
                                 return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
                             },
 
-                            removeAttachment(index) {
-                                const file = this.taskForm.attachments[index];
-                                if (confirm(`Hapus file ${file.name}?`)) {
-                                    // Jika file sudah diupload ke server, hapus dari server juga
-                                    if (file.id && !file.id.toString().startsWith('temp-')) {
-                                        this.deleteAttachmentFromServer(file.id);
-                                    }
-                                    this.taskForm.attachments.splice(index, 1);
-                                }
-                            },
+                            // removeAttachment(index) {
+                            //     const file = this.taskForm.attachments[index];
+                            //     if (confirm(`Hapus file ${file.name}?`)) {
+                            //         // Jika file sudah diupload ke server, hapus dari server juga
+                            //         if (file.id && !file.id.toString().startsWith('temp-')) {
+                            //             this.deleteAttachmentFromServer(file.id);
+                            //         }
+                            //         this.taskForm.attachments.splice(index, 1);
+                            //     }
+                            // },
 
                             async deleteAttachmentFromServer(attachmentId) {
                                 try {
@@ -5486,10 +5709,26 @@ init() {
 
                             // Di dalam kanbanApp() - tambahkan method ini
                             async deleteCustomColumn(columnId) {
-                                if (!confirm('Hapus kolom ini? Semua tugas harus dipindahkan terlebih dahulu.')) {
-                                    return;
-                                }
+                                const result = await Swal.fire({
+    icon: 'warning',
+    title: 'Konfirmasi Hapus Kolom',
+    text: 'Semua tugas harus dipindahkan terlebih dahulu.',
+    showCancelButton: true,
+    confirmButtonText: 'Ya, Hapus',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
+    background: '#f7faff',
+    customClass: {
+        popup: 'swal-custom-popup',
+        title: 'swal-custom-title',
+        htmlContainer: 'swal-custom-text'
+    }
+});
 
+if (!result.isConfirmed) {
+    return;
+}
                                 try {
                                     console.log('🔄 Deleting custom column:', columnId);
 
@@ -5973,7 +6212,7 @@ init() {
                                                 });
 
                                                 console.log('✅ Image uploaded:', data.url);
-                                                this.showNotification('Image berhasil diupload', 'success');
+                                                // this.showNotification('Image berhasil diupload', 'success');
                                             } else {
                                                 throw new Error(data.error || 'Upload gagal');
                                             }
@@ -6055,7 +6294,7 @@ init() {
                                                 });
 
                                                 console.log('✅ File uploaded:', data.url);
-                                                this.showNotification('File berhasil diupload', 'success');
+                                                // this.showNotification('File berhasil diupload', 'success');
                                             } else {
                                                 throw new Error(data.error || 'Upload gagal');
                                             }
@@ -6139,9 +6378,9 @@ init() {
 
                                 const content = this.getEditorData('task-main-comment-editor').trim();
                                 if (!content) {
-                                    this.showNotification('Komentar tidak boleh kosong', 'error');
-                                    return;
-                                }
+    showSwalAlert('Komentar tidak boleh kosong', 'warning', true);
+    return;
+}
 
                                 try {
                                     const preId = window.currentMainCommentId || this.generateUUID();
@@ -6181,7 +6420,7 @@ init() {
                                             this.initializeMainEditor();
                                         });
 
-                                        this.showNotification('Komentar berhasil dikirim', 'success');
+                                        // this.showNotification('Komentar berhasil dikirim', 'success');
                                     } else {
                                         throw new Error(data.message || 'Gagal mengirim komentar');
                                     }
@@ -6202,9 +6441,9 @@ init() {
                                 const content = this.getEditorData(editorId).trim();
 
                                 if (!content) {
-                                    this.showNotification('Balasan tidak boleh kosong', 'error');
-                                    return;
-                                }
+    showSwalAlert('Balasan tidak boleh kosong', 'warning', true);
+    return;
+}
 
                                 try {
                                     const preId = window[`currentReplyId_${parent.id}`] || this.generateUUID();
@@ -6240,7 +6479,7 @@ init() {
 
                                         parent.replies.push(newReply);
                                         this.closeReplyView();
-                                        this.showNotification('Balasan berhasil dikirim', 'success');
+                                        // this.showNotification('Balasan berhasil dikirim', 'success');
                                     } else {
                                         throw new Error(data.message || 'Gagal mengirim balasan');
                                     }
