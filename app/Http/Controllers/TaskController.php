@@ -2020,54 +2020,59 @@ public function deleteChecklist($checklistId)
     }
 
     // ✅ NEW: Create checklist item untuk task
-    public function createChecklistForTask(Request $request, $taskId)
-    {
-        try {
-            $task = Task::findOrFail($taskId);
-            $user = Auth::user();
+   // Di TaskController.php - method createChecklistForTask
+public function createChecklistForTask(Request $request, $taskId)
+{
+    try {
+        $task = Task::findOrFail($taskId);
+        $user = Auth::user();
 
-            // Validasi akses
-            if (!$this->canAccessWorkspace($task->workspace_id)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke task ini'
-                ], 403);
-            }
-
-            $validator = Validator::make($request->all(), [
-                'title' => 'required|string|max:255'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validasi gagal',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $checklist = Checklist::create([
-                'id' => Str::uuid()->toString(),
-                'task_id' => $taskId,
-                'title' => $request->title,
-                'is_done' => false,
-                'position' => Checklist::where('task_id', $taskId)->max('position') + 1
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Checklist berhasil ditambahkan',
-                'checklist' => $checklist
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error creating checklist for task: ' . $e->getMessage());
+        // Validasi akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menambahkan checklist: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
         }
-    }
 
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|max:255',
+            'is_done' => 'boolean' // ✅ TAMBAHKAN validasi untuk is_done
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Hitung posisi terakhir (handle null)
+        $lastPosition = Checklist::where('task_id', $taskId)->max('position');
+        $newPosition = ($lastPosition !== null) ? $lastPosition + 1 : 0;
+
+        $checklist = Checklist::create([
+            'id' => Str::uuid()->toString(),
+            'task_id' => $taskId,
+            'title' => $request->title,
+            'is_done' => $request->is_done ?? false, // ✅ TERIMA is_done dari request
+            'position' => $newPosition
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Checklist berhasil ditambahkan',
+            'checklist' => $checklist
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error creating checklist for task: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menambahkan checklist: ' . $e->getMessage()
+        ], 500);
+    }
+}
 
 
     // Di TaskController - tambahkan method untuk update attachments
@@ -3004,6 +3009,86 @@ public function deleteColumnWithTasksTransfer(Request $request, $columnId)
         return response()->json([
             'success' => false,
             'message' => 'Gagal menghapus kolom: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+// ✅ NEW: Create checklist untuk task yang sudah ada
+public function createChecklistForExistingTask(Request $request, $taskId)
+{
+    $request->validate([
+        'title' => 'required|string|max:255',
+        'is_done' => 'boolean'
+    ]);
+
+    try {
+        $task = Task::findOrFail($taskId);
+        $user = Auth::user();
+
+        // ✅ VALIDASI: Gunakan method helper untuk cek akses
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
+        }
+
+        // Hitung posisi terakhir
+        $lastPosition = Checklist::where('task_id', $taskId)->max('position');
+
+        $checklist = Checklist::create([
+            'id' => Str::uuid()->toString(),
+            'task_id' => $taskId,
+            'title' => $request->title,
+            'is_done' => $request->is_done ?? false,
+            'position' => ($lastPosition ? $lastPosition + 1 : 0)
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Checklist berhasil ditambahkan',
+            'checklist' => $checklist
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error creating checklist for existing task: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menambahkan checklist: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
+// ✅ NEW: Get all checklists for task
+public function getAllChecklists($taskId)
+{
+    try {
+        $task = Task::findOrFail($taskId);
+        $user = Auth::user();
+
+        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki akses ke task ini'
+            ], 403);
+        }
+
+        $checklists = Checklist::where('task_id', $taskId)
+            ->orderBy('position')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'checklists' => $checklists
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error getting all checklists: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil data checklist'
         ], 500);
     }
 }

@@ -208,6 +208,9 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/checklists/{checklistId}', [TaskController::class, 'deleteChecklist'])->name('tasks.checklists.delete');
         Route::put('/checklists/positions/update', [TaskController::class, 'updateChecklistPositions']);
 
+        //yang baru
+        Route::get('/tasks/{taskId}/checklists/all', [TaskController::class, 'getAllChecklists'])->name('tasks.checklists.all');
+
         // Attachments
         Route::post('/attachments/upload', [TaskController::class, 'uploadAttachment'])->name('tasks.attachments.upload');
         Route::get('/{taskId}/attachments', [TaskController::class, 'getTaskAttachments'])->name('tasks.attachments.get');
@@ -225,14 +228,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/workspace/{workspaceId}/timeline', [TaskController::class, 'getTimelineData'])->name('tasks.timeline');
 
         // Task deletion routes
-    Route::delete('/{taskId}', [TaskController::class, 'deleteTask'])->name('tasks.delete');
-    Route::delete('/{taskId}/force', [TaskController::class, 'forceDeleteTask'])->name('tasks.force-delete');
-    Route::post('/{taskId}/restore', [TaskController::class, 'restoreTask'])->name('tasks.restore');
+        Route::delete('/{taskId}', [TaskController::class, 'deleteTask'])->name('tasks.delete');
+        Route::delete('/{taskId}/force', [TaskController::class, 'forceDeleteTask'])->name('tasks.force-delete');
+        Route::post('/{taskId}/restore', [TaskController::class, 'restoreTask'])->name('tasks.restore');
 
-    Route::delete('/custom-columns/{columnId}', [TaskController::class, 'deleteCustomColumn'])
-    ->name('tasks.custom-columns.delete');
-
-        
+        Route::delete('/custom-columns/{columnId}', [TaskController::class, 'deleteCustomColumn'])
+            ->name('tasks.custom-columns.delete');
     });
 
     // ========================================

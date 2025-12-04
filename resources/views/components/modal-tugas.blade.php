@@ -1361,77 +1361,81 @@
              </div>
 
              <!-- Checklist Section -->
-             <div class="mb-4">
-                 <label class="block text-sm font-medium text-gray-700 mb-2">Checklist</label>
+             <!-- Checklist Section dengan ADD functionality -->
+<div class="mb-4">
+    <label class="block text-sm font-medium text-gray-700 mb-2">Checklist</label>
 
-                 <!-- Progress Bar -->
-                 <div x-show="currentTask?.checklist && currentTask.checklist.length > 0" class="mb-3">
-                     <div class="flex justify-between items-center text-xs text-gray-600 mb-1">
-                         <span>Progress Checklist</span>
-                         <span x-text="`${calculateTaskProgress(currentTask)}%`"
-                             :class="{
-                                 'text-green-600': calculateTaskProgress(currentTask) === 100,
-                                 'text-blue-600': calculateTaskProgress(currentTask) < 100
-                             }">
-                         </span>
-                     </div>
-                     <div class="w-full bg-gray-200 rounded-full h-2">
-                         <div class="h-2 rounded-full transition-all duration-300"
-                             :class="{
-                                 'bg-green-500': calculateTaskProgress(currentTask) === 100,
-                                 'bg-blue-500': calculateTaskProgress(currentTask) < 100
-                             }"
-                             :style="`width: ${calculateTaskProgress(currentTask)}%`"></div>
-                     </div>
-                 </div>
+    <!-- Progress Bar -->
+    <div x-show="currentTask?.checklist && currentTask.checklist.length > 0" class="mb-3">
+        <div class="flex justify-between items-center text-xs text-gray-600 mb-1">
+            <span>Progress Checklist</span>
+            <span x-text="`${calculateTaskProgress(currentTask)}%`"
+                  :class="{
+                      'text-green-600': calculateTaskProgress(currentTask) === 100,
+                      'text-blue-600': calculateTaskProgress(currentTask) < 100
+                  }">
+            </span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="h-2 rounded-full transition-all duration-300"
+                 :class="{
+                     'bg-green-500': calculateTaskProgress(currentTask) === 100,
+                     'bg-blue-500': calculateTaskProgress(currentTask) < 100
+                 }"
+                 :style="`width: ${calculateTaskProgress(currentTask)}%`"></div>
+        </div>
+    </div>
 
-                 <!-- Checklist Items -->
-                 <div class="space-y-2 border border-gray-300 rounded-lg p-3" id="detail-checklist-container">
-                     <template x-for="(item, index) in currentTask?.checklist || []" :key="item.id">
-                         <div class="flex items-center gap-2">
-                             <input type="checkbox" x-model="item.is_done"
-                                 @change="updateChecklistItemInDetail(item)"
-                                 class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                 :disabled="!isEditMode">
+    <!-- Checklist Items -->
+    <div class="space-y-2 border border-gray-300 rounded-lg p-3" id="detail-checklist-container">
+        <template x-for="(item, index) in currentTask?.checklist || []" :key="item.id">
+            <div class="flex items-center gap-2">
+                <input type="checkbox" x-model="item.is_done"
+                       @change="updateChecklistItemInDetail(item)"
+                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                       :disabled="!isEditMode">
 
-                             <template x-if="!isEditMode">
-                                 <span class="text-sm" :class="{ 'line-through text-gray-500': item.is_done }"
-                                     x-text="item.title"></span>
-                             </template>
+                <template x-if="!isEditMode">
+                    <span class="text-sm" :class="{ 'line-through text-gray-500': item.is_done }"
+                          x-text="item.title"></span>
+                </template>
 
-                             <template x-if="isEditMode">
-                                 <input type="text" x-model="item.title" @blur="updateChecklistItemInDetail(item)"
-                                     class="flex-1 border-0 focus:ring-0 p-1 text-sm bg-transparent outline-none"
-                                     :class="{ 'line-through text-gray-500': item.is_done }">
-                             </template>
+                <template x-if="isEditMode">
+                    <input type="text" x-model="item.title" 
+                           @blur="updateChecklistItemInDetail(item)"
+                           @keydown.enter="$event.target.blur()"
+                           @keydown.escape="$event.target.blur()"
+                           class="flex-1 border-0 focus:ring-0 p-1 text-sm bg-transparent outline-none"
+                           :class="{ 'line-through text-gray-500': item.is_done }"
+                           placeholder="Ketik item checklist...">
+                </template>
 
-                             <button x-show="isEditMode" @click="removeChecklistItemFromDetail(index)"
-                                 class="text-red-500 hover:text-red-700 p-1">
-                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                 </svg>
-                             </button>
-                         </div>
-                     </template>
+                <button x-show="isEditMode" @click="removeChecklistItemFromDetail(index)"
+                        class="text-red-500 hover:text-red-700 p-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+        </template>
 
-                     <template x-if="!currentTask?.checklist || currentTask.checklist.length === 0">
-                         <div class="text-center py-2 text-gray-500 text-sm">
-                             Tidak ada checklist
-                         </div>
-                     </template>
-                 </div>
+        <template x-if="(!currentTask?.checklist || currentTask.checklist.length === 0) && !isEditMode">
+            <div class="text-center py-2 text-gray-500 text-sm">
+                Tidak ada checklist
+            </div>
+        </template>
+    </div>
 
-                 <!-- Add Checklist Button -->
-                 <button x-show="isEditMode" type="button" @click="addChecklistItemToDetail()"
-                     class="w-full mt-2 border border-dashed border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-700 flex items-center justify-center gap-2 bg-white transition-all duration-200">
-                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                     </svg>
-                     Tambah Item Checklist
-                 </button>
-             </div>
-
+    <!-- Add Checklist Button (Tampil di Edit Mode) -->
+    <button x-show="isEditMode" type="button" @click="addChecklistItemToDetail()"
+            class="w-full mt-2 border border-dashed border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-700 flex items-center justify-center gap-2 bg-white transition-all duration-200">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Tambah Item Checklist
+    </button>
+</div>
              <!-- Tanggal & Jam -->
              <div class="grid grid-cols-2 gap-4 mb-6">
                  <div>

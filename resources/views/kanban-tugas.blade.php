@@ -1143,6 +1143,25 @@
                         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
                         transition-duration: 300ms;
                     }
+
+
+
+                    /* Checklist input styling */
+#detail-checklist-container input[type="text"] {
+    transition: all 0.2s ease;
+}
+
+#detail-checklist-container input[type="text"]:focus {
+    background-color: #f9fafb;
+    border-radius: 4px;
+    padding-left: 8px;
+}
+
+/* Checklist item hover effect */
+#detail-checklist-container .flex:hover {
+    background-color: #f8fafc;
+    border-radius: 6px;
+}
                 </style>
 
                 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
@@ -1969,146 +1988,242 @@
 
                             // ✅ NEW: Method untuk menghapus checklist item
                             // Di dalam kanbanApp() - GANTI method removeChecklistItemFromDetail
-                            async removeChecklistItemFromDetail(index) {
-                                if (!this.currentTask || !this.currentTask.checklist) return;
+                            // ✅ PERBAIKI: Method untuk menghapus checklist item
+async removeChecklistItemFromDetail(index) {
+    if (!this.currentTask || !this.currentTask.checklist) return;
 
-                                const item = this.currentTask.checklist[index];
+    const item = this.currentTask.checklist[index];
+    
+    if (!item) return;
 
-                                if (!confirm(`Hapus item "${item.title}"?`)) {
-                                    return;
-                                }
+    if (!confirm(`Hapus item "${item.title}"?`)) {
+        return;
+    }
 
-                                try {
-                                    // ✅ JIKA ITEM BARU (temp-), LANGSUNG HAPUS DARI ARRAY
-                                    if (item.id && item.id.toString().startsWith('temp-')) {
-                                        this.currentTask.checklist.splice(index, 1);
-                                        console.log('✅ Temporary item removed:', item.id);
-                                        return;
-                                    }
+    try {
+        // ✅ JIKA ITEM BARU (temp-), LANGSUNG HAPUS DARI ARRAY
+        if (item.id && item.id.toString().startsWith('temp-')) {
+            this.currentTask.checklist.splice(index, 1);
+            console.log('✅ Temporary item removed:', item.id);
+            return;
+        }
 
-                                    // ✅ JIKA ITEM SUDAH ADA DI DATABASE, HAPUS VIA API
-                                    if (item.id && !item.id.toString().startsWith('temp-')) {
-                                        console.log('🔄 Deleting checklist item:', item.id);
+        // ✅ JIKA ITEM SUDAH ADA DI DATABASE, HAPUS VIA API
+        if (item.id && !item.id.toString().startsWith('temp-')) {
+            console.log('🔄 Deleting checklist item:', item.id);
 
-                                        const response = await fetch(`/tasks/checklists/${item.id}`, {
-                                            method: 'DELETE',
-                                            headers: {
-                                                'X-CSRF-TOKEN': this.getCsrfToken(),
-                                                'Accept': 'application/json'
-                                            }
-                                        });
+            const response = await fetch(`/tasks/checklists/${item.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': this.getCsrfToken(),
+                    'Accept': 'application/json'
+                }
+            });
 
-                                        // ✅ CHECK RESPONSE STATUS
-                                        if (!response.ok) {
-                                            const errorData = await response.json().catch(() => ({}));
-                                            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-                                        }
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+            }
 
-                                        const data = await response.json();
+            const data = await response.json();
 
-                                        if (!data.success) {
-                                            throw new Error(data.message || 'Gagal menghapus checklist');
-                                        }
+            if (!data.success) {
+                throw new Error(data.message || 'Gagal menghapus checklist');
+            }
 
-                                        // ✅ HAPUS DARI ARRAY JIKA API SUCCESS
-                                        this.currentTask.checklist.splice(index, 1);
-                                        console.log('✅ Checklist deleted successfully');
-                                        this.showNotification('Checklist berhasil dihapus', 'success');
-                                    }
-                                } catch (error) {
-                                    console.error('❌ Error deleting checklist item:', error);
-                                    this.showNotification('Gagal menghapus checklist: ' + error.message, 'error');
-
-                                    // ✅ RELOAD TASK DETAIL JIKA GAGAL
-                                    if (this.currentTask?.id) {
-                                        await this.openDetail(this.currentTask.id);
-                                    }
-                                }
-                            },
+            // ✅ HAPUS DARI ARRAY JIKA API SUCCESS
+            this.currentTask.checklist.splice(index, 1);
+            console.log('✅ Checklist deleted successfully');
+            // this.showNotification('Checklist berhasil dihapus', 'success');
+        }
+    } catch (error) {
+        console.error('❌ Error deleting checklist item:', error);
+        this.showNotification('Gagal menghapus checklist: ' + error.message, 'error');
+    }
+},
                             // ✅ NEW: Method untuk menambah checklist item di detail
-                            addChecklistItemToDetail() {
-                                if (!this.currentTask.checklist) {
-                                    this.currentTask.checklist = [];
-                                }
+                            // ✅ PERBAIKI: Method untuk menambah checklist item di detail dengan API call
+// ✅ PERBAIKI: Method untuk menambah checklist item di detail dengan API call
+// ✅ PERBAIKI: Method untuk menambah checklist item di detail
+async addChecklistItemToDetail() {
+    console.log('🔄 Adding checklist item...');
+    
+    if (!this.currentTask || !this.currentTask.id) {
+        this.showNotification('Task tidak ditemukan', 'error');
+        return;
+    }
 
-                                const newItem = {
-                                    id: 'temp-' + Date.now(),
-                                    title: 'Item checklist baru',
-                                    is_done: false,
-                                    done: false,
-                                    position: this.currentTask.checklist.length
-                                };
+    // Initialize checklist array jika belum ada
+    if (!this.currentTask.checklist) {
+        this.currentTask.checklist = [];
+    }
 
-                                this.currentTask.checklist.push(newItem);
+    // Buat item sementara untuk feedback UI cepat
+    const tempId = 'temp-' + Date.now();
+    const newItem = {
+        id: tempId,
+        title: 'Item checklist baru',
+        is_done: false,
+        done: false,
+        position: this.currentTask.checklist.length
+    };
 
-                                // Focus ke input baru
-                                this.$nextTick(() => {
-                                    const inputs = document.querySelectorAll('#detail-checklist-container input[type="text"]');
-                                    if (inputs.length > 0) {
-                                        inputs[inputs.length - 1].focus();
-                                        inputs[inputs.length - 1].select();
-                                    }
-                                });
-                            },
+    console.log('📝 Adding checklist for task:', this.currentTask.id);
+
+    // ✅ TAMBAHKAN KE ARRAY LOKAL (untuk UI feedback)
+    this.currentTask.checklist.push(newItem);
+    
+    try {
+        // ✅ GUNAKAN ENDPOINT YANG SUDAH ADA: POST /tasks/{taskId}/checklists
+        const response = await fetch(`/tasks/${this.currentTask.id}/checklists`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': this.getCsrfToken(),
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                title: 'Item checklist baru',
+                is_done: false
+            })
+        });
+
+        console.log('📥 Response status:', response.status);
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Server error:', response.status, errorText);
+            
+            // Hapus item temporary jika error
+            const index = this.currentTask.checklist.findIndex(item => item.id === tempId);
+            if (index !== -1) {
+                this.currentTask.checklist.splice(index, 1);
+            }
+            
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('📥 Response data:', data);
+
+        if (data.success && data.checklist) {
+            // ✅ GANTI ITEM TEMPORARY DENGAN DATA REAL DARI SERVER
+            const index = this.currentTask.checklist.findIndex(item => item.id === tempId);
+            if (index !== -1) {
+                this.currentTask.checklist[index] = {
+                    id: data.checklist.id,
+                    title: data.checklist.title,
+                    is_done: data.checklist.is_done,
+                    done: data.checklist.is_done,
+                    position: data.checklist.position || index
+                };
+            } else {
+                // Jika tidak ditemukan temporary item, tambahkan baru
+                this.currentTask.checklist.push({
+                    id: data.checklist.id,
+                    title: data.checklist.title,
+                    is_done: data.checklist.is_done,
+                    done: data.checklist.is_done,
+                    position: data.checklist.position || this.currentTask.checklist.length
+                });
+            }
+            
+            // this.showNotification('Checklist berhasil ditambahkan', 'success');
+            console.log('✅ Checklist added successfully');
+            
+            // ✅ FOCUS KE INPUT BARU
+            this.$nextTick(() => {
+                setTimeout(() => {
+                    const inputs = document.querySelectorAll('#detail-checklist-container input[type="text"]');
+                    if (inputs.length > 0) {
+                        const lastInput = inputs[inputs.length - 1];
+                        lastInput.focus();
+                        lastInput.select();
+                    }
+                }, 200);
+            });
+        } else {
+            throw new Error(data.message || 'Gagal menambahkan checklist');
+        }
+    } catch (error) {
+        console.error('❌ Error adding checklist:', error);
+        this.showNotification('Gagal menambahkan checklist: ' + error.message, 'error');
+    }
+},
+
+
+// ✅ Helper untuk notification yang lebih baik
+showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ${
+        type === 'success' ? 'bg-green-100 border-green-400 text-green-700' :
+        type === 'error' ? 'bg-red-100 border-red-400 text-red-700' :
+        'bg-blue-100 border-blue-400 text-blue-700'
+    }`;
+    
+    notification.innerHTML = `
+        <div class="flex items-center gap-2">
+            ${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+},
 
                             // ✅ NEW: Method untuk update checklist item di detail
                             // Di dalam kanbanApp() - GANTI method updateChecklistItemInDetail
-                            async updateChecklistItemInDetail(item) {
-                                if (!item.title?.trim()) {
-                                    this.showNotification('Judul checklist tidak boleh kosong', 'error');
-                                    return;
-                                }
+                           // ✅ PERBAIKI: Method untuk update checklist item di detail
+async updateChecklistItemInDetail(item) {
+    // Skip jika item masih kosong atau temporary
+    if (!item.title?.trim() || (item.id && item.id.toString().startsWith('temp-'))) {
+        console.log('⏭️ Skip update for empty or temporary item');
+        return;
+    }
 
-                                try {
-                                    // ✅ JIKA ITEM BARU (ID starts with 'temp-'), SKIP UPDATE KE API
-                                    if (item.id && item.id.toString().startsWith('temp-')) {
-                                        console.log('⏭️ Skip API update for temporary item:', item.id);
-                                        return; // Item baru akan di-save saat saveTaskEdit()
-                                    }
+    try {
+        // ✅ GUNAKAN ENDPOINT YANG SUDAH ADA: PUT /tasks/checklists/{checklistId}
+        if (item.id && !item.id.toString().startsWith('temp-')) {
+            console.log('🔄 Updating checklist item:', item.id);
 
-                                    // ✅ JIKA ITEM SUDAH ADA DI DATABASE, UPDATE VIA API
-                                    if (item.id && !item.id.toString().startsWith('temp-')) {
-                                        console.log('🔄 Updating checklist item:', item.id);
+            const response = await fetch(`/tasks/checklists/${item.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': this.getCsrfToken(),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: item.title,
+                    is_done: item.is_done
+                })
+            });
 
-                                        const response = await fetch(`/tasks/checklists/${item.id}`, {
-                                            method: 'PUT',
-                                            headers: {
-                                                'Content-Type': 'application/json',
-                                                'X-CSRF-TOKEN': this.getCsrfToken(),
-                                                'Accept': 'application/json'
-                                            },
-                                            body: JSON.stringify({
-                                                title: item.title,
-                                                is_done: item.is_done
-                                            })
-                                        });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+            }
 
-                                        // ✅ CHECK RESPONSE STATUS
-                                        if (!response.ok) {
-                                            const errorData = await response.json().catch(() => ({}));
-                                            throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
-                                        }
+            const data = await response.json();
 
-                                        const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Gagal menyimpan perubahan');
+            }
 
-                                        if (!data.success) {
-                                            throw new Error(data.message || 'Gagal menyimpan perubahan');
-                                        }
-
-                                        console.log('✅ Checklist updated successfully');
-                                        this.showNotification('Checklist berhasil diupdate', 'success');
-                                    }
-                                } catch (error) {
-                                    console.error('❌ Error updating checklist item:', error);
-                                    this.showNotification('Gagal mengupdate checklist: ' + error.message, 'error');
-
-                                    // ✅ REVERT PERUBAHAN JIKA GAGAL
-                                    // Reload task detail untuk get fresh data
-                                    if (this.currentTask?.id) {
-                                        await this.openDetail(this.currentTask.id);
-                                    }
-                                }
-                            },
+            console.log('✅ Checklist updated successfully');
+            // this.showNotification('Checklist berhasil diupdate', 'success');
+        }
+    } catch (error) {
+        console.error('❌ Error updating checklist item:', error);
+        this.showNotification('Gagal mengupdate checklist: ' + error.message, 'error');
+    }
+},
 
                             // ✅ NEW: Calculate progress untuk task detail
                             calculateTaskProgress(task) {
