@@ -41,6 +41,21 @@ function showCustomSwal({
     });
 }
 
+// ✅ TAMBAHKAN di bagian atas (sebelum export default)
+window.initCompanyDocuments = function (folders, rootFiles, company) {
+    const event = new CustomEvent("init-company-documents", {
+        detail: { folders, rootFiles, company },
+    });
+    window.dispatchEvent(event);
+};
+
+window.initWorkspaceDocuments = function (folders, rootFiles, workspace) {
+    const event = new CustomEvent("init-workspace-documents", {
+        detail: { folders, rootFiles, workspace },
+    });
+    window.dispatchEvent(event);
+};
+
 // ===== DOKUMEN SEARCH FUNCTIONS =====
 export default function documentSearch() {
     console.log("🚀 documentSearch() function LOADED");
@@ -48,6 +63,7 @@ export default function documentSearch() {
         // State Properties
         searchQuery: "",
         ready: false,
+        _submittingFolder: false, // ✅ TAMBAHKAN INI
         filteredDocuments: [],
         showCreateFolderModal: false,
         showMoveDocumentsModal: false,
@@ -77,6 +93,12 @@ export default function documentSearch() {
         editingFile: null,
         editFileIsSecret: false,
         originalIsSecretFile: null,
+        // ✅ TAMBAHAN: Property untuk track context
+        currentContext: null, // 'workspace' atau 'company'
+        currentWorkspaceId: null,
+        currentCompanyId: null,
+        currentWorkspace: null,
+        currentCompany: null,
         searchMember: "",
         selectAll: false,
         originalFolderName: "",
@@ -242,6 +264,36 @@ export default function documentSearch() {
                 this.updateBreadcrumbs();
             };
 
+            // ✅ TAMBAHAN: Listen untuk workspace documents
+            window.addEventListener("init-workspace-documents", (e) => {
+                this.currentContext = "workspace";
+                this.currentWorkspace = e.detail.workspace;
+                this.currentWorkspaceId = e.detail.workspace.id;
+                this.currentCompany = null;
+                this.currentCompanyId = null;
+
+                this.initData(
+                    e.detail.folders,
+                    e.detail.rootFiles,
+                    e.detail.workspace
+                );
+            });
+
+            // ✅ TAMBAHAN: Listen untuk company documents
+            window.addEventListener("init-company-documents", (e) => {
+                this.currentContext = "company";
+                this.currentCompany = e.detail.company;
+                this.currentCompanyId = e.detail.company.id;
+                this.currentWorkspace = null;
+                this.currentWorkspaceId = null;
+
+                this.initData(
+                    e.detail.folders,
+                    e.detail.rootFiles,
+                    e.detail.company
+                );
+            });
+
             window.addEventListener("popstate", handlePopState);
 
             // pageshow untuk bfcache
@@ -291,41 +343,35 @@ export default function documentSearch() {
         },
 
         // Function untuk inisialisasi data
-        initData(foldersData, rootFilesData, workspace) {
+        initData(foldersData, rootFilesData, context) {
             console.log("🚀 ========== initData START ==========");
             console.log("📂 foldersData:", foldersData);
             console.log("📄 rootFilesData:", rootFilesData);
-            console.log("🏢 workspace:", workspace);
-            console.log("🕐 Timestamp:", new Date().toISOString());
-            console.log(
-                "DEBUG backend folders:",
-                JSON.parse(JSON.stringify(foldersData))
-            );
-            console.log(
-                "DEBUG root files:",
-                JSON.parse(JSON.stringify(rootFilesData))
-            );
+            console.log("🔍 context:", context);
+            console.log("📌 currentContext:", this.currentContext);
 
             // Simpan data dari backend
             this.backendFolders = foldersData;
             this.backendRootFiles = rootFilesData;
-            this.currentWorkspace = workspace;
-            this.currentWorkspaceId = workspace.id; // penting buat fetch()
 
-            // Convert data Laravel Collection ke format yang diharapkan Alpine
+            // ✅ Set workspace atau company ID untuk fetch API
+            if (this.currentContext === "workspace") {
+                this.currentWorkspace = context;
+                this.currentWorkspaceId = context.id;
+            } else if (this.currentContext === "company") {
+                this.currentCompany = context;
+                this.currentCompanyId = context.id;
+            }
+
+            // Convert data Laravel Collection ke format Alpine
             this.processBackendData();
 
             console.log(
                 "✅ initData selesai, folders count:",
                 this.folders.length
             );
-            console.log("🔄 Akan memanggil restoreFolderFromUrl...");
 
-            // ⬇️ TAMBAHKAN INI - restore state dari URL setelah data siap
             this.$nextTick(() => {
-                console.log(
-                    "🎯 $nextTick executed, calling restoreFolderFromUrl"
-                );
                 this.restoreFolderFromUrl();
             });
         },
@@ -714,15 +760,26 @@ export default function documentSearch() {
         },
 
         // 2️⃣ Handle Create Folder
+        // 2️⃣ Handle Create Folder
         async handleCreateFolder(event) {
             console.log("🚀 handleCreateFolder called");
-            console.log("📍 history.length BEFORE create:", history.length);
+
+            // ✅ PREVENT DOUBLE SUBMIT
+            if (this._submittingFolder) {
+                console.warn("⚠️ Already submitting folder, blocked!");
+                return;
+            }
+
+            this._submittingFolder = true;
+
+            console.log("📍 Call stack:", new Error().stack);
+            console.log("📍 currentCompanyId:", this.currentCompanyId);
+            console.log("📍 currentContext:", this.currentContext);
 
             const form = event.target;
             const formData = new FormData(form);
             const url = form.action;
 
-            // Loading
             showCustomSwal({
                 title: "Membuat folder...",
                 showConfirmButton: false,
@@ -744,12 +801,10 @@ export default function documentSearch() {
                 console.log("✅ Create folder response:", data);
 
                 if (data.success && data.redirect_url) {
-                    // Reset modal state
                     this.showCreateFolderModal = false;
                     this.newFolderName = "";
                     this.isSecretFolder = false;
 
-                    // Success alert
                     if (data.alert) {
                         showCustomSwal({
                             icon: data.alert.icon,
@@ -760,12 +815,7 @@ export default function documentSearch() {
                         });
                     }
 
-                    // Redirect
                     setTimeout(() => {
-                        console.log(
-                            "📍 history.length BEFORE replace:",
-                            history.length
-                        );
                         window.location.replace(data.redirect_url);
                     }, 1000);
                 } else {
@@ -780,13 +830,17 @@ export default function documentSearch() {
                 }
             } catch (error) {
                 console.error("❌ Create folder error:", error);
-
                 showCustomSwal({
                     icon: "error",
                     title: "Error!",
                     text: "Terjadi kesalahan saat membuat folder",
                     showConfirmButton: true,
                 });
+            } finally {
+                // ✅ RESET FLAG SETELAH 2 DETIK
+                setTimeout(() => {
+                    this._submittingFolder = false;
+                }, 2000);
             }
         },
 
@@ -1984,6 +2038,7 @@ export default function documentSearch() {
 
         loadMembersFromAPI() {
             console.log("🔄 loadMembersFromAPI called");
+            console.log("📋 currentContext:", this.currentContext);
             console.log(
                 "📋 currentFolderCreatedBy:",
                 this.currentFolderCreatedBy
@@ -1992,7 +2047,6 @@ export default function documentSearch() {
                 "📋 currentFileUploadedBy:",
                 this.currentFileUploadedBy
             );
-            console.log("📋 currentWorkspaceId:", this.currentWorkspaceId);
 
             this.isLoadingPermission = true;
 
@@ -2001,30 +2055,35 @@ export default function documentSearch() {
                 file_uploaded_by: this.currentFileUploadedBy ?? "",
             });
 
-            console.log(
-                "🔗 Fetching:",
-                `/workspaces/${this.currentWorkspaceId}/members?${params}`
-            );
+            // ✅ Tentukan endpoint berdasarkan context
+            let endpoint;
+            if (this.currentContext === "workspace") {
+                endpoint = `/workspaces/${this.currentWorkspaceId}/members?${params}`;
+            } else if (this.currentContext === "company") {
+                endpoint = `/company-documents/members?${params}`;
+            } else {
+                console.error("❌ Unknown context:", this.currentContext);
+                this.isLoadingPermission = false;
+                return;
+            }
 
-            fetch(`/workspaces/${this.currentWorkspaceId}/members?${params}`)
+            console.log("🔗 Fetching:", endpoint);
+
+            fetch(endpoint)
                 .then(async (res) => {
                     console.log("✅ Response status:", res.status);
                     this.memberListAllowed = res.status === 200;
                     if (!this.memberListAllowed) {
-                        console.warn(
-                            "⚠️ memberListAllowed = false, response:",
-                            res.status
-                        );
+                        console.warn("⚠️ memberListAllowed = false");
                         this.members = [];
                         return null;
                     }
                     return await res.json();
                 })
                 .then(async (data) => {
-                    console.log("📦 Members data:", data);
                     if (!data?.members) return;
 
-                    // Fetch recipients status=true dari backend
+                    // Fetch recipients
                     const docId =
                         this.currentFolder?.id || this.currentFile?.id;
                     const recipientsRes = await fetch(
@@ -2033,28 +2092,22 @@ export default function documentSearch() {
                     const recipientsData = await recipientsRes.json();
                     const selectedUserIds = recipientsData?.recipients || [];
 
-                    // Tandai member yang sudah status=true
                     this.members = data.members.map((m) => ({
                         ...m,
                         selected: selectedUserIds.includes(m.id),
                     }));
 
-                    // Centang "Pilih Semua" jika semua member tercentang
                     this.selectAll =
                         this.members.length > 0 &&
                         this.members.every((m) => m.selected);
                 })
-                .catch(() => {
+                .catch((error) => {
                     console.error("❌ Error loading members:", error);
                     this.memberListAllowed = false;
                     this.members = [];
                 })
                 .finally(() => {
                     this.isLoadingPermission = false;
-                    console.log(
-                        "✅ loadMembersFromAPI selesai, memberListAllowed:",
-                        this.memberListAllowed
-                    );
                 });
         },
 

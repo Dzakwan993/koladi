@@ -19,6 +19,7 @@ class File extends Model
     protected $fillable = [
         'id',
         'folder_id',
+        'company_id',    
         'workspace_id',
         'file_url',
         'file_name',
@@ -241,5 +242,11 @@ class File extends Model
     public function getDownloadPath()
     {
         return storage_path('app/public/' . ltrim($this->file_path ?? $this->file_url, '/'));
+    }
+
+    // Relasi ke Company
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 }

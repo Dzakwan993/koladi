@@ -1,5 +1,4 @@
 {{-- Breadcrumb dan Info Folder --}}
-<!-- <p>Workspace ID: {{ $workspace->id }}</p> -->
                 <div x-show="isLoadingPermission" class="p-4">
                     <div class="animate-pulse space-y-3">
                         <div class="h-4 bg-gray-300 rounded w-1/3"></div>
