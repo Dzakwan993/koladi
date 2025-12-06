@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Workspace')
+@section('title', 'Pengumuman Ruang Kerja')
 
 @section('content')
     <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -20,7 +20,7 @@
             <div class="mb-6">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h1 class="text-2xl font-bold text-gray-800 mb-1">📢 Pengumuman Workspace</h1>
+                        <h1 class="text-2xl font-bold text-gray-800 mb-1">📢 Pengumuman Ruang Kerja</h1>
                         <p class="text-sm text-gray-500">Lihat dan kelola pengumuman di {{ $workspace->name }}</p>
                     </div>
 

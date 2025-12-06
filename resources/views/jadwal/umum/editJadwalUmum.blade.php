@@ -363,6 +363,12 @@
     <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
 
     <script>
+        body: JSON.stringify({
+            start_datetime: startDatetime,
+            end_datetime: endDatetime,
+            participants: participants,
+            exclude_event_id: '{{ $event->id }}' // ✅ Exclude jadwal yang sedang diedit
+        })
         let catatanEditor = null;
 
         document.addEventListener('DOMContentLoaded', function() {

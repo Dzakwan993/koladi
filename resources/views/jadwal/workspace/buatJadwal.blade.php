@@ -155,24 +155,22 @@
                         }
                     }">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <template x-for="participant in displayedParticipants" :key="participant.id">
-                                <div class="relative">
-                                    <img :src="participant.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(participant.full_name) + '&background=3B82F6&color=fff&bold=true&size=128'"
-    :alt="participant.full_name"
-                                        class="rounded-full border-2 border-gray-200 w-10 h-10 object-cover"
-                                        :title="participant.full_name" />
-                                </div>
-                            </template>
+    <template x-for="participant in displayedParticipants" :key="participant.id">
+        <div class="relative">
+            <img :src="participant.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(participant.full_name) + '&background=3B82F6&color=fff&bold=true&size=128'"
+                :alt="participant.full_name"
+                class="rounded-full border-2 border-gray-200 w-10 h-10 object-cover"
+                :title="participant.full_name" />
+        </div>
+    </template>
 
-                            <button @click.prevent="openPopup = true" type="button"
-                                class="w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center transition-colors">
-                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 4v16m8-8H4" />
-                                </svg>
-                            </button>
-                        </div>
+    <button @click.prevent="openPopup = true" type="button"
+        class="w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center transition-colors">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+    </button>
+</div>
 
                         <template x-for="participantId in selectedParticipants" :key="participantId">
                             <input type="hidden" name="participants[]" :value="participantId">
@@ -193,24 +191,23 @@
                                         class="w-5 h-5 rounded-md accent-blue-600 cursor-pointer" />
                                 </div>
                                 <div class="flex flex-col gap-2 max-h-60 overflow-y-auto px-2">
-                                    <template x-for="member in filteredMembers" :key="member.id">
-                                        <div class="flex items-center justify-between py-1">
-                                            <div class="flex items-center gap-2">
-                                                <img :src="member.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(member.full_name) + '&background=3B82F6&color=fff&bold=true&size=128'"
-    class="w-8 h-8 rounded-full object-cover border border-gray-200"
-                                                    :alt="member.full_name" />
-                                                <span class="text-sm" x-text="member.full_name"></span>
-                                            </div>
-                                            <input type="checkbox" :checked="isSelected(member.id)"
-                                                @click="toggleParticipant(member.id)"
-                                                class="w-5 h-5 rounded-md accent-blue-600 cursor-pointer" />
-                                        </div>
-                                    </template>
-                                    <div x-show="filteredMembers.length === 0"
-                                        class="text-center text-gray-500 py-4 text-sm">
-                                        Tidak ada anggota ditemukan
-                                    </div>
-                                </div>
+    <template x-for="member in filteredMembers" :key="member.id">
+        <div class="flex items-center justify-between py-1">
+            <div class="flex items-center gap-2">
+                <img :src="member.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(member.full_name) + '&background=3B82F6&color=fff&bold=true&size=128'"
+                    class="w-8 h-8 rounded-full object-cover border border-gray-200"
+                    :alt="member.full_name" />
+                <span class="text-sm" x-text="member.full_name"></span>
+            </div>
+            <input type="checkbox" :checked="isSelected(member.id)"
+                @click="toggleParticipant(member.id)"
+                class="w-5 h-5 rounded-md accent-blue-600 cursor-pointer" />
+        </div>
+    </template>
+    <div x-show="filteredMembers.length === 0" class="text-center text-gray-500 py-4 text-sm">
+        Tidak ada anggota ditemukan
+    </div>
+</div>
                                 <div class="flex justify-end mt-4">
                                     <button @click.prevent="openPopup = false" type="button"
                                         class="bg-[#102a63] text-white px-6 py-2 rounded-md font-inter text-sm hover:bg-[#0d1f4d] transition-colors">
@@ -317,6 +314,173 @@
 
     <script>
         let catatanEditor = null;
+        let conflictCheckTimeout = null;
+
+        // ✅ Function untuk cek konflik jadwal
+        async function checkScheduleConflicts() {
+            const startDate = document.getElementById('start_date').value;
+            const startTime = document.getElementById('start_time').value;
+            const endDate = document.getElementById('end_date').value;
+            const endTime = document.getElementById('end_time').value;
+
+            if (!startDate || !startTime || !endDate || !endTime) {
+                return;
+            }
+
+            const startDatetime = `${startDate} ${startTime}`;
+            const endDatetime = `${endDate} ${endTime}`;
+
+            const start = new Date(`${startDate} ${startTime}`);
+            const end = new Date(`${endDate} ${endTime}`);
+
+            if (end <= start) {
+                return;
+            }
+
+            // Ambil peserta dari Alpine.js component
+            const participantsEl = document.querySelector('[x-data*="selectedParticipants"]');
+            const participantsData = participantsEl ? Alpine.$data(participantsEl) : null;
+            const participants = participantsData ? participantsData.selectedParticipants : [];
+
+            const workspaceId = '{{ $workspaceId }}';
+            const apiUrl = `/workspace/${workspaceId}/calendar/check-conflicts`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        start_datetime: startDatetime,
+                        end_datetime: endDatetime,
+                        participants: participants
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.has_conflicts) {
+                    showConflictWarning(data.conflicts);
+                }
+            } catch (error) {
+                console.error('Error checking conflicts:', error);
+            }
+        }
+
+        // ✅ Function untuk tampilkan warning konflik
+        function showConflictWarning(conflicts) {
+            let conflictHtml = '<div class="text-left">';
+
+            Object.entries(conflicts).forEach(([userId, userData]) => {
+                conflictHtml += `
+                    <div class="mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <p class="font-semibold text-gray-800 mb-2">
+                            <i class="fas fa-user-circle text-yellow-600"></i> ${userData.user_name}
+                        </p>
+                        <div class="space-y-2">
+                `;
+
+                userData.conflicts.forEach(conflict => {
+                    const typeLabel = conflict.type === 'company' ? 'Jadwal Umum' :
+                        `Workspace: ${conflict.workspace_name}`;
+                    const locationIcon = conflict.is_online ? 'fa-video' : 'fa-map-marker-alt';
+
+                    conflictHtml += `
+                        <div class="pl-4 border-l-2 border-yellow-400 py-1">
+                            <p class="text-sm font-medium text-gray-700">📅 ${conflict.title}</p>
+                            <p class="text-xs text-gray-600">
+                                <i class="far fa-clock"></i> ${conflict.start} - ${conflict.end}
+                            </p>
+                            <p class="text-xs text-gray-600">
+                                <i class="fas ${locationIcon}"></i> ${conflict.location}
+                            </p>
+                            <span class="inline-block mt-1 px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded">
+                                ${typeLabel}
+                            </span>
+                        </div>
+                    `;
+                });
+
+                conflictHtml += `</div></div>`;
+            });
+
+            conflictHtml += '</div>';
+
+            Swal.fire({
+                icon: 'warning',
+                title: '⚠️ Jadwal Bentrok Terdeteksi!',
+                html: `
+                    <div class="text-sm text-gray-600 mb-3">
+                        Terdapat jadwal yang bentrok dengan waktu yang Anda pilih:
+                    </div>
+                    ${conflictHtml}
+                    <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <p class="text-xs text-gray-700">
+                            <i class="fas fa-info-circle text-blue-600"></i>
+                            Anda tetap dapat melanjutkan membuat jadwal ini, namun peserta mungkin tidak dapat hadir di kedua jadwal.
+                        </p>
+                    </div>
+                `,
+                width: '600px',
+                showCancelButton: true,
+                confirmButtonText: 'Lanjutkan Tetap',
+                cancelButtonText: 'Ubah Waktu',
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#6b7280',
+                customClass: {
+                    popup: 'text-left'
+                }
+            });
+        }
+
+        // ✅ Debounced conflict check
+        function scheduleConflictCheck() {
+            clearTimeout(conflictCheckTimeout);
+            conflictCheckTimeout = setTimeout(() => {
+                checkScheduleConflicts();
+            }, 1000);
+        }
+
+        function buildConflictHtml(conflicts) {
+            let html = '<div class="text-left text-sm">';
+            html += '<p class="text-gray-600 mb-3">Terdapat jadwal yang bentrok:</p>';
+
+            Object.entries(conflicts).forEach(([userId, userData]) => {
+                html += `
+                    <div class="mb-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <p class="font-semibold text-gray-800 mb-2">
+                            <i class="fas fa-user-circle text-yellow-600"></i> ${userData.user_name}
+                        </p>
+                `;
+
+                userData.conflicts.forEach(conflict => {
+                    const typeLabel = conflict.type === 'company' ? 'Jadwal Umum' :
+                        `Workspace: ${conflict.workspace_name}`;
+                    html += `
+                        <div class="pl-3 border-l-2 border-yellow-400 mb-2">
+                            <p class="font-medium text-gray-700">${conflict.title}</p>
+                            <p class="text-xs text-gray-600">
+                                <i class="far fa-clock"></i> ${conflict.start} - ${conflict.end}
+                            </p>
+                            <span class="inline-block mt-1 px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded">
+                                ${typeLabel}
+                            </span>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+            });
+
+            html +=
+                '<p class="mt-3 text-xs text-gray-600"><i class="fas fa-info-circle text-blue-600"></i> Lanjutkan membuat jadwal?</p>';
+            html += '</div>';
+
+            return html;
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date().toISOString().split('T')[0];
@@ -343,6 +507,15 @@
                 document.getElementById('end_date').min = this.value;
             });
 
+            // ✅ Event listeners untuk conflict check
+            const dateTimeInputs = ['start_date', 'start_time', 'end_date', 'end_time'];
+            dateTimeInputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.addEventListener('change', scheduleConflictCheck);
+                }
+            });
+
             ClassicEditor
                 .create(document.getElementById('catatan-editor'), {
                     toolbar: ['heading', '|', 'bold', 'italic', 'underline', '|', 'link', 'bulletedList',
@@ -358,7 +531,8 @@
                 })
                 .catch(error => console.error('CKEditor error:', error));
 
-            document.getElementById('scheduleForm').addEventListener('submit', function(e) {
+            // ✅ Form submit dengan conflict check
+            document.getElementById('scheduleForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
 
                 const startDate = document.getElementById('start_date').value;
@@ -394,7 +568,55 @@
                     return false;
                 }
 
-                this.submit();
+                // ✅ CEK KONFLIK SEBELUM SUBMIT
+                const participantsEl = document.querySelector('[x-data*="selectedParticipants"]');
+                const participantsData = participantsEl ? Alpine.$data(participantsEl) : null;
+                const participants = participantsData ? participantsData.selectedParticipants : [];
+
+                const workspaceId = '{{ $workspaceId }}';
+                const apiUrl = `/workspace/${workspaceId}/calendar/check-conflicts`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                .content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            start_datetime: `${startDate} ${startTime}`,
+                            end_datetime: `${endDate} ${endTime}`,
+                            participants: participants
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.has_conflicts) {
+                        const result = await Swal.fire({
+                            icon: 'warning',
+                            title: '⚠️ Jadwal Bentrok Terdeteksi!',
+                            html: buildConflictHtml(data.conflicts),
+                            width: '600px',
+                            showCancelButton: true,
+                            confirmButtonText: 'Ya, Buat Jadwal',
+                            cancelButtonText: 'Batalkan',
+                            confirmButtonColor: '#f59e0b',
+                            cancelButtonColor: '#6b7280'
+                        });
+
+                        if (result.isConfirmed) {
+                            this.submit();
+                        }
+                    } else {
+                        this.submit();
+                    }
+                } catch (error) {
+                    console.error('Error checking conflicts:', error);
+                    this.submit();
+                }
             });
         });
     </script>
@@ -411,6 +633,29 @@
         .ck-editor__editable {
             min-height: 180px;
             max-height: 400px;
+        }
+
+        .swal2-popup.text-left {
+            text-align: left !important;
+        }
+
+        .swal2-html-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .swal2-html-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .swal2-html-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+
+        .swal2-html-container::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
         }
     </style>
 @endsection

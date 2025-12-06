@@ -8,13 +8,15 @@
 
         <div class="min-h-screen flex justify-center pt-4 md:pt-8 pb-8 bg-[#f3f6fc] px-3 md:px-6">
             <!-- Form -->
-            <form action="{{ route('calendar.update', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}" method="POST" id="scheduleForm"
+            <form action="{{ route('calendar.update', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}" method="POST"
+                id="scheduleForm"
                 class="bg-white rounded-xl shadow-xl p-4 md:p-6 w-full max-w-4xl flex flex-col gap-4 md:gap-5 h-fit">
                 @csrf
                 @method('PUT')
 
                 <!-- Judul -->
-                <h2 class="text-lg md:text-xl font-inter font-bold text-[#102a63] border-b-2 border-black pb-3">Edit Jadwal Workspace
+                <h2 class="text-lg md:text-xl font-inter font-bold text-[#102a63] border-b-2 border-black pb-3">Edit Jadwal
+                    Workspace
                 </h2>
 
                 <!-- Nama Jadwal -->
@@ -365,6 +367,12 @@
     <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
 
     <script>
+        body: JSON.stringify({
+            start_datetime: startDatetime,
+            end_datetime: endDatetime,
+            participants: participants,
+            exclude_event_id: '{{ $event->id }}' // ✅ Exclude jadwal yang sedang diedit
+        })
         let catatanEditor = null;
 
         document.addEventListener('DOMContentLoaded', function() {

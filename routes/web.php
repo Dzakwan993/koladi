@@ -9,6 +9,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
+
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\CompanyController;
@@ -110,8 +111,12 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['check.subscription'])->group(function () {
 
         // Tambahkan di routes/web.php dalam group middleware 'auth' dan 'check.subscription'
+        // Dashboard - All Events (Company + Workspace)
+        Route::get('/dashboard/all-events', [DashboardController::class, 'getAllEvents'])
+            ->name('dashboard.all-events');
 
-        Route::get('/dashboard/schedules/{date}', [CompanyController::class, 'getSchedulesByDate'])
+        // Dashboard - Schedules by Date
+        Route::get('/dashboard/schedules/{date}', [DashboardController::class, 'getSchedulesByDate'])
             ->name('dashboard.schedules.by-date');
 
         // Dashboard Awal
@@ -283,6 +288,8 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/jadwal/{id}', [CalendarController::class, 'destroy'])->name('calendar.destroy');
             Route::get('/notulensi', [CalendarController::class, 'notulensi'])->name('notulensi');
             Route::get('/jadwal/{id}', [CalendarController::class, 'show'])->name('calendar.show');
+            Route::post('/calendar/check-conflicts', [CalendarController::class, 'checkConflicts'])
+                ->name('calendar.check-conflicts');
         });
 
         Route::prefix('jadwal-umum')->group(function () {
@@ -294,6 +301,8 @@ Route::middleware(['auth'])->group(function () {
             Route::put('/{id}', [CalendarController::class, 'companyUpdate'])->name('jadwal-umum.update');
             Route::delete('/{id}', [CalendarController::class, 'companyDestroy'])->name('jadwal-umum.destroy');
             Route::get('/{id}', [CalendarController::class, 'companyShow'])->name('jadwal-umum.show');
+            Route::post('/check-conflicts', [CalendarController::class, 'checkCompanyConflicts'])
+                ->name('jadwal-umum.check-conflicts');
         });
 
         Route::get('/notulensi-umum', [CalendarController::class, 'companyNotulensi'])->name('notulensi-umum');

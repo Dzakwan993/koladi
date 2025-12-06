@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Jadwal Workspace')
+@section('title', 'Jadwal Ruang Kerja')
 
 @section('content')
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
@@ -20,7 +20,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div class="flex-1 min-w-0">
                             <h1 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#1E1E1E] mb-2">
-                                Jadwal Workspace 📅
+                                Jadwal Ruang Kerja 📅
                             </h1>
                             <p class="text-xs sm:text-sm md:text-base text-[#6B7280]">
                                 Kelola dan lihat semua jadwal workspace Anda dalam satu tempat

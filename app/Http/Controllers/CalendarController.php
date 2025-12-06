@@ -766,17 +766,20 @@ class CalendarController extends Controller
             'end_datetime' => 'required|date|after:start_datetime',
             'recurrence' => 'nullable|string',
             'is_private' => 'nullable|boolean',
-            'meeting_mode' => 'required|in:online,offline', // ✅ TAMBAH VALIDASI
-            'meeting_link' => 'required_if:meeting_mode,online|nullable|url', // ✅ WAJIB JIKA ONLINE
-            'location' => 'required_if:meeting_mode,offline|nullable|string|max:255', // ✅ WAJIB JIKA OFFLINE
+            'meeting_mode' => 'required|in:online,offline',
+            'meeting_link' => 'required_if:meeting_mode,online|nullable|url',
+            'location' => 'required_if:meeting_mode,offline|nullable|string|max:255',
             'participants' => 'nullable|array',
             'participants.*' => 'uuid|exists:users,id',
         ]);
 
         DB::beginTransaction();
         try {
+            // ✅ GET WORKSPACE TO GET COMPANY_ID
+            $workspace = Workspace::findOrFail($workspaceId);
+
             $isPrivate = filter_var($validated['is_private'] ?? false, FILTER_VALIDATE_BOOLEAN);
-            $isOnlineMeeting = $validated['meeting_mode'] === 'online'; // ✅ DARI meeting_mode
+            $isOnlineMeeting = $validated['meeting_mode'] === 'online';
 
             $recurrence = $validated['recurrence'] ?? 'Jangan Ulangi';
             if ($recurrence === 'Jangan Ulangi') {
@@ -788,6 +791,7 @@ class CalendarController extends Controller
 
             $event = CalendarEvent::create([
                 'workspace_id' => $workspaceId,
+                'company_id' => $workspace->company_id, // ✅ TAMBAHKAN INI
                 'created_by' => Auth::id(),
                 'title' => $validated['title'],
                 'description' => $validated['description'] ?? null,
@@ -796,8 +800,8 @@ class CalendarController extends Controller
                 'recurrence' => $recurrence,
                 'is_private' => $isPrivate,
                 'is_online_meeting' => $isOnlineMeeting,
-                'meeting_link' => $isOnlineMeeting ? ($validated['meeting_link'] ?? null) : null, // ✅ HANYA JIKA ONLINE
-                'location' => !$isOnlineMeeting ? ($validated['location'] ?? null) : null, // ✅ HANYA JIKA OFFLINE
+                'meeting_link' => $isOnlineMeeting ? ($validated['meeting_link'] ?? null) : null,
+                'location' => !$isOnlineMeeting ? ($validated['location'] ?? null) : null,
             ]);
 
             // Creator langsung accepted
@@ -1076,6 +1080,9 @@ class CalendarController extends Controller
 
         DB::beginTransaction();
         try {
+            // ✅ GET WORKSPACE TO ENSURE COMPANY_ID
+            $workspace = Workspace::findOrFail($workspaceId);
+
             $isPrivate = filter_var($validated['is_private'] ?? false, FILTER_VALIDATE_BOOLEAN);
             $isOnlineMeeting = $validated['meeting_mode'] === 'online';
 
@@ -1088,6 +1095,7 @@ class CalendarController extends Controller
             $endDatetime = Carbon::parse($validated['end_datetime'], 'Asia/Jakarta');
 
             $event->update([
+                'company_id' => $workspace->company_id, // ✅ PASTIKAN COMPANY_ID ADA
                 'title' => $validated['title'],
                 'description' => $validated['description'] ?? null,
                 'start_datetime' => $startDatetime,
@@ -1154,5 +1162,149 @@ class CalendarController extends Controller
     {
         // Method ini bisa dihapus atau dibiarkan kosong
         return back()->with('info', 'Fitur status undangan sudah tidak digunakan');
+    }
+
+// Tambahkan method ini ke dalam CalendarController.php
+
+    /**
+     * ✅ Check apakah ada jadwal yang bentrok untuk user tertentu
+     * Cek di jadwal umum (company) DAN jadwal workspace
+     */
+    private function checkScheduleConflict($userId, $startDatetime, $endDatetime, $excludeEventId = null, $currentWorkspaceId = null)
+    {
+        $conflicts = [];
+
+        // Parse datetime
+        $start = Carbon::parse($startDatetime);
+        $end = Carbon::parse($endDatetime);
+
+        // 1️⃣ CEK JADWAL UMUM (COMPANY LEVEL) - dimana user adalah peserta
+        $companyConflicts = CalendarEvent::whereNull('workspace_id')
+            ->where('company_id', session('active_company_id'))
+            ->whereNull('deleted_at')
+            ->when($excludeEventId, function ($q) use ($excludeEventId) {
+                $q->where('id', '!=', $excludeEventId);
+            })
+            ->whereHas('participants', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->where(function ($q) use ($start, $end) {
+                // Cek overlap: jadwal baru mulai sebelum jadwal lama selesai
+                // DAN jadwal baru selesai setelah jadwal lama mulai
+                $q->where(function ($query) use ($start, $end) {
+                    $query->where('start_datetime', '<', $end)
+                        ->where('end_datetime', '>', $start);
+                });
+            })
+            ->with(['participants', 'creator'])
+            ->get();
+
+        foreach ($companyConflicts as $event) {
+            $conflicts[] = [
+                'type' => 'company',
+                'event' => $event,
+                'title' => $event->title,
+                'start' => $event->start_datetime->format('d M Y H:i'),
+                'end' => $event->end_datetime->format('d M Y H:i'),
+                'location' => $event->location ?? ($event->is_online_meeting ? 'Online Meeting' : '-'),
+                'is_online' => $event->is_online_meeting
+            ];
+        }
+
+        // 2️⃣ CEK JADWAL WORKSPACE - dimana user adalah peserta
+        $workspaceConflicts = CalendarEvent::whereNotNull('workspace_id')
+            ->whereNull('deleted_at')
+            ->when($excludeEventId, function ($q) use ($excludeEventId) {
+                $q->where('id', '!=', $excludeEventId);
+            })
+            ->when($currentWorkspaceId, function ($q) use ($currentWorkspaceId) {
+                // Jika sedang edit jadwal workspace, exclude workspace yang sama
+                // karena konflik di workspace yang sama sudah jelas
+                $q->where('workspace_id', '!=', $currentWorkspaceId);
+            })
+            ->whereHas('participants', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->where(function ($q) use ($start, $end) {
+                $q->where(function ($query) use ($start, $end) {
+                    $query->where('start_datetime', '<', $end)
+                        ->where('end_datetime', '>', $start);
+                });
+            })
+            ->with(['participants', 'creator', 'workspace'])
+            ->get();
+
+        foreach ($workspaceConflicts as $event) {
+            $conflicts[] = [
+                'type' => 'workspace',
+                'event' => $event,
+                'title' => $event->title,
+                'workspace_name' => $event->workspace->name ?? 'Unknown Workspace',
+                'start' => $event->start_datetime->format('d M Y H:i'),
+                'end' => $event->end_datetime->format('d M Y H:i'),
+                'location' => $event->location ?? ($event->is_online_meeting ? 'Online Meeting' : '-'),
+                'is_online' => $event->is_online_meeting
+            ];
+        }
+
+        return $conflicts;
+    }
+
+    /**
+     * ✅ API endpoint untuk cek konflik jadwal (dipanggil dari frontend)
+     */
+    public function checkConflicts(Request $request, $workspaceId = null)
+    {
+        try {
+            $validated = $request->validate([
+                'start_datetime' => 'required|date',
+                'end_datetime' => 'required|date|after:start_datetime',
+                'exclude_event_id' => 'nullable|uuid',
+                'participants' => 'nullable|array',
+                'participants.*' => 'uuid|exists:users,id'
+            ]);
+
+            $userId = Auth::id();
+            $participants = $validated['participants'] ?? [$userId];
+
+            // Cek konflik untuk semua peserta
+            $allConflicts = [];
+            foreach ($participants as $participantId) {
+                $conflicts = $this->checkScheduleConflict(
+                    $participantId,
+                    $validated['start_datetime'],
+                    $validated['end_datetime'],
+                    $validated['exclude_event_id'] ?? null,
+                    $workspaceId
+                );
+
+                if (!empty($conflicts)) {
+                    $user = User::find($participantId);
+                    $allConflicts[$participantId] = [
+                        'user_name' => $user->full_name ?? 'Unknown',
+                        'conflicts' => $conflicts
+                    ];
+                }
+            }
+
+            return response()->json([
+                'has_conflicts' => !empty($allConflicts),
+                'conflicts' => $allConflicts
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error checking conflicts: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Failed to check conflicts',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ✅ API endpoint untuk jadwal umum
+     */
+    public function checkCompanyConflicts(Request $request)
+    {
+        return $this->checkConflicts($request, null);
     }
 }
