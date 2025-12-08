@@ -5,6 +5,8 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\CheckSubscription;
 use App\Http\Middleware\CheckWorkspaceAccess;
+use App\Http\Middleware\CheckSystemAdmin;
+
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -19,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'check.subscription' => CheckSubscription::class,
             'check.workspace' => CheckWorkspaceAccess::class,
+            'check.system.admin' => CheckSystemAdmin::class,
         ]);
 
         // ✅ Pengecualian CSRF untuk Midtrans callback

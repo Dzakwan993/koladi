@@ -75,14 +75,13 @@ Route::get('/reset-password', [AuthController::class, 'showResetPasswordForm'])-
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('reset-password.submit');
 
 
-// ============================================
-// 🔥 ADMIN SISTEM ROUTES (SEBELUM AUTH MIDDLEWARE)
-// ============================================
+// 🔥 ADMIN SISTEM ROUTES
 Route::middleware(['auth', 'check.system.admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/companies/{id}', [AdminController::class, 'showCompany'])->name('companies.show');
     Route::post('/companies/{id}/toggle-status', [AdminController::class, 'toggleCompanyStatus'])->name('companies.toggle-status');
 });
+
 
 // Webhook Midtrans (tanpa auth)
 Route::post('/midtrans/callback', [SubscriptionController::class, 'callback'])->name('midtrans.callback');
@@ -121,9 +120,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 
 
-    Route::get('/admin/dashboard', function () {
-    return view('dashboard_admin');
-})->name('admin.dashboard');
+//     Route::get('/admin/dashboard', function () {
+//     return view('dashboard_admin');
+// })->name('admin.dashboard');
 
 
     // ============================================
