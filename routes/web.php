@@ -84,6 +84,9 @@ Route::middleware(['auth', 'check.system.admin'])->prefix('admin')->name('admin.
     // Edit Paket & Addon Routes
     Route::post('/plans/{id}/update', [AdminController::class, 'updatePlan'])->name('plans.update');
     Route::post('/addons/{id}/update', [AdminController::class, 'updateAddon'])->name('addons.update');
+    
+    // Export Excel Route
+    Route::get('/companies/export/excel', [AdminController::class, 'exportCompanies'])->name('companies.export');
 });
 
 

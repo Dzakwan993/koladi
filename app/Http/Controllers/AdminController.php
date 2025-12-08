@@ -10,6 +10,9 @@ use App\Models\UserCompany;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Exports\CompaniesExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Carbon\Carbon;
 
 class AdminController extends Controller
 {
@@ -189,6 +192,24 @@ public function updateAddon(Request $request, $id)
             'success' => false,
             'message' => 'Gagal memperbarui add-ons: ' . $e->getMessage()
         ], 500);
+    }
+}
+
+
+public function exportCompanies()
+{
+    try {
+        // Generate nama file dengan timestamp
+        $fileName = 'Daftar_Perusahaan_' . Carbon::now()->format('d-M-Y_His') . '.xlsx';
+        
+        // Export ke Excel
+        return Excel::download(new CompaniesExport, $fileName);
+        
+    } catch (\Exception $e) {
+        Log::error('Export Companies Error: ' . $e->getMessage());
+        Log::error('Stack trace: ' . $e->getTraceAsString());
+        
+        return back()->with('error', 'Gagal export data perusahaan');
     }
 }
 }
