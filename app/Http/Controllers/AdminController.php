@@ -123,4 +123,72 @@ $plans = $plans->sortBy(function ($plan) use ($order) {
         
         return back()->with('success', 'Status perusahaan berhasil diubah');
     }
+
+
+
+    /**
+ * Update paket berlangganan
+ */
+public function updatePlan(Request $request, $id)
+{
+    try {
+        $request->validate([
+            'plan_name' => 'required|string|max:255',
+            'price_monthly' => 'required|numeric|min:0',
+            'base_user_limit' => 'required|integer|min:1',
+        ]);
+
+        $plan = Plan::findOrFail($id);
+        
+        $plan->update([
+            'plan_name' => $request->plan_name,
+            'price_monthly' => $request->price_monthly,
+            'base_user_limit' => $request->base_user_limit,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Paket berhasil diperbarui',
+            'data' => $plan
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Update Plan Error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memperbarui paket: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Update add-ons
+ */
+public function updateAddon(Request $request, $id)
+{
+    try {
+        $request->validate([
+            'price_per_user' => 'required|numeric|min:0',
+        ]);
+
+        $addon = Addon::findOrFail($id);
+        
+        $addon->update([
+            'price_per_user' => $request->price_per_user,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Add-ons berhasil diperbarui',
+            'data' => $addon
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Update Addon Error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memperbarui add-ons: ' . $e->getMessage()
+        ], 500);
+    }
+}
 }

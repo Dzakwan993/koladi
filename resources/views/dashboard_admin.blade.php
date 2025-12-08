@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Dashboard Admin - Koladi</title>
     @vite('resources/css/app.css')
 </head>
@@ -149,13 +150,13 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
                 @php
-    $order = ['Basic', 'Standard', 'Business']; // hapus tanda '='
+                    $order = ['Basic', 'Standard', 'Business']; // hapus tanda '='
 
-    // Urutkan $plans sesuai urutan di $order
-    $plans = $plans->sortBy(function ($plan) use ($order) {
-        return array_search($plan->plan_name, $order);
-    });
-@endphp
+                    // Urutkan $plans sesuai urutan di $order
+                    $plans = $plans->sortBy(function ($plan) use ($order) {
+                        return array_search($plan->plan_name, $order);
+                    });
+                @endphp
 
 
                 @foreach ($plans as $index => $plan)
@@ -562,7 +563,7 @@
         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
         <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-gray-800" id="modalPackageTitle">Edit Paket Basic</h3>
+                <h3 class="text-lg font-bold text-gray-800" id="modalPackageTitle">Edit Paket Berlangganan</h3>
                 <button class="text-gray-400 hover:text-gray-600 close-modal">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
@@ -573,28 +574,30 @@
             </div>
 
             <form id="packageForm">
-                <input type="hidden" id="packageType" name="package_type">
+                @csrf
+                <input type="hidden" id="planId" name="plan_id">
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Harga per bulan</label>
-                        <input type="text" id="packagePrice" name="price"
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Paket</label>
+                        <input type="text" id="packageName" name="plan_name"
                             class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Rp 199,000">
+                            placeholder="Paket Basic" required>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">User limit</label>
-                        <input type="number" id="packageUserLimit" name="user_limit"
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Harga per bulan (Rp)</label>
+                        <input type="number" id="packagePrice" name="price_monthly"
                             class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="10">
+                            placeholder="199000" required min="0">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Storage limit (GB)</label>
-                        <input type="number" id="packageStorageLimit" name="storage_limit"
+                        <label class="block text-sm font-medium text-gray-700 mb-1">User Limit (Jumlah Pengguna
+                            Maksimum)</label>
+                        <input type="number" id="packageUserLimit" name="base_user_limit"
                             class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="10">
+                            placeholder="10" required min="1">
                     </div>
                 </div>
 
@@ -605,7 +608,18 @@
                     </button>
                     <button type="submit"
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-                        Simpan Perubahan
+                        <span class="btn-text">Simpan Perubahan</span>
+                        <span class="btn-loading hidden">
+                            <svg class="animate-spin h-5 w-5 inline" xmlns="http://www.w3.org/2000/svg"
+                                fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10"
+                                    stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                </path>
+                            </svg>
+                            Menyimpan...
+                        </span>
                     </button>
                 </div>
             </form>
@@ -617,7 +631,7 @@
         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
         <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-gray-800" id="modalAddonTitle">Edit Add-ons User</h3>
+                <h3 class="text-lg font-bold text-gray-800" id="modalAddonTitle">Edit Add-ons</h3>
                 <button class="text-gray-400 hover:text-gray-600 close-modal">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
@@ -628,15 +642,16 @@
             </div>
 
             <form id="addonForm">
-                <input type="hidden" id="addonType" name="addon_type">
+                @csrf
+                <input type="hidden" id="addonId" name="addon_id">
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1" id="addonPriceLabel">Harga per
-                            user per bulan</label>
-                        <input type="text" id="addonPrice" name="price"
-                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Rp 50,000">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Harga per user per bulan
+                            (Rp)</label>
+                        <input type="number" id="addonPrice" name="price_per_user"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            placeholder="50000" required min="0">
                     </div>
                 </div>
 
@@ -647,90 +662,108 @@
                     </button>
                     <button type="submit"
                         class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium">
-                        Simpan Perubahan
+                        <span class="btn-text">Simpan Perubahan</span>
+                        <span class="btn-loading hidden">
+                            <svg class="animate-spin h-5 w-5 inline" xmlns="http://www.w3.org/2000/svg"
+                                fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10"
+                                    stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                </path>
+                            </svg>
+                            Menyimpan...
+                        </span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-4 right-4 bg-white shadow-lg rounded-lg p-4 hidden z-50 border-l-4">
+        <div class="flex items-center gap-3">
+            <div id="toastIcon"></div>
+            <div>
+                <p id="toastMessage" class="font-medium"></p>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Refresh button
-            const refreshBtn = document.querySelector('.refresh-btn');
-            if (refreshBtn) {
-                refreshBtn.addEventListener('click', function() {
-                    const originalHTML = this.innerHTML;
-                    this.innerHTML = '<span class="animate-spin">⟳</span> Refreshing...';
-                    this.disabled = true;
+            // CSRF Token
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+                document.querySelector('input[name="_token"]')?.value;
 
-                    setTimeout(() => {
-                        this.innerHTML = originalHTML;
-                        this.disabled = false;
-                        alert('Data diperbarui!');
-                    }, 1500);
-                });
-            }
+            // Toast notification function
+            function showToast(message, type = 'success') {
+                const toast = document.getElementById('toast');
+                const toastMessage = document.getElementById('toastMessage');
+                const toastIcon = document.getElementById('toastIcon');
 
-            // Filter functionality
-            const filterBtn = document.querySelector('button:contains("Filter")');
-            const searchInput = document.querySelector('input[placeholder="Cari perusahaan..."]');
-            const statusSelect = document.querySelector('select');
+                toast.classList.remove('border-green-500', 'border-red-500', 'border-blue-500');
 
-            if (filterBtn) {
-                filterBtn.addEventListener('click', function() {
-                    const searchTerm = searchInput.value.toLowerCase();
-                    const status = statusSelect.value;
+                if (type === 'success') {
+                    toast.classList.add('border-green-500');
+                    toastIcon.innerHTML = `
+                    <svg class="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                `;
+                } else if (type === 'error') {
+                    toast.classList.add('border-red-500');
+                    toastIcon.innerHTML = `
+                    <svg class="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                `;
+                }
 
-                    const rows = document.querySelectorAll('tbody tr');
-                    rows.forEach(row => {
-                        const companyName = row.cells[0].textContent.toLowerCase();
-                        const statusBadge = row.cells[7].textContent.toLowerCase();
+                toastMessage.textContent = message;
+                toast.classList.remove('hidden');
 
-                        const matchesSearch = !searchTerm || companyName.includes(searchTerm);
-                        const matchesStatus = !status || statusBadge.includes(status);
-
-                        row.style.display = matchesSearch && matchesStatus ? '' : 'none';
-                    });
-                });
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 3000);
             }
 
             // Package Edit Modal
             const editPackageModal = document.getElementById('editPackageModal');
             const modalPackageTitle = document.getElementById('modalPackageTitle');
-            const packageTypeInput = document.getElementById('packageType');
+            const planIdInput = document.getElementById('planId');
+            const packageNameInput = document.getElementById('packageName');
             const packagePriceInput = document.getElementById('packagePrice');
             const packageUserLimitInput = document.getElementById('packageUserLimit');
-            const packageStorageLimitInput = document.getElementById('packageStorageLimit');
 
             // Addon Edit Modal
             const editAddonModal = document.getElementById('editAddonModal');
             const modalAddonTitle = document.getElementById('modalAddonTitle');
-            const addonPriceLabel = document.getElementById('addonPriceLabel');
-            const addonTypeInput = document.getElementById('addonType');
+            const addonIdInput = document.getElementById('addonId');
             const addonPriceInput = document.getElementById('addonPrice');
 
             // Package edit buttons
             document.querySelectorAll('.edit-package').forEach(button => {
-                button.addEventListener('click', function() {
-                    const packageType = this.getAttribute('data-package');
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
                     const packageCard = this.closest('.package-card');
+                    const planId = packageCard.getAttribute('data-plan-id');
 
                     // Get current values
+                    const currentName = packageCard.querySelector('h3').textContent.trim();
                     const currentPrice = packageCard.querySelector('.package-price').textContent
-                        .split('Rp')[1].split(',')[0].trim();
+                        .replace(/[^0-9]/g, '');
                     const currentUserLimit = packageCard.querySelector('.package-user-limit')
-                        .textContent;
-                    const currentStorageLimit = packageCard.querySelector('.package-storage-limit')
-                        .textContent.split(' ')[0];
+                        .textContent.trim();
 
                     // Set modal values
-                    modalPackageTitle.textContent =
-                        `Edit Paket ${packageType.charAt(0).toUpperCase() + packageType.slice(1)}`;
-                    packageTypeInput.value = packageType;
-                    packagePriceInput.value = `Rp ${currentPrice},000`;
+                    modalPackageTitle.textContent = `Edit ${currentName}`;
+                    planIdInput.value = planId;
+                    packageNameInput.value = currentName;
+                    packagePriceInput.value = currentPrice;
                     packageUserLimitInput.value = currentUserLimit;
-                    packageStorageLimitInput.value = currentStorageLimit;
 
                     editPackageModal.classList.remove('hidden');
                 });
@@ -738,21 +771,22 @@
 
             // Addon edit buttons
             document.querySelectorAll('.edit-addon').forEach(button => {
-                button.addEventListener('click', function() {
-                    const addonType = this.getAttribute('data-addon');
-                    const addonCard = this.closest('.addon-card');
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
 
-                    // Get current value
-                    const currentPrice = addonCard.querySelector('.addon-price').textContent;
+                    const addonCard = this.closest('.addon-card');
+                    const addonId = addonCard.getAttribute('data-addon-id');
+
+                    // Get current values
+                    const currentName = addonCard.querySelector('h3').textContent.trim();
+                    const currentPrice = addonCard.querySelector('.addon-price').textContent
+                        .replace(/[^0-9]/g, '');
 
                     // Set modal values
-                    const addonName = addonType === 'user' ? 'User' : 'Storage';
-                    modalAddonTitle.textContent = `Edit Add-ons ${addonName}`;
-                    addonPriceLabel.textContent = addonType === 'user' ?
-                        'Harga per user per bulan' :
-                        'Harga per 10 GB per bulan';
-                    addonTypeInput.value = addonType;
-                    addonPriceInput.value = currentPrice.split('/')[0].trim();
+                    modalAddonTitle.textContent = `Edit ${currentName}`;
+                    addonIdInput.value = addonId;
+                    addonPriceInput.value = currentPrice;
 
                     editAddonModal.classList.remove('hidden');
                 });
@@ -766,47 +800,6 @@
                 });
             });
 
-            // Package form submission
-            document.getElementById('packageForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                const packageType = packageTypeInput.value;
-                const newPrice = packagePriceInput.value;
-                const newUserLimit = packageUserLimitInput.value;
-                const newStorageLimit = packageStorageLimitInput.value;
-
-                // Update the card in UI
-                const packageCard = document.querySelector(`.package-card[data-package="${packageType}"]`);
-                packageCard.querySelector('.package-price').innerHTML =
-                    `${newPrice}<span class="text-sm text-gray-500">/bulan</span>`;
-                packageCard.querySelector('.package-user-limit').textContent = newUserLimit;
-                packageCard.querySelector('.package-storage-limit').textContent = `${newStorageLimit} GB`;
-
-                // In real app, send to server
-                alert(`Paket ${packageType} berhasil diperbarui!`);
-
-                editPackageModal.classList.add('hidden');
-            });
-
-            // Addon form submission
-            document.getElementById('addonForm').addEventListener('submit', function(e) {
-                e.preventDefault();
-
-                const addonType = addonTypeInput.value;
-                const newPrice = addonPriceInput.value;
-
-                // Update the card in UI
-                const addonCard = document.querySelector(`.addon-card[data-addon="${addonType}"]`);
-                addonCard.querySelector('.addon-price').innerHTML =
-                    `${newPrice}<span class="text-sm font-normal">/bulan</span>`;
-
-                // In real app, send to server
-                const addonName = addonType === 'user' ? 'User' : 'Storage';
-                alert(`Add-ons ${addonName} berhasil diperbarui!`);
-
-                editAddonModal.classList.add('hidden');
-            });
-
             // Close modals when clicking outside
             [editPackageModal, editAddonModal].forEach(modal => {
                 modal.addEventListener('click', function(e) {
@@ -815,6 +808,119 @@
                     }
                 });
             });
+
+            // Package form submission
+            document.getElementById('packageForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const btnText = submitBtn.querySelector('.btn-text');
+                const btnLoading = submitBtn.querySelector('.btn-loading');
+
+                // Disable button and show loading
+                submitBtn.disabled = true;
+                btnText.classList.add('hidden');
+                btnLoading.classList.remove('hidden');
+
+                const planId = planIdInput.value;
+                const formData = new FormData(this);
+
+                try {
+                    const response = await fetch(`/admin/plans/${planId}/update`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Update UI
+                        const packageCard = document.querySelector(
+                            `.package-card[data-plan-id="${planId}"]`);
+                        packageCard.querySelector('h3').textContent = formData.get('plan_name');
+                        packageCard.querySelector('.package-price').innerHTML =
+                            `Rp ${parseInt(formData.get('price_monthly')).toLocaleString('id-ID')}<span class="text-sm text-gray-500">/bulan</span>`;
+                        packageCard.querySelector('.package-user-limit').textContent = formData.get(
+                            'base_user_limit');
+
+                        showToast(result.message, 'success');
+                        editPackageModal.classList.add('hidden');
+                    } else {
+                        showToast(result.message || 'Gagal memperbarui paket', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showToast('Terjadi kesalahan saat memperbarui paket', 'error');
+                } finally {
+                    // Re-enable button
+                    submitBtn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    btnLoading.classList.add('hidden');
+                }
+            });
+
+            // Addon form submission
+            document.getElementById('addonForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const btnText = submitBtn.querySelector('.btn-text');
+                const btnLoading = submitBtn.querySelector('.btn-loading');
+
+                // Disable button and show loading
+                submitBtn.disabled = true;
+                btnText.classList.add('hidden');
+                btnLoading.classList.remove('hidden');
+
+                const addonId = addonIdInput.value;
+                const formData = new FormData(this);
+
+                try {
+                    const response = await fetch(`/admin/addons/${addonId}/update`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Update UI
+                        const addonCard = document.querySelector(
+                            `.addon-card[data-addon-id="${addonId}"]`);
+                        addonCard.querySelector('.addon-price').innerHTML =
+                            `Rp ${parseInt(formData.get('price_per_user')).toLocaleString('id-ID')}<span class="text-sm font-normal">/bulan</span>`;
+
+                        showToast(result.message, 'success');
+                        editAddonModal.classList.add('hidden');
+                    } else {
+                        showToast(result.message || 'Gagal memperbarui add-ons', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showToast('Terjadi kesalahan saat memperbarui add-ons', 'error');
+                } finally {
+                    // Re-enable button
+                    submitBtn.disabled = false;
+                    btnText.classList.remove('hidden');
+                    btnLoading.classList.add('hidden');
+                }
+            });
+
+            // Existing refresh and filter code...
+            const refreshBtn = document.querySelector('.refresh-btn');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', function() {
+                    window.location.reload();
+                });
+            }
         });
     </script>
 

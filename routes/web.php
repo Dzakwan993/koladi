@@ -80,6 +80,10 @@ Route::middleware(['auth', 'check.system.admin'])->prefix('admin')->name('admin.
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/companies/{id}', [AdminController::class, 'showCompany'])->name('companies.show');
     Route::post('/companies/{id}/toggle-status', [AdminController::class, 'toggleCompanyStatus'])->name('companies.toggle-status');
+    
+    // Edit Paket & Addon Routes
+    Route::post('/plans/{id}/update', [AdminController::class, 'updatePlan'])->name('plans.update');
+    Route::post('/addons/{id}/update', [AdminController::class, 'updateAddon'])->name('addons.update');
 });
 
 
