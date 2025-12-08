@@ -82,6 +82,12 @@ export default function documentSearch() {
         selectedDocuments: [],
         selectedWorkspace: null,
         selectedFolder: null,
+        currentModalFolder: null, // ✅ BARU - folder yang sedang dibuka di modal
+        modalFolderHistory: [], // ✅ BARU - history navigasi folder di modal
+        modalBreadcrumbs: [], // ✅ BARU - breadcrumb folder di modal
+        loadingModalFolders: false, // ✅ BARU - loading state
+        availableModalFolders: [], // ✅ BARU - daftar folder yang ditampilkan
+        availableModalFiles: [], // ⬅️ TAMBAHKAN di data properties
         currentFolder: null,
         folderHistory: [],
         breadcrumbs: [],
@@ -118,6 +124,7 @@ export default function documentSearch() {
         excelFiles: [],
         members: [],
         availableWorkspaces: [],
+        loadingWorkspaces: false,
         backendFolders: [],
         backendRootFiles: [],
 
@@ -759,7 +766,439 @@ export default function documentSearch() {
             form.reset();
         },
 
-        // 2️⃣ Handle Create Folder
+        // Tambahkan method baru (sekitar baris 800-900, setelah method lainnya)
+        async loadAvailableWorkspaces() {
+            console.log("🔍 loadAvailableWorkspaces called");
+            console.log("📍 currentContext:", this.currentContext);
+
+            this.loadingWorkspaces = true;
+            this.selectedWorkspace = "";
+
+            try {
+                // ✅ PERBAIKAN: Pilih endpoint berdasarkan context
+                const endpoint =
+                    this.currentContext === "company"
+                        ? "/company-documents/workspaces" // ⬅️ Company endpoint
+                        : "/api/user/workspaces"; // ⬅️ Workspace endpoint
+
+                console.log("🔗 Fetching from:", endpoint);
+
+                const response = await fetch(endpoint);
+
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    const text = await response.text();
+                    console.error(
+                        "❌ Response is not JSON:",
+                        text.substring(0, 500)
+                    );
+                    throw new Error("Server returned HTML instead of JSON");
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.availableWorkspaces = data.workspaces;
+                    console.log(
+                        "✅ Available workspaces:",
+                        this.availableWorkspaces.length
+                    );
+                } else {
+                    throw new Error(
+                        data.message || "Failed to load workspaces"
+                    );
+                }
+            } catch (error) {
+                console.error("❌ Error loading workspaces:", error);
+
+                showCustomSwal({
+                    icon: "error",
+                    title: "Error!",
+                    text: error.message,
+                    showConfirmButton: true,
+                });
+            } finally {
+                this.loadingWorkspaces = false;
+            }
+        },
+
+        // ✅ Method untuk memilih workspace dan load root folders
+        // ✅ Method untuk memilih workspace dan load root folders
+        selectWorkspaceForMove(workspace) {
+            console.log("🔥 selectWorkspaceForMove called");
+            console.log("📦 workspace param:", workspace);
+
+            if (!workspace) {
+                console.warn("⚠️ No workspace provided");
+                return;
+            }
+
+            console.log("📂 Workspace selected:", workspace.name);
+            console.log("📂 Workspace ID:", workspace.id);
+
+            // ✅ PENTING: Set selectedWorkspace sebagai ID (string), bukan object
+            // Karena x-model bind ke ID dari <option :value="workspace.id">
+            this.selectedWorkspace = workspace.id;
+
+            console.log(
+                "✅ this.selectedWorkspace set to:",
+                this.selectedWorkspace
+            );
+
+            // Reset state
+            this.selectedWorkspace = workspace.id;
+            this.selectedFolder = null;
+            this.currentModalFolder = null;
+            this.modalFolderHistory = [];
+            this.modalBreadcrumbs = [];
+
+            // Load root folders dari workspace yang dipilih
+            this.availableModalFolders = workspace.folders || [];
+            this.availableModalFiles = workspace.files || []; // ⬅️ TAMBAHKAN INI
+
+            console.log(
+                "📁 Root folders loaded:",
+                this.availableModalFolders.length
+            );
+        },
+
+        // ✅ Method untuk masuk ke dalam folder di modal
+        openModalFolder(folder) {
+            console.log("📂 Opening modal folder:", folder.name);
+
+            if (this.currentModalFolder) {
+                this.modalFolderHistory.push(this.currentModalFolder);
+            }
+
+            this.currentModalFolder = folder;
+            this.updateModalBreadcrumbs();
+
+            // ✅ Load subfolders DAN files
+            this.loadModalSubfolders(folder.id);
+        },
+
+        // ✅ Method untuk kembali ke folder sebelumnya
+        goBackModalFolder() {
+            console.log("🔙 Going back in modal folder navigation");
+
+            if (this.modalFolderHistory.length > 0) {
+                // Ambil folder terakhir dari history
+                const previousFolder = this.modalFolderHistory.pop();
+                this.currentModalFolder = previousFolder;
+
+                // Update breadcrumbs
+                this.updateModalBreadcrumbs();
+
+                // Load subfolders dari folder sebelumnya
+                this.loadModalSubfolders(previousFolder.id);
+            } else {
+                // ✅ PERBAIKAN: Kembali ke root dengan load ulang data
+                this.goToModalRoot();
+            }
+        },
+
+        // ✅ Method untuk kembali ke root workspace
+        goToModalRoot() {
+            console.log("🏠 Going to modal root");
+
+            this.currentModalFolder = null;
+            this.modalFolderHistory = [];
+            this.modalBreadcrumbs = [];
+
+            // ✅ PERBAIKAN: Load ulang root folders dari workspace yang dipilih
+            if (this.selectedWorkspace) {
+                const workspace = this.availableWorkspaces.find(
+                    (w) => String(w.id) === String(this.selectedWorkspace)
+                );
+
+                if (workspace) {
+                    this.availableModalFolders = workspace.folders || [];
+                    this.availableModalFiles = workspace.files || [];
+
+                    console.log(
+                        "✅ Root folders reloaded:",
+                        this.availableModalFolders.length
+                    );
+                    console.log(
+                        "✅ Root files reloaded:",
+                        this.availableModalFiles.length
+                    );
+                }
+            }
+        },
+
+        // ✅ Method untuk update breadcrumbs di modal
+        updateModalBreadcrumbs() {
+            if (!this.currentModalFolder) {
+                this.modalBreadcrumbs = [];
+                return;
+            }
+
+            // Build breadcrumbs dari history + current
+            this.modalBreadcrumbs = [
+                ...this.modalFolderHistory,
+                this.currentModalFolder,
+            ];
+
+            console.log(
+                "📍 Modal breadcrumbs:",
+                this.modalBreadcrumbs.map((f) => f.name)
+            );
+        },
+
+        // ✅ Method untuk load subfolders dari API
+        async loadModalSubfolders(folderId) {
+            this.loadingModalFolders = true;
+
+            try {
+                const response = await fetch(
+                    `/api/folders/${folderId}/subfolders`
+                );
+                const data = await response.json();
+
+                if (data.success) {
+                    this.availableModalFolders = data.folders || [];
+                    this.availableModalFiles = data.files || []; // ⬅️ TAMBAHKAN INI
+
+                    console.log(
+                        "✅ Subfolders loaded:",
+                        this.availableModalFolders.length
+                    );
+                    console.log(
+                        "✅ Files loaded:",
+                        this.availableModalFiles.length
+                    );
+                }
+            } catch (error) {
+                console.error("❌ Error loading subfolders:", error);
+                this.availableModalFolders = [];
+                this.availableModalFiles = []; // ⬅️ TAMBAHKAN INI
+            } finally {
+                this.loadingModalFolders = false;
+            }
+        },
+
+        // ✅ Method untuk navigasi breadcrumb (klik breadcrumb tertentu)
+        navigateToModalFolder(folder) {
+            console.log("🔹 Navigating to modal folder:", folder.name);
+
+            const folderIndex = this.modalBreadcrumbs.findIndex(
+                (f) => f.id === folder.id
+            );
+
+            if (folderIndex > -1) {
+                // Potong history sampai index folder yang diklik
+                this.modalFolderHistory = this.modalBreadcrumbs.slice(
+                    0,
+                    folderIndex
+                );
+                this.currentModalFolder = folder;
+
+                // Update breadcrumbs
+                this.updateModalBreadcrumbs();
+
+                // Load subfolders
+                this.loadModalSubfolders(folder.id);
+            } else if (
+                folderIndex === -1 &&
+                this.modalBreadcrumbs.length === 0
+            ) {
+                // ✅ PERBAIKAN: Jika breadcrumbs kosong, berarti kembali ke root
+                this.goToModalRoot();
+            }
+        },
+
+        // ✅ Method untuk pilih folder tujuan
+        selectFolderDestination(folder) {
+            this.selectedFolder = folder;
+            console.log("✅ Folder destination selected:", folder.name);
+        },
+
+        // ✅ Method untuk clear pilihan folder (pindah ke root)
+        clearFolderDestination() {
+            this.selectedFolder = null;
+            console.log("✅ Destination set to root");
+        },
+
+        // Tambahkan method untuk submit move documents
+        async submitMoveDocuments() {
+            console.log("🔥 submitMoveDocuments called");
+            console.log("📍 Context:", this.currentContext);
+
+            if (
+                !this.selectedWorkspace ||
+                this.selectedDocuments.length === 0
+            ) {
+                showCustomSwal({
+                    icon: "warning",
+                    title: "Peringatan!",
+                    text: "Pilih workspace tujuan dan dokumen yang akan dipindahkan",
+                    showConfirmButton: true,
+                });
+                return;
+            }
+
+            const workspaceId =
+                typeof this.selectedWorkspace === "object"
+                    ? this.selectedWorkspace.id
+                    : this.selectedWorkspace;
+
+            const targetWorkspace = this.availableWorkspaces.find(
+                (w) => String(w.id) === String(workspaceId)
+            );
+
+            if (!targetWorkspace) {
+                showCustomSwal({
+                    icon: "error",
+                    title: "Error!",
+                    text: "Workspace tidak ditemukan. Silakan refresh halaman.",
+                    showConfirmButton: true,
+                });
+                return;
+            }
+
+            let targetFolderId = null;
+
+            if (this.selectedFolder) {
+                targetFolderId = this.selectedFolder.id;
+            } else if (this.currentModalFolder) {
+                targetFolderId = this.currentModalFolder.id;
+            }
+
+            // ✅ VALIDASI: Cek jika pindah ke lokasi yang sama
+            const currentWorkspaceId =
+                this.currentWorkspaceId || this.currentWorkspace?.id;
+            const currentFolderId = this.currentFolder?.id || null;
+
+            if (
+                String(currentWorkspaceId) === String(targetWorkspace.id) &&
+                String(currentFolderId) === String(targetFolderId)
+            ) {
+                showCustomSwal({
+                    icon: "warning",
+                    title: "Tidak Dapat Memindahkan!",
+                    text: "Dokumen sudah berada di lokasi tersebut.",
+                    showConfirmButton: true,
+                });
+                return;
+            }
+
+            // Show loading
+            showCustomSwal({
+                title: "Memindahkan dokumen...",
+                text: "Mohon tunggu sebentar",
+                showConfirmButton: false,
+            });
+
+            if (window.Swal) Swal.showLoading();
+
+            try {
+                // ✅ PERBAIKAN: Pilih endpoint berdasarkan context
+                const endpoint =
+                    this.currentContext === "company"
+                        ? "/company-documents/move" // ⬅️ Company endpoint
+                        : "/documents/move"; // ⬅️ Workspace endpoint
+
+                console.log("📤 Posting to:", endpoint);
+
+                const csrfToken = document.querySelector(
+                    'meta[name="csrf-token"]'
+                )?.content;
+
+                if (!csrfToken) {
+                    throw new Error("CSRF token not found");
+                }
+
+                const payload = {
+                    workspace_id: targetWorkspace.id,
+                    folder_id: targetFolderId,
+                    documents: this.selectedDocuments.map((doc) => ({
+                        id: doc.id,
+                        type: doc.type === "Folder" ? "folder" : "file",
+                    })),
+                };
+
+                console.log(
+                    "📤 Request payload:",
+                    JSON.stringify(payload, null, 2)
+                );
+
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrfToken,
+                        Accept: "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                const contentType = response.headers.get("content-type");
+
+                if (!contentType || !contentType.includes("application/json")) {
+                    const text = await response.text();
+                    console.error(
+                        "❌ Response is not JSON:",
+                        text.substring(0, 500)
+                    );
+                    throw new Error("Server returned HTML instead of JSON");
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.showMoveDocumentsModal = false;
+                    this.selectedWorkspace = null;
+                    this.selectedFolder = null;
+                    this.currentModalFolder = null;
+                    this.modalFolderHistory = [];
+                    this.modalBreadcrumbs = [];
+                    this.selectedDocuments = [];
+                    this.selectMode = false;
+
+                    // ✅ Build message dengan info renamed
+                    let alertText = data.message;
+
+                    if (data.renamed_files && data.renamed_files.length > 0) {
+                        alertText += "\n\nFile yang di-rename:";
+                        data.renamed_files.forEach((file) => {
+                            alertText += `\n• ${file.old_name} → ${file.new_name}`;
+                        });
+                    }
+
+                    showCustomSwal({
+                        icon: "success",
+                        title: "Berhasil!",
+                        text: "File berhasil dipindahkan",
+                        html: alertText.replace(/\n/g, "<br>"), // ✅ Gunakan html untuk line break
+                        timer: 4000, // ✅ Kasih waktu lebih lama untuk baca
+                        showConfirmButton: true,
+                    });
+
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    showCustomSwal({
+                        icon: "error",
+                        title: "Gagal!",
+                        text: data.message || "Gagal memindahkan dokumen",
+                        showConfirmButton: true,
+                    });
+                }
+            } catch (error) {
+                console.error("❌ Error moving documents:", error);
+                showCustomSwal({
+                    icon: "error",
+                    title: "Error!",
+                    text:
+                        error.message ||
+                        "Terjadi kesalahan saat memindahkan dokumen",
+                    showConfirmButton: true,
+                });
+            }
+        },
+
         // 2️⃣ Handle Create Folder
         async handleCreateFolder(event) {
             console.log("🚀 handleCreateFolder called");

@@ -16,7 +16,7 @@
                                 <span x-text="selectedDocuments.length"></span> berkas dipilih
                             </span>
                         </div>
-                        <button @click="showMoveDocumentsModal = true"
+                        <button @click="showMoveDocumentsModal = true; $dispatch('movemodal-open')"
                             class="bg-blue-600 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition text-xs sm:text-sm mt-2 sm:mt-0">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

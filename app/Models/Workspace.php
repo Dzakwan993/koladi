@@ -88,6 +88,17 @@ class Workspace extends Model
     {
         return $this->hasMany(UserWorkspace::class, 'workspace_id');
     }
+    // Di Model Workspace.php
+    public function folders()
+    {
+        return $this->hasMany(Folder::class);
+    }
+    // app/Models/Workspace.php
+
+    public function files()
+    {
+        return $this->hasMany(File::class, 'workspace_id')->whereNull('folder_id');
+    }
 
     /**
      * ✅ Relationship untuk mendapatkan members (users) dari workspace
@@ -149,7 +160,7 @@ class Workspace extends Model
         return $query->whereNull('deleted_at');
     }
 
-     public function pengumumans()
+    public function pengumumans()
     {
         return $this->hasMany(Pengumuman::class);
     }

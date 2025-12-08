@@ -142,6 +142,198 @@
     </form>
 </div>
 
+{{-- 8️⃣ MOVE DOCUMENTS MODAL (Company → Workspace) --}}
+<div x-show="showMoveDocumentsModal" x-cloak @movemodal-open.window="
+         console.log('🔥 movemodal-open event received (company context)');
+         console.log('📋 currentContext:', currentContext);
+         loadAvailableWorkspaces();
+     " class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col"
+        @click.outside="showMoveDocumentsModal = false">
+
+        {{-- Header Modal --}}
+        <div class="px-6 py-4 border-b border-gray-200 flex-shrink-0">
+            <h3 class="text-lg font-semibold text-gray-800">Pindahkan Dokumen ke Workspace</h3>
+        </div>
+
+        {{-- Content Modal --}}
+        <div class="px-6 py-4 space-y-4 overflow-y-auto flex-1">
+
+            {{-- Info Dokumen Terpilih --}}
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-blue-900">
+                            <span x-text="selectedDocuments.length"></span> dokumen akan dipindahkan
+                        </p>
+                        <p class="text-xs text-blue-700 mt-1">
+                            Dari: <span class="font-medium">Dokumen Company</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Loading State --}}
+            <div x-show="loadingWorkspaces" class="text-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-3"></div>
+                <p class="text-sm text-gray-600">Memuat workspace...</p>
+            </div>
+
+            {{-- Workspace & Folder Selection --}}
+            <div x-show="!loadingWorkspaces" class="space-y-4">
+
+                {{-- ========== WORKSPACE DROPDOWN ========== --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Pilih Workspace Tujuan <span class="text-red-500">*</span>
+                    </label>
+
+                    {{-- Empty State --}}
+                    <div x-show="availableWorkspaces.length === 0"
+                        class="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 7a2 2 0 012-2h5l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                        </svg>
+                        <p class="text-sm text-gray-600">Tidak ada workspace tersedia</p>
+                    </div>
+
+                    {{-- Dropdown Select --}}
+                    <div x-show="availableWorkspaces.length > 0" class="relative">
+                        <select x-model="selectedWorkspace"
+                            @change="selectWorkspaceForMove(availableWorkspaces.find(w => w.id === selectedWorkspace))"
+                            class="w-full px-4 py-3 pr-10 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 transition text-sm"
+                            style="appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: none;">
+                            <option value="" disabled selected>-- Pilih Workspace --</option>
+                            <template x-for="workspace in availableWorkspaces" :key="workspace.id">
+                                <option :value="workspace.id" x-text="`${workspace.name} (${workspace.type})`"></option>
+                            </template>
+                        </select>
+                        {{-- Dropdown Arrow --}}
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ========== FOLDER NAVIGATION (jika workspace dipilih) ========== --}}
+                <div x-show="selectedWorkspace" x-transition class="space-y-3">
+
+                    <label class="block text-sm font-medium text-gray-700">
+                        Pilih Lokasi Tujuan
+                    </label>
+
+                    {{-- Breadcrumb Navigation --}}
+                    <div x-show="currentModalFolder"
+                        class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+
+                        {{-- Breadcrumbs --}}
+                        <div class="flex items-center gap-1 overflow-x-auto flex-1 text-sm">
+                            <button @click="goToModalRoot()"
+                                class="px-2 py-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition whitespace-nowrap">
+                                Folder Utama
+                            </button>
+
+                            <template x-for="(crumb, index) in modalBreadcrumbs" :key="crumb.id">
+                                <div class="flex items-center gap-1">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5l7 7-7 7" />
+                                    </svg>
+                                    <button @click="navigateToModalFolder(crumb)"
+                                        :class="index === modalBreadcrumbs.length - 1 ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-blue-600'"
+                                        class="px-2 py-1 hover:bg-blue-50 rounded transition whitespace-nowrap"
+                                        x-text="crumb.name">
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    {{-- Loading Folders --}}
+                    <div x-show="loadingModalFolders" class="text-center py-6">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                        <p class="text-xs text-gray-600">Memuat folder...</p>
+                    </div>
+
+                    {{-- Folder & File List --}}
+                    <div x-show="!loadingModalFolders && (availableModalFolders.length > 0 || availableModalFiles.length > 0)"
+                        class="space-y-2 max-h-[300px] overflow-y-auto border border-gray-200 rounded-lg p-3">
+
+                        {{-- Folders --}}
+                        <template x-for="folder in availableModalFolders" :key="folder.id">
+                            <button @click="openModalFolder(folder)"
+                                class="w-full p-2.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-left transition-all duration-150 flex items-center gap-2">
+                                <svg class="w-4 h-4 flex-shrink-0 text-blue-500" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 7a2 2 0 012-2h5l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                                </svg>
+                                <span class="text-sm font-medium truncate" x-text="folder.name"></span>
+                            </button>
+                        </template>
+
+                        {{-- Files (read-only, tidak bisa diklik) --}}
+                        <template x-for="file in availableModalFiles" :key="file.id">
+                            <div
+                                class="w-full p-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-500 text-left flex items-center gap-2 cursor-not-allowed">
+                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                <span class="text-sm truncate" x-text="file.name || file.file_name"></span>
+                            </div>
+                        </template>
+                    </div>
+
+                    {{-- Empty State --}}
+                    <div x-show="!loadingModalFolders && availableModalFolders.length === 0 && availableModalFiles.length === 0"
+                        class="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                        <svg class="w-10 h-10 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 7a2 2 0 012-2h5l2 2h7a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+                        </svg>
+                        <p class="text-sm text-gray-600">Tidak ada folder di lokasi ini</p>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        {{-- Footer Modal --}}
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-between items-center gap-3 flex-shrink-0">
+            <button @click="showMoveDocumentsModal = false"
+                class="px-4 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition">
+                Batal
+            </button>
+
+            <button @click="submitMoveDocuments()" :disabled="!selectedWorkspace || selectedDocuments.length === 0"
+                :class="(!selectedWorkspace || selectedDocuments.length === 0) ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+                class="px-5 py-2.5 text-sm font-medium text-white rounded-lg transition flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+                <span>Pindahkan ke Workspace</span>
+            </button>
+        </div>
+    </div>
+</div>
+
 {{-- 4️⃣ EDIT FILE MODAL --}}
 <div x-show="showEditFileModal" x-cloak
     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

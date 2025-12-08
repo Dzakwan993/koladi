@@ -1,11 +1,12 @@
 {{-- resources/views/components/company-dokumen-header.blade.php --}}
 
 {{-- Header dengan Pencarian dan Tombol Aksi --}}
-<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 flex-shrink-0" x-show="!currentFile">
+<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6 flex-shrink-0"
+    x-show="!currentFile">
     {{-- Tombol Aksi --}}
     <div class="flex flex-wrap gap-2 sm:gap-3" x-show="!selectMode">
         <button @click="showCreateFolderModal = true"
-            class="bg-blue-600 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-blue-700 flex items-center gap-1 sm:gap-2 transition text-xs sm:text-sm">
+            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition text-sm whitespace-nowrap h-10">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
@@ -14,33 +15,31 @@
         </button>
 
         {{-- 🔥 COMPANY FILE UPLOAD FORM --}}
-        <form id="uploadFileForm" 
-              action="{{ route('company-documents.file.store') }}" 
-              method="POST" 
-              enctype="multipart/form-data" 
-              class="inline" 
-              @submit.prevent="handleFileUpload($event)">
+        <form id="uploadFileForm" action="{{ route('company-documents.file.store') }}" method="POST"
+            enctype="multipart/form-data" class="inline" @submit.prevent="handleFileUpload($event)">
             @csrf
 
-            {{-- ✅ COMPANY ID (bukan workspace_id) --}}
-            <input type="hidden" name="company_id" :value="currentCompanyId || '{{ $company->id }}'">
+            {{-- ✅ Company context --}}
+            <input type="hidden" name="company_id" value="{{ $company->id }}">
             <input type="hidden" name="folder_id" x-bind:value="currentFolder ? currentFolder.id : ''">
 
-            <label class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center gap-2 transition cursor-pointer">
+            <input type="file" name="file" x-ref="fileInput" class="hidden"
+                @change="$el.closest('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))">
+
+            <button type="button" @click="$refs.fileInput.click()"
+                class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center gap-2 transition text-sm whitespace-nowrap h-10">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
                     stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M12 16v-8m0 0l-4 4m4-4l4 4m4 4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h3l2-2h6a2 2 0 012 2v12z" />
+                        d="M12 16v-8m0 0l-4 4m4-4l4 4m4 4a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h3l2-2h6a2 2 0 012 2v12z">
+                    </path>
                 </svg>
-
-                <span class="font-medium text-sm">Unggah File</span>
-
-                <input type="file" name="file" class="hidden" @change="$el.closest('form').dispatchEvent(new Event('submit', {bubbles: true, cancelable: true}))">
-            </label>
+                <span class="font-medium">Unggah File</span>
+            </button>
         </form>
 
         <button @click="toggleSelectMode()"
-            class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center gap-2 transition">
+            class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center gap-2 transition text-sm whitespace-nowrap h-10">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
                 stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />

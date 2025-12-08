@@ -70,6 +70,13 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 // ============================================
 Route::middleware(['auth'])->group(function () {
 
+    // API untuk get user workspaces
+    Route::get('/api/user/workspaces', [DokumenController::class, 'getUserWorkspaces']);
+
+    // Route untuk move documents
+    Route::post('/documents/move', [DokumenController::class, 'moveDocuments']);
+    // ✅ BARU - Get subfolders dari folder tertentu
+    Route::get('/api/folders/{folder}/subfolders', [DokumenController::class, 'getFolderSubfolders']);
     // ✅ Dashboard & Company Routes
     Route::get('/dashboard', [CompanyController::class, 'dashboard'])->name('dashboard');
     Route::get('/member-removed', [CompanyController::class, 'memberRemoved'])->name('member.removed');
@@ -279,6 +286,9 @@ Route::middleware(['auth'])->group(function () {
     // ========================================
     // 🔥 COMPANY DOCUMENTS (NEW)
     // ========================================
+    // ========================================
+// 🔥 COMPANY DOCUMENTS (NEW)
+// ========================================
     Route::prefix('company-documents')->name('company-documents.')->group(function () {
         Route::get('/', [CompanyDokumenController::class, 'index'])->name('index');
         Route::post('/folder', [CompanyDokumenController::class, 'storeFolder'])->name('folder.store');
@@ -290,6 +300,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/members', [CompanyDokumenController::class, 'getCompanyMembers'])->name('members');
         Route::post('/recipients', [CompanyDokumenController::class, 'recipientsStore'])->name('recipients.store');
         Route::get('/{document}/recipients', [CompanyDokumenController::class, 'getRecipients'])->name('recipients.get');
+
+        // ✅ TAMBAHAN: Route untuk move documents dari company ke workspace
+        Route::post('/move', [CompanyDokumenController::class, 'moveDocuments'])->name('move'); // ⬅️ BARU
+        Route::get('/workspaces', [CompanyDokumenController::class, 'getAvailableWorkspaces'])->name('workspaces'); // ⬅️ BARU
     });
 
     // Comments untuk company documents
