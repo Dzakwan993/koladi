@@ -254,6 +254,12 @@ class AuthController extends Controller
             $request->session()->regenerate();
             $user = Auth::user();
 
+            if ($user->isSystemAdmin()) {
+                return redirect()->route('admin.dashboard')
+                    ->with('success', 'Selamat datang, Admin Sistem!');
+            }
+
+
             // ✅ Handle pending invitation
             $pendingToken = session('pending_invitation_token');
             if ($pendingToken) {

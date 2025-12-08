@@ -26,6 +26,7 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\CompanyChatController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\DocumentCommentController;
+use App\Http\Controllers\AdminController;
 
 // 🔥 Broadcasting Routes
 Broadcast::routes(['middleware' => ['web', 'auth']]);
@@ -73,6 +74,16 @@ Route::post('/reset-password/verify', [AuthController::class, 'verifyResetOtp'])
 Route::get('/reset-password', [AuthController::class, 'showResetPasswordForm'])->name('reset-password.form');
 Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('reset-password.submit');
 
+
+// ============================================
+// 🔥 ADMIN SISTEM ROUTES (SEBELUM AUTH MIDDLEWARE)
+// ============================================
+Route::middleware(['auth', 'check.system.admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('/companies/{id}', [AdminController::class, 'showCompany'])->name('companies.show');
+    Route::post('/companies/{id}/toggle-status', [AdminController::class, 'toggleCompanyStatus'])->name('companies.toggle-status');
+});
+
 // Webhook Midtrans (tanpa auth)
 Route::post('/midtrans/callback', [SubscriptionController::class, 'callback'])->name('midtrans.callback');
 
@@ -108,6 +119,12 @@ Route::middleware(['auth'])->group(function () {
 
     // Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
+
+
+    Route::get('/admin/dashboard', function () {
+    return view('dashboard_admin');
+})->name('admin.dashboard');
+
 
     // ============================================
     // 🔒 ROUTES DENGAN CheckSubscription
