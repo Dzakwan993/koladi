@@ -380,9 +380,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/statistik', function () {
             return view('statistik');
         })->name('statistik');
-        Route::get('/statistikRuangKerja', function () {
-            return view('statistikRuangKerja');
-        })->name('statistikRuangKerja');
+    
 
         // ========================================
         // 🔥 ROLE MANAGEMENT ROUTES

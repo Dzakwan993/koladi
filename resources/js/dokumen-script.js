@@ -1388,4 +1388,4 @@ window.destroyEditorForDocument = window.documentCommentSection.prototype.destro
 window.getDocumentEditorData = window.documentCommentSection.prototype.getDocumentEditorData;
 window.initReplyEditorForDocument = window.documentCommentSection.prototype.initReplyEditorForDocument;
 window.destroyReplyEditorForDocument = window.documentCommentSection.prototype.destroyReplyEditorForDocument;
-window.getDocumentReplyEditorDataFor = window.documentCommentSection.prototype.getDocumentReplyEditorDataFor;
+window.getDocumentReplyEditorDataFor = window.documentCommentSection.prototype.getDocumentReplyEditorDataFor;``
