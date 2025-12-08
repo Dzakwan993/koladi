@@ -1,11 +1,8 @@
 @extends('layouts.app')
 
-@section('title', 'Notulensi Rapat')
+@section('title', 'Notulensi Rapat Workspace')
 
 @section('content')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -27,6 +24,16 @@
             box-shadow: 0 2px 4px rgba(251, 191, 36, 0.3);
         }
 
+        .badge-online {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+        }
+
+        .badge-offline {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+        }
+
         .empty-state {
             animation: fadeIn 0.5s ease-in;
         }
@@ -36,23 +43,39 @@
                 opacity: 0;
                 transform: translateY(10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
-        .filter-btn {
+        /* ✅ Style untuk Filter Button */
+        .filter-btn,
+        .filter-type-btn {
             transition: all 0.2s ease;
+            cursor: pointer;
         }
 
-        .filter-btn:hover {
+        .filter-btn:hover,
+        .filter-type-btn:hover {
             transform: scale(1.05);
+            background: #e5e7eb !important;
         }
 
-        .filter-btn.active {
-            background: #2563eb !important;
+        /* ✅ Active state untuk kedua tipe filter */
+        .filter-btn.active,
+        .filter-type-btn.active {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%) !important;
             color: white !important;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+            font-weight: 600;
+        }
+
+        .filter-btn.active:hover,
+        .filter-type-btn.active:hover {
+            transform: scale(1.05);
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%) !important;
         }
     </style>
 
@@ -63,16 +86,16 @@
         ])
 
         <div class="container mx-auto px-4 py-8 max-w-6xl">
-            <!-- Header -->
+            <!-- Header dengan Tombol Kembali -->
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-4">
-                        <div class=rounded-lg">
+                        <div class="rounded-lg">
                             <img src="{{ asset('images/icons/notulen.gif') }}" alt="Notulen Icon" class="w-14 h-14">
                         </div>
                         <div>
-                            <h1 class="text-2xl font-bold text-gray-800">Notulensi Rapat</h1>
-                            <p class="text-gray-600 text-sm mt-1">Catatan dan diskusi dari rapat online</p>
+                            <h1 class="text-2xl font-bold text-gray-800">Notulensi Rapat Workspace</h1>
+                            <p class="text-gray-600 text-sm mt-1">Catatan dan diskusi dari semua rapat workspace</p>
                         </div>
                     </div>
 
@@ -87,7 +110,8 @@
             <!-- Filter & Stats -->
             <div class="bg-white rounded-lg shadow-md p-4 mb-6">
                 <div class="flex items-center justify-between flex-wrap gap-4">
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 flex-wrap">
+                        <!-- ✅ Filter Waktu -->
                         <button onclick="filterNotulensi('all')"
                             class="filter-btn active px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium">
                             Semua
@@ -104,6 +128,22 @@
                             class="filter-btn px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium">
                             Bulan Ini
                         </button>
+
+                        <div class="w-px bg-gray-300 mx-2"></div>
+
+                        <!-- ✅ Filter Online/Offline -->
+                        <button onclick="filterByType('all-type')"
+                            class="filter-type-btn active px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium">
+                            <i class="fas fa-globe"></i> Semua Tipe
+                        </button>
+                        <button onclick="filterByType('online')"
+                            class="filter-type-btn px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium">
+                            <i class="fas fa-video"></i> Online
+                        </button>
+                        <button onclick="filterByType('offline')"
+                            class="filter-type-btn px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium">
+                            <i class="fas fa-map-marker-alt"></i> Offline
+                        </button>
                     </div>
 
                     <div class="flex items-center gap-2 text-sm text-gray-600">
@@ -112,12 +152,6 @@
                         <span>Notulensi</span>
                     </div>
                 </div>
-            </div>
-
-            <!-- Loading State -->
-            <div id="loadingState" class="text-center py-12" style="display: none;">
-                <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
-                <p class="text-gray-600">Memuat notulensi...</p>
             </div>
 
             <!-- List Notulensi -->
@@ -131,7 +165,8 @@
 
                     <a href="{{ route('calendar.show', ['workspaceId' => $workspaceId, 'id' => $notulensi->id]) }}"
                         class="notulensi-card block bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition"
-                        data-date="{{ $startDate->format('Y-m-d') }}">
+                        data-date="{{ $startDate->format('Y-m-d') }}"
+                        data-is-online="{{ $notulensi->is_online_meeting ? '1' : '0' }}">
 
                         <div class="flex items-start justify-between gap-4">
                             <!-- Left: Date Badge -->
@@ -146,8 +181,21 @@
 
                             <!-- Center: Content -->
                             <div class="flex-1">
-                                <div class="flex items-center gap-2 mb-2">
-                                    <i class="fas fa-video text-blue-600"></i>
+                                <!-- ✅ Title + Badge Online/Offline -->
+                                <div class="flex items-center gap-2 mb-2 flex-wrap">
+                                    @if ($notulensi->is_online_meeting)
+                                        <span
+                                            class="badge-online text-white text-xs px-2.5 py-1 rounded-full font-semibold inline-flex items-center gap-1">
+                                            <i class="fas fa-video text-xs"></i>
+                                            Online
+                                        </span>
+                                    @else
+                                        <span
+                                            class="badge-offline text-white text-xs px-2.5 py-1 rounded-full font-semibold inline-flex items-center gap-1">
+                                            <i class="fas fa-map-marker-alt text-xs"></i>
+                                            Offline
+                                        </span>
+                                    @endif
                                     <h3 class="text-lg font-semibold text-gray-800">{{ $notulensi->title }}</h3>
                                 </div>
 
@@ -170,7 +218,7 @@
                                 </div>
 
                                 <!-- Description Preview -->
-                                @if($notulensi->description)
+                                @if ($notulensi->description)
                                     <div class="text-sm text-gray-600 line-clamp-2 mb-2">
                                         {!! strip_tags($notulensi->description) !!}
                                     </div>
@@ -179,14 +227,14 @@
                                 <!-- Participants -->
                                 <div class="flex items-center gap-2">
                                     <div class="flex -space-x-2">
-                                        @foreach($notulensi->participants->take(4) as $participant)
+                                        @foreach ($notulensi->participants->take(4) as $participant)
                                             <img src="{{ $participant->user->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($participant->user->full_name) . '&background=3B82F6&color=fff&bold=true&size=128' }}"
                                                 alt="{{ $participant->user->full_name }}"
                                                 title="{{ $participant->user->full_name }}"
                                                 class="w-8 h-8 rounded-full border-2 border-white object-cover">
                                         @endforeach
                                     </div>
-                                    @if($notulensi->participants->count() > 4)
+                                    @if ($notulensi->participants->count() > 4)
                                         <span class="text-xs text-gray-500">
                                             +{{ $notulensi->participants->count() - 4 }} lainnya
                                         </span>
@@ -196,19 +244,27 @@
 
                             <!-- Right: Comment Badge -->
                             <div class="flex-shrink-0">
-                                <div class="badge-comment text-white rounded-full w-14 h-14 flex flex-col items-center justify-center">
+                                <div
+                                    class="badge-comment text-white rounded-full w-14 h-14 flex flex-col items-center justify-center">
                                     <div class="text-xl font-bold">{{ $notulensi->comments_count }}</div>
                                     <div class="text-[9px] uppercase">komen</div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Meeting Link -->
-                        @if($notulensi->meeting_link)
+                        <!-- ✅ Meeting Link atau Location -->
+                        @if ($notulensi->is_online_meeting && $notulensi->meeting_link)
                             <div class="mt-4 pt-4 border-t border-gray-100">
                                 <div class="flex items-center gap-2 text-sm text-blue-600">
                                     <i class="fas fa-link"></i>
                                     <span class="truncate">{{ $notulensi->meeting_link }}</span>
+                                </div>
+                            </div>
+                        @elseif(!$notulensi->is_online_meeting && $notulensi->location)
+                            <div class="mt-4 pt-4 border-t border-gray-100">
+                                <div class="flex items-center gap-2 text-sm text-gray-600">
+                                    <i class="fas fa-map-pin text-red-500"></i>
+                                    <span>{{ $notulensi->location }}</span>
                                 </div>
                             </div>
                         @endif
@@ -220,7 +276,7 @@
                         </div>
                         <h3 class="text-xl font-semibold text-gray-700 mb-2">Belum Ada Notulensi</h3>
                         <p class="text-gray-500 mb-6">
-                            Notulensi akan muncul setelah rapat online memiliki komentar
+                            Notulensi akan muncul setelah rapat memiliki komentar
                         </p>
                         <a href="{{ route('jadwal', ['workspaceId' => $workspaceId]) }}"
                             class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition">
@@ -243,11 +299,29 @@
     </div>
 
     <script>
+        let currentDateFilter = 'all';
+        let currentTypeFilter = 'all-type';
+
+        // ✅ Filter by Date
         function filterNotulensi(type) {
+            currentDateFilter = type;
             const buttons = document.querySelectorAll('.filter-btn');
             buttons.forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
+            applyFilters();
+        }
 
+        // ✅ Filter by Type (Online/Offline)
+        function filterByType(type) {
+            currentTypeFilter = type;
+            const buttons = document.querySelectorAll('.filter-type-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            applyFilters();
+        }
+
+        // ✅ Apply Combined Filters
+        function applyFilters() {
             const cards = document.querySelectorAll('.notulensi-card');
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -262,25 +336,42 @@
             cards.forEach(card => {
                 const cardDate = new Date(card.dataset.date);
                 cardDate.setHours(0, 0, 0, 0);
+                const isOnline = card.dataset.isOnline === '1';
 
-                let show = false;
+                let showByDate = false;
+                let showByType = false;
 
-                switch (type) {
+                // Date Filter
+                switch (currentDateFilter) {
                     case 'all':
-                        show = true;
+                        showByDate = true;
                         break;
                     case 'today':
-                        show = cardDate.getTime() === today.getTime();
+                        showByDate = cardDate.getTime() === today.getTime();
                         break;
                     case 'week':
-                        show = cardDate >= weekStart && cardDate <= today;
+                        showByDate = cardDate >= weekStart && cardDate <= today;
                         break;
                     case 'month':
-                        show = cardDate >= monthStart && cardDate <= today;
+                        showByDate = cardDate >= monthStart && cardDate <= today;
                         break;
                 }
 
-                if (show) {
+                // Type Filter
+                switch (currentTypeFilter) {
+                    case 'all-type':
+                        showByType = true;
+                        break;
+                    case 'online':
+                        showByType = isOnline;
+                        break;
+                    case 'offline':
+                        showByType = !isOnline;
+                        break;
+                }
+
+                // Show card only if both filters pass
+                if (showByDate && showByType) {
                     card.style.display = 'block';
                     visibleCount++;
                 } else {
@@ -288,12 +379,11 @@
                 }
             });
 
-            // Show/hide empty state
             const notulensiList = document.getElementById('notulensiList');
             const emptyState = document.getElementById('emptyFilterState');
             const totalCount = document.getElementById('totalNotulensi');
 
-            if (visibleCount === 0 && type !== 'all') {
+            if (visibleCount === 0) {
                 notulensiList.style.display = 'none';
                 emptyState.style.display = 'block';
             } else {

@@ -36,7 +36,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
         x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full">
         {{-- Logo --}}
         <div class="h-16 flex items-center justify-center px-4 border-b border-gray-200">
-            <img src="{{ asset('images/logo-koladi.png') }}" class="h-28 mt-12" alt="Koladi Logo">
+            <img src="{{ asset('images/logo-koladi.svg') }}" class="h-9 object-cover object-center" alt="Logo Koladi">
         </div>
 
         {{-- Navigation --}}
@@ -68,11 +68,11 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 <a href="{{ route('pengumuman-perusahaan.index', ['company_id' => $company_id]) }}"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
    {{ Request::is('companies/*/pengumuman-perusahaan*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                    <img src="{{ asset('images/icons/workspace_pengumuman.svg') }}" class="w-5 h-5">
+                    <img src="{{ Request::is('companies/*/pengumuman-perusahaan*') ? asset('images/icons/workspace_pengumuman1.svg') : asset('images/icons/workspace_pengumuman.svg') }}" class="w-5 h-5">
                     <span class="text-sm">Pengumuman</span>
                 </a>
             @endif
-            
+
             {{-- Chat Perusahaan --}}
             @auth
                 @php

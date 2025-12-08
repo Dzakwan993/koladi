@@ -1,20 +1,23 @@
 @extends('layouts.app')
 
-@section('title', 'Edit Jadwal')
+@section('title', 'Edit Jadwal Workspace')
 
 @section('content')
     <div class="bg-[#e9effd] min-h-screen">
-        @include('components.workspace-nav', ['active' => 'jadwal'])
+        @include('components.workspace-nav', ['active' => 'jadwal', 'workspaceId' => $workspaceId])
 
         <div class="min-h-screen flex justify-center pt-4 md:pt-8 pb-8 bg-[#f3f6fc] px-3 md:px-6">
             <!-- Form -->
-            <form action="{{ route('calendar.update', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}" method="POST" id="scheduleForm"
+            <form action="{{ route('calendar.update', ['workspaceId' => $workspaceId, 'id' => $event->id]) }}" method="POST"
+                id="scheduleForm"
                 class="bg-white rounded-xl shadow-xl p-4 md:p-6 w-full max-w-4xl flex flex-col gap-4 md:gap-5 h-fit">
                 @csrf
                 @method('PUT')
 
                 <!-- Judul -->
-                <h2 class="text-lg md:text-xl font-inter font-bold text-[#102a63] border-b-2 border-black pb-3">Edit Jadwal</h2>
+                <h2 class="text-lg md:text-xl font-inter font-bold text-[#102a63] border-b-2 border-black pb-3">Edit Jadwal
+                    Workspace
+                </h2>
 
                 <!-- Nama Jadwal -->
                 <div class="flex flex-col font-inter">
@@ -122,20 +125,29 @@
                             class="text-red-500">*</span></label>
 
                     @php
-                        $selectedParticipantIds = old('participants', $event->participants->pluck('user_id')->toArray());
+                        $selectedParticipantIds = old(
+                            'participants',
+                            $event->participants->pluck('user_id')->toArray(),
+                        );
                     @endphp
 
                     <div x-data="{
                         openPopup: false,
                         selectedParticipants: {{ json_encode($selectedParticipantIds) }},
                         searchQuery: '',
-                        allMembers: {{ json_encode($members->map(function($m) {
-                            return [
-                                'id' => $m->id,
-                                'full_name' => $m->full_name,
-                                'avatar_url' => $m->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($m->full_name) . '&background=3B82F6&color=fff&bold=true&size=128'
-                            ];
-                        })->toArray()) }},
+                        allMembers: {{ json_encode(
+                            $members->map(function ($m) {
+                                    return [
+                                        'id' => $m->id,
+                                        'full_name' => $m->full_name,
+                                        'avatar_url' =>
+                                            $m->avatar_url ??
+                                            'https://ui-avatars.com/api/?name=' .
+                                                urlencode($m->full_name) .
+                                                '&background=3B82F6&color=fff&bold=true&size=128',
+                                    ];
+                                })->toArray(),
+                        ) }},
                         get filteredMembers() {
                             if (!this.searchQuery) return this.allMembers;
                             return this.allMembers.filter(member =>
@@ -170,8 +182,7 @@
                         <div class="flex items-center gap-2 flex-wrap">
                             <template x-for="participant in displayedParticipants" :key="participant.id">
                                 <div class="relative">
-                                    <img :src="participant.avatar_url"
-                                        :alt="participant.full_name"
+                                    <img :src="participant.avatar_url" :alt="participant.full_name"
                                         class="rounded-full border-2 border-gray-200 w-10 h-10 object-cover"
                                         :title="participant.full_name"
                                         onerror="this.src='https://ui-avatars.com/api/?name=' + encodeURIComponent(this.alt) + '&background=3B82F6&color=fff&bold=true&size=128'" />
@@ -181,8 +192,10 @@
                             <!-- Tombol tambah peserta -->
                             <button @click.prevent="openPopup = true" type="button"
                                 class="w-10 h-10 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center transition-colors">
-                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 4v16m8-8H4" />
                                 </svg>
                             </button>
                         </div>
@@ -193,14 +206,11 @@
                         </template>
 
                         <!-- POPUP TAMBAH PESERTA -->
-                        <div x-show="openPopup"
-                            @click.self="openPopup = false"
+                        <div x-show="openPopup" @click.self="openPopup = false"
                             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 popup-wrapper p-4"
-                            x-cloak
-                            style="display: none;">
+                            x-cloak style="display: none;">
                             <!-- Card Popup -->
-                            <div class="bg-white rounded-xl shadow-lg p-4 md:p-5 w-full max-w-sm popup-card"
-                                @click.stop>
+                            <div class="bg-white rounded-xl shadow-lg p-4 md:p-5 w-full max-w-sm popup-card" @click.stop>
                                 <!-- Header -->
                                 <h2 class="text-center font-bold text-base md:text-lg mb-3">Tambah Peserta</h2>
 
@@ -234,7 +244,8 @@
                                     </template>
 
                                     <!-- No results -->
-                                    <div x-show="filteredMembers.length === 0" class="text-center text-gray-500 py-4 text-sm">
+                                    <div x-show="filteredMembers.length === 0"
+                                        class="text-center text-gray-500 py-4 text-sm">
                                         Tidak ada anggota ditemukan
                                     </div>
                                 </div>
@@ -267,34 +278,60 @@
                             </button>
                             <span class="text-sm font-medium text-[#102a63] font-inter">Rahasia</span>
                         </div>
-                        <span class="text-xs md:text-sm text-gray-500 font-inter">Hanya peserta yang diundang bisa melihat</span>
+                        <span class="text-xs md:text-sm text-gray-500 font-inter">Hanya peserta yang diundang bisa
+                            melihat</span>
                     </div>
+                    <!-- ✅ MODE RAPAT: ONLINE (DEFAULT) / OFFLINE -->
+                    <div class="flex flex-col gap-3" x-data="{
+                        meetingMode: '{{ old('meeting_mode', $event->is_online_meeting ? 'online' : 'offline') }}'
+                    }">
+                        <span class="font-medium text-sm md:text-base text-black font-inter">
+                            Mode Rapat <span class="text-red-500">*</span>
+                        </span>
 
-                    <!-- Rapat -->
-                    <div class="flex flex-col gap-2" x-data="{ isOnlineMeeting: {{ old('is_online_meeting', $event->is_online_meeting ? 1 : 0) }} }">
-                        <span class="font-medium text-sm md:text-base text-black font-inter">Apakah anda akan mengadakan
-                            rapat?</span>
-                        <div class="flex items-center gap-3">
-                            <input type="hidden" name="is_online_meeting" :value="isOnlineMeeting ? 1 : 0">
-                            <!-- Toggle switch Rapat -->
-                            <button type="button" @click="isOnlineMeeting = !isOnlineMeeting"
-                                :class="isOnlineMeeting ? 'bg-[#102a63]' : 'bg-gray-300'"
-                                class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors">
-                                <span :class="isOnlineMeeting ? 'translate-x-6' : 'translate-x-1'"
-                                    class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform"></span>
-                            </button>
-                            <span class="text-sm font-medium text-[#102a63] font-inter">Rapat</span>
+                        <!-- Radio Buttons -->
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="meeting_mode" value="online" @click="meetingMode = 'online'"
+                                    :checked="meetingMode === 'online'"
+                                    class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm font-medium text-gray-700">Online</span>
+                            </label>
+
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="meeting_mode" value="offline"
+                                    @click="meetingMode = 'offline'" :checked="meetingMode === 'offline'"
+                                    class="w-4 h-4 text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm font-medium text-gray-700">Offline</span>
+                            </label>
                         </div>
 
-                        <!-- Link Rapat (Conditional) -->
-                        <div x-show="isOnlineMeeting" x-transition class="flex flex-col mt-2">
-                            <label class="mb-1 font-medium font-inter text-sm md:text-base">Link Rapat (Opsional)</label>
-                            <input type="url" name="meeting_link" value="{{ old('meeting_link', $event->meeting_link) }}"
-                                placeholder="Masukkan link rapat anda..."
-                                class="border rounded-md pl-5 py-2 focus:outline-none font-inter text-sm placeholder-[#6B7280] border-[#6B7280]" />
-                            <span class="text-xs text-gray-400 font-inter mt-1">Opsional - isi jika rapat dilakukan
-                                online</span>
+                        <!-- Input Link Rapat (Online) -->
+                        <div x-show="meetingMode === 'online'" x-transition class="flex flex-col">
+                            <label class="mb-1 font-medium font-inter text-sm md:text-base">
+                                Link Rapat <span class="text-red-500">*</span>
+                            </label>
+                            <input type="url" name="meeting_link"
+                                value="{{ old('meeting_link', $event->meeting_link) }}"
+                                placeholder="https://zoom.us/j/..." :required="meetingMode === 'online'"
+                                class="border rounded-md px-4 py-2 focus:outline-none font-inter text-sm placeholder-[#6B7280] border-[#6B7280] focus:ring-2 focus:ring-blue-500" />
+                            <span class="text-xs text-gray-400 font-inter mt-1">Masukkan link Zoom, Google Meet,
+                                dll.</span>
                             @error('meeting_link')
+                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <!-- Input Lokasi (Offline) -->
+                        <div x-show="meetingMode === 'offline'" x-transition class="flex flex-col">
+                            <label class="mb-1 font-medium font-inter text-sm md:text-base">
+                                Lokasi Rapat <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="location" value="{{ old('location', $event->location) }}"
+                                placeholder="Contoh: Ruang Meeting Lt. 3" :required="meetingMode === 'offline'"
+                                class="border rounded-md px-4 py-2 focus:outline-none font-inter text-sm placeholder-[#6B7280] border-[#6B7280] focus:ring-2 focus:ring-blue-500" />
+                            <span class="text-xs text-gray-400 font-inter mt-1">Masukkan lokasi tempat rapat</span>
+                            @error('location')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </div>
@@ -330,6 +367,12 @@
     <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
 
     <script>
+        body: JSON.stringify({
+            start_datetime: startDatetime,
+            end_datetime: endDatetime,
+            participants: participants,
+            exclude_event_id: '{{ $event->id }}' // ✅ Exclude jadwal yang sedang diedit
+        })
         let catatanEditor = null;
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -344,13 +387,33 @@
             // Initialize CKEditor dengan data existing
             ClassicEditor
                 .create(document.getElementById('catatan-editor'), {
-                    toolbar: ['heading', '|', 'bold', 'italic', 'underline', '|', 'link', 'bulletedList', 'numberedList', '|', 'blockQuote', 'insertTable', '|', 'undo', 'redo'],
+                    toolbar: ['heading', '|', 'bold', 'italic', 'underline', '|', 'link', 'bulletedList',
+                        'numberedList', '|', 'blockQuote', 'insertTable', '|', 'undo', 'redo'
+                    ],
                     heading: {
-                        options: [
-                            { model: 'paragraph', title: 'Paragraph', class: 'ck-heading_paragraph' },
-                            { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
-                            { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
-                            { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' }
+                        options: [{
+                                model: 'paragraph',
+                                title: 'Paragraph',
+                                class: 'ck-heading_paragraph'
+                            },
+                            {
+                                model: 'heading1',
+                                view: 'h1',
+                                title: 'Heading 1',
+                                class: 'ck-heading_heading1'
+                            },
+                            {
+                                model: 'heading2',
+                                view: 'h2',
+                                title: 'Heading 2',
+                                class: 'ck-heading_heading2'
+                            },
+                            {
+                                model: 'heading3',
+                                view: 'h3',
+                                title: 'Heading 3',
+                                class: 'ck-heading_heading3'
+                            }
                         ]
                     },
                     placeholder: 'Masukkan catatan anda disini...'
@@ -433,9 +496,13 @@
     @endif
 
     <style>
-        [x-cloak] { display: none !important; }
+        [x-cloak] {
+            display: none !important;
+        }
 
-        #catatan-editor { min-height: 180px; }
+        #catatan-editor {
+            min-height: 180px;
+        }
 
         .ck-editor__editable {
             min-height: 180px;
@@ -461,7 +528,10 @@
         }
 
         @media (max-width: 768px) {
-            .ck-editor__editable { min-height: 150px; font-size: 14px; }
+            .ck-editor__editable {
+                min-height: 150px;
+                font-size: 14px;
+            }
         }
     </style>
 @endsection

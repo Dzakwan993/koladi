@@ -1,6 +1,4 @@
 <!-- Modal Undang Orang -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
 <div id="inviteModal" class="fixed inset-0 z-50 hidden font-[Inter,sans-serif]" onclick="closeInviteModal(event)">
     <!-- Modal Container -->
     <div id="inviteModalContent"

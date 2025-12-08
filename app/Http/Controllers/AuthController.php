@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\OtpVerification;
 use App\Mail\OtpMail;
 use Illuminate\Http\Request;
+use App\Models\OtpVerification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -253,25 +254,29 @@ class AuthController extends Controller
             $request->session()->regenerate();
             $user = Auth::user();
 
-            if ($user->isSystemAdmin()) {
-                return redirect()->route('admin.dashboard')
-                    ->with('success', 'Selamat datang, Admin Sistem!');
-            }
-
+            // ✅ Handle pending invitation
             $pendingToken = session('pending_invitation_token');
             if ($pendingToken) {
                 return redirect()->route('invite.accept', $pendingToken);
             }
 
-            $hasCompany = DB::table('user_companies')
-                ->where('user_id', $user->id)
-                ->exists();
+            $userCompany = \App\Models\UserCompany::where('user_id', $user->id)
+                ->whereNull('deleted_at')
+                ->first();
 
-            if (!$hasCompany) {
+            if (!$userCompany) {
+                Log::warning('User has no company, redirecting to create company', [
+                    'user_id' => $user->id,
+                ]);
+
                 return redirect()->route('buat-perusahaan.create')
                     ->with('info', 'Silakan buat perusahaan terlebih dahulu.');
             }
 
+            // ✅ SET SESSION active_company_id (INI YANG PENTING!)
+            session(['active_company_id' => $userCompany->company_id]);
+
+            // ✅ Redirect ke dashboard
             return redirect()->intended('/dashboard')
                 ->with('success', 'Berhasil masuk. Selamat datang!');
         }

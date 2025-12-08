@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Isi Pengumuman')
+@section('title', 'Detail Pengumuman')
 
 @section('content')
     @include('components.sweet-alert')
@@ -8,250 +8,315 @@
         \Carbon\Carbon::setLocale('id');
     @endphp
 
-    <!-- Font Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Inter & CKEditor -->
     <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/41.3.1/classic/styles.css">
-
-    <!-- Alpine.js & CKEditor -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
 
-    <div class="bg-[#e9effd] min-h-screen font-[Inter,sans-serif] text-black relative" x-data="commentSection">
-        @include('components.workspace-nav')
+    <div class="bg-[#f3f6fc] min-h-screen font-[Inter,sans-serif] text-black" x-data="commentSection">
+        <div class="max-w-5xl mx-auto px-4 py-6">
 
-        <div class="max-w-4xl mx-auto px-4 py-6">
-            <div class="bg-white rounded-xl shadow-md p-6">
+            <!-- Tombol Kembali -->
+            <div class="mb-6">
+                <button
+                    onclick="window.location.href='{{ route('pengumuman-perusahaan.index', ['company_id' => $company_id]) }}'"
+                    class="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors group bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg">
+                    <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span class="font-semibold">Kembali ke Pengumuman</span>
+                </button>
+            </div>
 
-                <!-- === CARD PENGUMUMAN === -->
-                <div class="max-w-5xl mx-auto mt-6">
-                    @php
-                        $creator = $pengumuman->creator ?? null;
+            <!-- Card Pengumuman -->
+            <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
+                @php
+                    $creator = $pengumuman->creator ?? null;
+                    $avatarPath = $creator && $creator->avatar ? 'storage/' . $creator->avatar : null;
+                    $hasAvatarFile = $avatarPath && file_exists(public_path($avatarPath));
+                    $avatarUrl = $hasAvatarFile
+                        ? asset($avatarPath)
+                        : ($creator && $creator->full_name
+                            ? 'https://ui-avatars.com/api/?name=' .
+                                urlencode($creator->full_name) .
+                                '&background=random&color=fff'
+                            : asset('images/dk.jpg'));
+                @endphp
 
-                        // Cek avatar file
-                        $avatarPath = $creator && $creator->avatar ? 'storage/' . $creator->avatar : null;
-                        $hasAvatarFile = $avatarPath && file_exists(public_path($avatarPath));
+                <!-- Header Pengumuman -->
+                <div class="p-6 border-b border-blue-100 bg-gradient-to-r from-blue-50 to-white">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start gap-4 flex-1">
+                            <img src="{{ $avatarUrl }}" alt="Avatar"
+                                class="rounded-full w-12 h-12 object-cover border-2 border-white shadow-sm flex-shrink-0">
 
-                        // Pilih URL avatar final
-                        $avatarUrl = $hasAvatarFile
-                            ? asset($avatarPath)
-                            : ($creator && $creator->full_name
-                                ? 'https://ui-avatars.com/api/?name=' .
-                                    urlencode($creator->full_name) .
-                                    '&background=random&color=fff'
-                                : asset('images/dk.jpg'));
-                    @endphp
+                            <div class="flex-1 min-w-0">
+                                <h1 class="text-2xl font-bold text-blue-900 mb-2">
+                                    {{ $pengumuman->title }}
+                                </h1>
 
-                    <div class="bg-[#e9effd] rounded-xl p-5 mb-6 shadow-md">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="flex items-start gap-3">
-                                <img src="{{ $avatarUrl }}" alt="Avatar"
-                                    class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
-                                <div>
-                                    <h1 class="text-xl font-semibold text-black mb-1">
-                                        {{ $pengumuman->title }}
-                                    </h1>
-                                    <div class="flex items-center gap-2">
-                                        <p class="text-sm text-black font-medium">
-                                            {{ $pengumuman->creator->full_name ?? 'Tidak diketahui' }}
-                                        </p>
-                                        <span class="text-sm text-gray-600">
-                                            •
-                                            {{ $pengumuman->display_created_at }}
-                                        </span>
-                                    </div>
+                                <div class="flex items-center gap-3 flex-wrap">
+                                    <span class="text-sm font-semibold text-blue-700">
+                                        {{ $pengumuman->creator->full_name ?? 'Tidak diketahui' }}
+                                    </span>
+                                    <span class="text-blue-400">•</span>
+                                    <span class="text-sm text-blue-600">
+                                        {{ $pengumuman->display_created_at }}
+                                    </span>
 
                                     @if ($pengumuman->due_date)
                                         <span
-                                            class="bg-[#102a63] text-white text-xs font-medium px-2 py-1 flex rounded-md items-center gap-1 w-[90px] h-[28px] mt-2">
-                                            <img src="{{ asset('images/icons/Clock.svg') }}" alt="Clock" class="w-5 h-5">
+                                            class="inline-flex items-center gap-1 bg-blue-600 text-white text-xs font-medium px-2.5 py-1 rounded-md">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
                                             {{ \Carbon\Carbon::parse($pengumuman->due_date)->translatedFormat('d M') }}
                                         </span>
                                     @endif
                                 </div>
                             </div>
-
-                            <!-- Tombol tiga titik -->
-                            <div x-data="{ open: false }" class="relative inline-block text-left">
-                                <button @click="open = !open" @click.away="open = false"
-                                    class="text-gray-600 hover:text-gray-800 focus:outline-none">
-                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                    </svg>
-                                </button>
-
-                                <div x-show="open" x-transition.scale.origin.top.right
-                                    class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-50">
-                                    <h3 class="text-center font-semibold text-gray-800 mb-2">Aksi</h3>
-
-                                    <button
-                                        onclick="
-                                        @if ($pengumuman->created_by == Auth::id()) openEditModal('{{ $pengumuman->id }}');
-                                        @else
-                                            alert('Anda tidak memiliki akses untuk ini!'); @endif
-                                    "
-                                        class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
-                                        <img src="{{ asset('images/icons/Pencil.svg') }}" alt="Edit" class="w-6 h-6">
-                                        <span class="text-gray-700 text-base">Edit</span>
-                                    </button>
-                                    <hr class="border-gray-300 my-2">
-                                    <button
-                                        onclick="
-                                        @if ($pengumuman->created_by == Auth::id()) deletePengumuman('{{ $pengumuman->id }}');
-                                        @else
-                                            alert('Anda tidak memiliki akses untuk ini!'); @endif
-                                    "
-                                        class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
-                                        <img src="{{ asset('images/icons/Trash.svg') }}" alt="Hapus" class="w-6 h-6">
-                                        <span class="text-gray-700 text-base">Hapus</span>
-                                    </button>
-                                </div>
-                            </div>
                         </div>
 
-                        <hr class="border-gray-300 my-4">
+                        <!-- Menu Aksi -->
+                        <div x-data="{ open: false }" class="relative">
+                            <button @click="open = !open" @click.away="open = false"
+                                class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path
+                                        d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                </svg>
+                            </button>
 
-                        <div class="ck-content text-black text-[15px] leading-relaxed deskripsi-pengumuman">
+                            <div x-show="open" x-transition.scale.origin.top.right
+                                class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50">
+                                <button
+                                    onclick="@if ($pengumuman->created_by == Auth::id()) openEditModal('{{ $pengumuman->id }}'); @else alert('Anda tidak memiliki akses!'); @endif"
+                                    class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-50 rounded-lg transition text-left">
+                                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    <span class="text-gray-700 font-medium">Edit</span>
+                                </button>
+
+                                <hr class="my-1 border-gray-200">
+
+                                <button
+                                    onclick="@if ($pengumuman->created_by == Auth::id()) deletePengumuman('{{ $pengumuman->id }}'); @else alert('Anda tidak memiliki akses!'); @endif"
+                                    class="flex items-center gap-3 w-full px-3 py-2 hover:bg-red-50 rounded-lg transition text-left">
+                                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    <span class="text-red-600 font-medium">Hapus</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Konten Deskripsi -->
+                <div class="p-6 border-b border-blue-100 bg-blue-50/30">
+                    <div class="prose max-w-none">
+                        <div class="ck-content text-gray-700 text-[15px] leading-relaxed deskripsi-pengumuman">
                             {!! $pengumuman->description !!}
                         </div>
                     </div>
+                </div>
 
-                    <!-- Section Komentar -->
-                    <div class="mt-6">
-                        <h3 class="text-base font-semibold text-black mb-4">Komentar</h3>
+                <!-- Section Komentar -->
+                <div class="p-6 bg-white">
+                    <h3 class="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                        </svg>
+                        Komentar
+                    </h3>
 
-                        <!-- Input Komentar Utama -->
-                        <div class="flex items-start gap-3 mb-6">
-                            <img src="{{ $avatarUrl }}" alt="Avatar"
-                                class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
+                    <!-- Input Komentar Utama -->
+                    <div class="flex items-start gap-3 mb-6">
+                        <img src="{{ $avatarUrl }}" alt="Avatar"
+                            class="rounded-full w-10 h-10 object-cover border border-gray-200 shadow-sm flex-shrink-0">
 
-                            <div class="flex-1" x-data="{ active: false }" x-cloak>
-                                <template x-if="!active">
-                                    <input type="text" placeholder="Tambahkan komentar baru..."
-                                        @focus="active = true; $nextTick(() => initMainEditor('main-editor'))"
-                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-[#102a63] text-sm bg-white cursor-text">
-                                </template>
+                        <div class="flex-1" x-data="{ active: false }" x-cloak>
+                            <template x-if="!active">
+                                <input type="text" placeholder="Tambahkan komentar..."
+                                    @focus="active = true; $nextTick(() => initMainEditor('main-editor'))"
+                                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white hover:border-gray-300 transition cursor-text">
+                            </template>
 
-                                <template x-if="active">
-                                    <div class="bg-white border border-gray-300 rounded-lg p-4">
-                                        <div id="main-editor" class="min-h-[140px] bg-white"></div>
+                            <template x-if="active">
+                                <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                    <div id="main-editor" class="min-h-[120px] bg-white"></div>
 
-                                        <div class="flex justify-end gap-2 mt-4">
-                                            <button @click="active = false; destroyMainEditor('main-editor')"
-                                                class="px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded-lg hover:text-gray-800 transition">
-                                                Batal
-                                            </button>
-                                            <button @click="submitMain(); active = false;"
-                                                class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                                                Kirim
-                                            </button>
-                                        </div>
+                                    <div class="flex justify-end gap-2 mt-4">
+                                        <button @click="active = false; destroyMainEditor('main-editor')"
+                                            class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                            Batal
+                                        </button>
+                                        <button @click="submitMain(); active = false;"
+                                            class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shadow-sm">
+                                            Kirim
+                                        </button>
                                     </div>
-                                </template>
-                            </div>
-                        </div>
-
-                        <!-- Daftar Komentar -->
-                        <template x-if="comments.length > 0">
-                            <div class="space-y-4">
-                                <template x-for="comment in comments" :key="comment.id">
-                                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                        <div class="flex items-start gap-3">
-                                            <img x-bind:src="'{{ $avatarUrl }}'"
-                                                class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
-                                            <div class="flex-1">
-                                                <div class="flex justify-between items-center">
-                                                    <p class="text-sm font-semibold text-gray-800"
-                                                        x-text="comment.author.name"></p>
-                                                    <span class="text-xs text-gray-500"
-                                                        x-text="formatCommentDate(comment.createdAt)"></span>
-                                                </div>
-
-                                                <div class="text-sm text-gray-700 mt-1 comment-text"
-                                                    x-html="comment.content"></div>
-
-                                                <!-- Tombol Balas -->
-                                                <div class="flex items-center gap-4 mt-2">
-                                                    <button @click="toggleReply(comment)"
-                                                        class="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 transition">
-                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor"
-                                                            viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                                        </svg>
-                                                        <span>balas</span>
-                                                    </button>
-                                                </div>
-
-                                                <!-- FORM BALAS -->
-                                                <template
-                                                    x-if="replyView.active && replyView.parentComment?.id === comment.id">
-                                                    <div class="mt-4 pl-6 border-l-2 border-gray-200">
-                                                        <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                                            <h4 class="text-sm font-semibold text-gray-800 mb-2">Membalas
-                                                                <span x-text="comment.author.name"></span>
-                                                            </h4>
-
-                                                            <div
-                                                                class="border border-gray-300 rounded-lg overflow-hidden mb-3">
-                                                                <div :id="'reply-editor-' + comment.id"
-                                                                    class="min-h-[120px] p-3 bg-white"></div>
-                                                            </div>
-
-                                                            <div class="flex justify-end gap-2">
-                                                                <button @click="closeReplyView()"
-                                                                    class="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition border border-gray-300 rounded-lg">Batal</button>
-                                                                <button @click="submitReplyFromEditor()"
-                                                                    class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">Kirim</button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </template>
-
-                                                <!-- Balasan -->
-                                                <template x-if="comment.replies && comment.replies.length > 0">
-                                                    <div class="mt-3 pl-6 border-l-2 border-gray-200 space-y-3">
-                                                        <template x-for="reply in comment.replies" :key="reply.id">
-                                                            <div class="bg-white rounded-lg p-3 border border-gray-200">
-                                                                <div class="flex items-start gap-2">
-                                                                    <img x-bind:src="'{{ $avatarUrl }}'"
-                                                                        class="rounded-full w-6 h-6 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
-                                                                    <div>
-                                                                        <div class="flex items-center gap-2">
-                                                                            <p class="text-sm font-semibold text-gray-800"
-                                                                                x-text="reply.author.name"></p>
-                                                                            <span class="text-xs text-gray-500"
-                                                                                x-text="formatCommentDate(reply.createdAt)"></span>
-                                                                        </div>
-                                                                        <div class="text-sm text-gray-700 mt-1 comment-text"
-                                                                            x-html="reply.content"></div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </template>
-                                                    </div>
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-
-                        <template x-if="comments.length === 0">
-                            <div class="text-center py-8 text-gray-500 text-sm">Belum ada komentar disini...</div>
-                        </template>
-
-                        <hr class="border-gray-200 my-6">
-                        <div class="flex items-center gap-2 text-sm text-gray-600">
-                            <!-- Additional content -->
+                                </div>
+                            </template>
                         </div>
                     </div>
+
+                    <!-- Daftar Komentar -->
+                    <template x-if="comments.length > 0">
+                        <div class="space-y-4">
+                            <template x-for="comment in comments" :key="comment.id">
+                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                    <div class="flex items-start gap-3">
+                                        <img x-bind:src="'{{ $avatarUrl }}'"
+                                            class="rounded-full w-10 h-10 object-cover border border-gray-200 shadow-sm flex-shrink-0">
+                                        <div class="flex-1">
+                                            <div class="flex justify-between items-center">
+                                                <p class="text-sm font-semibold text-gray-800"
+                                                    x-text="comment.author.name"></p>
+                                                <span class="text-xs text-gray-500"
+                                                    x-text="formatCommentDate(comment.createdAt)"></span>
+                                            </div>
+
+                                            <div class="text-sm text-gray-700 mt-1 comment-text" x-html="comment.content">
+                                            </div>
+
+                                            <!-- Tombol Balas -->
+                                            <div class="flex items-center gap-4 mt-2">
+                                                <button @click="toggleReply(comment)"
+                                                    class="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 transition">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                                    </svg>
+                                                    <span>balas</span>
+                                                </button>
+                                            </div>
+
+                                            <!-- FORM BALAS -->
+                                            <template
+                                                x-if="replyView.active && replyView.parentComment?.id === comment.id">
+                                                <div class="mt-4 pl-6 border-l-2 border-gray-200">
+                                                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                                        <h4 class="text-sm font-semibold text-gray-800 mb-2">Membalas
+                                                            <span x-text="comment.author.name"></span>
+                                                        </h4>
+
+                                                        <div
+                                                            class="border border-gray-300 rounded-lg overflow-hidden mb-3">
+                                                            <div :id="'reply-editor-' + comment.id"
+                                                                class="min-h-[120px] p-3 bg-white"></div>
+                                                        </div>
+
+                                                        <div class="flex justify-end gap-2">
+                                                            <button @click="closeReplyView()"
+                                                                class="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition border border-gray-300 rounded-lg">Batal</button>
+                                                            <button @click="submitReplyFromEditor()"
+                                                                class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">Kirim</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+
+                                            <!-- Balasan -->
+                                            <template x-if="comment.replies && comment.replies.length > 0">
+                                                <div class="mt-3 pl-6 border-l-2 border-gray-200 space-y-3">
+                                                    <template x-for="reply in comment.replies" :key="reply.id">
+                                                        <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                                            <div class="flex items-start gap-2">
+                                                                <img x-bind:src="'{{ $avatarUrl }}'"
+                                                                    class="rounded-full w-6 h-6 object-cover border border-gray-200 shadow-sm">
+                                                                <div>
+                                                                    <div class="flex items-center gap-2">
+                                                                        <p class="text-sm font-semibold text-gray-800"
+                                                                            x-text="reply.author.name"></p>
+                                                                        <span class="text-xs text-gray-500"
+                                                                            x-text="formatCommentDate(reply.createdAt)"></span>
+                                                                    </div>
+                                                                    <div class="text-sm text-gray-700 mt-1 comment-text"
+                                                                        x-html="reply.content"></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <template x-if="comments.length === 0">
+                        <div class="text-center py-12">
+                            <svg class="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <p class="text-gray-500 font-medium">Belum ada komentar</p>
+                            <p class="text-sm text-gray-400 mt-1">Jadilah yang pertama berkomentar</p>
+                        </div>
+                    </template>
                 </div>
             </div>
         </div>
     </div>
+
+    <style>
+        .ck-content a {
+            color: #2563eb !important;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .ck-content a:hover {
+            color: #1d4ed8 !important;
+        }
+
+        .comment-text a {
+            color: #2563eb !important;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .comment-text a:hover {
+            color: #1d4ed8 !important;
+        }
+
+        .deskripsi-pengumuman a {
+            color: #2563eb;
+            text-decoration: underline;
+            font-weight: 500;
+        }
+
+        .deskripsi-pengumuman a:hover {
+            color: #1d4ed8;
+        }
+
+        /* Responsif */
+        @media (max-width: 640px) {
+            .bg-white .p-6 h1 {
+                font-size: 1.25rem;
+            }
+
+            .flex.items-start.gap-4 img {
+                width: 2.5rem;
+                height: 2.5rem;
+            }
+        }
+    </style>
 
     <script>
         const editors = {}; // key -> CKEditor instance
@@ -1399,17 +1464,17 @@
                         });
                     </script>
 
-                        <!-- Tombol Lebih Besar -->
-                        <div class="flex justify-end gap-2 pt-2">
-                            <button type="button" id="editBtnBatal"
-                                class="border border-blue-700 text-blue-600 bg-white px-8 py-2 text-[16px] rounded-lg hover:bg-red-50 transition">
-                                Batal
-                            </button>
-                            <button type="submit" id="editSubmitBtn"
-                                class="bg-blue-700 text-white px-8 py-2 text-[16px] rounded-lg hover:bg-blue-800 transition">
-                                Perbarui
-                            </button>
-                        </div>
+                    <!-- Tombol Lebih Besar -->
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" id="editBtnBatal"
+                            class="border border-blue-700 text-blue-600 bg-white px-8 py-2 text-[16px] rounded-lg hover:bg-red-50 transition">
+                            Batal
+                        </button>
+                        <button type="submit" id="editSubmitBtn"
+                            class="bg-blue-700 text-white px-8 py-2 text-[16px] rounded-lg hover:bg-blue-800 transition">
+                            Perbarui
+                        </button>
+                    </div>
             </form>
         </div>
     </div>
@@ -1439,7 +1504,8 @@
 
             // PERBAIKAN: Gunakan route yang benar
             // ✅ SESUDAH (BENAR) - Menggunakan route helper
-fetch(`{{ route('pengumuman-perusahaan.edit', ['company_id' => $company_id, 'id' => '__ID__']) }}`.replace('__ID__', pengumumanId))
+            fetch(`{{ route('pengumuman-perusahaan.edit', ['company_id' => $company_id, 'id' => '__ID__']) }}`.replace(
+                    '__ID__', pengumumanId))
                 .then(response => {
                     if (!response.ok) throw new Error('Gagal mengambil data');
                     return response.json();
@@ -1610,57 +1676,58 @@ fetch(`{{ route('pengumuman-perusahaan.edit', ['company_id' => $company_id, 'id'
 
             // PERBAIKAN: Gunakan route yang benar
             fetch(`/companies/{{ $company_id }}/pengumuman-perusahaan/${pengumumanId}`, {
-    method: 'POST', // ⚠️ Ganti ke POST
-    headers: {
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-        _method: 'PUT', // ✅ Laravel akan parse ini sebagai PUT
-        title: title,
-        description: editorData,
-        auto_due: document.getElementById('editAutoDue').value,
-        due_date: document.getElementById('editCustomDeadline').value,
-        is_private: document.getElementById('editSwitchRahasia').checked,
-        attachable_id: pengumumanId
-    })
-}))
-                .then(async response => {
-                    const text = await response.text();
-                    try {
-                        return JSON.parse(text);
-                    } catch {
-                        throw new Error("Server tidak mengembalikan JSON: " + text.slice(0, 120));
-                    }
+                method: 'POST', // ⚠️ Ganti ke POST
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
+                        'content'),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    _method: 'PUT', // ✅ Laravel akan parse ini sebagai PUT
+                    title: title,
+                    description: editorData,
+                    auto_due: document.getElementById('editAutoDue').value,
+                    due_date: document.getElementById('editCustomDeadline').value,
+                    is_private: document.getElementById('editSwitchRahasia').checked,
+                    attachable_id: pengumumanId
                 })
-                .then(data => {
-                    console.log('Response data:', data);
-                    if (data.success) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil!',
-                            text: data.message,
-                            timer: 2000,
-                            showConfirmButton: false
-                        }).then(() => {
-                            closeEditModal();
-                            if (data.redirect) {
-                                window.location.href = data.redirect;
-                            } else {
-                                location.reload();
-                            }
-                        });
+            }))
+        .then(async response => {
+            const text = await response.text();
+            try {
+                return JSON.parse(text);
+            } catch {
+                throw new Error("Server tidak mengembalikan JSON: " + text.slice(0, 120));
+            }
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: data.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    closeEditModal();
+                    if (data.redirect) {
+                        window.location.href = data.redirect;
                     } else {
-                        Swal.fire("Error", data.message || "Terjadi kesalahan", "error");
+                        location.reload();
                     }
-                })
-                .catch(error => {
-                    console.error('Submit error (update):', error);
-                    Swal.fire("Error", "Terjadi kesalahan saat memperbarui pengumuman", "error");
-                })
-                .finally(() => {
-                    isSubmittingEdit = false;
                 });
+            } else {
+                Swal.fire("Error", data.message || "Terjadi kesalahan", "error");
+            }
+        })
+        .catch(error => {
+            console.error('Submit error (update):', error);
+            Swal.fire("Error", "Terjadi kesalahan saat memperbarui pengumuman", "error");
+        })
+        .finally(() => {
+            isSubmittingEdit = false;
+        });
         });
 
         // Fungsi untuk menutup modal edit
@@ -1680,46 +1747,46 @@ fetch(`{{ route('pengumuman-perusahaan.edit', ['company_id' => $company_id, 'id'
     <!-- delete -->
     <script>
         function deletePengumuman(id) {
-    Swal.fire({
-        title: "Hapus pengumuman?",
-        text: "Semua file & gambar terkait juga akan dihapus.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#d33",
-        cancelButtonColor: "#3085d6",
-        confirmButtonText: "Ya, hapus!",
-        cancelButtonText: "Batal"
-    }).then((result) => {
-        if (result.isConfirmed) {
-            fetch(`/companies/{{ $company_id }}/pengumuman-perusahaan/${id}`, {
-                method: "DELETE",
-                headers: {
-                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-                    "Accept": "application/json"
+            Swal.fire({
+                title: "Hapus pengumuman?",
+                text: "Semua file & gambar terkait juga akan dihapus.",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#d33",
+                cancelButtonColor: "#3085d6",
+                confirmButtonText: "Ya, hapus!",
+                cancelButtonText: "Batal"
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/companies/{{ $company_id }}/pengumuman-perusahaan/${id}`, {
+                            method: "DELETE",
+                            headers: {
+                                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                                "Accept": "application/json"
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({
+                                    icon: "success",
+                                    title: "Berhasil!",
+                                    text: data.message,
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    window.location.href = data.redirect_url;
+                                });
+                            } else {
+                                Swal.fire("Gagal", data.message, "error");
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error:", error);
+                            Swal.fire("Error", "Terjadi kesalahan saat menghapus pengumuman", "error");
+                        });
                 }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    Swal.fire({
-                        icon: "success",
-                        title: "Berhasil!",
-                        text: data.message,
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        window.location.href = data.redirect_url;
-                    });
-                } else {
-                    Swal.fire("Gagal", data.message, "error");
-                }
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                Swal.fire("Error", "Terjadi kesalahan saat menghapus pengumuman", "error");
             });
         }
-    });
-}
     </script>
 @endsection

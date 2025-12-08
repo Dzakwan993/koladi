@@ -4,10 +4,6 @@
 
 @section('content')
 
-    <!-- Font Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Alpine.js & CKEditor -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
 
@@ -15,13 +11,22 @@
         <div class="min-h-screen flex justify-center items-start pt-10 bg-[#f3f6fc] px-4">
             <div class="bg-white rounded-[8px] shadow-xl p-6 md:p-8 w-full max-w-3xl flex flex-col gap-6">
 
-                <!-- Header -->
+                <!-- Header dengan Tombol Kembali -->
                 <header class="flex justify-between items-start">
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-4 flex-1">
+                        <!-- ✅ Tombol Kembali -->
+                        <a href="{{ route('jadwal-umum') }}"
+                            class="flex items-center justify-center w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                        </a>
+
                         <div class="bg-[#2563eb] rounded-lg p-2">
                             <img src="{{ asset('images/icons/Calendar.svg') }}" alt="Calendar Icon" class="h-8 w-8">
                         </div>
-                        <div>
+                        <div class="flex-1">
                             <h1 class="font-bold text-xl text-black">{{ $event->title }}</h1>
                             <p class="text-sm font-semibold text-[16px] text-[#6B7280]">
                                 Dibuat oleh {{ $event->creator->full_name }} pada
@@ -30,7 +35,6 @@
                         </div>
                     </div>
 
-                    <!-- Tombol Action (Edit/Delete untuk creator) -->
                     @if ($isCreator)
                         <div class="relative" x-data="{ open: false }">
                             <button @click="open = !open" class="text-[#6B7280] hover:text-gray-800">
@@ -67,7 +71,6 @@
                                     @method('DELETE')
                                 </form>
                             </div>
-
                         </div>
                     @endif
                 </header>
@@ -116,7 +119,6 @@
                                             title="{{ $participant->user->full_name }}"
                                             class="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hover:border-blue-500 transition cursor-pointer">
 
-                                        <!-- ✅ Tooltip hanya nama, tidak ada status -->
                                         <div
                                             class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                                             {{ $participant->user->full_name }}
@@ -127,52 +129,85 @@
                         </div>
                     </div>
 
-                    <!-- Mode Rapat -->
-                    <div class="flex items-start gap-4" x-data="{ openPopup: false }">
-                        <img src="{{ asset('images/icons/hbj1.svg') }}" alt="Icon Rapat" class="w-5 h-5 mt-1">
-                        <div>
-                            <h2 class="font-semibold text-black text-[16px]">
-                                Rapat dilakukan dengan {{ $event->is_online_meeting ? 'online' : 'offline' }}
-                            </h2>
-                            @if ($event->is_online_meeting && $event->meeting_link)
-                                <button @click="openPopup = true"
-                                    class="mt-2 bg-[#2563eb] text-white font-semibold py-2 px-4 rounded-lg text-sm hover:bg-blue-700 transition-colors flex items-center gap-2">
-                                    <img src="{{ asset('images/icons/ZoomPutih.svg') }}" alt="Zoom Icon" class="w-5 h-5">
-                                    <span>Gabung rapat</span>
-                                </button>
+                    <!-- ✅ MODE RAPAT: ONLINE / OFFLINE -->
+                    <div class="flex items-start gap-4">
+                        @if ($event->is_online_meeting)
+                            <!-- ========== ONLINE MEETING ========== -->
+                            <div class="flex-shrink-0 mt-1">
+                                <i class="fas fa-video text-blue-600 text-lg"></i>
+                            </div>
+                            <div class="flex-1" x-data="{ openPopup: false }">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <h2 class="font-semibold text-black text-[16px] mt-2">Rapat Online</h2>
+                                </div>
 
-                                <!-- POPUP Konfirmasi Gabung Rapat -->
-                                <div x-show="openPopup" x-transition x-cloak
-                                    class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-                                    <div @click.away="openPopup = false"
-                                        class="bg-[#f3f6fc] rounded-2xl shadow-lg p-8 w-full max-w-sm text-center">
+                                @if ($event->meeting_link)
+                                    <button @click="openPopup = true"
+                                        class="mt-2 bg-[#2563eb] text-white font-semibold py-2.5 px-5 rounded-lg text-sm hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-md hover:shadow-lg">
+                                        <i class="fas fa-video"></i>
+                                        <span>Gabung Rapat</span>
+                                    </button>
 
-                                        <img src="{{ asset('images/icons/teamimage.svg') }}" alt="Ilustrasi rapat"
-                                            class="w-48 mx-auto mb-6">
+                                    <!-- POPUP Konfirmasi Gabung Rapat -->
+                                    <div x-show="openPopup" x-transition x-cloak
+                                        class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+                                        <div @click.away="openPopup = false"
+                                            class="bg-[#f3f6fc] rounded-2xl shadow-lg p-8 w-full max-w-sm text-center">
 
-                                        <h2 class="text-xl font-medium text-black mb-4">
-                                            Apakah anda ingin bergabung dengan rapat?
-                                        </h2>
+                                            <img src="{{ asset('images/icons/teamimage.svg') }}" alt="Ilustrasi rapat"
+                                                class="w-48 mx-auto mb-6">
 
-                                        <p class="text-sm text-gray-600 mb-6">
-                                            Anda akan diarahkan ke link rapat eksternal
-                                        </p>
+                                            <h2 class="text-xl font-medium text-black mb-4">
+                                                Apakah anda ingin bergabung dengan rapat?
+                                            </h2>
 
-                                        <div class="flex justify-center gap-4">
-                                            <button @click="openPopup = false"
-                                                class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors text-sm">
-                                                Batal
-                                            </button>
+                                            <p class="text-sm text-gray-600 mb-6">
+                                                Anda akan diarahkan ke link rapat eksternal
+                                            </p>
 
-                                            <a href="{{ $event->meeting_link }}" target="_blank" @click="openPopup = false"
-                                                class="bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-6 rounded-lg transition-colors text-sm">
-                                                Gabung Rapat
-                                            </a>
+                                            <div class="flex justify-center gap-4">
+                                                <button @click="openPopup = false"
+                                                    class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors text-sm">
+                                                    Batal
+                                                </button>
+
+                                                <a href="{{ $event->meeting_link }}" target="_blank"
+                                                    @click="openPopup = false"
+                                                    class="bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-6 rounded-lg transition-colors text-sm">
+                                                    Gabung Rapat
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
+                                @else
+                                    <p class="text-sm text-gray-500 mt-2">Link rapat belum tersedia</p>
+                                @endif
+                            </div>
+                        @else
+                            <!-- ========== OFFLINE MEETING ========== -->
+                            <div class="flex-shrink-0 mt-1">
+                                <i class="fas fa-map-marker-alt text-red-600 text-lg"></i>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <h2 class="font-semibold text-black text-[16px] mt-2">Rapat Offline</h2>
                                 </div>
-                            @endif
-                        </div>
+
+                                {{-- ✅ TAMPILKAN LOKASI JIKA ADA - SIMPLE VERSION --}}
+                                @if ($event->location)
+                                    <div class="mt-3 flex items-center gap-2 text-gray-700">
+                                        <i class="fas fa-map-pin text-red-500"></i>
+                                        <span class="text-sm font-medium">{{ $event->location }}</span>
+                                    </div>
+                                @else
+                                    {{-- ✅ JIKA LOKASI KOSONG --}}
+                                    <div class="mt-3 flex items-center gap-2 text-gray-500">
+                                        <i class="fas fa-info-circle"></i>
+                                        <span class="text-sm">Lokasi rapat belum ditentukan</span>
+                                    </div>
+                                @endif
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Catatan -->
@@ -189,11 +224,10 @@
                     @endif
                 </div>
 
-                <!-- Section Komentar -->
+                <!-- Section Komentar (SAMA SEPERTI SEBELUMNYA) -->
                 <div class="mt-6">
                     <h3 class="text-base font-semibold text-black mb-4">Komentar</h3>
 
-                    <!-- Input Komentar Utama -->
                     @php
                         $user = Auth::user();
                         $avatarPath = $user->avatar ? 'storage/' . $user->avatar : null;
@@ -238,7 +272,7 @@
                         </div>
                     </div>
 
-                    <!-- Daftar Komentar -->
+                    <!-- Daftar Komentar (SAMA) -->
                     <template x-if="comments.length > 0">
                         <div class="space-y-4">
                             <template x-for="comment in comments" :key="comment.id">
@@ -257,7 +291,6 @@
                                             <div class="text-sm text-gray-700 mt-1 comment-text" x-html="comment.content">
                                             </div>
 
-                                            <!-- Tombol Balas -->
                                             <div class="flex items-center gap-4 mt-2">
                                                 <button @click="toggleReply(comment)"
                                                     class="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 transition">
@@ -270,6 +303,7 @@
                                                     <span>balas</span>
                                                 </button>
                                             </div>
+
 
                                             <!-- FORM BALAS -->
                                             <template

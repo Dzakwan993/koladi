@@ -65,150 +65,271 @@
         }
     @endphp
 
+    {{-- Background biru seperti semula --}}
     <div x-data x-init="$store.workspace = { selectedMenu: '' }" class="bg-[#f3f6fc] min-h-screen">
         {{-- Workspace Nav --}}
         @include('components.workspace-nav', ['workspace' => $workspace, 'active' => ''])
 
-        {{-- Grid Workspace --}}
-        <div class="p-8 grid grid-cols-3 gap-6 max-w-6xl mx-auto">
+        {{-- Warning jika belum memilih workspace - DIPINDAH KE ATAS --}}
+        @if (!$currentWorkspace)
+            <div class="max-w-6xl mx-auto px-8 pt-8">
+                <div class="bg-amber-50 border-l-4 border-amber-400 rounded-r-lg p-5 shadow-sm">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-amber-600 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        <div>
+                            <p class="text-sm font-medium text-amber-800 mb-1">
+                                Belum Ada Workspace Aktif
+                            </p>
+                            <p class="text-sm text-amber-700">
+                                @if ($isCompanyAdmin)
+                                    Silakan buat atau pilih workspace dari halaman
+                                    <a href="{{ route('kelola-workspace') }}" class="underline font-medium hover:text-amber-900">
+                                        Kelola Workspace
+                                    </a> terlebih dahulu.
+                                @else
+                                    Silakan pilih workspace dari halaman
+                                    <a href="{{ route('kelola-workspace') }}" class="underline font-medium hover:text-amber-900">
+                                        Kelola Workspace
+                                    </a> terlebih dahulu.
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- 🎨 UPDATED: Grid dengan spacing lebih baik --}}
+        <div class="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 max-w-6xl mx-auto">
 
             {{-- Card Tugas --}}
             @if ($currentWorkspace)
-                <a href="{{ route('kanban-tugas', $currentWorkspace->id) }}" @click="$store.workspace.selectedMenu = 'tugas'"
-                    class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
-                    <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
-                        <img src="{{ asset('images/icons/workspace_tugas.svg') }}" alt="Tugas Icon" class="w-full h-full">
+                <a href="{{ route('kanban-tugas', $currentWorkspace->id) }}"
+                   @click="$store.workspace.selectedMenu = 'tugas'"
+                   class="group bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer">
+
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="p-3 bg-gray-100 rounded-lg group-hover:bg-blue-600 transition-colors duration-200">
+                            <img src="{{ asset('images/icons/workspace_tugas.svg') }}"
+                                 alt="Tugas Icon"
+                                 class="w-6 h-6 group-hover:brightness-0 group-hover:invert transition-all">
+                        </div>
                     </div>
-                    <span class="text-gray-700 font-medium">Tugas</span>
+
+                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Tugas</h3>
+                    <p class="text-sm text-gray-500">Kelola tugas dan prioritas</p>
                 </a>
             @else
-                <div
-                    class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center opacity-50 cursor-not-allowed">
-                    <div class="w-16 h-16 mb-4 text-gray-400">
-                        <img src="{{ asset('images/icons/workspace_tugas.svg') }}" alt="Tugas Icon" class="w-full h-full">
+                <div class="bg-gray-100 rounded-xl border border-gray-200 p-6 flex flex-col opacity-60 cursor-not-allowed">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="p-3 bg-gray-200 rounded-lg">
+                            <img src="{{ asset('images/icons/workspace_tugas.svg') }}"
+                                 alt="Tugas Icon"
+                                 class="w-6 h-6 opacity-50">
+                        </div>
                     </div>
-                    <span class="text-gray-700 font-medium">Tugas</span>
-                    <p class="text-xs text-gray-500 mt-2 text-center">Pilih workspace terlebih dahulu</p>
+
+                    <h3 class="text-lg font-semibold text-gray-500 mb-1">Tugas</h3>
+                    <p class="text-sm text-gray-400">Kelola tugas dan prioritas</p>
+
+                    <div class="mt-3 pt-3 border-t border-gray-300">
+                        <p class="text-xs text-gray-500">Pilih workspace terlebih dahulu</p>
+                    </div>
                 </div>
             @endif
 
             {{-- Card Pengumuman --}}
-            <a href="{{ route('workspace.pengumuman', $workspace->id) }}"
-                @click="$store.workspace.selectedMenu = 'pengumuman'"
-                class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
-                <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
-                    <img src="{{ asset('images/icons/workspace_pengumuman.svg') }}" alt="Pengumuman Icon"
-                        class="w-full h-full">
+            @if ($currentWorkspace)
+                <a href="{{ route('workspace.pengumuman', ['workspace' => $currentWorkspace->id]) }}"
+                   @click="$store.workspace.selectedMenu = 'pengumuman'"
+                   class="group bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer">
+
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="p-3 bg-gray-100 rounded-lg group-hover:bg-blue-600 transition-colors duration-200">
+                            <img src="{{ asset('images/icons/workspace_pengumuman.svg') }}"
+                                 alt="Pengumuman Icon"
+                                 class="w-6 h-6 group-hover:brightness-0 group-hover:invert transition-all">
+                        </div>
+                    </div>
+
+                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Pengumuman</h3>
+                    <p class="text-sm text-gray-500">Informasi dan berita terkini</p>
+                </a>
+            @else
+                <div class="bg-gray-100 rounded-xl border border-gray-200 p-6 flex flex-col opacity-60 cursor-not-allowed">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="p-3 bg-gray-200 rounded-lg">
+                            <img src="{{ asset('images/icons/workspace_pengumuman.svg') }}"
+                                 alt="Pengumuman Icon"
+                                 class="w-6 h-6 opacity-50">
+                        </div>
+                    </div>
+
+                    <h3 class="text-lg font-semibold text-gray-500 mb-1">Pengumuman</h3>
+                    <p class="text-sm text-gray-400">Informasi dan berita terkini</p>
+
+                    <div class="mt-3 pt-3 border-t border-gray-300">
+                        <p class="text-xs text-gray-500">Pilih workspace terlebih dahulu</p>
+                    </div>
                 </div>
-                <span class="text-gray-700 font-medium">Pengumuman</span>
-            </a>
+            @endif
 
             {{-- Card Jadwal --}}
             @if ($currentWorkspace)
                 <a href="{{ route('jadwal', ['workspaceId' => $currentWorkspace->id]) }}"
-                    @click="$store.workspace.selectedMenu = 'jadwal'"
-                    class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
-                    <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
-                        <img src="{{ asset('images/icons/workspace_kalender.svg') }}" alt="Jadwal Icon"
-                            class="w-full h-full">
+                   @click="$store.workspace.selectedMenu = 'jadwal'"
+                   class="group bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer">
+
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="p-3 bg-gray-100 rounded-lg group-hover:bg-blue-600 transition-colors duration-200">
+                            <img src="{{ asset('images/icons/workspace_kalender.svg') }}"
+                                 alt="Jadwal Icon"
+                                 class="w-6 h-6 group-hover:brightness-0 group-hover:invert transition-all">
+                        </div>
                     </div>
-                    <span class="text-gray-700 font-medium">Jadwal</span>
+
+                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Jadwal</h3>
+                    <p class="text-sm text-gray-500">Kalender dan timeline proyek</p>
                 </a>
             @else
-                <div
-                    class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center opacity-50 cursor-not-allowed">
-                    <div class="w-16 h-16 mb-4 text-gray-400">
-                        <img src="{{ asset('images/icons/workspace_kalender.svg') }}" alt="Jadwal Icon"
-                            class="w-full h-full">
+                <div class="bg-gray-100 rounded-xl border border-gray-200 p-6 flex flex-col opacity-60 cursor-not-allowed">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="p-3 bg-gray-200 rounded-lg">
+                            <img src="{{ asset('images/icons/workspace_kalender.svg') }}"
+                                 alt="Jadwal Icon"
+                                 class="w-6 h-6 opacity-50">
+                        </div>
                     </div>
-                    <span class="text-gray-700 font-medium">Jadwal</span>
-                    <p class="text-xs text-gray-500 mt-2 text-center">Pilih workspace terlebih dahulu</p>
+
+                    <h3 class="text-lg font-semibold text-gray-500 mb-1">Jadwal</h3>
+                    <p class="text-sm text-gray-400">Kalender dan timeline proyek</p>
+
+                    <div class="mt-3 pt-3 border-t border-gray-300">
+                        <p class="text-xs text-gray-500">Pilih workspace terlebih dahulu</p>
+                    </div>
                 </div>
             @endif
 
-            {{-- Card Chat - 🔥 FIXED: Gunakan route dengan workspace ID --}}
+            {{-- Card Chat --}}
             @if ($currentWorkspace)
-                <a href="{{ route('chat', $currentWorkspace->id) }}" @click="$store.workspace.selectedMenu = 'chat'"
-                    class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
-                    <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
-                        <img src="{{ asset('images/icons/workspace_chat.svg') }}" alt="Chat Icon" class="w-full h-full">
+                <a href="{{ route('chat', $currentWorkspace->id) }}"
+                   @click="$store.workspace.selectedMenu = 'chat'"
+                   class="group bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer">
+
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="p-3 bg-gray-100 rounded-lg group-hover:bg-blue-600 transition-colors duration-200">
+                            <img src="{{ asset('images/icons/workspace_chat.svg') }}"
+                                 alt="Chat Icon"
+                                 class="w-6 h-6 group-hover:brightness-0 group-hover:invert transition-all">
+                        </div>
                     </div>
-                    <span class="text-gray-700 font-medium">Chat</span>
+
+                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Chat</h3>
+                    <p class="text-sm text-gray-500">Komunikasi tim real-time</p>
                 </a>
             @else
-                <div
-                    class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center opacity-50 cursor-not-allowed">
-                    <div class="w-16 h-16 mb-4 text-gray-400">
-                        <img src="{{ asset('images/icons/workspace_chat.svg') }}" alt="Chat Icon" class="w-full h-full">
+                <div class="bg-gray-100 rounded-xl border border-gray-200 p-6 flex flex-col opacity-60 cursor-not-allowed">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="p-3 bg-gray-200 rounded-lg">
+                            <img src="{{ asset('images/icons/workspace_chat.svg') }}"
+                                 alt="Chat Icon"
+                                 class="w-6 h-6 opacity-50">
+                        </div>
                     </div>
-                    <span class="text-gray-700 font-medium">Chat</span>
-                    <p class="text-xs text-gray-500 mt-2 text-center">Pilih workspace terlebih dahulu</p>
+
+                    <h3 class="text-lg font-semibold text-gray-500 mb-1">Chat</h3>
+                    <p class="text-sm text-gray-400">Komunikasi tim real-time</p>
+
+                    <div class="mt-3 pt-3 border-t border-gray-300">
+                        <p class="text-xs text-gray-500">Pilih workspace terlebih dahulu</p>
+                    </div>
                 </div>
             @endif
 
-            {{-- Card Insight --}}
+            {{-- Card Mindmap --}}
             @if ($currentWorkspace)
                 <a href="{{ url('/workspace/' . $currentWorkspace->id . '/mindmap') }}"
-                    @click="$store.workspace.selectedMenu = 'insight'"
-                    class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
-                    <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
-                        <img src="{{ asset('images/icons/workspace_insight.svg') }}" alt="Insight Icon"
-                            class="w-full h-full">
-                    </div>
-                    <span class="text-gray-700 font-medium">Mindmap</span>
-                </a>
-            @endif
+                   @click="$store.workspace.selectedMenu = 'insight'"
+                   class="group bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer">
 
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="p-3 bg-gray-100 rounded-lg group-hover:bg-blue-600 transition-colors duration-200">
+                            <img src="{{ asset('images/icons/workspace_insight.svg') }}"
+                                 alt="Mindmap Icon"
+                                 class="w-6 h-6 group-hover:brightness-0 group-hover:invert transition-all">
+                        </div>
+                    </div>
+
+                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Mindmap</h3>
+                    <p class="text-sm text-gray-500">Visualisasi ide dan konsep</p>
+                </a>
+            @else
+                <div class="bg-gray-100 rounded-xl border border-gray-200 p-6 flex flex-col opacity-60 cursor-not-allowed">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="p-3 bg-gray-200 rounded-lg">
+                            <img src="{{ asset('images/icons/workspace_insight.svg') }}"
+                                 alt="Mindmap Icon"
+                                 class="w-6 h-6 opacity-50">
+                        </div>
+                    </div>
+
+                    <h3 class="text-lg font-semibold text-gray-500 mb-1">Mindmap</h3>
+                    <p class="text-sm text-gray-400">Visualisasi ide dan konsep</p>
+
+                    <div class="mt-3 pt-3 border-t border-gray-300">
+                        <p class="text-xs text-gray-500">Pilih workspace terlebih dahulu</p>
+                    </div>
+                </div>
+            @endif
 
             {{-- Card Dokumen --}}
             @if ($currentWorkspace)
                 <a href="{{ route('dokumen-dan-file', $currentWorkspace->id) }}"
-                    @click="$store.workspace.selectedMenu = 'dokumen'"
-                    class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center hover:shadow-md transition group cursor-pointer">
-                    <div class="w-16 h-16 mb-4 text-gray-400 group-hover:text-blue-500 transition">
-                        <img src="{{ asset('images/icons/workspace_dokumen&file.svg') }}" alt="Dokumen Icon"
-                            class="w-full h-full">
+                   @click="$store.workspace.selectedMenu = 'dokumen'"
+                   class="group bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer">
+
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="p-3 bg-gray-100 rounded-lg group-hover:bg-blue-600 transition-colors duration-200">
+                            <img src="{{ asset('images/icons/workspace_dokumen&file.svg') }}"
+                                 alt="Dokumen Icon"
+                                 class="w-6 h-6 group-hover:brightness-0 group-hover:invert transition-all">
+                        </div>
                     </div>
-                    <span class="text-gray-700 font-medium">Dokumen</span>
+
+                    <h3 class="text-lg font-semibold text-gray-800 mb-1">Dokumen</h3>
+                    <p class="text-sm text-gray-500">File dan dokumentasi</p>
                 </a>
             @else
-                <div
-                    class="bg-white rounded-2xl shadow-sm p-8 flex flex-col items-center justify-center opacity-50 cursor-not-allowed">
-                    <div class="w-16 h-16 mb-4 text-gray-400">
-                        <img src="{{ asset('images/icons/workspace_dokumen&file.svg') }}" alt="Dokumen Icon"
-                            class="w-full h-full">
+                <div class="bg-gray-100 rounded-xl border border-gray-200 p-6 flex flex-col opacity-60 cursor-not-allowed">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="p-3 bg-gray-200 rounded-lg">
+                            <img src="{{ asset('images/icons/workspace_dokumen&file.svg') }}"
+                                 alt="Dokumen Icon"
+                                 class="w-6 h-6 opacity-50">
+                        </div>
                     </div>
-                    <span class="text-gray-700 font-medium">Dokumen</span>
-                    <p class="text-xs text-gray-500 mt-2 text-center">Pilih workspace terlebih dahulu</p>
+
+                    <h3 class="text-lg font-semibold text-gray-500 mb-1">Dokumen</h3>
+                    <p class="text-sm text-gray-400">File dan dokumentasi</p>
+
+                    <div class="mt-3 pt-3 border-t border-gray-300">
+                        <p class="text-xs text-gray-500">Pilih workspace terlebih dahulu</p>
+                    </div>
                 </div>
             @endif
 
         </div>
 
-        {{-- Warning jika belum memilih workspace atau tidak memiliki akses --}}
-        @if (!$currentWorkspace)
-            <div class="max-w-6xl mx-auto px-8">
-                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <div class="flex items-center">
-                        <svg class="w-5 h-5 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd"
-                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                clip-rule="evenodd" />
-                        </svg>
-                        <p class="text-sm text-yellow-700">
-                            <strong>Peringatan:</strong>
-                            @if ($isCompanyAdmin)
-                                Belum ada workspace yang tersedia atau Anda belum memilih workspace. Silakan buat atau pilih
-                                workspace dari halaman <a href="{{ route('kelola-workspace') }}"
-                                    class="underline font-medium">Kelola Workspace</a> terlebih dahulu.
-                            @else
-                                Anda belum tergabung dalam workspace manapun atau belum memilih workspace. Silakan pilih
-                                workspace dari halaman <a href="{{ route('kelola-workspace') }}"
-                                    class="underline font-medium">Kelola Workspace</a> terlebih dahulu.
-                            @endif
-                        </p>
-                    </div>
-                </div>
+        {{-- Footer Info --}}
+        @if ($currentWorkspace)
+            <div class="max-w-6xl mx-auto px-8 pb-8">
+                <p class="text-center text-sm text-gray-500">
+                    Pilih salah satu menu untuk memulai bekerja
+                </p>
             </div>
         @endif
     </div>

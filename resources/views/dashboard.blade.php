@@ -3,505 +3,285 @@
 @section('title', 'Dashboard')
 
 @section('content')
-<!-- Font Inter -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    @php
+        function getShortName($fullName)
+        {
+            if (!$fullName) {
+                return 'User';
+            }
+            $words = explode(' ', trim($fullName));
+            return implode(' ', array_slice($words, 0, 2));
+        }
+    @endphp
 
-<div class="px-3 pb-3 sm:p-4 md:p-6 lg:p-8 h-screen overflow-hidden font-[Inter,sans-serif]">
-    <div class="max-w-7xl mx-auto h-full flex flex-col">
-        {{-- Header - Fixed Height --}}
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 border-b border-[#6B7280] pb-2 sm:pb-3 mb-2 sm:mb-3.5 flex-shrink-0">
-            <div class="mx-2 sm:mx-3">
-                <h1 class="text-lg sm:text-xl md:text-2xl font-bold text-[#1E1E1E] mt-0.5">Selamat datang, {{ Auth::user()->full_name }}</h1>
-                <p class="text-xs sm:text-sm text-[#6B7280] mt-0.5">Silahkan kelola tugas anda.</p>
-            </div>
-            <a href="{{ url('/tambah-anggota') }}"
-                class="mx-2 sm:mx-4 text-xs sm:text-sm bg-[#225AD6] hover:bg-blue-700 text-white px-3 py-2 sm:py-2.5 rounded-lg font-semibold transition flex items-center justify-center gap-1 shadow-sm">
-                <img src="{{ asset('images/icons/Plus.svg') }}" alt="Schedule" class="w-4 h-4 sm:w-5 sm:h-5" />
-                Tambah anggota
-            </a>
-        </div>
+    <div class="min-h-screen bg-gradient-to-br from-[#f3f6fc] to-[#e9effd] font-[Inter,sans-serif]">
+        <!-- ✅ Improved padding with better mobile spacing -->
+        <div class="px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+            <div class="max-w-7xl mx-auto">
 
-        {{-- Main Grid - Flex 1 to fill remaining space --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 flex-1 min-h-0">
-            {{-- Left Column - Tasks --}}
-            <div class="flex flex-col mx-2 sm:mx-3 h-full overflow-hidden">
-                {{-- Ringkasan Tugas Section - Fixed --}}
-                <div class="flex items-center gap-2 mb-2 sm:mb-3 flex-shrink-0">
-                    <img src="{{ asset('images/icons/Schedule.svg') }}" alt="Schedule" class="w-5 h-5 sm:w-6 sm:h-6" />
-                    <p class="text-xs sm:text-sm text-[#6B7280] font-medium">Ringkasan tugas saya</p>
+                {{-- Hero Header - Improved Responsive --}}
+                <div class="mb-6 pb-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div class="flex-1 min-w-0">
+                            <h1 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#1E1E1E] mb-2 truncate">
+                                Selamat datang, {{ getShortName(Auth::user()->full_name) }} 👋
+                            </h1>
+                            <p class="text-xs sm:text-sm md:text-base text-[#6B7280]">
+                                Kelola pekerjaan, jadwal, dan komunikasi tim Anda — semua dalam satu layar.
+                            </p>
+                        </div>
+                        <!-- ✅ Improved button with better mobile layout -->
+                        <a href="{{ url('/tambah-anggota') }}" role="button" aria-label="Tambah Anggota Baru"
+                            class="inline-flex items-center justify-center gap-2 text-sm sm:text-base bg-gradient-to-r from-[#225AD6] to-[#1e40af] hover:from-[#1e40af] hover:to-[#225AD6] text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#225AD6] focus:ring-offset-2 whitespace-nowrap">
+                            <i class="fas fa-user-plus" aria-hidden="true"></i>
+                            <span class="hidden xs:inline">Tambah Anggota</span>
+                            <span class="xs:hidden">Tambah Anggota</span>
+                        </a>
+                    </div>
                 </div>
 
-                {{-- Container Putih Terluar --}}
-                <div class="bg-white rounded-lg sm:rounded-xl shadow-sm px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex-1 flex flex-col overflow-hidden min-h-0">
-                    {{-- Header: Judul + Search + Sort --}}
-                    <div class="mb-2 flex-shrink-0">
-                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-center gap-2 sm:gap-4 md:gap-6">
-                            {{-- Judul Perencanaan --}}
-                            <h2 class="text-base sm:text-lg font-bold text-[#6B7280]">Perencanaan</h2>
+                {{-- ✅ Improved Grid - Better mobile stacking --}}
+                <div class="grid grid-cols-1 xl:grid-cols-7 gap-4 sm:gap-5 lg:gap-6">
 
-                            {{-- Search Box --}}
-                            <div class="w-full sm:w-48 md:w-60 relative">
-                                <input
-                                    type="text"
-                                    placeholder="Cari tugas..."
-                                    class="w-full pl-9 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 bg-[#E9EFFD] border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 text-xs sm:text-sm placeholder-gray-400 font-medium"
-                                />
-                                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 absolute left-2 sm:left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                            </div>
-
-                            {{-- Sort Button --}}
-                            <button class="p-1.5 sm:p-2 rounded-lg hover:bg-gray-200 transition flex-shrink-0">
-                                <img src="{{ asset('images/icons/Sort.svg') }}" alt="Sort" class="w-4 h-4 sm:w-5 sm:h-5" />
-                            </button>
-                        </div>
-                    </div>
-
-                    {{-- Divider --}}
-                    <div class="border-t border-[#6B7280] mb-2 sm:mb-3 mx-4 sm:mx-8 md:mx-12 flex-shrink-0"></div>
-
-                    {{-- Scroll Container dengan Cards menggunakan x-scroll-card --}}
-                    <div class="flex-1 min-h-0 overflow-hidden">
-                        <x-scroll-card max-height="h-full">
-                            <div class="space-y-2">
-                                {{-- Card 1 --}}
-                                <x-progress-card
-                                    title="Div. Marketing"
-                                    description="Menargetkan penjualan di atas 40% sehingga terjadi kenaikan penjualan"
-                                    :percentage="80"
-                                    :members="[
-                                        ['name' => 'Sahroni', 'avatar' => 'https://i.pravatar.cc/40?img=1'],
-                                        ['name' => 'Andi', 'avatar' => 'https://i.pravatar.cc/40?img=2'],
-                                        ['name' => 'Rizal', 'avatar' => 'https://i.pravatar.cc/40?img=3'],
-                                        ['name' => 'Bagas', 'avatar' => 'https://i.pravatar.cc/40?img=4']
-                                    ]"
-                                    :additionalCount="3"
-                                />
-
-                                {{-- Card 2 --}}
-                                <x-progress-card
-                                    title="Div. Marketing"
-                                    description="Menargetkan penjualan di atas 40% sehingga terjadi kenaikan penjualan"
-                                    :percentage="90"
-                                    :members="[
-                                        ['name' => 'Sahroni', 'avatar' => 'https://i.pravatar.cc/40?img=1'],
-                                        ['name' => 'Andi', 'avatar' => 'https://i.pravatar.cc/40?img=2'],
-                                        ['name' => 'Rizal', 'avatar' => 'https://i.pravatar.cc/40?img=3']
-                                    ]"
-                                    :additionalCount="3"
-                                />
-
-                                {{-- Date Separator --}}
-                                <div class="flex items-center justify-center py-2">
-                                    <span class="text-xs sm:text-sm text-[#6B7280] font-semibold">Kamis, 18 September 2025</span>
+                    {{-- Left Column - Pengumuman (4/7 width on XL screens) --}}
+                    <div class="xl:col-span-4 flex flex-col order-2 xl:order-1">
+                        {{-- Header Pengumuman --}}
+                        <div class="flex items-center justify-between mb-3 sm:mb-4">
+                            <div class="flex items-center gap-2 sm:gap-3">
+                                <div
+                                    class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                                    <i class="fas fa-bullhorn text-white text-base sm:text-lg" aria-hidden="true"></i>
                                 </div>
-
-                                {{-- Card 3 --}}
-                                <x-progress-card
-                                    title="Div. Marketing"
-                                    description="Menargetkan penjualan di atas 40% sehingga terjadi kenaikan penjualan"
-                                    :percentage="60"
-                                    :members="[
-                                        ['name' => 'Sahroni', 'avatar' => 'https://i.pravatar.cc/40?img=1'],
-                                        ['name' => 'Andi', 'avatar' => 'https://i.pravatar.cc/40?img=2'],
-                                        ['name' => 'Rizal', 'avatar' => 'https://i.pravatar.cc/40?img=3']
-                                    ]"
-                                    :additionalCount="3"
-                                />
-
-                                {{-- Card 4 --}}
-                                <x-progress-card
-                                    title="Div. Marketing"
-                                    description="Menargetkan penjualan di atas 40% sehingga terjadi kenaikan penjualan"
-                                    :percentage="60"
-                                    :members="[
-                                        ['name' => 'Sahroni', 'avatar' => 'https://i.pravatar.cc/40?img=1'],
-                                        ['name' => 'Andi', 'avatar' => 'https://i.pravatar.cc/40?img=2'],
-                                        ['name' => 'Rizal', 'avatar' => 'https://i.pravatar.cc/40?img=3']
-                                    ]"
-                                    :additionalCount="3"
-                                />
-
-                                {{-- Card 5 --}}
-                                <x-progress-card
-                                    title="Div. Marketing"
-                                    description="Menargetkan penjualan di atas 40% sehingga terjadi kenaikan penjualan"
-                                    :percentage="60"
-                                    :members="[
-                                        ['name' => 'Sahroni', 'avatar' => 'https://i.pravatar.cc/40?img=1'],
-                                        ['name' => 'Andi', 'avatar' => 'https://i.pravatar.cc/40?img=2'],
-                                        ['name' => 'Rizal', 'avatar' => 'https://i.pravatar.cc/40?img=3']
-                                    ]"
-                                    :additionalCount="3"
-                                />
-
-                                {{-- Card 6 --}}
-                                <x-progress-card
-                                    title="Div. Marketing"
-                                    description="Menargetkan penjualan di atas 40% sehingga terjadi kenaikan penjualan"
-                                    :percentage="60"
-                                    :members="[
-                                        ['name' => 'Sahroni', 'avatar' => 'https://i.pravatar.cc/40?img=1'],
-                                        ['name' => 'Andi', 'avatar' => 'https://i.pravatar.cc/40?img=2'],
-                                        ['name' => 'Rizal', 'avatar' => 'https://i.pravatar.cc/40?img=3']
-                                    ]"
-                                    :additionalCount="3"
-                                />
-
-                                {{-- Card 7 --}}
-                                <x-progress-card
-                                    title="Div. Marketing"
-                                    description="Menargetkan penjualan di atas 40% sehingga terjadi kenaikan penjualan"
-                                    :percentage="60"
-                                    :members="[
-                                        ['name' => 'Sahroni', 'avatar' => 'https://i.pravatar.cc/40?img=1'],
-                                        ['name' => 'Andi', 'avatar' => 'https://i.pravatar.cc/40?img=2'],
-                                        ['name' => 'Rizal', 'avatar' => 'https://i.pravatar.cc/40?img=3']
-                                    ]"
-                                    :additionalCount="3"
-                                />
+                                <div>
+                                    <p class="text-sm sm:text-base lg:text-lg text-[#1E1E1E] font-bold">Pengumuman Terbaru
+                                    </p>
+                                    <p class="text-xs text-gray-500 hidden sm:block">Update terkini untuk Anda</p>
+                                </div>
                             </div>
-                        </x-scroll-card>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Right Column - Calendar & Details --}}
-            <div class="flex flex-col h-full overflow-hidden mx-2 sm:mx-4">
-                {{-- Jadwal Header --}}
-                <div class="flex items-center gap-2 mb-2 sm:mb-3 flex-shrink-0">
-                    <img src="{{ asset('images/icons/calendar-dashboard.svg') }}" alt="Schedule" class="w-5 h-5 sm:w-6 sm:h-6" />
-                    <p class="text-xs sm:text-sm text-[#6B7280] font-medium">Jadwal</p>
-                </div>
-
-                {{-- Calendar Wrapper - Fixed Height --}}
-                <div class="flex-shrink-0 mb-3" style="height: 40vh; min-height: 300px;">
-                    <div class="bg-white rounded-xl sm:rounded-2xl shadow-md p-2 sm:p-3 h-full">
-                        <div id="calendar" class="w-full h-full"></div>
-                    </div>
-                </div>
-
-                {{-- Task Detail - Scrollable menggunakan x-scroll-card --}}
-                <div class="flex-1 min-h-0 overflow-hidden">
-                    <x-scroll-card max-height="h-full">
-                        <div class="space-y-2 sm:space-y-3">
-                            {{-- Card 1 --}}
-                            <x-task-detail-card
-                                time="Kamis, 18 Feb 2025 11:12 AM - Kamis, 18 Feb 2025 01:00 PM"
-                                title="Div. Marketing"
-                                description="Rapat pengadaan alat yang di butuhkan dan revisi fonder agritment sebersar 50% dan juga"
-                                :members="[
-                                    ['name' => 'Sahroni', 'avatar' => 'https://i.pravatar.cc/40?img=1'],
-                                    ['name' => 'Andi', 'avatar' => 'https://i.pravatar.cc/40?img=2'],
-                                    ['name' => 'Rizal', 'avatar' => 'https://i.pravatar.cc/40?img=3']
-                                ]"
-                                :additionalCount="3"
-                            />
-
-                            {{-- Card 2 --}}
-                            <x-task-detail-card
-                                time="Jumat, 19 Feb 2025 09:00 AM - Jumat, 19 Feb 2025 11:00 AM"
-                                title="Div. IT"
-                                description="Meeting koordinasi pengembangan sistem baru dan maintenance server"
-                                :members="[
-                                    ['name' => 'Budi', 'avatar' => 'https://i.pravatar.cc/40?img=5'],
-                                    ['name' => 'Siti', 'avatar' => 'https://i.pravatar.cc/40?img=6']
-                                ]"
-                                :additionalCount="2"
-                            />
-
-                            {{-- Card 3 --}}
-                            <x-task-detail-card
-                                time="Sabtu, 20 Feb 2025 14:00 PM - Sabtu, 20 Feb 2025 16:00 PM"
-                                title="Div. Finance"
-                                description="Review budget tahunan dan laporan keuangan Q1"
-                                :members="[
-                                    ['name' => 'Andi', 'avatar' => 'https://i.pravatar.cc/40?img=7'],
-                                    ['name' => 'Dina', 'avatar' => 'https://i.pravatar.cc/40?img=8']
-                                ]"
-                                :additionalCount="1"
-                            />
                         </div>
-                    </x-scroll-card>
+
+                        {{-- ✅ Container Pengumuman - Flexible height --}}
+                        <div
+                            class="bg-white rounded-2xl shadow-lg p-4 sm:p-5 lg:p-6 flex flex-col border border-gray-100 min-h-[400px] max-h-[600px] xl:h-[calc(100vh-280px)]">
+                            <div class="overflow-y-auto flex-1 pr-2 py-2 custom-scrollbar">
+                                <div class="space-y-3 sm:space-y-4 px-1">
+                                    @forelse($pengumumans as $p)
+                                        <div class="group bg-gradient-to-br from-[#E9EFFD] to-[#dce6fc] rounded-xl p-3 sm:p-4 shadow-sm hover:shadow-2xl transition-all duration-300 cursor-pointer border border-blue-100 hover:border-blue-400 focus-within:ring-2 focus-within:ring-blue-400"
+                                            onclick="window.location.href='{{ route('pengumuman-perusahaan.show', ['company_id' => $company->id, 'id' => $p->id]) }}'"
+                                            tabindex="0" role="article" aria-label="Pengumuman: {{ $p->title }}">
+
+                                            {{-- Header dengan Avatar dan Tanggal --}}
+                                            <div class="flex items-start justify-between mb-3 gap-2">
+                                                <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                                                    <img src="{{ $p->creator->avatar_url }}"
+                                                        alt="Avatar {{ $p->creator->full_name }}" loading="lazy"
+                                                        class="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover border-2 border-white shadow-md flex-shrink-0 ring-2 ring-blue-200">
+
+                                                    <div class="flex-1 min-w-0">
+                                                        <p class="font-semibold text-xs sm:text-sm text-gray-800 truncate">
+                                                            {{ $p->creator->full_name }}
+                                                        </p>
+                                                        <div class="flex items-center gap-1.5 sm:gap-2 mt-0.5">
+                                                            @if ($p->is_private)
+                                                                <i class="fas fa-lock text-gray-400 text-xs"
+                                                                    aria-label="Pengumuman Privat"></i>
+                                                            @endif
+                                                            <span class="text-xs text-gray-500">
+                                                                <i class="far fa-clock mr-1" aria-hidden="true"></i>
+                                                                {{ $p->display_relative_time ?? $p->created_at->diffForHumans() }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {{-- Comment Badge --}}
+                                                @if ($p->comments_count > 0)
+                                                    <div class="flex-shrink-0">
+                                                        <div class="relative">
+                                                            <div class="bg-gradient-to-br from-yellow-400 to-yellow-500 text-gray-800 text-xs font-bold rounded-lg w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300"
+                                                                aria-label="{{ $p->comments_count }} komentar">
+                                                                {{ $p->comments_count }}
+                                                            </div>
+                                                            <div class="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-500 rounded-full animate-pulse"
+                                                                aria-hidden="true"></div>
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            {{-- Title --}}
+                                            <h3
+                                                class="font-bold text-[#090909] text-sm sm:text-base mb-2 line-clamp-1 group-hover:text-blue-700 transition-colors">
+                                                {{ $p->title }}
+                                            </h3>
+
+                                            {{-- Description --}}
+                                            <p class="text-xs sm:text-sm text-gray-600 mb-3 line-clamp-2 leading-relaxed">
+                                                {!! strip_tags($p->description) !!}
+                                            </p>
+
+                                            {{-- Footer dengan metadata --}}
+                                            @if ($p->due_date || $p->auto_due)
+                                                <div
+                                                    class="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-2 sm:pt-3 border-t border-blue-200/50">
+                                                    <i class="fas fa-calendar-check text-blue-600 text-xs"
+                                                        aria-hidden="true"></i>
+                                                    @if ($p->due_date)
+                                                        <span class="text-xs font-medium text-blue-700">
+                                                            Tenggat:
+                                                            {{ \Carbon\Carbon::parse($p->due_date)->translatedFormat('d M Y') }}
+                                                        </span>
+                                                    @endif
+                                                    @if ($p->auto_due)
+                                                        <span class="text-xs text-gray-600">
+                                                            • Selesai:
+                                                            {{ \Carbon\Carbon::parse($p->auto_due)->translatedFormat('d M Y') }}
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @empty
+                                        <div class="text-center py-12 sm:py-16">
+                                            <div
+                                                class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 mb-4">
+                                                <i class="fas fa-bullhorn text-3xl sm:text-4xl text-gray-400"
+                                                    aria-hidden="true"></i>
+                                            </div>
+                                            <p class="text-sm sm:text-base font-semibold text-gray-700 mb-2">Belum Ada
+                                                Pengumuman</p>
+                                            <p class="text-xs sm:text-sm text-gray-500">Pengumuman terbaru akan muncul di
+                                                sini</p>
+                                        </div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Right Column - Calendar & Jadwal (3/7 width on XL screens) --}}
+                    <div class="xl:col-span-3 flex flex-col order-1 xl:order-2">
+                        {{-- Header Jadwal --}}
+                        <div class="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                            <div
+                                class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
+                                <i class="fas fa-calendar-alt text-white text-base sm:text-lg" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm sm:text-base lg:text-lg text-[#1E1E1E] font-bold">Jadwal</p>
+                                <p class="text-xs text-gray-500 hidden sm:block">Agenda Anda</p>
+                            </div>
+                        </div>
+
+                        {{-- ✅ Calendar - Improved responsive height --}}
+                        <div
+                            class="bg-white rounded-2xl shadow-lg p-3 sm:p-4 lg:p-5 mb-4 sm:mb-5 border border-gray-100 h-[280px] sm:h-[320px] lg:h-[350px]">
+                            <div id="calendar" class="w-full h-full" role="application" aria-label="Kalender Jadwal"></div>
+                        </div>
+
+                        {{-- ✅ Jadwal List - Better flexible sizing --}}
+                        {{-- ✅ Jadwal List - Better flexible sizing --}}
+                        <div
+                            class="bg-white rounded-2xl shadow-lg p-3 sm:p-4 lg:p-5 flex flex-col border border-gray-100 min-h-[200px] max-h-[400px] xl:flex-1">
+                            <h3 class="font-bold text-[#1E1E1E] mb-3 text-sm sm:text-base flex items-center gap-2"
+                                id="scheduleTitle">
+                                <i class="fas fa-list-check text-blue-600" aria-hidden="true"></i>
+                                Jadwal Hari Ini
+                            </h3>
+
+                            <div class="overflow-y-auto flex-1 pr-2 custom-scrollbar">
+                                <div class="space-y-2 sm:space-y-3 schedule-cards-container">
+                                    @forelse($todaySchedules as $schedule)
+                                        <a href="{{ $schedule->schedule_type === 'company' ? route('jadwal-umum.show', $schedule->id) : route('calendar.show', ['workspaceId' => $schedule->workspace_id, 'id' => $schedule->id]) }}"
+                                            class="group bg-gradient-to-br from-[#E9EFFD] to-[#dce6fc] rounded-xl p-3 sm:p-4 shadow-sm hover:shadow-2xl transition-all duration-300 cursor-pointer border border-blue-100 hover:border-blue-400 block">
+
+                                            {{-- Header dengan Avatar & Badge Type --}}
+                                            <div class="flex items-start justify-between mb-2 gap-2">
+                                                <div class="flex items-center gap-2 flex-1 min-w-0">
+                                                    <img src="{{ $schedule->creator->avatar_url }}"
+                                                        alt="{{ $schedule->creator->full_name }}"
+                                                        class="w-10 h-10 rounded-full object-cover border-2 border-white shadow-md flex-shrink-0">
+
+                                                    <div class="flex-1 min-w-0">
+                                                        <p class="font-semibold text-sm text-gray-800 truncate">
+                                                            {{ $schedule->creator->full_name }}
+                                                        </p>
+                                                        {{-- ✅ BADGE TYPE (Company/Workspace) --}}
+                                                        <span
+                                                            class="inline-block text-xs px-2 py-0.5 rounded-full mt-1 {{ $schedule->schedule_type === 'company' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700' }}">
+                                                            {{ $schedule->schedule_label }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {{-- Comment Badge --}}
+                                                @if ($schedule->comments_count > 0)
+                                                    <div class="flex-shrink-0">
+                                                        <div
+                                                            class="bg-gradient-to-br from-yellow-400 to-yellow-500 text-gray-800 text-xs font-bold rounded-lg w-8 h-8 flex items-center justify-center shadow-md">
+                                                            {{ $schedule->comments_count }}
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            {{-- Title --}}
+                                            <h4
+                                                class="font-bold text-[#090909] text-sm mb-2 line-clamp-1 group-hover:text-blue-700 transition-colors">
+                                                {{ $schedule->title }}
+                                            </h4>
+
+                                            {{-- Time & Location --}}
+                                            <div class="flex flex-col gap-1">
+                                                <div class="flex items-center gap-1.5 text-xs text-gray-600">
+                                                    <i class="far fa-clock text-blue-500"></i>
+                                                    <span>{{ $schedule->start_datetime->format('H:i') }} -
+                                                        {{ $schedule->end_datetime->format('H:i') }} WIB</span>
+                                                </div>
+
+                                                @if ($schedule->is_online_meeting)
+                                                    <div class="flex items-center gap-1.5 text-xs text-gray-600">
+                                                        <i class="fas fa-video text-blue-600"></i>
+                                                        <span>Online Meeting</span>
+                                                    </div>
+                                                @elseif($schedule->location)
+                                                    <div class="flex items-center gap-1.5 text-xs text-gray-600">
+                                                        <i class="fas fa-map-marker-alt text-red-500"></i>
+                                                        <span class="truncate">{{ $schedule->location }}</span>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                        </a>
+                                    @empty
+                                        <div class="text-center py-8 sm:py-12">
+                                            <div
+                                                class="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-blue-50 mb-3 sm:mb-4">
+                                                <i class="fas fa-calendar-times text-2xl sm:text-3xl text-gray-400"
+                                                    aria-hidden="true"></i>
+                                            </div>
+                                            <p class="text-xs sm:text-sm font-semibold text-gray-700">Tidak Ada Jadwal Hari
+                                                Ini</p>
+                                            <p class="text-xs text-gray-500 mt-1">Jadwal Anda akan muncul di sini</p>
+                                        </div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-{{-- FullCalendar CSS --}}
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+    {{-- FullCalendar CSS --}}
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
 
-<style>
-    /* Calendar styles */
-    .fc-theme-standard td,
-    .fc-theme-standard th,
-    .fc-theme-standard .fc-scrollgrid,
-    .fc .fc-daygrid-day,
-    .fc .fc-daygrid-day-bg,
-    .fc .fc-col-header-cell,
-    .fc .fc-daygrid-day-frame,
-    .fc .fc-scrollgrid-sync-inner {
-        border: none !important;
-        background: transparent !important;
-        box-shadow: none !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
+    @vite(['resources/css/dashboard.css'])
 
-    .fc .fc-toolbar.fc-header-toolbar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 0.5rem !important;
-    }
+    {{-- FullCalendar JS --}}
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 
-    .fc .fc-toolbar-chunk .fc-button-group {
-        display: contents !important;
-    }
-
-    .fc .fc-toolbar-title {
-        text-align: center;
-        font-size: 16px;
-        font-weight: bold;
-        color: black;
-        font-family: 'Inter', sans-serif;
-    }
-
-    @media (min-width: 640px) {
-        .fc .fc-toolbar-title {
-            font-size: 18px;
-        }
-    }
-
-    .fc .fc-button {
-        background: #2563eb;
-        color: white;
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        padding: 0;
-        font-size: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background 0.2s;
-    }
-
-    @media (min-width: 640px) {
-        .fc .fc-button {
-            width: 28px;
-            height: 28px;
-            font-size: 14px;
-        }
-    }
-
-    .fc .fc-button:hover {
-        background: #225ad6;
-    }
-
-    .fc .fc-toolbar-chunk button.fc-next-button {
-        margin-right: 8px;
-        margin-top: 0px;
-    }
-
-    @media (min-width: 640px) {
-        .fc .fc-toolbar-chunk button.fc-next-button {
-            margin-right: 10px;
-        }
-    }
-
-    .fc .fc-toolbar-chunk button.fc-prev-button {
-        margin-left: 8px;
-        margin-top: 0px;
-    }
-
-    @media (min-width: 640px) {
-        .fc .fc-toolbar-chunk button.fc-prev-button {
-            margin-left: 10px;
-        }
-    }
-
-    .fc .fc-daygrid-day-top {
-        justify-content: center;
-        font-size: 12px;
-    }
-
-    @media (min-width: 640px) {
-        .fc .fc-daygrid-day-top {
-            font-size: 14px;
-        }
-    }
-
-    .fc .fc-daygrid-day-number {
-        font-family: 'Inter', sans-serif;
-        color: #102a63;
-        font-weight: 500;
-        font-size: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 32px;
-        height: 32px;
-        margin: auto;
-    }
-
-    @media (min-width: 640px) {
-        .fc .fc-daygrid-day-number {
-            font-size: 16px;
-            width: 36px;
-            height: 36px;
-        }
-    }
-
-    .fc .fc-daygrid-day-number:hover {
-        background-color: #225ad6;
-        color: white;
-        border-radius: 50%;
-        cursor: pointer;
-    }
-
-    .fc .fc-day-today .fc-daygrid-day-number {
-        background-color: #2563eb;
-        color: white;
-        font-weight: bold;
-        border-radius: 50%;
-    }
-
-    .fc-day-selected .fc-daygrid-day-number {
-        background-color: transparent !important;
-        color: #102a63 !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-
-    .fc-daygrid-day:focus,
-    .fc-daygrid-day-number:focus {
-        outline: none !important;
-        box-shadow: none !important;
-    }
-
-    .fc .fc-col-header-cell-cushion {
-        color: #102a63;
-        font-weight: 500;
-        opacity: 0.5;
-        font-family: 'Inter', sans-serif;
-        font-size: 12px;
-        padding-bottom: 6px;
-    }
-
-    @media (min-width: 640px) {
-        .fc .fc-col-header-cell-cushion {
-            font-size: 14px;
-            padding-bottom: 8px;
-        }
-    }
-
-    #calendar {
-        overflow: hidden !important;
-        height: 100% !important;
-    }
-
-    .fc .fc-scroller {
-        overflow: hidden !important;
-    }
-
-    .fc .fc-daygrid-day-events {
-        display: none !important;
-    }
-
-    .fc .fc-daygrid-event {
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        height: auto !important;
-    }
-
-    .fc .fc-highlight {
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-
-    .fc .fc-daygrid-day-frame {
-        position: relative;
-        overflow: visible !important;
-    }
-
-    .fc .day-marker {
-        position: absolute;
-        top: 0px;
-        left: 65%;
-        width: 14px;
-        height: 14px;
-        background-color: #facc15;
-        border: 2px solid #ffffff;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 8px;
-        color: #6B7280;
-        font-weight: 600;
-        font-family: 'Inter', sans-serif;
-        pointer-events: none;
-        z-index: 10;
-    }
-
-    @media (min-width: 640px) {
-        .fc .day-marker {
-            width: 16px;
-            height: 16px;
-            font-size: 10px;
-        }
-    }
-</style>
-
-{{-- FullCalendar JS --}}
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        let calendarEl = document.getElementById('calendar');
-
-        let calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            locale: 'id',
-            selectable: true,
-            fixedWeekCount: false,
-            height: '100%',
-            headerToolbar: {
-                left: 'prev',
-                center: 'title',
-                right: 'next'
-            },
-            dateClick: function(info) {
-                document.querySelectorAll('.fc-day-selected')
-                    .forEach(el => el.classList.remove('fc-day-selected'));
-                info.dayEl.classList.add('fc-day-selected');
-            },
-            dayCellDidMount: function(info) {
-                const dateStr = info.date.toISOString().split('T')[0];
-                if(dateStr === '2025-10-01') {
-                    const marker = document.createElement('div');
-                    marker.classList.add('day-marker');
-                    marker.textContent = '1';
-                    const frame = info.el.querySelector('.fc-daygrid-day-frame');
-                    if(frame) frame.appendChild(marker);
-                }
-                if(dateStr === '2025-10-06') {
-                    const marker = document.createElement('div');
-                    marker.classList.add('day-marker');
-                    marker.textContent = '6';
-                    const frame = info.el.querySelector('.fc-daygrid-day-frame');
-                    if(frame) frame.appendChild(marker);
-                }
-            }
-        });
-
-        calendar.render();
-    });
-</script>
+    @push('scripts')
+        @vite('resources/js/dashboard.js')
+    @endpush
 @endsection

@@ -3,96 +3,365 @@
 @section('title', 'Pembayaran')
 
 @section('content')
-    <div class="p-6">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Kolom Kiri: Daftar Perusahaan -->
-            <div class="lg:col-span-1">
-                <div class="bg-white rounded-lg shadow-lg p-4">
-                    <h3 class="text-sm font-semibold text-gray-700 mb-4">Daftar perusahaanmu</h3>
-                    <div class="space-y-2">
-                        <div
-                            class="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200 cursor-pointer hover:bg-blue-100 transition">
-                            <img src="{{ asset('images/icons/bayar-perusahaan.svg') }}" class="w-8 h-8" alt="Company Icon">
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-800 truncate">PT. Mencari Cinta Sejati</p>
+    <div class="min-h-screen bg-gray-50 py-4 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            {{-- ❌ Alert jika paket expired --}}
+            @if ($company->status === 'expired' || ($trialStatus === 'expired' && !$hasActiveSubscription))
+                <div class="mb-6 bg-red-50 border-l-4 border-red-500 rounded-lg shadow-sm animate-pulse">
+                    <div class="p-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                        clip-rule="evenodd" />
+                                </svg>
                             </div>
-                        </div>
-
-                        <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition cursor-pointer">
-                            <img src="{{ asset('images/icons/bayar-perusahaan.svg') }}" class="w-8 h-8" alt="Company Icon">
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm text-gray-700 truncate">PT. Anugerah Keramik</p>
+                            <div class="ml-3 flex-1">
+                                <h3 class="text-sm font-bold text-red-800 mb-1">⚠️ Paket Berakhir</h3>
+                                <p class="text-sm text-red-700 mb-2">
+                                    Paket perusahaan <span class="font-bold">{{ $company->name }}</span> telah berakhir.
+                                </p>
+                                <div class="flex flex-wrap gap-2 text-xs">
+                                    <button onclick="openModal()"
+                                        class="bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 font-semibold">
+                                        💳 Pilih Paket
+                                    </button>
+                                    <span class="text-red-600">atau</span>
+                                    <a href="{{ route('company.switch', $companies->where('status', '!=', 'expired')->first()->id ?? '#') }}"
+                                        class="bg-white text-red-600 border-2 border-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 font-semibold">
+                                        🔄 Pindah ke Perusahaan Aktif
+                                    </a>
+                                </div>
                             </div>
+                            <span
+                                class="ml-auto flex-shrink-0 inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-600 text-white">
+                                Berakhir
+                            </span>
                         </div>
                     </div>
                 </div>
-            </div>
+            @endif
 
-            <!-- Kolom Kanan -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Card Paket Langganan dan Pemakaian -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Paket Langganan -->
-                    <div class="bg-white rounded-lg shadow-lg p-5">
-                        <div class="flex justify-between items-start mb-3">
-                            <h3 class="text-sm font-semibold text-gray-700">Paket Langganan</h3>
-                            <span class="bg-red-500 text-white text-xs font-semibold px-3 py-1 rounded">Berakhir</span>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
+                <!-- Kolom Kiri: Daftar Perusahaan (Mobile: Full Width, Desktop: 3 Cols) -->
+                <div class="lg:col-span-3">
+                    <div class="bg-white rounded-xl shadow-md p-4 lg:p-5 border border-gray-200">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                                Perusahaan
+                            </h3>
+                            <a href="{{ route('buat-perusahaan.create') }}"
+                                class="text-blue-600 hover:text-blue-800 transition-colors" title="Buat Perusahaan Baru">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                            </a>
                         </div>
-                        <h2 class="text-2xl font-bold text-gray-800 mb-1">7 hari trial gratis</h2>
-                        <p class="text-xs text-gray-500 mb-4">Terjadi selanjutnya 27 Okt 2025 (5 hari tersisa)</p>
-                        <button onclick="openModal()"
-                            class="bg-[#5FD0AB] hover:bg-[#4dbf9a] text-white text-sm font-semibold py-2 px-5 rounded-full transition-all shadow-sm hover:shadow-md">
-                            Perpanjang
-                        </button>
-                    </div>
 
-                    <!-- Pemakaian Anggota -->
-                    <div class="bg-white rounded-lg shadow-lg p-5">
-                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Pemakaian Anggota</h3>
-                        <div class="flex items-end gap-2 mb-2">
-                            <h2 class="text-4xl font-bold text-gray-800">5</h2>
-                            <span class="text-2xl font-semibold text-gray-400 mb-1">/30</span>
+                        <div class="space-y-2 mb-3">
+                            @foreach ($companies as $comp)
+                                @php
+                                    // Check status untuk setiap perusahaan
+                                    $compTrialActive = false;
+                                    if ($comp->status === 'trial' && $comp->trial_end) {
+                                        $compTrialActive = \Carbon\Carbon::parse($comp->trial_end)->isFuture();
+                                    }
+                                    $compSubActive =
+                                        $comp->subscription &&
+                                        $comp->subscription->status === 'active' &&
+                                        \Carbon\Carbon::parse($comp->subscription->end_date)->isFuture();
+
+                                    $isExpired = !$compTrialActive && !$compSubActive;
+                                @endphp
+
+                                <a href="{{ route('company.switch', $comp->id) }}"
+                                    class="flex items-center gap-3 p-3 rounded-lg border-2 transition-all {{ $comp->id === $company->id ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200' : ($isExpired ? 'bg-red-50 border-red-200 hover:border-red-300' : 'bg-gray-50 border-gray-200 hover:border-blue-300 hover:bg-blue-50') }}">
+                                    <div
+                                        class="w-10 h-10 {{ $comp->id === $company->id ? 'bg-blue-600' : ($isExpired ? 'bg-red-400' : 'bg-gray-400') }} rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <span class="text-white font-bold text-lg">{{ substr($comp->name, 0, 1) }}</span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm font-semibold text-gray-900 truncate flex items-center gap-1">
+                                            {{ $comp->name }}
+                                            @if ($comp->id === $company->id)
+                                                <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd"
+                                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                        clip-rule="evenodd" />
+                                                </svg>
+                                            @endif
+                                        </p>
+                                        <p class="text-xs text-gray-600 flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                <path
+                                                    d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                            </svg>
+                                            {{ $comp->users->count() }} Anggota
+                                        </p>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        @if ($compTrialActive)
+                                            <span
+                                                class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold">Trial</span>
+                                        @elseif($compSubActive)
+                                            <span
+                                                class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">Aktif</span>
+                                        @else
+                                            <span
+                                                class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold">Expired</span>
+                                        @endif
+                                    </div>
+                                </a>
+                            @endforeach
                         </div>
-                        <p class="text-xs text-gray-500">Kamu bisa undang 25 orang lagi</p>
+
+                        {{-- Button Buat Perusahaan Baru --}}
+                        <a href="{{ route('buat-perusahaan.create') }}"
+                            class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-bold py-3 px-4 rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            </svg>
+                            Buat Perusahaan Baru
+                        </a>
                     </div>
                 </div>
 
-                <!-- Tabel Kultansi Perpanjangan Paket -->
-                <div class="bg-white rounded-lg shadow-lg">
-                    <div class="p-5 border-b border-gray-200">
-                        <h3 class="text-sm font-semibold text-gray-700">Kuitansi Perpanjangan Paket</h3>
+                <!-- Kolom Kanan (Mobile: Full Width, Desktop: 9 Cols) -->
+                <div class="lg:col-span-9 space-y-4 lg:space-y-6">
+                    <!-- Card Paket Langganan dan Pemakaian -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Paket Langganan -->
+                        <div class="bg-white rounded-xl shadow-md p-5 border border-gray-200">
+                            <div class="flex justify-between items-start mb-4">
+                                <h3 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                    Paket Langganan
+                                </h3>
+                                @if ($trialStatus === 'active')
+                                    <span
+                                        class="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">
+                                        Trial Aktif
+                                    </span>
+                                @elseif($hasActiveSubscription)
+                                    <span
+                                        class="bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">
+                                        Aktif
+                                    </span>
+                                @else
+                                    <span
+                                        class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap shadow-sm">
+                                        Berakhir
+                                    </span>
+                                @endif
+                            </div>
+
+                            @if ($trialStatus === 'active')
+                                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-1">Trial Gratis 7 Hari</h2>
+                                <p class="text-xs text-gray-600 mb-4">
+                                    Berakhir {{ \Carbon\Carbon::parse($company->trial_end)->format('d M Y') }}
+                                    <span class="font-semibold text-orange-600">({{ $company->trial_days_remaining }} hari
+                                        tersisa)</span>
+                                </p>
+                            @elseif($hasActiveSubscription)
+                                <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
+                                    {{ $company->subscription->plan->plan_name }}</h2>
+                                <p class="text-xs text-gray-600 mb-4">
+                                    Berlaku hingga
+                                    {{ \Carbon\Carbon::parse($company->subscription->end_date)->format('d M Y') }}
+                                </p>
+                            @else
+                                <h2 class="text-xl sm:text-2xl font-bold text-red-600 mb-1">Tidak Ada Paket Aktif</h2>
+                                <p class="text-xs text-gray-600 mb-4">Silakan pilih paket untuk melanjutkan</p>
+                            @endif
+
+                            <button onclick="openModal()"
+                                class="w-full bg-gradient-to-r from-[#5FD0AB] to-[#4dbf9a] hover:from-[#4dbf9a] hover:to-[#3aae87] text-white text-sm font-bold py-3 px-5 rounded-lg transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                                {{ $hasActiveSubscription ? '🔄 Ubah Paket' : '🚀 Pilih Paket' }}
+                            </button>
+                        </div>
+
+                        <!-- Pemakaian Anggota -->
+                        <div class="bg-white rounded-xl shadow-md p-5 border border-gray-200">
+                            <h3 class="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path
+                                        d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                </svg>
+                                Pemakaian Anggota
+                            </h3>
+                            <div class="flex items-end gap-2 mb-3">
+                                <h2 class="text-4xl sm:text-5xl font-bold text-gray-900">{{ $company->users->count() }}
+                                </h2>
+                                <span
+                                    class="text-2xl sm:text-3xl font-semibold text-gray-400 mb-1">/{{ $company->subscription->total_user_limit ?? '∞' }}</span>
+                            </div>
+                            @php
+                                $remainingSlots =
+                                    ($company->subscription->total_user_limit ?? 999) - $company->users->count();
+                            @endphp
+                            <div class="flex items-center gap-2 text-xs">
+                                @if ($remainingSlots > 0)
+                                    <span class="bg-green-100 text-green-700 font-semibold px-3 py-1 rounded-full">
+                                        ✅ Bisa undang {{ $remainingSlots }} orang lagi
+                                    </span>
+                                @else
+                                    <span class="bg-red-100 text-red-700 font-semibold px-3 py-1 rounded-full">
+                                        ⚠️ Batas maksimal tercapai
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead>
-                                <tr class="border-b border-gray-200">
-                                    <th class="text-left py-3 px-5 text-xs font-semibold text-gray-600">No</th>
-                                    <th class="text-left py-3 px-5 text-xs font-semibold text-gray-600">Status</th>
-                                    <th class="text-left py-3 px-5 text-xs font-semibold text-gray-600">Tanggal</th>
-                                    <th class="text-left py-3 px-5 text-xs font-semibold text-gray-600">Paket</th>
-                                    <th class="text-left py-3 px-5 text-xs font-semibold text-gray-600">Total</th>
-                                    <th class="text-left py-3 px-5 text-xs font-semibold text-gray-600">Link Bayar</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="border-b border-gray-100 hover:bg-gray-50">
-                                    <td class="py-3 px-5 text-sm text-gray-700">A001</td>
-                                    <td class="py-3 px-5">
-                                        <span
-                                            class="bg-red-500 text-white text-xs font-medium px-3 py-1 rounded-full">Lewat</span>
-                                    </td>
-                                    <td class="py-3 px-5 text-sm text-gray-700">-</td>
-                                    <td class="py-3 px-5 text-sm text-gray-700">-</td>
-                                    <td class="py-3 px-5 text-sm text-gray-700">-</td>
-                                    <td class="py-3 px-5">
-                                        <button
-                                            class="bg-white text-[#5FD0AB] text-sm font-medium px-5 py-1.5 rounded-full hover:bg-[#5FD0AB] hover:text-white transition-all border-2 border-[#5FD0AB]">
-                                            Buka Link
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+
+                    <!-- Tabel Kuitansi -->
+                    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                        <div class="p-4 sm:p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+                            <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                                <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Kuitansi Perpanjangan Paket
+                            </h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full min-w-[800px]">
+                                <thead class="bg-gray-100">
+                                    <tr class="border-b border-gray-200">
+                                        <th class="text-left py-3 px-4 text-xs font-bold text-gray-700 uppercase">No
+                                            Invoice</th>
+                                        <th class="text-left py-3 px-4 text-xs font-bold text-gray-700 uppercase">Status
+                                        </th>
+                                        <th class="text-left py-3 px-4 text-xs font-bold text-gray-700 uppercase">Tanggal
+                                        </th>
+                                        <th class="text-left py-3 px-4 text-xs font-bold text-gray-700 uppercase">Paket
+                                        </th>
+                                        <th class="text-left py-3 px-4 text-xs font-bold text-gray-700 uppercase">Total
+                                        </th>
+                                        <th class="text-center py-3 px-4 text-xs font-bold text-gray-700 uppercase">Aksi
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    @forelse($invoices as $invoice)
+                                        <tr class="hover:bg-gray-50 transition-colors">
+                                            <td class="py-3 px-4 text-sm text-gray-800 font-medium">
+                                                {{ $invoice->external_id ?? 'INV-' . $invoice->id }}
+                                            </td>
+                                            <td class="py-3 px-4">
+                                                @if ($invoice->status === 'paid')
+                                                    <span
+                                                        class="inline-flex items-center gap-1 bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full">
+                                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fill-rule="evenodd"
+                                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                                clip-rule="evenodd" />
+                                                        </svg>
+                                                        Lunas
+                                                    </span>
+                                                @elseif($invoice->status === 'pending')
+                                                    <span
+                                                        class="inline-flex items-center gap-1 bg-yellow-100 text-yellow-700 text-xs font-bold px-3 py-1 rounded-full">
+                                                        <svg class="w-3 h-3 animate-spin" fill="none"
+                                                            stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                        </svg>
+                                                        Menunggu
+                                                    </span>
+                                                @else
+                                                    <span
+                                                        class="inline-flex items-center gap-1 bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full">
+                                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fill-rule="evenodd"
+                                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                                                clip-rule="evenodd" />
+                                                        </svg>
+                                                        Kadaluarsa
+                                                    </span>
+                                                @endif
+                                            </td>
+                                            <td class="py-3 px-4 text-sm text-gray-700">
+                                                {{ $invoice->created_at->format('d M Y') }}
+                                            </td>
+                                            <td class="py-3 px-4 text-sm text-gray-800">
+                                                <span
+                                                    class="font-semibold">{{ $invoice->subscription->plan->plan_name ?? '-' }}</span>
+                                                @if ($invoice->subscription->addons_user_count > 0)
+                                                    <br><span class="text-xs text-gray-500">+
+                                                        {{ $invoice->subscription->addons_user_count }} user addon</span>
+                                                @endif
+                                            </td>
+                                            <td class="py-3 px-4 text-sm font-bold text-gray-900">
+                                                Rp {{ number_format($invoice->amount, 0, ',', '.') }}
+                                            </td>
+                                            <td class="py-3 px-4 text-center">
+                                                @if ($invoice->status === 'pending' && $invoice->payment_url)
+                                                    <a href="{{ $invoice->payment_url }}" target="_blank"
+                                                        class="inline-flex items-center gap-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                        </svg>
+                                                        Bayar Sekarang
+                                                    </a>
+                                                @elseif($invoice->status === 'paid')
+                                                    <span class="text-xs text-gray-500">✓ Selesai</span>
+                                                @else
+                                                    <button onclick="openModal()"
+                                                        class="inline-flex items-center gap-1 bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-600 transition-all shadow-md hover:shadow-lg">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                        </svg>
+                                                        Buat Baru
+                                                    </button>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="6" class="py-12 text-center">
+                                                <div class="flex flex-col items-center gap-3">
+                                                    <svg class="w-16 h-16 text-gray-300" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    <p class="text-gray-500 font-medium">Belum ada riwayat pembayaran</p>
+                                                    <button onclick="openModal()"
+                                                        class="inline-flex items-center gap-2 text-[#5FD0AB] hover:text-[#4dbf9a] font-semibold text-sm transition-colors">
+                                                        <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                            viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                        </svg>
+                                                        Pilih paket untuk memulai
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -101,21 +370,36 @@
 
     <!-- Modal Pilih Paket -->
     @include('components.pilihan-paket')
+@endsection
 
+@push('scripts')
     <script>
+        let plans = [];
+        let addon = null;
+        let plansLoaded = false;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const timestamp = new Date().getTime();
+            fetch('/api/plans?_=' + timestamp)
+                .then(res => res.json())
+                .then(data => {
+                    plans = data.plans;
+                    addon = data.addon;
+                    plansLoaded = true;
+                    console.log('✅ Plans preloaded:', plans.length);
+                })
+                .catch(err => console.error('❌ Preload plans failed:', err));
+        });
+
         function openModal() {
             document.getElementById('modalPilihPaket').classList.remove('hidden');
             document.getElementById('modalPilihPaket').classList.add('flex');
+            if (typeof loadPlans === 'function') loadPlans();
         }
 
         function closeModal() {
             document.getElementById('modalPilihPaket').classList.add('hidden');
             document.getElementById('modalPilihPaket').classList.remove('flex');
         }
-
-        // Close modal when clicking outside
-        document.getElementById('modalPilihPaket').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
-        });
     </script>
-@endsection
+@endpush
