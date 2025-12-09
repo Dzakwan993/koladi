@@ -22,6 +22,9 @@ class User extends Authenticatable
         'google_id',
         'status_active',
         'avatar',
+        'onboarding_step',
+        'onboarding_type',
+        'has_seen_onboarding',
     ];
 
     protected $hidden = [

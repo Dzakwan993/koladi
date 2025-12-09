@@ -72,8 +72,8 @@ class WorkspaceController extends Controller
     }
 
     // Menyimpan workspace baru
-    // Di WorkspaceController.php - modifikasi method store()
-    // Di WorkspaceController.php - modifikasi method store()
+    // app/Http/Controllers/WorkspaceController.php
+
     public function store(Request $request)
     {
         $request->validate([
@@ -87,7 +87,6 @@ class WorkspaceController extends Controller
             return response()->json(['error' => 'Tidak ada perusahaan yang aktif'], 400);
         }
 
-        // ✅ CEK APAKAH USER BOLEH MEMBUAT WORKSPACE
         $user = Auth::user();
         $userCompany = $user->userCompanies()
             ->where('company_id', $activeCompanyId)
@@ -96,18 +95,16 @@ class WorkspaceController extends Controller
 
         $userRole = $userCompany?->role?->name ?? 'Member';
 
-        // ✅ HANYA SuperAdmin, Admin, Manager yang boleh buat workspace
         if (!in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki izin untuk membuat workspace. Hanya SuperAdmin, Admin, dan Manager yang dapat membuat workspace.'
+                'message' => 'Anda tidak memiliki izin untuk membuat workspace.'
             ], 403);
         }
 
         try {
             DB::beginTransaction();
 
-            // Buat workspace
             $workspace = Workspace::create([
                 'company_id' => $activeCompanyId,
                 'type' => $request->type,
@@ -116,20 +113,26 @@ class WorkspaceController extends Controller
                 'created_by' => Auth::id()
             ]);
 
-            // ✅ DEFAULT COLUMNS AKAN OTOMATIS TERBUAT dari event di model
-
-            // ❌ HAPUS BAGIAN INI: Creator TIDAK otomatis ditambahkan sebagai member workspace
-            // SuperAdmin, Admin, Manager yang membuat workspace tidak menjadi member
+            // ✅ 🎯 CEK ONBOARDING
+            $showOnboarding = false;
+            if ($user->onboarding_step === 'kelola-workspace') {
+                $user->onboarding_step = 'workspace-created';
+                $user->save();
+                $showOnboarding = true; // ✅ Flag untuk trigger modal
+            }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Workspace berhasil dibuat!',
-                'workspace' => $workspace
+                'workspace' => $workspace,
+                'show_onboarding' => $showOnboarding, // ✅ Kirim flag
+                'workspace_name' => $workspace->name // ✅ Untuk ditampilkan di modal
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Workspace creation error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal membuat workspace'
@@ -416,7 +419,8 @@ class WorkspaceController extends Controller
         return !is_null($userWorkspace);
     }
 
-    // Di WorkspaceController.php - update method show()
+    // app/Http/Controllers/WorkspaceController.php
+
     public function show(Workspace $workspace)
     {
         $user = Auth::user();
@@ -433,7 +437,16 @@ class WorkspaceController extends Controller
             'current_workspace_name' => $workspace->name
         ]);
 
-        return view('workspace', compact('workspace'));
+        // ✅ 🎯 CEK APAKAH INI WORKSPACE BARU (untuk onboarding)
+        $showOnboarding = false;
+        if ($user->onboarding_step === 'workspace-created') {
+            $showOnboarding = true;
+        }
+
+        return view('workspace', [
+            'workspace' => $workspace,
+            'showOnboarding' => $showOnboarding // ✅ Kirim flag ke view
+        ]);
     }
 
     // ✅ TAMBAHKAN METHOD UNTUK CEK AKSES WORKSPACE
@@ -509,8 +522,6 @@ class WorkspaceController extends Controller
         return $userWorkspaceRole === 'Manager';
     }
 
-
-    // Di WorkspaceController.php - tambahkan method ini
     // Di WorkspaceController.php - tambahkan method ini
     private function canEditDeleteWorkspace()
     {

@@ -365,6 +365,8 @@ class CompanyController extends Controller
 
         return response()->json($roles);
     }
+    // app/Http/Controllers/CompanyController.php
+
     public function store(Request $request)
     {
         $request->validate([
@@ -386,7 +388,6 @@ class CompanyController extends Controller
                 'trial_end' => Carbon::now()->addDays(7),
             ]);
 
-            // 🔍 DEBUG: Cek data tersimpan
             Log::info('Company Created:', [
                 'id' => $company->id,
                 'name' => $company->name,
@@ -412,11 +413,24 @@ class CompanyController extends Controller
 
             session(['active_company_id' => $company->id]);
 
-            // 🔍 DEBUG: Cek session
             Log::info('Session Set:', [
                 'active_company_id' => session('active_company_id'),
                 'company_found' => Company::find(session('active_company_id')) ? 'YES' : 'NO'
             ]);
+
+            // ✅ SET ONBOARDING TYPE UNTUK FOUNDER (FULL TUTORIAL)
+            $user = Auth::user();
+            if (!$user->onboarding_type) {
+                $user->onboarding_type = 'full';  // ⬅️ TAMBAHAN INI
+                $user->has_seen_onboarding = false;
+                $user->onboarding_step = null;
+                $user->save();
+
+                Log::info('✅ Onboarding type set for founder:', [
+                    'user_id' => $user->id,
+                    'type' => 'full'
+                ]);
+            }
 
             DB::commit();
 

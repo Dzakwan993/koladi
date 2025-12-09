@@ -58,6 +58,11 @@
         [x-cloak] {
             display: none !important;
         }
+
+        /* 🔥 FIX: Sweet Alert harus di atas onboarding */
+        .swal2-container {
+            z-index: 11000 !important;
+        }
     </style>
 </head>
 

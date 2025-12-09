@@ -256,6 +256,11 @@ class InvitationController extends Controller
             'roles_id' => $memberRole->id,
         ]);
 
+        $user->onboarding_type = 'member';
+        $user->has_seen_onboarding = false;
+        $user->onboarding_step = null;
+        $user->save();
+
         // 🔥 Update status undangan menjadi ACCEPTED
         $invitation->update(['status' => 'accepted']);
 

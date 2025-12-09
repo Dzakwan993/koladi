@@ -30,53 +30,45 @@ class AuthController extends Controller
             'password' => 'required|min:8|confirmed',
         ]);
 
-        // 🔥 Cek apakah ini dari undangan (email sudah di-set dari query string)
         $isInvited = $request->query('email') && $request->email === $request->query('email');
+        $pendingToken = session('pending_invitation_token');
 
-        if ($isInvited) {
-            // 🔥 Jika dari undangan, langsung buat user tanpa OTP
+        // 🔥 SKENARIO 1: User baru dari undangan (skip OTP)
+        if ($isInvited && $pendingToken) {
             $user = User::create([
                 'full_name' => $request->full_name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'email_verified_at' => now(), // Langsung verified karena diundang
+                'email_verified_at' => now(),
             ]);
 
-            $pendingToken = session('pending_invitation_token');
-            session()->forget('pending_invitation_token');
-
-            if ($pendingToken) {
-                return redirect()->route('masuk')->with([
-                    'info' => 'Akun berhasil dibuat! Silakan masuk untuk menerima undangan perusahaan Anda.'
-                ]);
-            }
+            // ✅ JANGAN hapus token, biarkan sampai login
+            // Token akan dihapus setelah berhasil join company di InvitationController@accept
 
             return redirect()->route('masuk')->with([
-                'success' => 'Akun berhasil dibuat! Silakan masuk untuk melanjutkan.'
+                'success' => 'Akun berhasil dibuat! Silakan masuk untuk menerima undangan perusahaan Anda.'
             ]);
         }
 
-        // 🔥 Untuk pendaftaran biasa (bukan undangan), tetap pakai OTP
+        // 🔥 SKENARIO 2: Pendaftaran biasa (pakai OTP)
         session([
             'register_data' => [
                 'full_name' => $request->full_name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
             ],
-            'pending_invitation_token' => session('pending_invitation_token')
+            'pending_invitation_token' => $pendingToken // Simpan token kalau ada
         ]);
 
         try {
-            // 🔥 Generate dan kirim OTP
             $otp = OtpVerification::generateOtp($request->email, 'register');
             Mail::to($request->email)->send(new OtpMail($otp, 'register'));
 
             return redirect()->route('verify-otp.show')
-                ->with('success', 'Kode OTP telah dikirim ke email Anda. Silakan cek inbox atau folder spam.');
+                ->with('success', 'Kode OTP telah dikirim ke email Anda.');
         } catch (\Exception $e) {
-            // Jika email gagal terkirim, tampilkan error yang lebih user-friendly
             return back()->withErrors([
-                'email' => 'Gagal mengirim email OTP. Silakan coba lagi atau hubungi admin.'
+                'email' => 'Gagal mengirim email OTP. Silakan coba lagi.'
             ])->withInput();
         }
     }
@@ -103,24 +95,24 @@ class AuthController extends Controller
             return back()->withErrors(['otp' => 'Sesi pendaftaran tidak valid.']);
         }
 
-        // 🔥 Verifikasi OTP
         if (!OtpVerification::verifyOtp($registerData['email'], $request->otp, 'register')) {
             return back()->withErrors(['otp' => 'Kode OTP salah atau sudah kadaluarsa.']);
         }
 
-        // 🔥 Buat user setelah OTP valid dengan email_verified_at sudah terisi
         $user = User::create([
             'full_name' => $registerData['full_name'],
             'email' => $registerData['email'],
             'password' => $registerData['password'],
-            'email_verified_at' => now(), // ⬅️ PENTING: Set email sudah terverifikasi
+            'email_verified_at' => now(),
         ]);
 
-        // 🔥 Hapus session pendaftaran
+        // ✅ Ambil token tapi JANGAN hapus
         $pendingToken = session('pending_invitation_token');
-        session()->forget(['register_data', 'pending_invitation_token']);
 
-        // 🔥 Redirect sesuai kondisi
+        // ✅ Hapus HANYA register_data
+        session()->forget('register_data');
+        // JANGAN forget pending_invitation_token di sini!
+
         if ($pendingToken) {
             return redirect()->route('masuk')->with([
                 'info' => 'Akun berhasil dibuat! Silakan masuk untuk menerima undangan perusahaan Anda.'
@@ -253,12 +245,14 @@ class AuthController extends Controller
             $request->session()->regenerate();
             $user = Auth::user();
 
-            // ✅ Handle pending invitation
+            // 🔥 PRIORITAS 1: Handle pending invitation
             $pendingToken = session('pending_invitation_token');
             if ($pendingToken) {
+                // Token akan dihapus di InvitationController@accept setelah sukses
                 return redirect()->route('invite.accept', $pendingToken);
             }
 
+            // 🔥 PRIORITAS 2: Check apakah user punya company
             $userCompany = \App\Models\UserCompany::where('user_id', $user->id)
                 ->whereNull('deleted_at')
                 ->first();
@@ -272,10 +266,16 @@ class AuthController extends Controller
                     ->with('info', 'Silakan buat perusahaan terlebih dahulu.');
             }
 
-            // ✅ SET SESSION active_company_id (INI YANG PENTING!)
+            // ✅ SET SESSION active_company_id
             session(['active_company_id' => $userCompany->company_id]);
 
-            // ✅ Redirect ke dashboard
+            // 🎯 CEK APAKAH INI FIRST LOGIN (untuk trigger onboarding)
+            $isFirstLogin = !session()->has('has_logged_in_before');
+            if ($isFirstLogin) {
+                session(['has_logged_in_before' => true]);
+                session()->flash('first_login', true);
+            }
+
             return redirect()->intended('/dashboard')
                 ->with('success', 'Berhasil masuk. Selamat datang!');
         }
@@ -285,7 +285,9 @@ class AuthController extends Controller
         ])->onlyInput('email');
     }
 
-    // ✅ Logout
+    // ========================================
+    // ✅ METHOD LOGOUT - Bersihkan session
+    // ========================================
     public function logout(Request $request)
     {
         Auth::logout();

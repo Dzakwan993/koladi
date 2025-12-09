@@ -55,6 +55,7 @@ class DashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
+        $user->refresh(); // ⬅️ TAMBAHKAN INI untuk fresh data dari DB
         $activeCompanyId = session('active_company_id');
 
         if (!$activeCompanyId) {
@@ -63,6 +64,15 @@ class DashboardController extends Controller
         }
 
         $company = Company::findOrFail($activeCompanyId);
+
+        // ✅ PERBAIKAN: Cek has_seen_onboarding DAN onboarding_step
+        $showOnboarding = false;
+        $onboardingType = null;
+
+        if (!$user->has_seen_onboarding && is_null($user->onboarding_step)) {
+            $showOnboarding = true;
+            $onboardingType = $user->onboarding_type ?? 'member'; // default to member
+        }
 
         // ========================================
         // 🔥 DEBUG: CEK WORKSPACE USER
@@ -173,11 +183,33 @@ class DashboardController extends Controller
                 : 'Jadwal Umum';
         });
 
+
         return view('dashboard', [
             'company' => $company,
             'pengumumans' => $pengumumans,
             'todaySchedules' => $todaySchedules,
+            'showOnboarding' => $showOnboarding,
+            'onboardingType' => $onboardingType,
         ]);
+    }
+
+    public function markOnboardingSeen()
+    {
+        $user = Auth::user();
+        $user->has_seen_onboarding = true; // ✅ Set flag
+        $user->onboarding_step = null;     // ✅ Reset step
+        $user->save();
+
+        return response()->json(['success' => true]);
+    }
+
+    public function updateOnboardingStep(Request $request)
+    {
+        $user = Auth::user();
+        $user->onboarding_step = $request->step;
+        $user->save();
+
+        return response()->json(['success' => true]);
     }
 
     /**
@@ -347,6 +379,18 @@ class DashboardController extends Controller
         return response()->json([
             'schedules' => $schedules,
             'date' => $selectedDate->format('Y-m-d')
+        ]);
+    }
+    public function completeOnboarding()
+    {
+        $user = Auth::user();
+        $user->has_seen_onboarding = true;
+        $user->onboarding_step = null;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Onboarding selesai! Selamat bekerja! 🚀'
         ]);
     }
 }

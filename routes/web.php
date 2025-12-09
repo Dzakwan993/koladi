@@ -83,6 +83,10 @@ Route::middleware(['auth'])->group(function () {
 
     // Dashboard (Bisa diakses, tapi kasih warning kalau expired)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/mark-onboarding-seen', [DashboardController::class, 'markOnboardingSeen'])->name('mark-onboarding-seen');
+    Route::post('/update-onboarding-step', [DashboardController::class, 'updateOnboardingStep'])->name('update-onboarding-step');
+    Route::post('/complete-onboarding', [DashboardController::class, 'completeOnboarding'])
+        ->name('complete-onboarding');
 
     // Company Creation Routes
     Route::get('/buat-perusahaan', [CompanyController::class, 'create'])->name('buat-perusahaan.create');

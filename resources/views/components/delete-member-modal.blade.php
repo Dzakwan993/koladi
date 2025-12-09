@@ -52,7 +52,15 @@
     .animate-scaleIn {
         animation: scaleIn 0.2s ease-out forwards;
     }
+
+    /* ✅ FIX: Sweet Alert harus di atas onboarding */
+    .swal2-container {
+        z-index: 11000 !important;
+    }
 </style>
+
+{{-- ✅ PINDAHKAN KE @push('scripts') agar eksekusi setelah Sweet Alert loaded --}}
+@push('scripts')
 <script>
     function openDeleteModal(event, id, type) {
         event.preventDefault();
@@ -76,8 +84,14 @@
         modal.classList.remove('hidden');
         modal.classList.add('flex');
 
-        // Saat tombol submit diklik → tampilkan loading
+        // ✅ Saat tombol submit diklik → tampilkan loading
         form.addEventListener('submit', function(e) {
+            // ✅ CEK apakah Swal sudah loaded
+            if (typeof Swal === 'undefined') {
+                console.error('❌ Sweet Alert belum loaded!');
+                return; // Tetap submit form
+            }
+
             Swal.fire({
                 title: 'Menghapus...',
                 text: 'Mohon tunggu sebentar.',
@@ -114,28 +128,38 @@
             closeDeleteModal();
         }
     });
+
+    // ✅ TUNGGU SAMPAI SWEET ALERT LOADED
+    document.addEventListener('DOMContentLoaded', function() {
+        // ✅ CEK SESSION SUCCESS
+        @if (session('success'))
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: '{{ session('success') }}',
+                    confirmButtonColor: '#3085d6',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                console.error('❌ Sweet Alert belum loaded untuk success message!');
+            }
+        @endif
+
+        // ✅ CEK SESSION ERROR
+        @if (session('error'))
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal!',
+                    text: '{{ session('error') }}',
+                    confirmButtonColor: '#d33',
+                });
+            } else {
+                console.error('❌ Sweet Alert belum loaded untuk error message!');
+            }
+        @endif
+    });
 </script>
-
-@if (session('success'))
-    <script>
-        Swal.fire({
-            icon: 'success',
-            title: 'Berhasil!',
-            text: '{{ session('success') }}',
-            confirmButtonColor: '#3085d6',
-            timer: 2000,
-            showConfirmButton: false
-        });
-    </script>
-@endif
-
-@if (session('error'))
-    <script>
-        Swal.fire({
-            icon: 'error',
-            title: 'Gagal!',
-            text: '{{ session('error') }}',
-            confirmButtonColor: '#d33',
-        });
-    </script>
-@endif
+@endpush

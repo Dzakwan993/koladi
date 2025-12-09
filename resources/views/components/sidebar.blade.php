@@ -30,7 +30,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
 
     {{-- Sidebar --}}
     <div x-show="openSidebar"
-        class="w-64 bg-white shadow-sm border-r border-gray-200 h-screen transition-all duration-300 fixed md:relative "
+        class="w-64 bg-white shadow-sm border-r border-gray-200 h-screen transition-all duration-300 fixed md:relative"
         x-transition:enter="transform transition ease-in-out duration-300" x-transition:enter-start="-translate-x-full"
         x-transition:enter-end="translate-x-0" x-transition:leave="transform transition ease-in-out duration-300"
         x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full">
@@ -40,7 +40,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
         </div>
 
         {{-- Navigation --}}
-        <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto" x-data="{ openHQ: true, openTim: true, openProyek: true }">
+        <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto" x-data="{ openTim: true, openProyek: true }">
 
             {{-- Dashboard --}}
             <a href="{{ url('/dashboard') }}"
@@ -68,7 +68,8 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 <a href="{{ route('pengumuman-perusahaan.index', ['company_id' => $company_id]) }}"
                     class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
    {{ Request::is('companies/*/pengumuman-perusahaan*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                    <img src="{{ Request::is('companies/*/pengumuman-perusahaan*') ? asset('images/icons/workspace_pengumuman1.svg') : asset('images/icons/workspace_pengumuman.svg') }}" class="w-5 h-5">
+                    <img src="{{ Request::is('companies/*/pengumuman-perusahaan*') ? asset('images/icons/workspace_pengumuman1.svg') : asset('images/icons/workspace_pengumuman.svg') }}"
+                        class="w-5 h-5">
                     <span class="text-sm">Pengumuman</span>
                 </a>
             @endif
@@ -89,7 +90,6 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                         <span class="text-sm">Chat</span>
                     </a>
                 @else
-                    {{-- Tampilkan disabled link jika tidak ada company aktif --}}
                     <div class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 cursor-not-allowed"
                         title="Pilih perusahaan terlebih dahulu">
                         <img src="{{ asset('images/icons/sidebar_chat.svg') }}" alt="Chat Perusahaan" class="w-5 h-5">
@@ -98,7 +98,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 @endif
             @endauth
 
-            {{-- ✅ Jadwal Umum (Company Level) --}}
+            {{-- Jadwal Umum --}}
             <a href="{{ route('jadwal-umum') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                 {{ Request::is('jadwal-umum*') || Request::is('notulensi-umum*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
@@ -128,7 +128,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
             {{-- Search & Actions --}}
             <div class="pt-3 mt-3 border-t border-gray-200">
                 <div class="flex items-center gap-1.5">
-                    {{-- Search Bar (kecil) --}}
+                    {{-- Search Bar --}}
                     <div
                         class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-gray-50 text-gray-400 text-xs flex-1 hover:bg-gray-100 transition">
                         <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,23 +147,73 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                     </button>
 
                     {{-- Add Button --}}
-                    <button
+                    <a href="{{ url('/kelola-workspace') }}"
                         class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
-                        title="Tambah">
-                        <img src="{{ asset('images/icons/sidebar_tambah.svg') }}" alt="Tambah"
-                            class="w-3.5 h-3.5">
-                    </button>
+                        title="Tambah Workspace">
+                        <img src="{{ asset('images/icons/sidebar_tambah.svg') }}" alt="Tambah" class="w-3.5 h-3.5">
+                    </a>
                 </div>
             </div>
 
-            {{-- Workspace List --}}
+            {{-- ✅ WORKSPACE LIST DINAMIS --}}
+            @php
+                $user = Auth::user();
+                $activeCompanyId = session('active_company_id');
+
+                // Ambil workspace berdasarkan role user
+                if ($activeCompanyId) {
+                    $userCompany = $user->userCompanies()
+                        ->where('company_id', $activeCompanyId)
+                        ->with('role')
+                        ->first();
+
+                    $userRole = $userCompany?->role?->name ?? 'Member';
+
+                    // Jika SuperAdmin/Admin/Manager, tampilkan semua workspace
+                    if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
+                        $timWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
+                            ->where('type', 'Tim')
+                            ->orderBy('name')
+                            ->get();
+
+                        $proyekWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
+                            ->where('type', 'Proyek')
+                            ->orderBy('name')
+                            ->get();
+                    } else {
+                        // Jika Member, hanya tampilkan workspace yang diikuti
+                        $timWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
+                            ->where('type', 'Tim')
+                            ->whereHas('userWorkspaces', function ($query) use ($user) {
+                                $query->where('user_id', $user->id)->where('status_active', true);
+                            })
+                            ->orderBy('name')
+                            ->get();
+
+                        $proyekWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
+                            ->where('type', 'Proyek')
+                            ->whereHas('userWorkspaces', function ($query) use ($user) {
+                                $query->where('user_id', $user->id)->where('status_active', true);
+                            })
+                            ->orderBy('name')
+                            ->get();
+                    }
+                } else {
+                    $timWorkspaces = collect();
+                    $proyekWorkspaces = collect();
+                }
+
+                // Warna dot untuk workspace
+                $colors = ['blue-600', 'green-500', 'purple-500', 'yellow-500', 'red-500', 'pink-500', 'indigo-500'];
+            @endphp
+
             <div class="mt-3 space-y-1">
                 {{-- TIM --}}
                 <div>
                     <button @click="openTim = !openTim"
                         class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-lg transition">
                         <div class="flex items-center gap-2">
-                            <img src="/images/icons/sidebar_tim.svg" alt="Tim" class="w-4 h-4">
+                            <img src="{{ asset('images/icons/sidebar_tim.svg') }}" alt="Tim" class="w-4 h-4">
                             <span>Tim</span>
                         </div>
                         <svg class="w-3 h-3 transition-transform" :class="{ 'rotate-90': openTim }" fill="none"
@@ -174,24 +224,21 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                     </button>
 
                     <div x-show="openTim" x-transition class="mt-1 space-y-0.5">
-                        <a href="{{ url('/workspace') }}"
-                            class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition
-                            {{ Request::is('workspace') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                            <span class="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                            <span>Koladi</span>
-                        </a>
-                        <a href="{{ url('/workspace/pelayanan') }}"
-                            class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition
-                            {{ Request::is('workspace/pelayanan*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                            <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                            <span>Div. Pelayanan</span>
-                        </a>
-                        <a href="{{ url('/workspace/creativ') }}"
-                            class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition
-                            {{ Request::is('workspace/creativ*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                            <span class="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
-                            <span>Div. Creativ</span>
-                        </a>
+                        @if ($timWorkspaces->count() > 0)
+                            @foreach ($timWorkspaces as $index => $workspace)
+                                <a href="{{ route('workspace.detail', $workspace->id) }}"
+                                    class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition
+                                    {{ Request::is('workspace/' . $workspace->id . '*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                                    <span
+                                        class="w-1.5 h-1.5 bg-{{ $colors[$index % count($colors)] }} rounded-full"></span>
+                                    <span class="truncate">{{ $workspace->name }}</span>
+                                </a>
+                            @endforeach
+                        @else
+                            <div class="px-6 py-2">
+                                <p class="text-xs text-gray-400 text-center">Belum ada workspace Tim</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
@@ -200,7 +247,8 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                     <button @click="openProyek = !openProyek"
                         class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-lg transition">
                         <div class="flex items-center gap-2">
-                            <img src="/images/icons/sidebar_proyek.svg" alt="Proyek" class="w-4 h-4">
+                            <img src="{{ asset('images/icons/sidebar_proyek.svg') }}" alt="Proyek"
+                                class="w-4 h-4">
                             <span>Proyek</span>
                         </div>
                         <svg class="w-3 h-3 transition-transform" :class="{ 'rotate-90': openProyek }" fill="none"
@@ -211,25 +259,28 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                     </button>
 
                     <div x-show="openProyek" x-transition class="mt-1 space-y-0.5">
-                        <a href="{{ url('/workspace/creativ-konten') }}"
-                            class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition
-                                  {{ Request::is('workspace/creativ-konten*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                            <span class="w-1.5 h-1.5 bg-blue-700 rounded-full"></span>
-                            <span>Creativ Konten</span>
-                        </a>
-                        <a href="{{ url('/workspace/pelayan-creativ') }}"
-                            class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition
-                                  {{ Request::is('workspace/pelayan-creativ*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                            <span class="w-1.5 h-1.5 bg-gray-400 rounded-full"></span>
-                            <span>Pelayan Creativ</span>
-                        </a>
+                        @if ($proyekWorkspaces->count() > 0)
+                            @foreach ($proyekWorkspaces as $index => $workspace)
+                                <a href="{{ route('workspace.detail', $workspace->id) }}"
+                                    class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition
+                                    {{ Request::is('workspace/' . $workspace->id . '*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                                    <span
+                                        class="w-1.5 h-1.5 bg-{{ $colors[$index % count($colors)] }} rounded-full"></span>
+                                    <span class="truncate">{{ $workspace->name }}</span>
+                                </a>
+                            @endforeach
+                        @else
+                            <div class="px-6 py-2">
+                                <p class="text-xs text-gray-400 text-center">Belum ada workspace Proyek</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
         </nav>
     </div>
 
-    {{-- Overlay (blur background di layar kecil) --}}
+    {{-- Overlay --}}
     <div x-show="openSidebar && window.innerWidth < 768" x-transition.opacity @click="openSidebar = false"
         class="fixed inset-0 bg-black bg-opacity-30 z-10 md:hidden">
     </div>
