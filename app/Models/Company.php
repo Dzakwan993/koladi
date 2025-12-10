@@ -51,6 +51,12 @@ class Company extends Model
             ->withTimestamps();
     }
 
+    public function userCompanies()
+{
+    return $this->hasMany(UserCompany::class, 'company_id');
+}
+
+
     public function subscription()
     {
         return $this->hasOne(Subscription::class)->latest();

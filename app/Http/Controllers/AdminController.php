@@ -1,0 +1,215 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Company;
+use App\Models\Plan;
+use App\Models\Addon;
+use App\Models\Subscription;
+use App\Models\UserCompany;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Exports\CompaniesExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Carbon\Carbon;
+
+class AdminController extends Controller
+{
+    /**
+     * Tampilkan dashboard admin sistem
+     */
+    public function dashboard()
+    {
+        try {
+            // 🔥 SOLUSI SEDERHANA: Langsung ambil companies tanpa map
+            $companies = Company::whereNull('deleted_at')
+                ->orderBy('created_at', 'desc')
+                ->get();
+            
+            Log::info('Companies fetched: ' . $companies->count());
+            
+            // Tambahkan computed properties ke setiap company
+            foreach ($companies as $company) {
+                // Hitung member count
+                $company->member_count = DB::table('user_companies')
+                    ->where('company_id', $company->id)
+                    ->whereNull('deleted_at')
+                    ->count();
+                
+                // Ambil subscription
+                $subscription = Subscription::where('company_id', $company->id)
+                    ->whereNull('deleted_at')
+                    ->with('plan')
+                    ->first();
+                
+                // Set package type
+                $company->package_type = 'Trial';
+                if ($subscription && $subscription->plan) {
+                    $company->package_type = $subscription->plan->plan_name;
+                }
+                
+                // Set addons
+                $company->addons_user = $subscription ? $subscription->addons_user_count : 0;
+                $company->addons_storage = 0;
+            }
+
+            Log::info('Companies processed: ' . $companies->count());
+
+            // Hitung statistik total
+            $totalCompanies = Company::whereNull('deleted_at')->count();
+            $totalMembers = UserCompany::whereNull('deleted_at')->count();
+            $activeCompanies = Company::whereNull('deleted_at')
+                ->where('status', 'active')
+                ->count();
+            $trialCompanies = Company::whereNull('deleted_at')
+                ->where('status', 'trial')
+                ->count();
+
+            // Ambil data paket dan addon
+$plans = Plan::where('is_active', true)->get();
+
+// Urutkan manual: Basic → Standard → Business
+$order = ['Paket Basic', 'Paket Standard', 'Paket Business'];
+$plans = $plans->sortBy(function ($plan) use ($order) {
+    return array_search($plan->plan_name, $order);
+})->values(); // values() supaya index 0,1,2
+            $addons = Addon::where('is_active', true)->get();
+
+            return view('dashboard_admin', [
+    'allCompanies' => $companies, // gunakan nama baru
+                'totalCompanies' => $totalCompanies,
+                'totalMembers' => $totalMembers,
+                'activeCompanies' => $activeCompanies,
+                'trialCompanies' => $trialCompanies,
+                'plans' => $plans,
+                'addons' => $addons
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Admin Dashboard Error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            return view('dashboard_admin', [
+                'companies' => collect([]),
+                'totalCompanies' => 0,
+                'totalMembers' => 0,
+                'activeCompanies' => 0,
+                'trialCompanies' => 0,
+                'plans' => collect([]),
+                'addons' => collect([])
+            ])->with('error', 'Terjadi kesalahan saat memuat data');
+        }
+    }
+
+    /**
+     * Tampilkan detail perusahaan
+     */
+    public function showCompany($id)
+    {
+        $company = Company::with(['userCompanies.user', 'userCompanies.role'])
+            ->findOrFail($id);
+
+        return view('admin.company_detail', compact('company'));
+    }
+
+    /**
+     * Suspend/aktifkan perusahaan
+     */
+    public function toggleCompanyStatus($id)
+    {
+        $company = Company::findOrFail($id);
+        
+        // Toggle status
+        $newStatus = $company->status === 'active' ? 'suspended' : 'active';
+        $company->update(['status' => $newStatus]);
+        
+        return back()->with('success', 'Status perusahaan berhasil diubah');
+    }
+
+
+
+    /**
+ * Update paket berlangganan
+ */
+public function updatePlan(Request $request, $id)
+{
+    try {
+        $request->validate([
+            'plan_name' => 'required|string|max:255',
+            'price_monthly' => 'required|numeric|min:0',
+            'base_user_limit' => 'required|integer|min:1',
+        ]);
+
+        $plan = Plan::findOrFail($id);
+        
+        $plan->update([
+            'plan_name' => $request->plan_name,
+            'price_monthly' => $request->price_monthly,
+            'base_user_limit' => $request->base_user_limit,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Paket berhasil diperbarui',
+            'data' => $plan
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Update Plan Error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memperbarui paket: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
+ * Update add-ons
+ */
+public function updateAddon(Request $request, $id)
+{
+    try {
+        $request->validate([
+            'price_per_user' => 'required|numeric|min:0',
+        ]);
+
+        $addon = Addon::findOrFail($id);
+        
+        $addon->update([
+            'price_per_user' => $request->price_per_user,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Add-ons berhasil diperbarui',
+            'data' => $addon
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Update Addon Error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memperbarui add-ons: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+
+public function exportCompanies()
+{
+    try {
+        // Generate nama file dengan timestamp
+        $fileName = 'Daftar_Perusahaan_' . Carbon::now()->format('d-M-Y_His') . '.xlsx';
+        
+        // Export ke Excel
+        return Excel::download(new CompaniesExport, $fileName);
+        
+    } catch (\Exception $e) {
+        Log::error('Export Companies Error: ' . $e->getMessage());
+        Log::error('Stack trace: ' . $e->getTraceAsString());
+        
+        return back()->with('error', 'Gagal export data perusahaan');
+    }
+}
+}

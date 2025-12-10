@@ -241,11 +241,18 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
+
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             $user = Auth::user();
 
-            // 🔥 PRIORITAS 1: Handle pending invitation
+            if ($user->isSystemAdmin()) {
+                return redirect()->route('admin.dashboard')
+                    ->with('success', 'Selamat datang, Admin Sistem!');
+            }
+
+
+            // ✅ Handle pending invitation
             $pendingToken = session('pending_invitation_token');
             if ($pendingToken) {
                 // Token akan dihapus di InvitationController@accept setelah sukses

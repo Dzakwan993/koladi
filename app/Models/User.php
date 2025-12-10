@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Role;
 
 class User extends Authenticatable
 {
@@ -25,6 +26,7 @@ class User extends Authenticatable
         'onboarding_step',
         'onboarding_type',
         'has_seen_onboarding',
+        'system_role_id', // TAMBAHAN: untuk menyimpan role AdminSistem
     ];
 
     protected $hidden = [
@@ -37,6 +39,29 @@ class User extends Authenticatable
         'password' => 'hashed',
         'status_active' => 'boolean',
     ];
+
+    // ===== RELASI UNTUK ADMIN SISTEM =====
+    /**
+     * Relasi ke role sistem (untuk AdminSistem)
+     * Ini BERBEDA dari role company/workspace
+     */
+    public function systemRole()
+    {
+        return $this->belongsTo(Role::class, 'system_role_id');
+    }
+
+    /**
+     * Cek apakah user adalah Admin Sistem
+     */
+    public function isSystemAdmin()
+    {
+        // Cek berdasarkan system_role_id
+        if ($this->system_role_id) {
+            $role = $this->systemRole;
+            return $role && $role->name === 'AdminSistem';
+        }
+        return false;
+    }
 
     // Accessor untuk avatar
     public function getAvatarAttribute($value)
@@ -63,13 +88,6 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
-    // public function getAvatarUrlAttribute()
-    // {
-    //     return $this->avatar
-    //         ? asset('storage/' . $this->avatar) // path avatar di storage
-    //         : asset('images/dk.jpg');          // default jika tidak ada
-    // }
-
     public function role()
     {
         return $this->belongsTo(Role::class, 'roles_id');
@@ -86,10 +104,6 @@ class User extends Authenticatable
         return $this->hasMany(UserWorkspace::class, 'user_id');
     }
 
-    /**
-     * ✅ Relationship untuk mendapatkan workspaces yang diikuti user
-     * Relationship many-to-many melalui tabel user_workspaces
-     */
     public function workspaces()
     {
         return $this->belongsToMany(
@@ -103,9 +117,6 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
-    /**
-     * ✅ Mendapatkan semua workspaces (termasuk yang inactive)
-     */
     public function allWorkspaces()
     {
         return $this->belongsToMany(
@@ -118,9 +129,6 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
-    /**
-     * ✅ Relationship untuk workspaces yang dimiliki user (sebagai creator)
-     */
     public function ownedWorkspaces()
     {
         return $this->hasMany(Workspace::class, 'user_id');
@@ -156,18 +164,11 @@ class User extends Authenticatable
     }
 
     // ===== HELPER METHODS WORKSPACE =====
-
-    /**
-     * ✅ Cek apakah user adalah member dari workspace tertentu
-     */
     public function isMemberOf($workspaceId)
     {
         return $this->workspaces()->where('workspace_id', $workspaceId)->exists();
     }
 
-    /**
-     * ✅ Cek apakah user adalah admin/manager di company tertentu
-     */
     public function isCompanyAdmin($companyId)
     {
         $userCompany = $this->userCompanies()
@@ -180,9 +181,6 @@ class User extends Authenticatable
         return in_array($roleName, ['SuperAdmin', 'Administrator', 'Admin', 'Manager']);
     }
 
-    /**
-     * ✅ Get role user di workspace tertentu
-     */
     public function getWorkspaceRole($workspaceId)
     {
         $userWorkspace = $this->userWorkspaces()
