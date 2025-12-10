@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             RolesSeeder::class,
             ColorSeeder::class,
             SubscriptionSeeder::class,
+            AdminSistemSeeder::class,
         ]);
     }
 }
