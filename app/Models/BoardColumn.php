@@ -11,6 +11,9 @@ class BoardColumn extends Model
 {
     use HasFactory, SoftDeletes;
 
+        protected $dates = ['deleted_at'];
+
+
     protected $table = 'board_columns';
     public $incrementing = false;
     protected $keyType = 'string';
@@ -54,7 +57,8 @@ class BoardColumn extends Model
     // Relasi ke Tasks
     public function tasks()
     {
-        return $this->hasMany(Task::class, 'board_column_id');
+        return $this->hasMany(Task::class, 'board_column_id')
+            ->withTrashed();
     }
 
     // Scope untuk mengurutkan berdasarkan posisi

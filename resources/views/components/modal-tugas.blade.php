@@ -16,7 +16,7 @@
                                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                         <div>
-                            <div class="font-medium text-gray-700">Mulai Phase</div>
+                            <div class="font-medium text-gray-700">Mulai Fase</div>
                             <div class="text-gray-600" x-text="formatDate(phaseModal.start_date)"></div>
                         </div>
                     </div>
@@ -28,7 +28,7 @@
                                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <div>
-                            <div class="font-medium text-gray-700">Selesai Phase</div>
+                            <div class="font-medium text-gray-700">Selesai Fase</div>
                             <div class="text-gray-600" x-text="formatDate(phaseModal.end_date)"></div>
                         </div>
                     </div>
@@ -58,7 +58,7 @@
             <!-- Progress Overview -->
             <div class="mt-4 bg-gray-50 rounded-lg p-4">
                 <div class="flex items-center justify-between mb-2">
-                    <span class="font-medium text-gray-700">Progress Phase</span>
+                    <span class="font-medium text-gray-700">Progress Fase</span>
                     <span class="font-bold text-lg"
                         :class="{
                             'text-green-600': phaseModal.progress === 100,
@@ -158,7 +158,7 @@
 
 
  <!-- Modal Aksi List -->
- <div x-show="openListMenu && !replyView.active" x-cloak
+ {{-- <div x-show="openListMenu && !replyView.active" x-cloak
      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4" x-transition
      @click.self="openListMenu = null">
 
@@ -203,7 +203,7 @@
              </button>
          </div>
      </div>
- </div>
+ </div> --}}
 
 
  <!-- Modal Tambah List -->
@@ -276,17 +276,19 @@
              <!-- PHASE INPUT -->
              <!-- Di modal tambah tugas -->
              <div>
-                 <label class="text-sm font-medium text-gray-700 mb-2 block">Phase <span
+                 <label class="text-sm font-medium text-gray-700 mb-2 block">Fase <span
                          class="text-red-500">*</span></label>
                  <input type="text" x-model="taskForm.phase" placeholder="Masukkan nama phase" required
                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
-                 <p x-show="!taskForm.phase" class="text-red-500 text-xs mt-1">Phase wajib diisi</p>
+                 {{-- <p x-show="!taskForm.phase" class="text-red-500 text-xs mt-1">Phase wajib diisi</p> --}}
              </div>
 
              <!-- Anggota & Tugas Rahasia -->
              <!-- Di dalam modal tambah tugas, setelah section Anggota -->
              <div class="mb-4">
-                 <label class="text-sm font-medium text-gray-700 mb-2 block">Anggota</label>
+                 <label class="text-sm font-medium text-gray-700 mb-2 block">Anggota<span
+                         class="text-red-500"> *</span></label>
+                 
                  <div class="flex items-center justify-between">
                      <div class="flex items-center gap-2">
                          <template x-for="(member, index) in taskForm.members" :key="member?.id || index">
@@ -335,7 +337,7 @@
                              <p class="text-xs text-blue-800 font-medium">Tugas ini hanya akan terlihat oleh:</p>
                              <ul class="text-xs text-blue-700 mt-1 list-disc list-inside">
                                  <li>Anggota yang ditugaskan</li>
-                                 <li>Super Admin & Administrator</li>
+                                 <li>Super Admin, Administrator dan Manajer</li>
                                  <li>Pembuat tugas</li>
                              </ul>
                          </div>
@@ -349,7 +351,8 @@
              <!-- Catatan -->
              <!-- Di modal tambah tugas -->
 <div class="mb-4">
-    <label class="text-sm font-medium text-gray-700 mb-2 block">Catatan</label>
+    <label class="text-sm font-medium text-gray-700 mb-2 block">Catatan<span
+                         class="text-red-500">*</span></label>
     <div class="border rounded-lg overflow-hidden">
         <!-- ✅ PASTIKAN ID INI ADA -->
         <textarea id="editor-catatan" x-model="taskForm.description"></textarea>
@@ -666,60 +669,67 @@
              </div>
 
              <!-- Modal Pilih Label -->
-             <div x-show="openLabelModal" x-cloak
-                 class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 modal-layer-3 p-4">
-                 <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-                     <h2 class="text-lg font-semibold text-gray-800 mb-4">Pilih Label</h2>
+<div x-show="openLabelModal" x-cloak
+    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 modal-layer-3 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Pilih Label</h2>
 
-                     <!-- Search -->
-                     <input type="text" x-model="labelData.searchLabel" placeholder="Cari label..."
-                         class="w-full border rounded-lg p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
+        <!-- ✅ TAMBAHKAN INFO TEXT UNTUK EDIT MODE -->
+        <div x-show="isEditMode" class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p class="text-xs text-blue-700">
+                💡 Label akan disimpan setelah Anda klik <strong>"Simpan Perubahan"</strong> di halaman detail tugas.
+            </p>
+        </div>
 
-                     <!-- Tombol Tambah Label -->
-                     <button type="button" @click="openAddLabelModal = true; openLabelModal = false"
-                         class="text-blue-600 text-sm hover:underline font-medium mb-3">
-                         + Tambah Label Baru
-                     </button>
+        <!-- Search -->
+        <input type="text" x-model="labelData.searchLabel" placeholder="Cari label..."
+            class="w-full border rounded-lg p-2 text-sm mb-3 focus:ring-2 focus:ring-blue-500 focus:outline-none" />
 
-                     <!-- List Label -->
-                     <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
-                         <template x-for="label in filteredLabels()" :key="label.id">
-                             <label
-                                 class="flex items-center cursor-pointer border rounded-lg px-3 py-2 hover:bg-gray-50 transition">
-                                 <input type="checkbox" x-model="label.selected"
-                                     class="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                                 <div class="flex-1">
-                                     <span
-                                         class="inline-block px-3 py-1 rounded-md text-white text-sm font-medium shadow-sm"
-                                         :style="`background:${label.color.rgb}`" x-text="label.name">
-                                     </span>
-                                 </div>
-                             </label>
-                         </template>
+        <!-- Tombol Tambah Label -->
+        <button type="button" @click="openAddLabelModal = true; openLabelModal = false"
+            class="text-blue-600 text-sm hover:underline font-medium mb-3">
+            + Tambah Label Baru
+        </button>
 
-                         <!-- Empty State -->
-                         <div x-show="filteredLabels().length === 0" class="text-center py-4 text-gray-500 text-sm">
-                             <template x-if="labelData.searchLabel">
-                                 Tidak ada label yang cocok
-                             </template>
-                             <template x-if="!labelData.searchLabel">
-                                 Tidak ada label tersedia
-                             </template>
-                         </div>
-                     </div>
+        <!-- List Label -->
+        <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+            <template x-for="label in filteredLabels()" :key="label.id">
+                <label
+                    class="flex items-center cursor-pointer border rounded-lg px-3 py-2 hover:bg-gray-50 transition">
+                    <input type="checkbox" x-model="label.selected"
+                        class="mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                    <div class="flex-1">
+                        <span
+                            class="inline-block px-3 py-1 rounded-md text-white text-sm font-medium shadow-sm"
+                            :style="`background:${label.color.rgb}`" x-text="label.name">
+                        </span>
+                    </div>
+                </label>
+            </template>
 
-                     <!-- Footer -->
-                     <div class="flex justify-end items-center mt-6 space-x-2">
-                         <button type="button"
-                             @click="openLabelModal = false; labelData.labels.forEach(l => l.selected = false)"
-                             class="px-4 py-2 rounded-lg border text-sm hover:bg-gray-50">Batal</button>
-                         <button type="button" @click="saveTaskLabels(currentTask ? currentTask.id : null)"
-                             class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">
-                             Simpan (<span x-text="labelData.labels.filter(l => l.selected).length"></span>)
-                         </button>
-                     </div>
-                 </div>
-             </div>
+            <!-- Empty State -->
+            <div x-show="filteredLabels().length === 0" class="text-center py-4 text-gray-500 text-sm">
+                <template x-if="labelData.searchLabel">
+                    Tidak ada label yang cocok
+                </template>
+                <template x-if="!labelData.searchLabel">
+                    Tidak ada label tersedia
+                </template>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end items-center mt-6 space-x-2">
+            <button type="button"
+                @click="openLabelModal = false; labelData.labels.forEach(l => l.selected = false)"
+                class="px-4 py-2 rounded-lg border text-sm hover:bg-gray-50">Batal</button>
+            <button type="button" @click="saveTaskLabels(currentTask ? currentTask.id : null)"
+                class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700">
+                Simpan (<span x-text="labelData.labels.filter(l => l.selected).length"></span>)
+            </button>
+        </div>
+    </div>
+</div>
 
              <!-- Modal Tambah Label Baru -->
              <div x-show="openAddLabelModal" x-cloak
@@ -868,23 +878,27 @@
              <!-- Tanggal & Jam - TAMBAHKAN x-model -->
              <div class="grid grid-cols-2 gap-4">
                  <div>
-                     <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Mulai</label>
+                     <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Mulai<span
+                         class="text-red-500">*</span></label>
                      <input type="date" x-model="taskForm.startDate"
                          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
                  </div>
                  <div>
-                     <label class="block text-sm font-medium text-gray-700 mb-2">Jam Mulai</label>
+                     <label class="block text-sm font-medium text-gray-700 mb-2">Jam Mulai<span
+                         class="text-red-500">*</span></label>
                      <!-- ✅ UBAH LABEL -->
                      <input type="time" x-model="taskForm.startTime"
                          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
                  </div>
                  <div>
-                     <label class="block text-sm font-medium text-gray-700 mb-2">Tenggat</label>
+                     <label class="block text-sm font-medium text-gray-700 mb-2">Tenggat<span
+                         class="text-red-500">*</span></label>
                      <input type="date" x-model="taskForm.dueDate"
                          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
                  </div>
                  <div>
-                     <label class="block text-sm font-medium text-gray-700 mb-2">Jam Tenggat</label>
+                     <label class="block text-sm font-medium text-gray-700 mb-2">Jam Tenggat<span
+                         class="text-red-500">*</span></label>
                      <!-- ✅ UBAH LABEL -->
                      <input type="time" x-model="taskForm.dueTime"
                          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500" />
@@ -998,25 +1012,37 @@
                  </template>
 
                  <div class="flex items-center gap-2">
-                     <!-- Edit Toggle Button -->
-                     <template x-if="!isEditMode">
-                         <button @click="enableEditMode()"
-                             class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                             title="Edit Tugas">
-                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                     d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                             </svg>
-                         </button>
-                     </template>
-                     <button @click="openTaskDetail = false"
-                         class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                 d="M6 18L18 6M6 6l12 12" />
-                         </svg>
-                     </button>
-                 </div>
+    <!-- Edit Toggle Button -->
+    <template x-if="!isEditMode">
+        <button @click="enableEditMode()"
+            class="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            title="Edit Tugas">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+        </button>
+    </template>
+    
+    <!-- Tombol Hapus -->
+    <button @click="confirmDeleteTask()"
+        class="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+        title="Hapus Tugas">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+    </button>
+    
+    <!-- Tombol Tutup -->
+    <button @click="openTaskDetail = false"
+        class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M6 18L18 6M6 6l12 12" />
+        </svg>
+    </button>
+</div>
              </div>
              <p class="text-xs text-gray-500 text-center">
                  Ditambahkan ke <span x-text="currentTask?.board_column?.name || 'To-Do List'"></span> pada
@@ -1041,7 +1067,7 @@
 
              <!-- PHASE INFORMATION -->
              <div class="mb-4">
-                 <label class="text-sm font-medium text-gray-700 mb-2 block">Phase</label>
+                 <label class="text-sm font-medium text-gray-700 mb-2 block">Fase</label>
                  <div class="flex items-center gap-2">
                      <template x-if="!isEditMode">
                          <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
@@ -1155,35 +1181,50 @@
                  </template>
 
                  <!-- List File Attachments -->
-                 <div class="space-y-2">
-                     <template x-for="(file, index) in currentTask?.attachments || []" :key="index">
-                         <div class="flex items-center justify-between border border-gray-300 rounded-lg p-3">
-                             <div class="flex items-center gap-2">
-                                 <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                     <path fill-rule="evenodd"
-                                         d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
-                                 </svg>
-                                 <div>
-                                     <p class="text-sm font-medium text-gray-700" x-text="file.name"></p>
-                                     <p class="text-xs text-gray-500" x-text="formatFileSize(file.size)"></p>
-                                 </div>
-                             </div>
-                             <div class="flex items-center gap-3 text-xs">
-                                 <a :href="file.url" target="_blank"
-                                     class="text-blue-600 hover:underline">Lihat</a>
-                                 <button x-show="isEditMode" @click="removeAttachmentFromDetail(index)"
-                                     class="text-red-600 hover:underline">Hapus</button>
-                             </div>
-                         </div>
-                     </template>
+                 <!-- Di modal-tugas.blade.php - bagian lampiran -->
+<div class="space-y-2">
+    <template x-for="(file, index) in currentTask?.attachments || []" :key="file.id">
+        <div class="flex items-center justify-between border border-gray-300 rounded-lg p-3">
+            <div class="flex items-center gap-2">
+                <!-- File Icon berdasarkan tipe -->
+                <template x-if="file.type === 'image'">
+                    <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
+                    </svg>
+                </template>
+                <template x-if="file.type === 'pdf'">
+                    <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                    </svg>
+                </template>
+                <template x-if="!['image', 'pdf'].includes(file.type)">
+                    <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+                    </svg>
+                </template>
+                
+                <div>
+                    <!-- ✅ PERBAIKAN: Gunakan file.name yang sudah benar dari backend -->
+                    <p class="text-sm font-medium text-gray-700" x-text="file.name || 'Unknown File'"></p>
+                    <p class="text-xs text-gray-500" 
+                       x-text="file.size ? formatFileSize(file.size) : ''"></p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 text-xs">
+                <a :href="file.url" target="_blank" 
+                   class="text-blue-600 hover:underline">Lihat</a>
+                <button x-show="isEditMode" @click="removeAttachmentFromDetail(index)"
+                        class="text-red-600 hover:underline">Hapus</button>
+            </div>
+        </div>
+    </template>
 
-                     <template x-if="!currentTask?.attachments || currentTask.attachments.length === 0">
-                         <div
-                             class="text-center py-4 text-gray-500 text-sm border border-dashed border-gray-300 rounded-lg">
-                             Tidak ada lampiran
-                         </div>
-                     </template>
-                 </div>
+    <template x-if="!currentTask?.attachments || currentTask.attachments.length === 0">
+        <div class="text-center py-4 text-gray-500 text-sm border border-dashed border-gray-300 rounded-lg">
+            Tidak ada lampiran
+        </div>
+    </template>
+</div>
              </div>
 
              <!-- Label Section dengan Edit di Edit Mode -->
@@ -1320,77 +1361,81 @@
              </div>
 
              <!-- Checklist Section -->
-             <div class="mb-4">
-                 <label class="block text-sm font-medium text-gray-700 mb-2">Checklist</label>
+             <!-- Checklist Section dengan ADD functionality -->
+<div class="mb-4">
+    <label class="block text-sm font-medium text-gray-700 mb-2">Checklist</label>
 
-                 <!-- Progress Bar -->
-                 <div x-show="currentTask?.checklist && currentTask.checklist.length > 0" class="mb-3">
-                     <div class="flex justify-between items-center text-xs text-gray-600 mb-1">
-                         <span>Progress Checklist</span>
-                         <span x-text="`${calculateTaskProgress(currentTask)}%`"
-                             :class="{
-                                 'text-green-600': calculateTaskProgress(currentTask) === 100,
-                                 'text-blue-600': calculateTaskProgress(currentTask) < 100
-                             }">
-                         </span>
-                     </div>
-                     <div class="w-full bg-gray-200 rounded-full h-2">
-                         <div class="h-2 rounded-full transition-all duration-300"
-                             :class="{
-                                 'bg-green-500': calculateTaskProgress(currentTask) === 100,
-                                 'bg-blue-500': calculateTaskProgress(currentTask) < 100
-                             }"
-                             :style="`width: ${calculateTaskProgress(currentTask)}%`"></div>
-                     </div>
-                 </div>
+    <!-- Progress Bar -->
+    <div x-show="currentTask?.checklist && currentTask.checklist.length > 0" class="mb-3">
+        <div class="flex justify-between items-center text-xs text-gray-600 mb-1">
+            <span>Progress Checklist</span>
+            <span x-text="`${calculateTaskProgress(currentTask)}%`"
+                  :class="{
+                      'text-green-600': calculateTaskProgress(currentTask) === 100,
+                      'text-blue-600': calculateTaskProgress(currentTask) < 100
+                  }">
+            </span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+            <div class="h-2 rounded-full transition-all duration-300"
+                 :class="{
+                     'bg-green-500': calculateTaskProgress(currentTask) === 100,
+                     'bg-blue-500': calculateTaskProgress(currentTask) < 100
+                 }"
+                 :style="`width: ${calculateTaskProgress(currentTask)}%`"></div>
+        </div>
+    </div>
 
-                 <!-- Checklist Items -->
-                 <div class="space-y-2 border border-gray-300 rounded-lg p-3" id="detail-checklist-container">
-                     <template x-for="(item, index) in currentTask?.checklist || []" :key="item.id">
-                         <div class="flex items-center gap-2">
-                             <input type="checkbox" x-model="item.is_done"
-                                 @change="updateChecklistItemInDetail(item)"
-                                 class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                 :disabled="!isEditMode">
+    <!-- Checklist Items -->
+    <div class="space-y-2 border border-gray-300 rounded-lg p-3" id="detail-checklist-container">
+        <template x-for="(item, index) in currentTask?.checklist || []" :key="item.id">
+            <div class="flex items-center gap-2">
+                <input type="checkbox" x-model="item.is_done"
+                       @change="updateChecklistItemInDetail(item)"
+                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                       :disabled="!isEditMode">
 
-                             <template x-if="!isEditMode">
-                                 <span class="text-sm" :class="{ 'line-through text-gray-500': item.is_done }"
-                                     x-text="item.title"></span>
-                             </template>
+                <template x-if="!isEditMode">
+                    <span class="text-sm" :class="{ 'line-through text-gray-500': item.is_done }"
+                          x-text="item.title"></span>
+                </template>
 
-                             <template x-if="isEditMode">
-                                 <input type="text" x-model="item.title" @blur="updateChecklistItemInDetail(item)"
-                                     class="flex-1 border-0 focus:ring-0 p-1 text-sm bg-transparent outline-none"
-                                     :class="{ 'line-through text-gray-500': item.is_done }">
-                             </template>
+                <template x-if="isEditMode">
+                    <input type="text" x-model="item.title" 
+                           @blur="updateChecklistItemInDetail(item)"
+                           @keydown.enter="$event.target.blur()"
+                           @keydown.escape="$event.target.blur()"
+                           class="flex-1 border-0 focus:ring-0 p-1 text-sm bg-transparent outline-none"
+                           :class="{ 'line-through text-gray-500': item.is_done }"
+                           placeholder="Ketik item checklist...">
+                </template>
 
-                             <button x-show="isEditMode" @click="removeChecklistItemFromDetail(index)"
-                                 class="text-red-500 hover:text-red-700 p-1">
-                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                 </svg>
-                             </button>
-                         </div>
-                     </template>
+                <button x-show="isEditMode" @click="removeChecklistItemFromDetail(index)"
+                        class="text-red-500 hover:text-red-700 p-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+        </template>
 
-                     <template x-if="!currentTask?.checklist || currentTask.checklist.length === 0">
-                         <div class="text-center py-2 text-gray-500 text-sm">
-                             Tidak ada checklist
-                         </div>
-                     </template>
-                 </div>
+        <template x-if="(!currentTask?.checklist || currentTask.checklist.length === 0) && !isEditMode">
+            <div class="text-center py-2 text-gray-500 text-sm">
+                Tidak ada checklist
+            </div>
+        </template>
+    </div>
 
-                 <!-- Add Checklist Button -->
-                 <button x-show="isEditMode" type="button" @click="addChecklistItemToDetail()"
-                     class="w-full mt-2 border border-dashed border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-700 flex items-center justify-center gap-2 bg-white transition-all duration-200">
-                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                     </svg>
-                     Tambah Item Checklist
-                 </button>
-             </div>
-
+    <!-- Add Checklist Button (Tampil di Edit Mode) -->
+    <button x-show="isEditMode" type="button" @click="addChecklistItemToDetail()"
+            class="w-full mt-2 border border-dashed border-gray-300 rounded-lg px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-700 flex items-center justify-center gap-2 bg-white transition-all duration-200">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Tambah Item Checklist
+    </button>
+</div>
              <!-- Tanggal & Jam -->
              <div class="grid grid-cols-2 gap-4 mb-6">
                  <div>
