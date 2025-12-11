@@ -26,6 +26,7 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\CompanyChatController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\DocumentCommentController;
+use App\Http\Controllers\StatistikController;
 
 // 🔥 Broadcasting Routes
 Broadcast::routes(['middleware' => ['web', 'auth']]);
@@ -109,6 +110,30 @@ Route::middleware(['auth'])->group(function () {
     // 🔒 ROUTES DENGAN CheckSubscription
     // ============================================
     Route::middleware(['check.subscription'])->group(function () {
+
+        // Router Statistik
+        Route::get('/statistik', [StatistikController::class, 'index'])->name('statistik.index');
+
+        // API Routes untuk AJAX (tambahan baru)
+        Route::prefix('api/statistik')->name('api.statistik.')->group(function () {
+
+            // Get data workspace (ketika ganti workspace)
+            Route::get('/workspace/{workspaceId}', [StatistikController::class, 'getWorkspaceData'])
+                ->name('workspace');
+
+            // Get data member (ketika klik member tertentu)
+            Route::get('/member/{memberId}', [StatistikController::class, 'getMemberData'])
+                ->name('member');
+
+            // Get tasks by filter (ketika ganti filter status)
+            Route::get('/tasks', [StatistikController::class, 'getTasksByFilter'])
+                ->name('tasks');
+
+            // Get data by periode (ketika ganti periode)
+            Route::get('/periode', [StatistikController::class, 'getPeriodeData'])
+                ->name('periode');
+        });
+
 
         // Tambahkan di routes/web.php dalam group middleware 'auth' dan 'check.subscription'
         // Dashboard - All Events (Company + Workspace)
@@ -374,13 +399,6 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/pengumuman-perusahaan/{id}', [\App\Http\Controllers\PengumumanPerusahaanController::class, 'destroy'])->name('pengumuman-perusahaan.destroy');
         });
 
-        // ========================================
-        // 🔥 STATISTICS ROUTES
-        // ========================================
-        Route::get('/statistik', function () {
-            return view('statistik');
-        })->name('statistik');
-    
 
         // ========================================
         // 🔥 ROLE MANAGEMENT ROUTES

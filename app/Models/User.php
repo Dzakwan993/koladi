@@ -189,4 +189,9 @@ class User extends Authenticatable
 
         return $userWorkspace?->role;
     }
+
+    public function getNameAttribute()
+    {
+        return $this->full_name;
+    }
 }
