@@ -897,33 +897,38 @@
         }
     </style>
 
-    <!-- POPUP EDIT -->
-    <div id="openEditModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-50">
-        <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-3xl">
-            <h2 class="text-xl font-bold mb-4 text-[#102a63] border-b pb-2">Edit Pengumuman</h2>
 
-            <form action="#" method="POST" class="space-y-5" id="pengumumanEditForm">
-                @csrf
-                @method('PUT')
-                <input type="hidden" name="pengumuman_id" id="editPengumumanId">
-                <input type="hidden" id="editWorkspaceId" name="workspace_id" value="">
+    <!-- POPUP EDIT - FIXED SCROLLABLE VERSION -->
+    <div id="openEditModal"
+        class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-lg w-full max-w-3xl my-8 max-h-[90vh] flex flex-col">
+            <!-- Header - Fixed -->
+            <div class="p-6 border-b border-gray-200 flex-shrink-0">
+                <h2 class="text-xl font-bold text-[#102a63]">Edit Pengumuman</h2>
+            </div>
 
-                <!-- Judul -->
-                <div>
-                    <label class="block text-sm font-inter font-semibold text-black mb-1">
-                        Judul Pengumuman <span class="text-red-500">*</span>
-                    </label>
+            <!-- Content - Scrollable -->
+            <div class="overflow-y-auto flex-1 px-6">
+                <form action="#" method="POST" class="space-y-5 py-6" id="pengumumanEditForm">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="pengumuman_id" id="editPengumumanId">
+                    <input type="hidden" id="editWorkspaceId" name="workspace_id" value="">
 
-                    <input type="text" name="title" id="editTitle" placeholder="Masukkan judul pengumuman..."
-                        class="w-full border border-[#6B7280] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600 font-[Inter] text-[14px] placeholder:text-[#6B7280] pl-5" />
+                    <!-- Judul -->
+                    <div>
+                        <label class="block text-sm font-inter font-semibold text-black mb-1">
+                            Judul Pengumuman <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="title" id="editTitle" placeholder="Masukkan judul pengumuman..."
+                            class="w-full border border-[#6B7280] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600 font-[Inter] text-[14px] placeholder:text-[#6B7280] pl-5" />
+                    </div>
 
                     <!-- Deskripsi -->
                     <div class="flex flex-col" x-data x-init="createEditorFor('edit-catatan-editor', { placeholder: 'Masukkan catatan anda disini...' })">
-                        <label class="block text-sm font-inter font-semibold text-black mb-1 mt-5">
+                        <label class="block text-sm font-inter font-semibold text-black mb-1">
                             Deskripsi <span class="text-red-500">*</span>
                         </label>
-
-                        <!-- CKEditor Container -->
                         <div id="edit-catatan-editor"
                             class="border border-[#6B7280] rounded-lg bg-white min-h-[160px] p-2 font-[Inter] text-[14px] placeholder-[#6B7280]">
                         </div>
@@ -1235,11 +1240,11 @@
 
                     <!-- Tenggat -->
                     <div>
-                        <label class="block font-medium text-[14px] mb-2 mt-5 text-black font-[Inter]">
+                        <label class="block font-medium text-[14px] mb-2 text-black font-[Inter]">
                             Tenggat Pengumuman hingga selesai <span class="text-red-500">*</span>
                         </label>
 
-                        <div class="flex items-center gap-3 mb-3 mt-3 relative">
+                        <div class="flex items-center gap-3 mb-3 relative flex-wrap">
                             <!-- Select chip 1 -->
                             <div
                                 class="flex items-center rounded-lg border border-[#d0d7e2] overflow-hidden edit-chip-container-1">
@@ -1282,199 +1287,201 @@
                         </div>
                         <input type="hidden" name="auto_due" id="editAutoDue" value="">
                     </div>
+                </form>
+            </div>
 
-                    <style>
-                        /* ini untuk tampilan link filenya di pengumuman */
-                        .ck-content a {
-                            color: #2563eb;
-                            /* biru Tailwind (blue-600) */
-                            text-decoration: underline;
-                            font-weight: 500;
-                        }
+            <style>
+                /* ini untuk tampilan link filenya di pengumuman */
+                .ck-content a {
+                    color: #2563eb;
+                    /* biru Tailwind (blue-600) */
+                    text-decoration: underline;
+                    font-weight: 500;
+                }
 
-                        .ck-content a:hover {
-                            color: #1d4ed8;
-                            /* sedikit lebih gelap pas hover */
-                        }
+                .ck-content a:hover {
+                    color: #1d4ed8;
+                    /* sedikit lebih gelap pas hover */
+                }
 
-                        /* ini untuk style link file upload awal biru */
-                        .ck-content a {
-                            color: #007bff !important;
-                            text-decoration: underline !important;
-                        }
+                /* ini untuk style link file upload awal biru */
+                .ck-content a {
+                    color: #007bff !important;
+                    text-decoration: underline !important;
+                }
 
-                        /* Styling untuk input date */
-                        #editCustomDeadline::-webkit-calendar-picker-indicator {
-                            opacity: 0;
-                            position: absolute;
-                            right: 0;
-                            width: 100%;
-                            height: 100%;
-                            cursor: pointer;
-                            z-index: 10;
-                        }
+                /* Styling untuk input date */
+                #editCustomDeadline::-webkit-calendar-picker-indicator {
+                    opacity: 0;
+                    position: absolute;
+                    right: 0;
+                    width: 100%;
+                    height: 100%;
+                    cursor: pointer;
+                    z-index: 10;
+                }
 
-                        /* Warna placeholder untuk browser yang support */
-                        #editCustomDeadline::-webkit-datetime-edit-text {
-                            color: white;
-                        }
+                /* Warna placeholder untuk browser yang support */
+                #editCustomDeadline::-webkit-datetime-edit-text {
+                    color: white;
+                }
 
-                        #editCustomDeadline::-webkit-datetime-edit-month-field,
-                        #editCustomDeadline::-webkit-datetime-edit-day-field,
-                        #editCustomDeadline::-webkit-datetime-edit-year-field {
-                            color: white;
-                        }
+                #editCustomDeadline::-webkit-datetime-edit-month-field,
+                #editCustomDeadline::-webkit-datetime-edit-day-field,
+                #editCustomDeadline::-webkit-datetime-edit-year-field {
+                    color: white;
+                }
 
-                        /* Fix display saat show */
-                        #editDateInputContainer:not(.hidden) {
-                            display: flex;
-                        }
-                    </style>
+                /* Fix display saat show */
+                #editDateInputContainer:not(.hidden) {
+                    display: flex;
+                }
+            </style>
 
-                    <script>
-                        document.addEventListener("DOMContentLoaded", () => {
-                            // Dropdown 1 untuk edit
-                            const dropdown1 = document.createElement("div");
-                            dropdown1.className =
-                                "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 edit-dropdown-menu-1";
-                            dropdown1.innerHTML = `
+            <script>
+                document.addEventListener("DOMContentLoaded", () => {
+                    // Dropdown 1 untuk edit
+                    const dropdown1 = document.createElement("div");
+                    dropdown1.className =
+                        "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 edit-dropdown-menu-1";
+                    dropdown1.innerHTML = `
                                 <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-t-lg text-black font-[Inter]" data-value="Selesai otomatis">Selesai otomatis</div>
                                 <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-b-lg text-black font-[Inter]" data-value="Atur tenggat waktu sendiri">Atur tenggat waktu sendiri</div>
                             `;
-                            // Dropdown 2 untuk edit
-                            const dropdown2 = document.createElement("div");
-                            dropdown2.className =
-                                "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 edit-dropdown-menu-2";
-                            dropdown2.innerHTML = `
+                    // Dropdown 2 untuk edit
+                    const dropdown2 = document.createElement("div");
+                    dropdown2.className =
+                        "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 edit-dropdown-menu-2";
+                    dropdown2.innerHTML = `
                                 <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-t-lg text-black font-[Inter]" data-value="1 hari dari sekarang">1 hari dari sekarang</div>
                                 <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer text-black font-[Inter]" data-value="3 hari dari sekarang">3 hari dari sekarang</div>
                                 <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-b-lg text-black font-[Inter]" data-value="7 hari dari sekarang">7 hari dari sekarang</div>
                             `;
 
-                            document.body.appendChild(dropdown1);
-                            document.body.appendChild(dropdown2);
+                    document.body.appendChild(dropdown1);
+                    document.body.appendChild(dropdown2);
 
-                            // Get elements untuk edit
-                            const btn1 = document.querySelector(".edit-dropdown-btn-1");
-                            const btn2 = document.querySelector(".edit-dropdown-btn-2");
-                            const chipText1 = document.querySelector(".edit-chip-text-1");
-                            const chipText2 = document.querySelector(".edit-chip-text-2");
-                            const chipContainer1 = document.querySelector(".edit-chip-container-1");
-                            const chipContainer2 = document.querySelector(".edit-chip-container-2");
-                            const labelText = document.getElementById("editLabelText");
-                            const dropdownChip = document.getElementById("editDropdownChip");
-                            const dateInputContainer = document.getElementById("editDateInputContainer");
-                            const customDeadline = document.getElementById("editCustomDeadline");
-                            const calendarBtn = document.getElementById("editCalendarBtn");
+                    // Get elements untuk edit
+                    const btn1 = document.querySelector(".edit-dropdown-btn-1");
+                    const btn2 = document.querySelector(".edit-dropdown-btn-2");
+                    const chipText1 = document.querySelector(".edit-chip-text-1");
+                    const chipText2 = document.querySelector(".edit-chip-text-2");
+                    const chipContainer1 = document.querySelector(".edit-chip-container-1");
+                    const chipContainer2 = document.querySelector(".edit-chip-container-2");
+                    const labelText = document.getElementById("editLabelText");
+                    const dropdownChip = document.getElementById("editDropdownChip");
+                    const dateInputContainer = document.getElementById("editDateInputContainer");
+                    const customDeadline = document.getElementById("editCustomDeadline");
+                    const calendarBtn = document.getElementById("editCalendarBtn");
 
-                            // Function to position and toggle dropdown
-                            function toggleDropdown(dropdown, container) {
-                                const rect = container.getBoundingClientRect();
-                                dropdown.style.top = `${rect.bottom + window.scrollY + 5}px`;
-                                dropdown.style.left = `${rect.left + window.scrollX}px`;
-                                dropdown.classList.toggle("hidden");
+                    // Function to position and toggle dropdown
+                    function toggleDropdown(dropdown, container) {
+                        const rect = container.getBoundingClientRect();
+                        dropdown.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                        dropdown.style.left = `${rect.left + window.scrollX}px`;
+                        dropdown.classList.toggle("hidden");
+                    }
+
+                    // Click calendar button to trigger date picker
+                    if (calendarBtn) {
+                        calendarBtn.addEventListener("click", (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (customDeadline.showPicker) {
+                                customDeadline.showPicker();
+                            } else {
+                                customDeadline.click();
                             }
-
-                            // Click calendar button to trigger date picker
-                            if (calendarBtn) {
-                                calendarBtn.addEventListener("click", (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (customDeadline.showPicker) {
-                                        customDeadline.showPicker();
-                                    } else {
-                                        customDeadline.click();
-                                    }
-                                });
-                            }
-
-                            // Event listeners for buttons
-                            btn1.addEventListener("click", (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                dropdown2.classList.add("hidden");
-                                toggleDropdown(dropdown1, chipContainer1);
-                            });
-
-                            btn2.addEventListener("click", (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                dropdown1.classList.add("hidden");
-                                toggleDropdown(dropdown2, chipContainer2);
-                            });
-
-                            // Event listeners for dropdown 1 options
-                            dropdown1.querySelectorAll("div[data-value]").forEach(opt => {
-                                opt.addEventListener("click", (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    const value = opt.getAttribute("data-value");
-                                    chipText1.textContent = value;
-                                    dropdown1.classList.add("hidden");
-
-                                    // Toggle between dropdown and date input
-                                    if (value === "Atur tenggat waktu sendiri") {
-                                        labelText.textContent = "Tenggat :";
-                                        dropdownChip.classList.add("hidden");
-                                        dateInputContainer.classList.remove("hidden");
-                                    } else {
-                                        labelText.textContent = "Selesai otomatis pada:";
-                                        dropdownChip.classList.remove("hidden");
-                                        dateInputContainer.classList.add("hidden");
-                                    }
-                                });
-                            });
-
-                            // Event listeners for dropdown 2 options
-                            dropdown2.querySelectorAll("div[data-value]").forEach(opt => {
-                                opt.addEventListener("click", (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    const value = opt.getAttribute("data-value"); // ✅ ambil nilai dari option
-                                    chipText2.textContent = value;
-                                    document.getElementById("editAutoDue").value =
-                                        value; // ✅ simpan ke input hidden
-                                    dropdown2.classList.add("hidden");
-                                });
-                            });
-
-                            // Close dropdowns when clicking outside
-                            document.addEventListener("click", (e) => {
-                                const isClickInsideDropdown1 = dropdown1.contains(e.target) || chipContainer1.contains(e
-                                    .target);
-                                const isClickInsideDropdown2 = dropdown2.contains(e.target) || chipContainer2.contains(e
-                                    .target);
-
-                                if (!isClickInsideDropdown1) {
-                                    dropdown1.classList.add("hidden");
-                                }
-                                if (!isClickInsideDropdown2) {
-                                    dropdown2.classList.add("hidden");
-                                }
-                            });
-
-                            // Prevent dropdown from closing when moving mouse inside it
-                            dropdown1.addEventListener("click", (e) => {
-                                e.stopPropagation();
-                            });
-
-                            dropdown2.addEventListener("click", (e) => {
-                                e.stopPropagation();
-                            });
                         });
-                    </script>
+                    }
 
-                    <!-- Tombol Lebih Besar -->
-                    <div class="flex justify-end gap-2 pt-2">
-                        <button type="button" id="editBtnBatal"
-                            class="border border-blue-700 text-blue-600 bg-white px-8 py-2 text-[16px] rounded-lg hover:bg-red-50 transition">
-                            Batal
-                        </button>
-                        <button type="submit" id="editSubmitBtn"
-                            class="bg-blue-700 text-white px-8 py-2 text-[16px] rounded-lg hover:bg-blue-800 transition">
-                            Perbarui
-                        </button>
-                    </div>
+                    // Event listeners for buttons
+                    btn1.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropdown2.classList.add("hidden");
+                        toggleDropdown(dropdown1, chipContainer1);
+                    });
+
+                    btn2.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropdown1.classList.add("hidden");
+                        toggleDropdown(dropdown2, chipContainer2);
+                    });
+
+                    // Event listeners for dropdown 1 options
+                    dropdown1.querySelectorAll("div[data-value]").forEach(opt => {
+                        opt.addEventListener("click", (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const value = opt.getAttribute("data-value");
+                            chipText1.textContent = value;
+                            dropdown1.classList.add("hidden");
+
+                            // Toggle between dropdown and date input
+                            if (value === "Atur tenggat waktu sendiri") {
+                                labelText.textContent = "Tenggat :";
+                                dropdownChip.classList.add("hidden");
+                                dateInputContainer.classList.remove("hidden");
+                            } else {
+                                labelText.textContent = "Selesai otomatis pada:";
+                                dropdownChip.classList.remove("hidden");
+                                dateInputContainer.classList.add("hidden");
+                            }
+                        });
+                    });
+
+                    // Event listeners for dropdown 2 options
+                    dropdown2.querySelectorAll("div[data-value]").forEach(opt => {
+                        opt.addEventListener("click", (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const value = opt.getAttribute("data-value"); // ✅ ambil nilai dari option
+                            chipText2.textContent = value;
+                            document.getElementById("editAutoDue").value =
+                                value; // ✅ simpan ke input hidden
+                            dropdown2.classList.add("hidden");
+                        });
+                    });
+
+                    // Close dropdowns when clicking outside
+                    document.addEventListener("click", (e) => {
+                        const isClickInsideDropdown1 = dropdown1.contains(e.target) || chipContainer1.contains(e
+                            .target);
+                        const isClickInsideDropdown2 = dropdown2.contains(e.target) || chipContainer2.contains(e
+                            .target);
+
+                        if (!isClickInsideDropdown1) {
+                            dropdown1.classList.add("hidden");
+                        }
+                        if (!isClickInsideDropdown2) {
+                            dropdown2.classList.add("hidden");
+                        }
+                    });
+
+                    // Prevent dropdown from closing when moving mouse inside it
+                    dropdown1.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                    });
+
+                    dropdown2.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                    });
+                });
+            </script>
+
+            <!-- Tombol Lebih Besar -->
+            <div class="p-6 border-t border-gray-200 flex justify-end gap-2 flex-shrink-0">
+                <button type="button" id="editBtnBatal"
+                    class="border border-blue-700 text-blue-600 bg-white px-8 py-2 text-[16px] rounded-lg hover:bg-red-50 transition">
+                    Batal
+                </button>
+                <button type="submit" id="editSubmitBtn" form="pengumumanEditForm"
+                    class="bg-blue-700 text-white px-8 py-2 text-[16px] rounded-lg hover:bg-blue-800 transition">
+                    Perbarui
+                </button>
+            </div>
             </form>
         </div>
     </div>
@@ -1484,6 +1491,10 @@
     </script>
 
     <script>
+        // ============================================
+        // FIXED SCRIPT UNTUK POPUP EDIT
+        // ============================================
+
         // Variabel untuk mencegah multiple submit
         let isSubmittingEdit = false;
 
@@ -1493,37 +1504,61 @@
 
             // Tampilkan modal
             const modal = document.getElementById('openEditModal');
+            if (!modal) {
+                console.error('Modal element not found!');
+                return;
+            }
+
             modal.classList.remove('hidden');
             modal.classList.add('flex');
 
             // Set pengumuman ID
-            document.getElementById('editPengumumanId').value = pengumumanId;
+            const idInput = document.getElementById('editPengumumanId');
+            if (!idInput) {
+                console.error('editPengumumanId input not found!');
+                return;
+            }
+            idInput.value = pengumumanId;
 
             // Reset form state terlebih dahulu
             resetEditForm();
 
-            // PERBAIKAN: Gunakan route yang benar
-            // ✅ SESUDAH (BENAR) - Menggunakan route helper
-            fetch(`{{ route('pengumuman-perusahaan.edit', ['company_id' => $company_id, 'id' => '__ID__']) }}`.replace(
-                    '__ID__', pengumumanId))
+            // Build URL yang benar
+            const companyId = "{{ $company_id }}";
+            const url = `/companies/${companyId}/pengumuman-perusahaan/${pengumumanId}/edit-data`;
+
+            console.log('Fetching from URL:', url);
+
+            // Fetch data pengumuman
+            fetch(url, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
                 .then(response => {
-                    if (!response.ok) throw new Error('Gagal mengambil data');
+                    console.log('Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
                     return response.json();
                 })
                 .then(data => {
                     console.log('Data received:', data);
-                    // Isi form dengan data yang diterima
                     populateEditForm(data);
                 })
                 .catch(error => {
-                    console.error('Fetch error (edit-data):', error);
+                    console.error('Fetch error:', error);
+                    alert('Gagal mengambil data pengumuman: ' + error.message);
                     closeEditModal();
                 });
         }
 
         // Fungsi reset form
         function resetEditForm() {
-            document.getElementById('editTitle').value = '';
+            // Reset title
+            const titleInput = document.getElementById('editTitle');
+            if (titleInput) titleInput.value = '';
 
             // Reset CKEditor
             const editor = window['edit-catatan-editor_editor'];
@@ -1532,23 +1567,21 @@
             }
 
             // Reset due date settings ke default
-            document.querySelector('.edit-chip-text-1').textContent = 'Selesai otomatis';
-            document.getElementById('editLabelText').textContent = 'Selesai otomatis pada:';
-            document.getElementById('editDropdownChip').classList.remove('hidden');
-            document.getElementById('editDateInputContainer').classList.add('hidden');
-            document.querySelector('.edit-chip-text-2').textContent = '1 hari dari sekarang';
-            document.getElementById('editAutoDue').value = '1 hari dari sekarang';
-            document.getElementById('editCustomDeadline').value = '';
+            const chipText1 = document.querySelector('.edit-chip-text-1');
+            const chipText2 = document.querySelector('.edit-chip-text-2');
+            const labelText = document.getElementById('editLabelText');
+            const dropdownChip = document.getElementById('editDropdownChip');
+            const dateInputContainer = document.getElementById('editDateInputContainer');
+            const autoDueInput = document.getElementById('editAutoDue');
+            const customDeadlineInput = document.getElementById('editCustomDeadline');
 
-            // Reset privacy switch
-            const switchInput = document.getElementById('editSwitchRahasia');
-            const switchBg = document.getElementById('editSwitchBg');
-            const switchCircle = document.getElementById('editSwitchCircle');
-
-            switchInput.checked = false;
-            switchBg.classList.remove('bg-blue-600');
-            switchBg.classList.add('bg-gray-300');
-            switchCircle.style.transform = 'translateX(0px)';
+            if (chipText1) chipText1.textContent = 'Selesai otomatis';
+            if (labelText) labelText.textContent = 'Selesai otomatis pada:';
+            if (dropdownChip) dropdownChip.classList.remove('hidden');
+            if (dateInputContainer) dateInputContainer.classList.add('hidden');
+            if (chipText2) chipText2.textContent = '1 hari dari sekarang';
+            if (autoDueInput) autoDueInput.value = '1 hari dari sekarang';
+            if (customDeadlineInput) customDeadlineInput.value = '';
 
             // Reset submit state
             isSubmittingEdit = false;
@@ -1559,7 +1592,10 @@
             console.log('Populating form with data:', data);
 
             // Judul
-            document.getElementById('editTitle').value = data.title || '';
+            const titleInput = document.getElementById('editTitle');
+            if (titleInput) {
+                titleInput.value = data.title || '';
+            }
 
             // Deskripsi - set ke CKEditor
             const editor = window['edit-catatan-editor_editor'];
@@ -1567,181 +1603,180 @@
                 editor.setData(data.description || '');
             } else {
                 // Jika editor belum siap, tunggu sebentar
+                console.warn('Editor not ready, retrying in 500ms...');
                 setTimeout(() => {
                     const editorRetry = window['edit-catatan-editor_editor'];
                     if (editorRetry) {
                         editorRetry.setData(data.description || '');
                     } else {
-                        console.error('CKEditor not found');
+                        console.error('CKEditor still not found after retry');
                     }
                 }, 500);
             }
 
             // Due date settings
+            const chipText1 = document.querySelector('.edit-chip-text-1');
+            const chipText2 = document.querySelector('.edit-chip-text-2');
+            const labelText = document.getElementById('editLabelText');
+            const dropdownChip = document.getElementById('editDropdownChip');
+            const dateInputContainer = document.getElementById('editDateInputContainer');
+            const autoDueInput = document.getElementById('editAutoDue');
+            const customDeadlineInput = document.getElementById('editCustomDeadline');
+
             if (data.auto_due && data.auto_due !== '') {
                 // Mode auto due
-                document.querySelector('.edit-chip-text-1').textContent = 'Selesai otomatis';
-                document.getElementById('editLabelText').textContent = 'Selesai otomatis pada:';
-                document.getElementById('editDropdownChip').classList.remove('hidden');
-                document.getElementById('editDateInputContainer').classList.add('hidden');
-                document.querySelector('.edit-chip-text-2').textContent = data.auto_due;
-                document.getElementById('editAutoDue').value = data.auto_due;
+                if (chipText1) chipText1.textContent = 'Selesai otomatis';
+                if (labelText) labelText.textContent = 'Selesai otomatis pada:';
+                if (dropdownChip) dropdownChip.classList.remove('hidden');
+                if (dateInputContainer) dateInputContainer.classList.add('hidden');
+                if (chipText2) chipText2.textContent = data.auto_due;
+                if (autoDueInput) autoDueInput.value = data.auto_due;
             } else if (data.due_date) {
                 // Mode manual due date
-                document.querySelector('.edit-chip-text-1').textContent = 'Atur tenggat waktu sendiri';
-                document.getElementById('editLabelText').textContent = 'Tenggat :';
-                document.getElementById('editDropdownChip').classList.add('hidden');
-                document.getElementById('editDateInputContainer').classList.remove('hidden');
-                document.getElementById('editCustomDeadline').value = data.due_date;
-                document.getElementById('editAutoDue').value = '';
+                if (chipText1) chipText1.textContent = 'Atur tenggat waktu sendiri';
+                if (labelText) labelText.textContent = 'Tenggat :';
+                if (dropdownChip) dropdownChip.classList.add('hidden');
+                if (dateInputContainer) dateInputContainer.classList.remove('hidden');
+                if (customDeadlineInput) customDeadlineInput.value = data.due_date;
+                if (autoDueInput) autoDueInput.value = '';
             } else {
                 // Default mode
-                document.querySelector('.edit-chip-text-1').textContent = 'Selesai otomatis';
-                document.getElementById('editLabelText').textContent = 'Selesai otomatis pada:';
-                document.getElementById('editDropdownChip').classList.remove('hidden');
-                document.getElementById('editDateInputContainer').classList.add('hidden');
-                document.querySelector('.edit-chip-text-2').textContent = '1 hari dari sekarang';
-                document.getElementById('editAutoDue').value = '1 hari dari sekarang';
-            }
-
-            // Privacy setting
-            const switchInput = document.getElementById('editSwitchRahasia');
-            const switchBg = document.getElementById('editSwitchBg');
-            const switchCircle = document.getElementById('editSwitchCircle');
-
-            if (data.is_private) {
-                switchInput.checked = true;
-                switchBg.classList.remove('bg-gray-300');
-                switchBg.classList.add('bg-blue-600');
-                switchCircle.style.transform = 'translateX(20px)';
-            } else {
-                switchInput.checked = false;
-                switchBg.classList.remove('bg-blue-600');
-                switchBg.classList.add('bg-gray-300');
-                switchCircle.style.transform = 'translateX(0px)';
+                if (chipText1) chipText1.textContent = 'Selesai otomatis';
+                if (labelText) labelText.textContent = 'Selesai otomatis pada:';
+                if (dropdownChip) dropdownChip.classList.remove('hidden');
+                if (dateInputContainer) dateInputContainer.classList.add('hidden');
+                if (chipText2) chipText2.textContent = '1 hari dari sekarang';
+                if (autoDueInput) autoDueInput.value = '1 hari dari sekarang';
             }
         }
 
         // Event listener untuk form submit
-        document.getElementById('pengumumanEditForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            // Cegah multiple submit
-            if (isSubmittingEdit) {
-                console.log('Submit already in progress, please wait...');
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('pengumumanEditForm');
+            if (!form) {
+                console.error('Form pengumumanEditForm not found!');
                 return;
             }
 
-            isSubmittingEdit = true;
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
 
-            const pengumumanId = document.getElementById('editPengumumanId').value;
-            const companyId = "{{ $company_id }}";
+                // Cegah multiple submit
+                if (isSubmittingEdit) {
+                    console.log('Submit already in progress, please wait...');
+                    return;
+                }
 
-            // Sinkronkan CKEditor sebelum FormData dibuat
-            if (window['edit-catatan-editor_editor']) {
-                window['edit-catatan-editor_editor'].updateSourceElement();
-            }
+                isSubmittingEdit = true;
 
-            const formData = new FormData(this);
+                const pengumumanId = document.getElementById('editPengumumanId').value;
+                const companyId = "{{ $company_id }}";
 
-            // Validasi form
-            const title = document.getElementById('editTitle').value.trim();
-            const editor = window['edit-catatan-editor_editor'];
-            const editorData = editor ? editor.getData().trim() : '';
+                // Validasi form
+                const title = document.getElementById('editTitle').value.trim();
+                const editor = window['edit-catatan-editor_editor'];
+                const editorData = editor ? editor.getData().trim() : '';
 
-            if (!title) {
-                Swal.fire("Kolom Belum Diisi", "Judul pengumuman wajib diisi.", "warning");
-                isSubmittingEdit = false;
-                return;
-            }
+                if (!title) {
+                    Swal.fire("Kolom Belum Diisi", "Judul pengumuman wajib diisi.", "warning");
+                    isSubmittingEdit = false;
+                    return;
+                }
 
-            if (!editorData || editorData === "<p><br></p>") {
-                Swal.fire("Kolom Belum Diisi", "Deskripsi pengumuman wajib diisi.", "warning");
-                isSubmittingEdit = false;
-                return;
-            }
+                if (!editorData || editorData === "<p><br></p>") {
+                    Swal.fire("Kolom Belum Diisi", "Deskripsi pengumuman wajib diisi.", "warning");
+                    isSubmittingEdit = false;
+                    return;
+                }
 
-            // Set deskripsi ke hidden input
-            document.getElementById('editCatatanInput').value = editorData;
+                // Set deskripsi ke hidden input
+                document.getElementById('editCatatanInput').value = editorData;
 
-            // TAMBAHKAN attachable_id ke formData untuk attachments
-            formData.append('attachable_id', pengumumanId);
-
-            console.log('Submitting form with data:', {
-                title: title,
-                description: editorData.substring(0, 100) + '...',
-                is_private: document.getElementById('editSwitchRahasia').checked,
-                attachable_id: pengumumanId
-            });
-
-            // PERBAIKAN: Gunakan route yang benar
-            fetch(`/companies/{{ $company_id }}/pengumuman-perusahaan/${pengumumanId}`, {
-                method: 'POST', // ⚠️ Ganti ke POST
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
-                        'content'),
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    _method: 'PUT', // ✅ Laravel akan parse ini sebagai PUT
+                console.log('Submitting form with data:', {
                     title: title,
-                    description: editorData,
-                    auto_due: document.getElementById('editAutoDue').value,
-                    due_date: document.getElementById('editCustomDeadline').value,
-                    is_private: document.getElementById('editSwitchRahasia').checked,
+                    description: editorData.substring(0, 100) + '...',
                     attachable_id: pengumumanId
-                })
-            }))
-        .then(async response => {
-            const text = await response.text();
-            try {
-                return JSON.parse(text);
-            } catch {
-                throw new Error("Server tidak mengembalikan JSON: " + text.slice(0, 120));
-            }
-        })
-        .then(data => {
-            console.log('Response data:', data);
-            if (data.success) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil!',
-                    text: data.message,
-                    timer: 2000,
-                    showConfirmButton: false
-                }).then(() => {
-                    closeEditModal();
-                    if (data.redirect) {
-                        window.location.href = data.redirect;
-                    } else {
-                        location.reload();
-                    }
                 });
-            } else {
-                Swal.fire("Error", data.message || "Terjadi kesalahan", "error");
-            }
-        })
-        .catch(error => {
-            console.error('Submit error (update):', error);
-            Swal.fire("Error", "Terjadi kesalahan saat memperbarui pengumuman", "error");
-        })
-        .finally(() => {
-            isSubmittingEdit = false;
-        });
+
+                // Submit via fetch
+                fetch(`/companies/${companyId}/pengumuman-perusahaan/${pengumumanId}`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                .getAttribute('content'),
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            _method: 'PUT',
+                            title: title,
+                            description: editorData,
+                            auto_due: document.getElementById('editAutoDue').value,
+                            due_date: document.getElementById('editCustomDeadline').value,
+                            is_private: false, // Default value karena tidak ada switch
+                            attachable_id: pengumumanId
+                        })
+                    })
+                    .then(async response => {
+                        const text = await response.text();
+                        console.log('Response text:', text);
+                        try {
+                            return JSON.parse(text);
+                        } catch {
+                            throw new Error("Server tidak mengembalikan JSON: " + text.slice(0,
+                                120));
+                        }
+                    })
+                    .then(data => {
+                        console.log('Response data:', data);
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: data.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                closeEditModal();
+                                if (data.redirect) {
+                                    window.location.href = data.redirect;
+                                } else {
+                                    location.reload();
+                                }
+                            });
+                        } else {
+                            Swal.fire("Error", data.message || "Terjadi kesalahan", "error");
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Submit error:', error);
+                        Swal.fire("Error", "Terjadi kesalahan saat memperbarui pengumuman: " + error
+                            .message, "error");
+                    })
+                    .finally(() => {
+                        isSubmittingEdit = false;
+                    });
+            });
         });
 
         // Fungsi untuk menutup modal edit
         function closeEditModal() {
             const modal = document.getElementById('openEditModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-
-            // Reset submit state
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
             isSubmittingEdit = false;
         }
 
         // Event listener untuk tombol batal
-        document.getElementById('editBtnBatal').addEventListener('click', closeEditModal);
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnBatal = document.getElementById('editBtnBatal');
+            if (btnBatal) {
+                btnBatal.addEventListener('click', closeEditModal);
+            }
+        });
     </script>
 
     <!-- delete -->

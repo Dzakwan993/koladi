@@ -420,7 +420,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/pengumuman-perusahaan', [\App\Http\Controllers\PengumumanPerusahaanController::class, 'index'])->name('pengumuman-perusahaan.index');
             Route::post('/pengumuman-perusahaan', [\App\Http\Controllers\PengumumanPerusahaanController::class, 'store'])->name('pengumuman-perusahaan.store');
             Route::get('/pengumuman-perusahaan/{id}', [\App\Http\Controllers\PengumumanPerusahaanController::class, 'show'])->name('pengumuman-perusahaan.show');
-            Route::get('/pengumuman-perusahaan/{id}/edit', [\App\Http\Controllers\PengumumanPerusahaanController::class, 'getEditData'])->name('pengumuman-perusahaan.edit');
+            Route::get('/pengumuman-perusahaan/{id}/edit-data', [\App\Http\Controllers\PengumumanPerusahaanController::class, 'getEditData'])->name('pengumuman-perusahaan.edit'); // ✅ BENAR
             Route::put('/pengumuman-perusahaan/{id}', [\App\Http\Controllers\PengumumanPerusahaanController::class, 'update'])->name('pengumuman-perusahaan.update');
             Route::delete('/pengumuman-perusahaan/{id}', [\App\Http\Controllers\PengumumanPerusahaanController::class, 'destroy'])->name('pengumuman-perusahaan.destroy');
         });
