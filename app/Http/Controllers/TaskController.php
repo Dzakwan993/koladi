@@ -23,9 +23,6 @@ use Illuminate\Support\Str;
 
 class TaskController extends Controller
 {
-
-
-
     private function canAccessWorkspace($workspaceId)
     {
         $user = Auth::user();
@@ -1378,7 +1375,7 @@ public function deleteChecklist($checklistId)
         $attachment->file_size = $file->getSize();
         $attachment->uploaded_by = $user->id;
         $attachment->uploaded_at = now();
-        
+
         // ✅ Save tanpa mass assignment untuk avoid error
         $attachment->save();
 
@@ -1741,7 +1738,7 @@ public function deleteChecklist($checklistId)
                 'attachments' => $task->attachments->map(function ($attachment) {
     // ✅ PERBAIKAN: Ambil nama file dari attribute atau file_url
     $fileName = $attachment->file_name ?? basename($attachment->file_url);
-    
+
     return [
         'id' => $attachment->id,
         'name' => $fileName,
@@ -1923,10 +1920,10 @@ public function deleteChecklist($checklistId)
 
         // ✅ PERBAIKAN: Reload task dengan relasi lengkap
         $task->load([
-            'assignments.user', 
-            'labels.color', 
-            'checklists', 
-            'attachments', 
+            'assignments.user',
+            'labels.color',
+            'checklists',
+            'attachments',
             'boardColumn',
             'creator'
         ]);
@@ -1960,7 +1957,7 @@ public function deleteChecklist($checklistId)
 
     } catch (\Exception $e) {
         DB::rollBack();
-        
+
         Log::error('Error updating task detail:', [
             'task_id' => $taskId,
             'error' => $e->getMessage(),
@@ -2226,7 +2223,7 @@ public function createChecklistForTask(Request $request, $taskId)
         $attachment->file_size = $file->getSize();
         $attachment->uploaded_by = $user->id;
         $attachment->uploaded_at = now();
-        
+
         $attachment->save();
 
         $attachment->load('uploader');
@@ -2491,7 +2488,7 @@ public function getTimelineData($workspaceId)
             // Normalisasi untuk grouping: lowercase dan trim
             $originalPhaseName = trim($task->phase);
             $normalizedKey = strtolower($originalPhaseName);
-            
+
             // Handle empty phase name
             if (empty($normalizedKey)) {
                 $originalPhaseName = 'Uncategorized';
@@ -2502,7 +2499,7 @@ public function getTimelineData($workspaceId)
             if (!isset($phaseGroups[$normalizedKey])) {
                 // Gunakan display name yang konsisten
                 $displayName = $this->getDisplayPhaseName($originalPhaseName);
-                
+
                 $phaseGroups[$normalizedKey] = [
                     'original_name' => $displayName,
                     'normalized_key' => $normalizedKey,
@@ -2540,7 +2537,7 @@ public function getTimelineData($workspaceId)
 
         // ✅ PERBAIKAN: Hitung progress dan date range untuk setiap phase
         $durations = [];
-        
+
         foreach ($phaseGroups as $normalizedKey => &$phase) {
             // Progress percentage
             $phase['progress_percentage'] = $phase['total_tasks'] > 0
@@ -2549,7 +2546,7 @@ public function getTimelineData($workspaceId)
 
             // Date range calculation
             $dateRange = $this->calculatePhaseDateRange($phase['tasks']);
-            
+
             $phase['start_date'] = $dateRange['start_date'];
             $phase['end_date'] = $dateRange['end_date'];
             $phase['duration'] = $dateRange['duration'];
@@ -2558,7 +2555,7 @@ public function getTimelineData($workspaceId)
                 $durations[] = $dateRange['duration'];
             }
         }
-        
+
         unset($phase); // Unset reference untuk menghindari bug
 
         // Hitung durasi maksimum untuk scaling
@@ -2605,11 +2602,11 @@ public function getTimelineData($workspaceId)
             if (!$a['start_date'] && !$b['start_date']) return 0;
             if (!$a['start_date']) return 1; // Yang null di akhir
             if (!$b['start_date']) return -1; // Yang null di akhir
-            
+
             // Convert to timestamp for comparison
             $timeA = strtotime($a['start_date']);
             $timeB = strtotime($b['start_date']);
-            
+
             // Ascending order (earliest first)
             return $timeA - $timeB;
         });
@@ -2617,7 +2614,7 @@ public function getTimelineData($workspaceId)
         // ✅ PERBAIKAN: Set IDs dan format tasks array setelah sorting
         foreach ($timelineData as $index => &$phaseItem) {
             $phaseItem['id'] = $index + 1;
-            
+
             // Format tasks array
             $phaseItem['tasks'] = array_map(function ($task) {
                 return [
@@ -2636,7 +2633,7 @@ public function getTimelineData($workspaceId)
                 ];
             }, $phaseItem['tasks']);
         }
-        
+
         unset($phaseItem); // Unset reference
 
         // ✅ DEBUG: Check for duplicates
@@ -2666,7 +2663,7 @@ public function getTimelineData($workspaceId)
                 'end_date' => $phase['end_date']
             ];
         }, $timelineData));
-        
+
         Log::info('=== TIMELINE DEBUG END ===');
 
         return response()->json([
@@ -2681,7 +2678,7 @@ public function getTimelineData($workspaceId)
                 'duplicates_found' => $duplicates
             ]
         ]);
-        
+
     } catch (\Exception $e) {
         Log::error('Error getting timeline data: ' . $e->getMessage());
         Log::error('Stack trace: ' . $e->getTraceAsString());
@@ -2708,18 +2705,18 @@ public function cleanupPhases($workspaceId)
             ->get();
 
         $updates = [];
-        
+
         foreach ($tasks as $task) {
             $oldPhase = $task->phase;
             $newPhase = 'Uncategorized';
-            
+
             $updates[] = [
                 'task_id' => $task->id,
                 'title' => $task->title,
                 'old_phase' => $oldPhase ?? '(NULL)',
                 'new_phase' => $newPhase
             ];
-            
+
             $task->phase = $newPhase;
             $task->save();
         }
@@ -2730,7 +2727,7 @@ public function cleanupPhases($workspaceId)
             'updated_count' => count($updates),
             'updates' => $updates
         ]);
-        
+
     } catch (\Exception $e) {
         Log::error('Error cleaning up phases: ' . $e->getMessage());
         return response()->json([
@@ -2748,10 +2745,10 @@ private function getDisplayPhaseName($originalPhaseName)
     if (empty(trim($originalPhaseName))) {
         return 'Uncategorized';
     }
-    
+
     // Gunakan ucwords dengan delimiter spasi dan strip_tags untuk safety
     $displayName = ucwords(strtolower(trim(strip_tags($originalPhaseName))));
-    
+
     return $displayName;
 }
 
@@ -2830,7 +2827,7 @@ public function debugPhases($workspaceId)
     $tasks = Task::where('workspace_id', $workspaceId)
         ->select('id', 'title', 'phase', 'status')
         ->get();
-    
+
     $phases = $tasks->groupBy(function($task) {
         return strtolower(trim($task->phase ?? ''));
     })->map(function($group) {
@@ -2847,7 +2844,7 @@ public function debugPhases($workspaceId)
             })->values()
         ];
     });
-    
+
     return response()->json([
         'success' => true,
         'phases' => $phases,
@@ -2882,7 +2879,7 @@ public function debugPhases($workspaceId)
 //     // Normalize input
 //     $normalized = strtolower(
 //         trim(
-//             preg_replace('/\s+/', ' ', 
+//             preg_replace('/\s+/', ' ',
 //                 preg_replace('/[^a-zA-Z0-9\s]/', '', $phaseName)
 //             )
 //         )
@@ -2959,7 +2956,7 @@ public function deleteTask($taskId)
     } catch (\Exception $e) {
         DB::rollBack();
         Log::error('Error deleting task: ' . $e->getMessage());
-        
+
         return response()->json([
             'success' => false,
             'message' => 'Gagal menghapus tugas: ' . $e->getMessage()
@@ -2997,7 +2994,7 @@ public function forceDeleteTask($taskId)
         $task->assignments()->delete();
         $task->checklists()->delete();
         $task->labels()->detach();
-        
+
         // Delete attachments files
         foreach ($task->attachments as $attachment) {
             if (Storage::disk('public')->exists($attachment->file_url)) {
@@ -3022,7 +3019,7 @@ public function forceDeleteTask($taskId)
     } catch (\Exception $e) {
         DB::rollBack();
         Log::error('Error force deleting task: ' . $e->getMessage());
-        
+
         return response()->json([
             'success' => false,
             'message' => 'Gagal menghapus permanen: ' . $e->getMessage()
@@ -3071,7 +3068,7 @@ public function restoreTask($taskId)
 
     } catch (\Exception $e) {
         Log::error('Error restoring task: ' . $e->getMessage());
-        
+
         return response()->json([
             'success' => false,
             'message' => 'Gagal mengembalikan tugas: ' . $e->getMessage()
@@ -3100,7 +3097,7 @@ public function deleteCustomColumn($columnId)
 
         // ✅ Cegah penghapusan kolom default
         $defaultColumns = ['To Do List', 'Dikerjakan', 'Selesai', 'Batal'];
-        
+
         if (in_array($column->name, $defaultColumns)) {
             return response()->json([
                 'success' => false,
@@ -3110,7 +3107,7 @@ public function deleteCustomColumn($columnId)
 
         // ✅ Pastikan tidak ada tugas di kolom ini sebelum dihapus
         $taskCount = Task::where('board_column_id', $columnId)->count();
-        
+
         if ($taskCount > 0) {
             return response()->json([
                 'success' => false,
@@ -3141,7 +3138,7 @@ public function deleteCustomColumn($columnId)
     } catch (\Exception $e) {
         DB::rollBack();
         Log::error('Error deleting custom column: ' . $e->getMessage());
-        
+
         return response()->json([
             'success' => false,
             'message' => 'Gagal menghapus kolom: ' . $e->getMessage()
@@ -3163,7 +3160,7 @@ public function deleteColumnWithTasksTransfer(Request $request, $columnId)
         $targetColumn = BoardColumn::findOrFail($request->target_column_id);
 
         // Validasi akses
-        if (!$this->canAccessWorkspace($column->workspace_id) || 
+        if (!$this->canAccessWorkspace($column->workspace_id) ||
             !$this->canAccessWorkspace($targetColumn->workspace_id)) {
             return response()->json([
                 'success' => false,
@@ -3198,7 +3195,7 @@ public function deleteColumnWithTasksTransfer(Request $request, $columnId)
     } catch (\Exception $e) {
         DB::rollBack();
         Log::error('Error deleting column with transfer: ' . $e->getMessage());
-        
+
         return response()->json([
             'success' => false,
             'message' => 'Gagal menghapus kolom: ' . $e->getMessage()
