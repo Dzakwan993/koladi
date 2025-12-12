@@ -26,6 +26,8 @@ use App\Http\Controllers\CompanyChatController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\DocumentCommentController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\CompanyDokumenController;
+use App\Http\Controllers\CompanyDocumentCommentController;
 
 // 🔥 Broadcasting Routes
 Broadcast::routes(['middleware' => ['web', 'auth']]);
@@ -118,6 +120,20 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/subscription/create', [SubscriptionController::class, 'createSubscription'])->name('subscription.create');
     Route::get('/api/subscription/status', [SubscriptionController::class, 'checkTrialStatus'])->name('api.subscription.status');
 
+    // ========================================
+    // 🔥 NEW: API ROUTES UNTUK DOKUMEN
+    // (Letakkan DI AWAL setelah Route::middleware(['auth'])->group)
+    // ========================================
+
+    // API untuk get user workspaces
+    Route::get('/api/user/workspaces', [DokumenController::class, 'getUserWorkspaces']);
+
+    // Route untuk move documents
+    Route::post('/documents/move', [DokumenController::class, 'moveDocuments']);
+
+    // ✅ BARU - Get subfolders dari folder tertentu
+    Route::get('/api/folders/{folder}/subfolders', [DokumenController::class, 'getFolderSubfolders']);
+
     // Profile Routes
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -130,9 +146,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 
 
-//     Route::get('/admin/dashboard', function () {
-//     return view('dashboard_admin');
-// })->name('admin.dashboard');
+    //     Route::get('/admin/dashboard', function () {
+    //     return view('dashboard_admin');
+    // })->name('admin.dashboard');
 
 
     // ============================================
@@ -376,6 +392,32 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('documents')->group(function () {
             Route::get('/{file}/comments', [DocumentCommentController::class, 'index']);
             Route::post('/comments', [DocumentCommentController::class, 'store'])->name('document.comments.store');
+        });
+
+        // ========================================
+        // 🔥 COMPANY DOCUMENTS (NEW) - TAMBAHKAN INI
+        // ========================================
+        Route::prefix('company-documents')->name('company-documents.')->group(function () {
+            Route::get('/', [CompanyDokumenController::class, 'index'])->name('index');
+            Route::post('/folder', [CompanyDokumenController::class, 'storeFolder'])->name('folder.store');
+            Route::post('/file', [CompanyDokumenController::class, 'storeFile'])->name('file.store');
+            Route::post('/folders/{id}/update', [CompanyDokumenController::class, 'updateFolder'])->name('folder.update');
+            Route::put('/files/{id}/update', [CompanyDokumenController::class, 'updateFile'])->name('files.update');
+            Route::delete('/files/{id}/delete', [CompanyDokumenController::class, 'destroyFile'])->name('files.destroy');
+            Route::delete('/folders/{folder}/delete', [CompanyDokumenController::class, 'destroyFolder'])->name('folders.destroy');
+            Route::get('/members', [CompanyDokumenController::class, 'getCompanyMembers'])->name('members');
+            Route::post('/recipients', [CompanyDokumenController::class, 'recipientsStore'])->name('recipients.store');
+            Route::get('/{document}/recipients', [CompanyDokumenController::class, 'getRecipients'])->name('recipients.get');
+
+            // ✅ Route untuk move documents dari company ke workspace
+            Route::post('/move', [CompanyDokumenController::class, 'moveDocuments'])->name('move');
+            Route::get('/workspaces', [CompanyDokumenController::class, 'getAvailableWorkspaces'])->name('workspaces');
+        });
+
+        // Comments untuk company documents
+        Route::prefix('company-documents')->group(function () {
+            Route::get('/{file}/comments', [CompanyDocumentCommentController::class, 'index']);
+            Route::post('/comments', [CompanyDocumentCommentController::class, 'store'])->name('company.document.comments.store');
         });
 
         // ========================================

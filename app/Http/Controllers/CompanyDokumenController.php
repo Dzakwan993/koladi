@@ -2,28 +2,34 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Workspace;
-use App\Models\DocumentRecipient;
+use App\Models\Company;
 use App\Models\Folder;
 use App\Models\File;
-use Illuminate\Support\Str; // ⬅⬅ Tambahkan ini
-use Illuminate\Http\Request;
-use App\Http\Requests\StoreFolderRequest;
-use App\Http\Requests\StoreFileRequest;
-use App\Models\UserWorkspace;
 use App\Models\User;
+use App\Models\DocumentRecipient;
+use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\StoreCompanyFolderRequest;
+use App\Http\Requests\StoreCompanyFileRequest;
+use App\Models\Workspace;
 
-class DokumenController extends Controller
+class CompanyDokumenController extends Controller
 {
-    public function index(Workspace $workspace)
+    public function index()
     {
         $user = auth()->user();
         $userId = $user->id;
+        $activeCompanyId = session('active_company_id');
 
-        $activeCompanyId = $workspace->company_id;
+        if (!$activeCompanyId) {
+            return redirect()->route('dashboard')->with('error', 'Tidak ada company aktif');
+        }
 
-        // Cek role SuperAdmin perusahaan
+        // ================================
+        // CEK ROLE COMPANY
+        // ================================
         $userCompany = $user->userCompanies()
             ->where('company_id', $activeCompanyId)
             ->with('role')
@@ -36,7 +42,6 @@ class DokumenController extends Controller
         // ACCESS CONDITION FOR FOLDERS
         // ================================
         $folderAccess = function ($query) use ($userId, $isSuperAdmin) {
-
             $query->where('is_private', false);
 
             if ($isSuperAdmin) {
@@ -61,7 +66,6 @@ class DokumenController extends Controller
         // ACCESS CONDITION FOR FILES
         // ================================
         $fileAccess = function ($query) use ($userId, $isSuperAdmin) {
-
             $query->where('is_private', false);
 
             if ($isSuperAdmin) {
@@ -83,19 +87,17 @@ class DokumenController extends Controller
         };
 
         // ================================
-        // GET FOLDERS
+        // GET FOLDERS (PER COMPANY)
         // ================================
-        $folders = Folder::where('workspace_id', $workspace->id)
+        $folders = Folder::where('company_id', $activeCompanyId) // ← BEDANYA DI SINI
+            ->whereNull('workspace_id') // ← PASTIKAN BUKAN MILIK WORKSPACE
             ->where($folderAccess)
             ->with([
                 'creator',
                 'documentRecipients',
                 'files' => function ($query) use ($fileAccess) {
                     $query->where($fileAccess)
-                        ->with(
-                            'uploader',
-                            'documentRecipients'
-                        );
+                        ->with('uploader', 'documentRecipients');
                 }
             ])
             ->withCount([
@@ -107,67 +109,46 @@ class DokumenController extends Controller
             ->get();
 
         // ================================
-        // GET ROOT FILES
+        // GET ROOT FILES (PER COMPANY)
         // ================================
-        $rootFiles = File::where('workspace_id', $workspace->id)
+        $rootFiles = File::where('company_id', $activeCompanyId) // ← BEDANYA DI SINI
+            ->whereNull('workspace_id') // ← PASTIKAN BUKAN MILIK WORKSPACE
+            ->whereNull('folder_id')
             ->where($fileAccess)
             ->with(['uploader', 'documentRecipients'])
             ->orderBy('uploaded_at', 'desc')
             ->get();
 
-        // 🔹 DEBUG: log apa yang di-pass ke view
-        \Log::info('DokumenController@index called', [
-            'workspace_id' => $workspace->id,
-            'user_id' => $userId,
-            'folders_count' => $folders->count(),
-            'rootFiles_count' => $rootFiles->count(),
-            'session_alert' => session('alert'),
-            'session_keys' => session()->all(),
-        ]);
+        $company = Company::find($activeCompanyId);
 
-        // ✅ TAMBAHAN: Log untuk debug
-        \Log::info('Root files with uploader:', [
-            'count' => $rootFiles->count(),
-            'sample' => $rootFiles->first() ? [
-                'id' => $rootFiles->first()->id,
-                'name' => $rootFiles->first()->name,
-                'uploaded_by' => $rootFiles->first()->uploaded_by,
-                'uploader' => $rootFiles->first()->uploader ? [
-                    'id' => $rootFiles->first()->uploader->id,
-                    'name' => $rootFiles->first()->uploader->full_name,
-                ] : null
-            ] : null
-        ]);
-
-
-        return view('dokumen-dan-file', compact('workspace', 'folders', 'rootFiles'));
+        return view('company-dokumen-dan-file', compact('company', 'folders', 'rootFiles'));
     }
 
-
-
-
-
-    public function store(StoreFolderRequest $request)
+    public function storeFolder(StoreCompanyFolderRequest $request)
     {
+        \Log::info('📝 storeFolder request data:', $request->all());
+
         $validated = $request->validated();
 
+        \Log::info('✅ Validated data:', $validated);
+
+        // ✅ HANYA 1x CREATE
         Folder::create([
-            'workspace_id' => $validated['workspace_id'],
+            'company_id' => $validated['company_id'],
+            'workspace_id' => null,
             'name' => $validated['name'],
             'is_private' => $validated['is_private'] ?? false,
             'created_by' => auth()->id(),
             'parent_id' => $validated['parent_id'] ?? null,
         ]);
 
-        // 🔥 PERBAIKAN: Redirect dengan URL eksplisit
-        $workspaceId = $validated['workspace_id'];
-        $parentId = $validated['parent_id'] ?? null;
+        $redirectUrl = route('company-documents.index');
 
-        $redirectUrl = route('dokumen-dan-file', ['workspace' => $workspaceId]);
-
-        if ($parentId) {
-            $redirectUrl .= '?folder=' . $parentId;
+        if ($validated['parent_id'] ?? null) {
+            $redirectUrl .= '?folder=' . $validated['parent_id'];
         }
+
+        \Log::info('🔀 Redirect URL generated:', ['url' => $redirectUrl]);
 
         return response()->json([
             'success' => true,
@@ -180,25 +161,23 @@ class DokumenController extends Controller
         ]);
     }
 
-    public function storeFile(StoreFileRequest $request)
+    public function storeFile(StoreCompanyFileRequest $request)
     {
         $validated = $request->validated();
-        $uploadedBy = auth()->id();
-        $uploaded = $request->file('file');
 
-        // --------- [1] Ambil nama awal ---------
+        $uploaded = $request->file('file');
         $originalName = pathinfo($uploaded->getClientOriginalName(), PATHINFO_FILENAME);
         $extension = $uploaded->getClientOriginalExtension();
 
-        $workspaceId = $validated['workspace_id'];
+        $companyId = $validated['company_id'];
         $folderId = $validated['folder_id'] ?? null;
 
-        // --------- [2] Generate nama unik ---------
+        // Generate nama unik
         $newName = $originalName;
         $counter = 1;
 
         while (
-            File::where('workspace_id', $workspaceId)
+            File::where('company_id', $companyId)
                 ->where('folder_id', $folderId)
                 ->where('file_name', $newName . '.' . $extension)
                 ->exists()
@@ -209,18 +188,15 @@ class DokumenController extends Controller
 
         $finalName = $newName . '.' . $extension;
 
-        // --------- [3] Simpan fisik dengan nama final ---------
-        $path = $uploaded->storeAs(
-            'files',
-            $finalName,
-            'public'
-        );
+        // Simpan fisik
+        $path = $uploaded->storeAs('files', $finalName, 'public');
 
-        // --------- [4] Simpan ke database ---------
+        // Simpan ke database
         $fileModel = File::create([
-            'workspace_id' => $workspaceId,
+            'company_id' => $companyId,
+            'workspace_id' => null, // ← PENTING: NULL untuk company-level
             'folder_id' => $folderId,
-            'uploaded_by' => $uploadedBy,
+            'uploaded_by' => auth()->id(),
             'file_name' => $finalName,
             'file_path' => $path,
             'file_size' => $uploaded->getSize(),
@@ -230,16 +206,12 @@ class DokumenController extends Controller
             'uploaded_at' => now(),
         ]);
 
-        $workspaceId = $validated['workspace_id'];
-        $folderId = $validated['folder_id'] ?? null;
-
-        $redirectUrl = route('dokumen-dan-file', ['workspace' => $workspaceId]);
+        $redirectUrl = route('company-documents.index');
 
         if ($folderId) {
             $redirectUrl .= '?folder=' . $folderId;
         }
 
-        // 🔥 SOLUSI: Return JSON dengan redirect URL
         return response()->json([
             'success' => true,
             'redirect_url' => $redirectUrl,
@@ -250,7 +222,6 @@ class DokumenController extends Controller
             ]
         ]);
     }
-
 
     public function updateFolder(Request $request, $id)
     {
@@ -264,34 +235,28 @@ class DokumenController extends Controller
 
         $messages = [];
 
-        // Perubahan nama
         if ($oldName !== $newName) {
             $messages[] = "Nama folder diperbarui.";
         }
 
-        // Perubahan private/public
         if ($oldPrivate !== $newPrivate) {
             $messages[] = "Aturan privasi folder diperbarui.";
 
-            // Jika dari true -> false, reset semua document_recipients
             if ($oldPrivate === true && $newPrivate === false) {
                 $folder->documentRecipients()->update(['status' => false]);
             }
         }
 
-        // Jika tidak ada perubahan sama sekali
         if (empty($messages)) {
             $messages[] = "Tidak ada perubahan pada folder.";
         }
 
-        // Update data folder
         $folder->update([
             'name' => $newName,
             'is_private' => $newPrivate,
         ]);
 
-        // 🔥 PERBAIKAN: Redirect dengan URL eksplisit
-        $redirectUrl = route('dokumen-dan-file', ['workspace' => $folder->workspace_id]);
+        $redirectUrl = route('company-documents.index');
         $redirectUrl .= '?folder=' . $folder->id;
 
         return response()->json([
@@ -305,7 +270,6 @@ class DokumenController extends Controller
         ]);
     }
 
-
     public function updateFile(Request $request, $id)
     {
         $file = File::findOrFail($id);
@@ -318,40 +282,31 @@ class DokumenController extends Controller
 
         $messages = [];
 
-        // Perubahan nama
         if ($oldName !== $newName) {
             $messages[] = "Nama file diperbarui.";
         }
 
-        // Perubahan private/public
         if ($oldPrivate !== $newPrivate) {
             $messages[] = "Aturan privasi file diperbarui.";
 
-            // Jika dari true -> false, reset semua document_recipients
             if ($oldPrivate === true && $newPrivate === false) {
                 $file->documentRecipients()->update(['status' => false]);
             }
         }
 
-        // Jika tidak ada perubahan sama sekali
         if (empty($messages)) {
             $messages[] = "Tidak ada perubahan pada file.";
         }
 
-        // Update data file
         $file->update([
             'name' => $newName,
             'is_private' => $newPrivate,
         ]);
 
-        // 🔥 PERBAIKAN: Redirect dengan URL eksplisit
-        $workspaceId = $file->workspace_id;
-        $folderId = $file->folder_id;
+        $redirectUrl = route('company-documents.index');
 
-        $redirectUrl = route('dokumen-dan-file', ['workspace' => $workspaceId]);
-
-        if ($folderId) {
-            $redirectUrl .= '?folder=' . $folderId;
+        if ($file->folder_id) {
+            $redirectUrl .= '?folder=' . $file->folder_id;
         }
 
         return response()->json([
@@ -365,14 +320,12 @@ class DokumenController extends Controller
         ]);
     }
 
-
-    public function destroy($id)
+    public function destroyFile($id)
     {
         $file = File::findOrFail($id);
 
-        // Hapus file dari storage
-        if ($file->path && Storage::exists($file->path)) {
-            Storage::delete($file->path);
+        if ($file->file_path && Storage::disk('public')->exists($file->file_path)) {
+            Storage::disk('public')->delete($file->file_path);
         }
 
         $file->delete();
@@ -386,14 +339,12 @@ class DokumenController extends Controller
 
     public function destroyFolder(Folder $folder)
     {
-        $workspaceId = $folder->workspace_id;
-        $parentId = $folder->parent_id; // bisa null
+        $companyId = $folder->company_id;
+        $parentId = $folder->parent_id;
 
-        // hapus folder (atau soft-delete)
         $folder->delete();
 
-        // build redirect ke workspace + parent folder (jika ada)
-        $url = route('dokumen-dan-file', ['workspace' => $workspaceId]);
+        $url = route('company-documents.index');
         if ($parentId) {
             $url .= '?folder=' . $parentId;
         }
@@ -405,31 +356,10 @@ class DokumenController extends Controller
         ]);
     }
 
-    private function deleteSubfolders($folder)
-    {
-        foreach ($folder->children as $sub) {
-
-            // Hapus file di subfolder ini
-            foreach ($sub->files as $file) {
-                $file->delete();
-            }
-
-            // Rekursif untuk subfolder berikutnya
-            $this->deleteSubfolders($sub);
-
-            // Hapus foldernya
-            $sub->delete();
-        }
-    }
-
-    public function getWorkspaceMembers(Request $req, $workspaceId)
+    public function getCompanyMembers(Request $req)
     {
         $user = Auth::user();
         $activeCompanyId = session('active_company_id');
-
-        // ================================
-        // 1. CEK AKSES ROLE COMPANY
-        // ================================
 
         $userCompany = $user->userCompanies()
             ->where('company_id', $activeCompanyId)
@@ -437,69 +367,34 @@ class DokumenController extends Controller
             ->first();
 
         $companyRole = $userCompany?->role?->name ?? 'Member';
-        $companyHighRoles = ['SuperAdmin',];
-
-        $isHighRole = in_array($companyRole, $companyHighRoles);
-
-        // ================================
-        // 2. BACA KONTEKS (folder/file)
-        // ================================
+        $isHighRole = in_array($companyRole, ['SuperAdmin', 'Admin']);
 
         $folderCreatedBy = $req->folder_created_by ?: null;
         $fileUploadedBy = $req->file_uploaded_by ?: null;
 
-        // Jika BUKAN role tinggi,
-        // tetap izinkan kalau dia adalah pembuat folder / pengupload file
         if (!$isHighRole) {
-
-            $userWorkspace = UserWorkspace::where('user_id', $user->id)
-                ->where('workspace_id', $workspaceId)
-                ->where('status_active', true)
-                ->with('role')
-                ->first();
-
-            $workspaceRole = $userWorkspace?->role?->name ?? 'Member';
-
-            // kalau workspace role juga bukan manager
-            if ($workspaceRole !== 'SuperAdmin') {
-
-                // tetapi jika dia pembuat folder atau uploader → IZINKAN
-                if ($folderCreatedBy != $user->id && $fileUploadedBy != $user->id) {
-                    return response()->json([
-                        'error' => 'Anda tidak memiliki akses untuk melihat anggota workspace ini'
-                    ], 403);
-                }
+            if ($folderCreatedBy != $user->id && $fileUploadedBy != $user->id) {
+                return response()->json([
+                    'error' => 'Anda tidak memiliki akses untuk melihat anggota company ini'
+                ], 403);
             }
         }
 
-        // ================================
-        // 3. AMBIL SEMUA MEMBER
-        // ================================
+        $members = User::whereHas('userCompanies', function ($q) use ($activeCompanyId) {
+            $q->where('company_id', $activeCompanyId);
+        })->get();
 
-        $members = User::whereIn(
-            'id',
-            UserWorkspace::where('workspace_id', $workspaceId)->pluck('user_id')
-        )->get();
-
-        // ================================
-        // 4. IZIN PILIH MEMBER
-        // ================================
-
-        $filtered = $members->map(function ($m) use ($folderCreatedBy, $fileUploadedBy, $isHighRole) {
-
+        $filtered = $members->map(function ($m) use ($folderCreatedBy, $fileUploadedBy, $isHighRole, $user) {
             $canBeSelected = false;
 
-            // Role tinggi → bisa pilih siapa pun
             if ($isHighRole) {
                 $canBeSelected = true;
             }
 
-            // pembuat folder → hanya dirinya yang bisa dipilih
             if ($folderCreatedBy && $m->id == $folderCreatedBy) {
                 $canBeSelected = true;
             }
 
-            // pengupload file → hanya dirinya yang bisa dipilih
             if ($fileUploadedBy && $m->id == $fileUploadedBy) {
                 $canBeSelected = true;
             }
@@ -513,9 +408,7 @@ class DokumenController extends Controller
             ];
         });
 
-        return response()->json([
-            'members' => $filtered
-        ]);
+        return response()->json(['members' => $filtered]);
     }
 
     public function recipientsStore(Request $request)
@@ -527,12 +420,10 @@ class DokumenController extends Controller
 
         $selectedMembers = json_decode($request->selected_members, true) ?? [];
 
-        // Tandai semua yang ada di database tapi tidak dipilih => status false
         DocumentRecipient::where('document_id', $request->document_id)
             ->whereNotIn('user_id', $selectedMembers)
             ->update(['status' => false]);
 
-        // Tambahkan atau update recipients
         foreach ($selectedMembers as $userId) {
             DocumentRecipient::updateOrCreate(
                 [
@@ -546,29 +437,18 @@ class DokumenController extends Controller
             );
         }
 
-        // Cek apakah ada minimal 1 recipient aktif
         $hasActiveRecipients = DocumentRecipient::where('document_id', $request->document_id)
             ->where('status', true)
             ->exists();
 
-        // Update kolom is_private di files atau folders
         if ($file = File::find($request->document_id)) {
-
-            // Kalau ada recipient aktif → pastikan private
             if ($hasActiveRecipients) {
                 $file->update(['is_private' => true]);
             }
-
-            // Kalau tidak ada recipient aktif → JANGAN sentuh is_private
-            // biarkan tetap seperti sebelumnya (true or false sesuai riwayat)
-
         } elseif ($folder = Folder::find($request->document_id)) {
-
             if ($hasActiveRecipients) {
                 $folder->update(['is_private' => true]);
             }
-
-            // Kalau kosong → tidak diubah
         }
 
         return redirect()->back()->with('alert', [
@@ -578,101 +458,75 @@ class DokumenController extends Controller
         ])->with('alert_once', true);
     }
 
-
-
     public function getRecipients($documentId)
     {
-        // Ambil hanya user_id yang status = true
         $recipients = DocumentRecipient::where('document_id', $documentId)
             ->where('status', true)
-            ->pluck('user_id'); // ambil array user_id
+            ->pluck('user_id');
 
         return response()->json(['recipients' => $recipients]);
     }
 
     /**
-     * Get workspaces yang bisa diakses user
+     * Get daftar workspace yang tersedia untuk move
      */
-    public function getUserWorkspaces()
+    public function getAvailableWorkspaces()
     {
         try {
+            // ✅ TAMBAHKAN LOGGING
+            \Log::info('🔥 getAvailableWorkspaces called from company context');
+
             $user = Auth::user();
             $activeCompanyId = session('active_company_id');
 
+            \Log::info('User ID:', ['user_id' => $user->id]);
+            \Log::info('Active Company ID:', ['company_id' => $activeCompanyId]);
+
             if (!$activeCompanyId) {
+                \Log::error('❌ No active company ID in session');
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Perusahaan aktif tidak ditemukan'
                 ], 400);
             }
 
+            // ✅ CEK ROLE: Hanya SuperAdmin dan Admin
             $userCompany = $user->userCompanies()
                 ->where('company_id', $activeCompanyId)
                 ->with('role')
                 ->first();
 
-            $userRole = $userCompany?->role?->name ?? 'Member';
+            $companyRole = $userCompany?->role?->name ?? 'Member';
 
-            if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
-                $workspaces = Workspace::where('company_id', $activeCompanyId)
-                    ->whereNull('deleted_at')
-                    // ✅ HAPUS filter workspace saat ini
-                    ->with([
-                        'folders' => function ($query) use ($user) {
-                            $query->where(function ($q) use ($user) {
-                                $q->where('is_private', false)
-                                    ->orWhere('created_by', $user->id)
-                                    ->orWhereHas('documentRecipients', function ($qr) use ($user) {
-                                        $qr->where('user_id', $user->id)
-                                            ->where('status', true);
-                                    });
-                            });
-                        },
-                        'files' => function ($query) use ($user) {
-                            $query->whereNull('folder_id') // ✅ Root files only
-                                ->where(function ($q) use ($user) {
-                                    $q->where('is_private', false)
-                                        ->orWhere('uploaded_by', $user->id)
-                                        ->orWhereHas('documentRecipients', function ($qr) use ($user) {
-                                            $qr->where('user_id', $user->id)
-                                                ->where('status', true);
-                                        });
-                                });
-                        }
-                    ])
-                    ->get();
-            } else {
-                $workspaces = Workspace::where('company_id', $activeCompanyId)
-                    ->whereNull('deleted_at')
-                    ->whereHas('userWorkspaces', function ($query) use ($user) {
-                        $query->where('user_id', $user->id)
-                            ->where('status_active', true);
-                    })
-                    ->with([
-                        'folders' => function ($query) use ($user) {
-                            $query->where(function ($q) use ($user) {
-                                $q->where('is_private', false)
-                                    ->orWhere('created_by', $user->id)
-                                    ->orWhereHas('documentRecipients', function ($qr) use ($user) {
-                                        $qr->where('user_id', $user->id)
-                                            ->where('status', true);
-                                    });
-                            });
-                        },
-                        'files' => function ($query) use ($user) {
-                            $query->whereNull('folder_id')
-                                ->where(function ($q) use ($user) {
-                                    $q->where('is_private', false)
-                                        ->orWhere('uploaded_by', $user->id)
-                                        ->orWhereHas('documentRecipients', function ($qr) use ($user) {
-                                            $qr->where('user_id', $user->id)
-                                                ->where('status', true);
-                                        });
-                                });
-                        }
-                    ])
-                    ->get();
+            \Log::info('User Company Role:', ['role' => $companyRole]);
+
+            if (!in_array($companyRole, ['SuperAdmin', 'Admin'])) {
+                \Log::warning('❌ User does not have permission');
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki izin untuk memindahkan dokumen company'
+                ], 403);
             }
+
+            // ✅ Ambil semua workspace di company ini
+            $workspaces = Workspace::where('company_id', $activeCompanyId)
+                ->whereNull('deleted_at')
+                ->with([
+                    'folders' => function ($query) {
+                        $query->whereNull('parent_id') // ⬅️ TAMBAHKAN INI (hanya root folders)
+                            ->orderBy('name');
+                    },
+                    'files' => function ($query) {
+                        $query->whereNull('folder_id')
+                            ->orderBy('file_name');
+                    }
+                ])
+                ->orderBy('name')
+                ->get();
+
+            \Log::info('Workspaces found:', ['count' => $workspaces->count()]);
 
             $formattedWorkspaces = $workspaces->map(function ($workspace) {
                 return [
@@ -694,73 +548,31 @@ class DokumenController extends Controller
                 ];
             });
 
+            \Log::info('✅ Response ready', ['workspace_count' => $formattedWorkspaces->count()]);
+
+            // ✅ PASTIKAN RETURN JSON
             return response()->json([
                 'success' => true,
                 'workspaces' => $formattedWorkspaces
-            ]);
+            ], 200, [], JSON_UNESCAPED_UNICODE); // ⬅️ Tambahkan JSON_UNESCAPED_UNICODE
 
         } catch (\Exception $e) {
-            \Log::error('Error in getUserWorkspaces: ' . $e->getMessage());
+            \Log::error('❌ Error in getAvailableWorkspaces:', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat memuat workspace',
+                'message' => 'Terjadi kesalahan saat memuat workspace: ' . $e->getMessage(),
             ], 500);
         }
     }
 
     /**
-     * Get subfolders dari folder tertentu (untuk navigasi di modal)
-     */
-    public function getFolderSubfolders(Folder $folder)
-    {
-        try {
-            $user = Auth::user();
-
-            // ... permission check ...
-
-            // ✅ Get subfolders
-            $subfolders = Folder::where('parent_id', $folder->id)
-                ->where(function ($query) use ($user) {
-                    $query->where('is_private', false)
-                        ->orWhere('created_by', $user->id)
-                        ->orWhereHas('documentRecipients', function ($q) use ($user) {
-                            $q->where('user_id', $user->id)->where('status', true);
-                        });
-                })
-                ->orderBy('name')
-                ->get(['id', 'name', 'is_private', 'created_by']);
-
-            // ✅ Get files di folder ini
-            $files = File::where('folder_id', $folder->id)
-                ->where(function ($query) use ($user) {
-                    $query->where('is_private', false)
-                        ->orWhere('uploaded_by', $user->id)
-                        ->orWhereHas('documentRecipients', function ($q) use ($user) {
-                            $q->where('user_id', $user->id)->where('status', true);
-                        });
-                })
-                ->orderBy('file_name')
-                ->get(['id', 'file_name as name', 'is_private']);
-
-            return response()->json([
-                'success' => true,
-                'folders' => $subfolders,
-                'files' => $files, // ⬅️ TAMBAHKAN INI
-            ]);
-
-        } catch (\Exception $e) {
-            \Log::error('Error in getFolderSubfolders: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat memuat subfolder'
-            ], 500);
-        }
-    }
-
-    /**
-     * Pindahkan dokumen ke workspace lain
+     * Pindahkan dokumen dari Company ke Workspace
      */
     public function moveDocuments(Request $request)
     {
@@ -782,55 +594,32 @@ class DokumenController extends Controller
             if (!$activeCompanyId) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Session perusahaan tidak ditemukan. Silakan login ulang.'
+                    'message' => 'Session perusahaan tidak ditemukan'
                 ], 401);
             }
 
-            // ✅ 1. CEK ROLE COMPANY
+            // ✅ 1. CEK ROLE: Hanya SuperAdmin dan Admin yang boleh
             $userCompany = $user->userCompanies()
                 ->where('company_id', $activeCompanyId)
                 ->with('role')
                 ->first();
 
             $companyRole = $userCompany?->role?->name ?? 'Member';
-            $isCompanySuperAdmin = ($companyRole === 'SuperAdmin');
 
-            // ✅ 2. CEK AKSES KE WORKSPACE TUJUAN
+            if (!in_array($companyRole, ['SuperAdmin', 'Admin'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki izin untuk memindahkan dokumen company'
+                ], 403);
+            }
+
+            // ✅ 2. VALIDASI WORKSPACE TUJUAN
             $targetWorkspace = Workspace::findOrFail($targetWorkspaceId);
 
             if ($targetWorkspace->company_id !== $activeCompanyId) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Workspace tujuan tidak termasuk dalam perusahaan aktif Anda'
-                ], 403);
-            }
-
-            // ✅ CEK: Apakah user adalah creator workspace tujuan?
-            $isTargetWorkspaceCreator = ($targetWorkspace->created_by === $userId);
-
-            // ✅ CEK: Apakah user adalah member workspace tujuan?
-            $userWorkspace = UserWorkspace::where('user_id', $userId)
-                ->where('workspace_id', $targetWorkspaceId)
-                ->where('status_active', true)
-                ->with('role')
-                ->first();
-
-            $workspaceRole = $userWorkspace?->role?->name ?? null;
-            $isWorkspaceManager = ($workspaceRole === 'Manager');
-
-            // ✅ VALIDASI AKSES WORKSPACE TUJUAN
-            // Boleh akses jika:
-            // 1. SuperAdmin Company, ATAU
-            // 2. Creator workspace tujuan, ATAU  
-            // 3. Member aktif workspace tujuan
-            $hasAccessToTargetWorkspace = $isCompanySuperAdmin ||
-                $isTargetWorkspaceCreator ||
-                $userWorkspace !== null;
-
-            if (!$hasAccessToTargetWorkspace) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke workspace tujuan'
+                    'message' => 'Workspace tujuan tidak termasuk dalam company yang sama'
                 ], 403);
             }
 
@@ -843,23 +632,8 @@ class DokumenController extends Controller
                 if (!$targetFolder) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Folder tujuan tidak ditemukan atau tidak valid'
+                        'message' => 'Folder tujuan tidak ditemukan'
                     ], 400);
-                }
-
-                // ✅ Validasi akses ke folder private
-                if ($targetFolder->is_private && $targetFolder->created_by !== $userId) {
-                    $hasAccess = DocumentRecipient::where('document_id', $targetFolder->id)
-                        ->where('user_id', $userId)
-                        ->where('status', true)
-                        ->exists();
-
-                    if (!$hasAccess && !$isCompanySuperAdmin) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Anda tidak memiliki akses ke folder tujuan'
-                        ], 403);
-                    }
                 }
             }
 
@@ -871,22 +645,12 @@ class DokumenController extends Controller
             foreach ($request->documents as $doc) {
                 try {
                     if ($doc['type'] === 'folder') {
-                        $folder = Folder::find($doc['id']);
+                        $folder = Folder::where('company_id', $activeCompanyId)
+                            ->whereNull('workspace_id')
+                            ->find($doc['id']);
 
                         if (!$folder) {
                             $errors[] = "Folder dengan ID {$doc['id']} tidak ditemukan";
-                            continue;
-                        }
-
-                        // ✅ CEK PERMISSION FOLDER
-                        // Boleh pindahkan jika:
-                        // 1. SuperAdmin Company, ATAU
-                        // 2. Dia pembuat folder (created_by)
-                        $canMove = $isCompanySuperAdmin ||
-                            ($folder->created_by === $userId);
-
-                        if (!$canMove) {
-                            $errors[] = "Tidak dapat memindahkan folder '{$folder->name}' (Anda bukan pembuat folder ini)";
                             continue;
                         }
 
@@ -896,41 +660,30 @@ class DokumenController extends Controller
                             continue;
                         }
 
-                        // Update workspace dan parent
-                        $updateData = [
+                        // Update: Pindah dari company ke workspace
+                        $folder->update([
                             'workspace_id' => $targetWorkspaceId,
                             'parent_id' => $targetFolderId,
-                        ];
+                            'company_id' => $targetWorkspace->company_id, // tetap di company yang sama
+                        ]);
 
-                        if (\Schema::hasColumn('folders', 'company_id')) {
-                            $updateData['company_id'] = $targetWorkspace->company_id;
-                        }
-
-                        $folder->update($updateData);
-
-                        // Update semua files di dalam folder (recursive)
+                        // Update semua files di dalam folder
                         $this->updateFolderFilesRecursive($folder, $targetWorkspaceId, $targetWorkspace->company_id);
 
                         $movedCount++;
-                        \Log::info("Folder moved successfully", ['folder_id' => $folder->id, 'name' => $folder->name]);
+                        \Log::info("Folder moved from company to workspace", [
+                            'folder_id' => $folder->id,
+                            'name' => $folder->name,
+                            'to_workspace' => $targetWorkspaceId
+                        ]);
 
                     } else if ($doc['type'] === 'file') {
-                        $file = File::find($doc['id']);
+                        $file = File::where('company_id', $activeCompanyId)
+                            ->whereNull('workspace_id')
+                            ->find($doc['id']);
 
                         if (!$file) {
                             $errors[] = "File dengan ID {$doc['id']} tidak ditemukan";
-                            continue;
-                        }
-
-                        // ✅ CEK PERMISSION FILE
-                        // Boleh pindahkan jika:
-                        // 1. SuperAdmin Company, ATAU
-                        // 2. Dia yang upload file (uploaded_by)
-                        $canMove = $isCompanySuperAdmin ||
-                            ($file->uploaded_by === $userId);
-
-                        if (!$canMove) {
-                            $errors[] = "Tidak dapat memindahkan file '{$file->file_name}' (Anda bukan yang mengupload file ini)";
                             continue;
                         }
 
@@ -955,20 +708,15 @@ class DokumenController extends Controller
                             $counter++;
                         }
 
-                        // Update workspace, folder, dan nama file
-                        $updateData = [
+                        // Update: Pindah dari company ke workspace
+                        $file->update([
                             'workspace_id' => $targetWorkspaceId,
                             'folder_id' => $targetFolderId,
                             'file_name' => $newFileName,
-                        ];
+                            'company_id' => $targetWorkspace->company_id, // tetap di company yang sama
+                        ]);
 
-                        if (\Schema::hasColumn('files', 'company_id')) {
-                            $updateData['company_id'] = $targetWorkspace->company_id;
-                        }
-
-                        $file->update($updateData);
-
-                        // Track jika file di-rename
+                        // Track jika di-rename
                         if ($newFileName !== $originalFileName) {
                             $renamedFiles[] = [
                                 'old_name' => $originalFileName,
@@ -983,14 +731,17 @@ class DokumenController extends Controller
                         }
 
                         $movedCount++;
-                        \Log::info("File moved successfully", ['file_id' => $file->id, 'name' => $newFileName]);
+                        \Log::info("File moved from company to workspace", [
+                            'file_id' => $file->id,
+                            'name' => $newFileName,
+                            'to_workspace' => $targetWorkspaceId
+                        ]);
                     }
 
                 } catch (\Exception $e) {
                     \Log::error("Error moving document", [
                         'doc_id' => $doc['id'],
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
+                        'error' => $e->getMessage()
                     ]);
                     $errors[] = "Error memindahkan dokumen ID {$doc['id']}: " . $e->getMessage();
                 }
@@ -1008,11 +759,9 @@ class DokumenController extends Controller
             $totalRequested = count($request->documents);
             $renamedCount = count($renamedFiles);
 
-            if ($movedCount === $totalRequested) {
-                $message = "Semua dokumen ({$movedCount}) berhasil dipindahkan";
-            } else {
-                $message = "{$movedCount} dari {$totalRequested} dokumen berhasil dipindahkan";
-            }
+            $message = $movedCount === $totalRequested
+                ? "Semua dokumen ({$movedCount}) berhasil dipindahkan ke workspace"
+                : "{$movedCount} dari {$totalRequested} dokumen berhasil dipindahkan ke workspace";
 
             if ($renamedCount > 0) {
                 $message .= ". {$renamedCount} file di-rename otomatis karena nama duplikat.";
@@ -1029,10 +778,6 @@ class DokumenController extends Controller
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \Log::error('Validation error in moveDocuments', [
-                'errors' => $e->errors()
-            ]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'Data tidak valid',
@@ -1052,9 +797,9 @@ class DokumenController extends Controller
         }
     }
 
+    // ✅ Helper methods (sama seperti DokumenController)
     private function updateFolderFilesRecursive($folder, $workspaceId, $companyId)
     {
-        // Update files di folder ini
         $updateData = ['workspace_id' => $workspaceId];
 
         if (\Schema::hasColumn('files', 'company_id')) {
@@ -1063,7 +808,6 @@ class DokumenController extends Controller
 
         $folder->files()->update($updateData);
 
-        // Recursive untuk subfolder
         foreach ($folder->children as $subfolder) {
             $subfolder->update([
                 'workspace_id' => $workspaceId,
@@ -1074,9 +818,6 @@ class DokumenController extends Controller
         }
     }
 
-    /**
-     * Helper: Cek apakah targetFolder adalah descendant dari sourceFolder
-     */
     private function isDescendantOf($targetFolderId, $sourceFolderId)
     {
         $currentFolder = Folder::find($targetFolderId);
@@ -1090,27 +831,4 @@ class DokumenController extends Controller
 
         return false;
     }
-
-
-    /**
-     * Helper: cek apakah user adalah SuperAdmin
-     */
-    private function isSuperAdmin($user)
-    {
-        $activeCompanyId = session('active_company_id');
-
-        $userCompany = $user->userCompanies()
-            ->where('company_id', $activeCompanyId)
-            ->with('role')
-            ->first();
-
-        return $userCompany?->role?->name === 'SuperAdmin';
-    }
-
-
-
-
-
-
-
 }

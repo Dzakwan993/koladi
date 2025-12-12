@@ -13,6 +13,7 @@ class Folder extends Model
     protected $keyType = 'string';     // ← TAMBAHKAN INI
 
     protected $fillable = [
+        'company_id',    
         'workspace_id',
         'name',
         'is_private',
@@ -50,5 +51,11 @@ class Folder extends Model
     public function children()
     {
         return $this->hasMany(Folder::class, 'parent_id');
+    }
+
+    // Relasi ke Company
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 }

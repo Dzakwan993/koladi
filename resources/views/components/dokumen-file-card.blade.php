@@ -49,10 +49,15 @@
 
     </div>
 
-    <!-- Nama File -->
-    <span class="text-xs text-gray-600 truncate w-full" x-text="file.name"></span>
+    <!-- Nama File (max 2 baris) -->
+    <span 
+        class="text-xs text-gray-600 w-full break-words line-clamp-2" 
+        x-text="file.name"
+        :title="file.name">
+    </span>
+    
     <!-- Tipe File -->
-  <div class="flex items-center gap-1">
+    <div class="flex items-center gap-1 mt-1">
         <span class="text-xs text-gray-400" x-text="file.type"></span>
 
         <template x-if="file.isSecret">

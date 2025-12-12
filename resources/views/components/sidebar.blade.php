@@ -107,13 +107,14 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 <span class="text-sm">Jadwal</span>
             </a>
 
+          
             {{-- Dokumen --}}
-            <a href="{{ url('/dokumen-dan-file') }}"
-                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
-                {{ Request::is('dokumen*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                <img src="{{ asset('images/icons/workspace_dokumen&file.svg') }}" alt="Dokumen"
-                    class="w-5 h-5 {{ Request::is('dokumen*') ? 'filter-blue' : '' }}">
-                <span class="text-sm">Dokumen</span>
+            <a href="{{ route('company-documents.index') }}"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+            {{ Request::is('company-documents*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+            <img src="{{ asset('images/icons/workspace_dokumen&file.svg') }}" alt="Dokumen"
+            class="w-5 h-5 {{ Request::is('company-documents*') ? 'filter-blue' : '' }}">
+            <span class="text-sm">Dokumen</span>
             </a>
 
             {{-- Laporan Kinerja --}}

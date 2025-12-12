@@ -12,14 +12,10 @@ use Illuminate\Http\Request;
 use App\Models\UserWorkspace;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log; // <- TAMBAH INI
+use Illuminate\Support\Facades\Log;
 
 class WorkspaceController extends Controller
 {
-    // Menampilkan halaman kelola workspace
-
-    // Di WorkspaceController.php - modifikasi method index()
-    // Di WorkspaceController.php - modifikasi method index()
     public function index()
     {
         $user = Auth::user();
@@ -32,7 +28,6 @@ class WorkspaceController extends Controller
                 ->with('error', 'Silakan buat perusahaan terlebih dahulu.');
         }
 
-        // ✅ CEK ROLE USER DI COMPANY
         $userCompany = $user->userCompanies()
             ->where('company_id', $activeCompany->id)
             ->with('role')
@@ -40,16 +35,13 @@ class WorkspaceController extends Controller
 
         $userRole = $userCompany?->role?->name ?? 'Member';
 
-        // ✅ JIKA SUPERADMIN/ADMIN/MANAGER, TAMPILKAN SEMUA WORKSPACE DI COMPANY
         if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
             $workspaces = Workspace::with(['creator', 'userWorkspaces.user', 'userWorkspaces.role'])
                 ->where('company_id', $activeCompany->id)
                 ->active()
                 ->get()
                 ->groupBy('type');
-        }
-        // ✅ JIKA BUKAN SUPERADMIN/ADMIN/MANAGER, TAMPILKAN HANYA WORKSPACE YANG DIIKUTI
-        else {
+        } else {
             $workspaces = Workspace::with(['creator', 'userWorkspaces.user', 'userWorkspaces.role'])
                 ->where('company_id', $activeCompany->id)
                 ->active()
@@ -67,12 +59,9 @@ class WorkspaceController extends Controller
             'workspaces' => $workspaces,
             'activeCompany' => $activeCompany,
             'roles' => $roles,
-            'userRole' => $userRole // ✅ KIRIM USER ROLE KE VIEW
+            'userRole' => $userRole
         ]);
     }
-
-    // Menyimpan workspace baru
-    // app/Http/Controllers/WorkspaceController.php
 
     public function store(Request $request)
     {
@@ -98,7 +87,7 @@ class WorkspaceController extends Controller
         if (!in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki izin untuk membuat workspace.'
+                'message' => 'Anda tidak memiliki izin untuk membuat workspace. Hanya SuperAdmin, Admin, dan Manager yang dapat membuat workspace.'
             ], 403);
         }
 
@@ -113,12 +102,12 @@ class WorkspaceController extends Controller
                 'created_by' => Auth::id()
             ]);
 
-            // ✅ 🎯 CEK ONBOARDING
+            // ✅ CEK ONBOARDING (dari main branch)
             $showOnboarding = false;
             if ($user->onboarding_step === 'kelola-workspace') {
                 $user->onboarding_step = 'workspace-created';
                 $user->save();
-                $showOnboarding = true; // ✅ Flag untuk trigger modal
+                $showOnboarding = true;
             }
 
             DB::commit();
@@ -127,8 +116,8 @@ class WorkspaceController extends Controller
                 'success' => true,
                 'message' => 'Workspace berhasil dibuat!',
                 'workspace' => $workspace,
-                'show_onboarding' => $showOnboarding, // ✅ Kirim flag
-                'workspace_name' => $workspace->name // ✅ Untuk ditampilkan di modal
+                'show_onboarding' => $showOnboarding,
+                'workspace_name' => $workspace->name
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -140,8 +129,6 @@ class WorkspaceController extends Controller
         }
     }
 
-    // Update workspace
-    // Di WorkspaceController.php - update method update()
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -152,7 +139,6 @@ class WorkspaceController extends Controller
 
         $workspace = Workspace::findOrFail($id);
 
-        // ✅ CEK APAKAH USER BOLEH EDIT WORKSPACE
         if (!$this->canEditDeleteWorkspace()) {
             return response()->json([
                 'success' => false,
@@ -160,7 +146,6 @@ class WorkspaceController extends Controller
             ], 403);
         }
 
-        // Cek apakah user memiliki akses ke workspace ini
         if (!$this->checkWorkspaceAccess($workspace)) {
             return response()->json(['error' => 'Anda tidak memiliki akses ke workspace ini'], 403);
         }
@@ -178,13 +163,10 @@ class WorkspaceController extends Controller
         ]);
     }
 
-    // Di WorkspaceController.php - update method updateUserRoles()
-    // Di WorkspaceController.php - update method updateUserRoles()
     public function updateUserRoles(Request $request, $workspaceId)
     {
         $workspace = Workspace::findOrFail($workspaceId);
 
-        // ✅ CEK APAKAH USER BOLEH MENGUBAH ROLE WORKSPACE
         if (!$this->canManageWorkspaceMembers($workspace)) {
             return response()->json([
                 'success' => false,
@@ -212,13 +194,10 @@ class WorkspaceController extends Controller
         }
     }
 
-    // Hapus workspace
-    // Di WorkspaceController.php - update method destroy()
     public function destroy($id)
     {
         $workspace = Workspace::findOrFail($id);
 
-        // ✅ CEK APAKAH USER BOLEH HAPUS WORKSPACE
         if (!$this->canEditDeleteWorkspace()) {
             return response()->json([
                 'success' => false,
@@ -226,7 +205,6 @@ class WorkspaceController extends Controller
             ], 403);
         }
 
-        // Cek apakah user memiliki akses ke workspace ini
         if (!$this->checkWorkspaceAccess($workspace)) {
             return response()->json(['error' => 'Anda tidak memiliki akses ke workspace ini'], 403);
         }
@@ -239,9 +217,6 @@ class WorkspaceController extends Controller
         ]);
     }
 
-    // Kelola anggota workspace
-    // Di WorkspaceController.php - update method manageMembers()
-    // Di WorkspaceController.php - update method manageMembers()
     public function manageMembers(Request $request, $workspaceId)
     {
         $request->validate([
@@ -252,7 +227,6 @@ class WorkspaceController extends Controller
 
         $workspace = Workspace::findOrFail($workspaceId);
 
-        // ✅ CEK APAKAH USER BOLEH MENGELOLA ANGGOTA WORKSPACE
         if (!$this->canManageWorkspaceMembers($workspace)) {
             return response()->json([
                 'success' => false,
@@ -263,21 +237,18 @@ class WorkspaceController extends Controller
         try {
             DB::beginTransaction();
 
-            // ✅ VALIDASI: Pastikan hanya user dengan role Member di company yang bisa ditambahkan
             $validUserIds = User::whereHas('userCompanies', function ($query) use ($workspace) {
                 $query->where('company_id', $workspace->company_id)
                     ->where('status_active', true)
                     ->whereHas('role', function ($roleQuery) {
-                        $roleQuery->where('name', 'Member'); // Hanya user dengan role Member
+                        $roleQuery->where('name', 'Member');
                     });
             })->whereIn('id', $request->user_ids)->pluck('id')->toArray();
 
-            // Hapus anggota lama yang tidak dipilih
             UserWorkspace::where('workspace_id', $workspaceId)
                 ->whereNotIn('user_id', $validUserIds)
                 ->delete();
 
-            // Tambah/update anggota baru
             foreach ($validUserIds as $userId) {
                 UserWorkspace::updateOrCreate(
                     [
@@ -307,12 +278,10 @@ class WorkspaceController extends Controller
         }
     }
 
-    // Get anggota workspace
     public function getMembers($workspaceId)
     {
         $workspace = Workspace::with(['userWorkspaces.user', 'userWorkspaces.role'])->findOrFail($workspaceId);
 
-        // ✅ CEK APAKAH USER BOLEH MELIHAT/MENGELOLA ANGGOTA WORKSPACE
         if (!$this->canManageWorkspaceMembers($workspace)) {
             return response()->json([
                 'error' => 'Anda tidak memiliki akses untuk melihat anggota workspace ini'
@@ -322,7 +291,7 @@ class WorkspaceController extends Controller
         $members = $workspace->userWorkspaces->map(function ($userWorkspace) {
             $user = $userWorkspace->user;
 
-            // ✅ LOGIC AVATAR YANG BENAR
+            // ✅ LOGIC AVATAR LENGKAP (dari main branch)
             if ($user->avatar && \Str::startsWith($user->avatar, ['http://', 'https://'])) {
                 $avatarUrl = $user->avatar;
             } elseif ($user->avatar) {
@@ -336,14 +305,13 @@ class WorkspaceController extends Controller
                 'name' => $user->full_name,
                 'email' => $user->email,
                 'role' => $userWorkspace->role->name,
-                'avatar' => $avatarUrl // ✅ GUNAKAN AVATAR URL YANG BENAR
+                'avatar' => $avatarUrl
             ];
         });
 
         return response()->json($members);
     }
 
-    // Di WorkspaceController - method getAvailableUsers()
     public function getAvailableUsers()
     {
         try {
@@ -354,12 +322,10 @@ class WorkspaceController extends Controller
                 return response()->json(['error' => 'No active company'], 400);
             }
 
-            // ✅ FILTER: Ambil users hanya dari company yang aktif DENGAN ROLE MEMBER
             $companyUsers = User::whereHas('userCompanies', function ($query) use ($activeCompanyId) {
                 $query->where('company_id', $activeCompanyId)
-                    ->where('status_active', true) // hanya yang aktif
+                    ->where('status_active', true)
                     ->whereHas('role', function ($roleQuery) {
-                        // ✅ HANYA tampilkan Member saja (SuperAdmin, Admin, Manager tidak ditampilkan)
                         $roleQuery->where('name', 'Member');
                     });
             })->get();
@@ -380,24 +346,19 @@ class WorkspaceController extends Controller
         }
     }
 
-    // Cek akses user ke workspace
-    // Cek akses user ke workspace
     private function checkWorkspaceAccess($workspace)
     {
         $user = Auth::user();
         $activeCompanyId = session('active_company_id');
 
-        // Jika user adalah pembuat workspace => selalu boleh
         if ($workspace->created_by === $user->id) {
             return true;
         }
 
-        // Jika ada active company dalam session dan workspace bukan milik company aktif => tolak
         if ($activeCompanyId && $workspace->company_id !== $activeCompanyId) {
             return false;
         }
 
-        // ✅ CEK APAKAH USER ADALAH SUPERADMIN/ADMIN/MANAGER DI COMPANY
         $userCompany = $user->userCompanies()
             ->where('company_id', $activeCompanyId)
             ->with('role')
@@ -405,12 +366,10 @@ class WorkspaceController extends Controller
 
         $userRole = $userCompany?->role?->name ?? 'Member';
 
-        // ✅ JIKA SUPERADMIN/ADMIN/MANAGER, BOLEH AKSES SEMUA WORKSPACE DI COMPANY
         if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
             return true;
         }
 
-        // ✅ JIKA BUKAN, CEK APAKAH USER ADALAH ANGGOTA WORKSPACE
         $userWorkspace = UserWorkspace::where('user_id', $user->id)
             ->where('workspace_id', $workspace->id)
             ->where('status_active', true)
@@ -419,25 +378,21 @@ class WorkspaceController extends Controller
         return !is_null($userWorkspace);
     }
 
-    // app/Http/Controllers/WorkspaceController.php
-
     public function show(Workspace $workspace)
     {
         $user = Auth::user();
         $activeCompanyId = session('active_company_id');
 
-        // ✅ CEK APAKAH USER BOLEH AKSES WORKSPACE INI
         if (!$this->canAccessWorkspace($workspace)) {
             abort(403, 'Anda tidak memiliki akses ke workspace ini');
         }
 
-        // Simpan workspace yang dipilih di session
         session([
             'current_workspace_id' => $workspace->id,
             'current_workspace_name' => $workspace->name
         ]);
 
-        // ✅ 🎯 CEK APAKAH INI WORKSPACE BARU (untuk onboarding)
+        // ✅ CEK ONBOARDING (dari main branch)
         $showOnboarding = false;
         if ($user->onboarding_step === 'workspace-created') {
             $showOnboarding = true;
@@ -445,28 +400,23 @@ class WorkspaceController extends Controller
 
         return view('workspace', [
             'workspace' => $workspace,
-            'showOnboarding' => $showOnboarding // ✅ Kirim flag ke view
+            'showOnboarding' => $showOnboarding
         ]);
     }
 
-    // ✅ TAMBAHKAN METHOD UNTUK CEK AKSES WORKSPACE
-    // ✅ TAMBAHKAN METHOD UNTUK CEK AKSES WORKSPACE
     private function canAccessWorkspace($workspace)
     {
         $user = Auth::user();
         $activeCompanyId = session('active_company_id');
 
-        // Jika user adalah pembuat workspace => selalu boleh
         if ($workspace->created_by === $user->id) {
             return true;
         }
 
-        // Jika ada active company dalam session dan workspace bukan milik company aktif => tolak
         if ($activeCompanyId && $workspace->company_id !== $activeCompanyId) {
             return false;
         }
 
-        // ✅ CEK APAKAH USER ADALAH SUPERADMIN/ADMIN/MANAGER DI COMPANY
         $userCompany = $user->userCompanies()
             ->where('company_id', $activeCompanyId)
             ->with('role')
@@ -474,12 +424,10 @@ class WorkspaceController extends Controller
 
         $userRole = $userCompany?->role?->name ?? 'Member';
 
-        // ✅ JIKA SUPERADMIN/ADMIN/MANAGER, BOLEH AKSES SEMUA WORKSPACE DI COMPANY
         if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
             return true;
         }
 
-        // ✅ JIKA BUKAN, CEK APAKAH USER ADALAH ANGGOTA WORKSPACE
         $userWorkspace = UserWorkspace::where('user_id', $user->id)
             ->where('workspace_id', $workspace->id)
             ->where('status_active', true)
@@ -488,15 +436,11 @@ class WorkspaceController extends Controller
         return !is_null($userWorkspace);
     }
 
-
-    // Di WorkspaceController.php - tambahkan method ini
-    // Di WorkspaceController.php - tambahkan method ini
     private function canManageWorkspaceMembers($workspace)
     {
         $user = Auth::user();
         $activeCompanyId = session('active_company_id');
 
-        // ✅ CEK ROLE USER DI COMPANY
         $userCompany = $user->userCompanies()
             ->where('company_id', $activeCompanyId)
             ->with('role')
@@ -504,12 +448,10 @@ class WorkspaceController extends Controller
 
         $userCompanyRole = $userCompany?->role?->name ?? 'Member';
 
-        // ✅ JIKA SUPERADMIN/ADMIN/MANAGER DI COMPANY, BOLEH KELOLA ANGGOTA SEMUA WORKSPACE
         if (in_array($userCompanyRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
             return true;
         }
 
-        // ✅ JIKA BUKAN, CEK APAKAH USER ADALAH MANAGER DI WORKSPACE
         $userWorkspace = UserWorkspace::where('user_id', $user->id)
             ->where('workspace_id', $workspace->id)
             ->where('status_active', true)
@@ -518,17 +460,14 @@ class WorkspaceController extends Controller
 
         $userWorkspaceRole = $userWorkspace?->role?->name ?? 'Member';
 
-        // ✅ HANYA MANAGER DI WORKSPACE YANG BOLEH KELOLA ANGGOTA
         return $userWorkspaceRole === 'Manager';
     }
 
-    // Di WorkspaceController.php - tambahkan method ini
     private function canEditDeleteWorkspace()
     {
         $user = Auth::user();
         $activeCompanyId = session('active_company_id');
 
-        // ✅ CEK ROLE USER DI COMPANY
         $userCompany = $user->userCompanies()
             ->where('company_id', $activeCompanyId)
             ->with('role')
@@ -536,20 +475,17 @@ class WorkspaceController extends Controller
 
         $userRole = $userCompany?->role?->name ?? 'Member';
 
-        // ✅ HANYA SuperAdmin, Administrator, Admin, dan Manager yang boleh edit/hapus workspace
         return in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager']);
     }
 
-    // ✅ TAMBAHKAN METHOD INI DI AKHIR CLASS
+    // ✅ METHOD INI DARI MAIN BRANCH
     public function getAvailableRolesForWorkspace()
     {
-        // Untuk workspace, hanya Manager dan Member yang tersedia
         $roles = Role::whereIn('id', [
             'a688ef38-3030-45cb-9a4d-0407605bc322', // Manager
             'ed81bd39-9041-43b8-a504-bf743b5c2919'  // Member
         ])->get(['id', 'name']);
 
-        // Fallback manual jika query gagal
         if ($roles->count() === 0) {
             $roles = collect([
                 (object)[
