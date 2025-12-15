@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\UserWorkspace;
+use App\Services\DSS\DSSService;
 
 class StatistikController extends Controller
 {
@@ -96,7 +97,14 @@ class StatistikController extends Controller
 
         if ($workspaces->isEmpty()) {
             Log::warning('No workspaces found, redirecting to dashboard');
-            return redirect()->route('dashboard')->with('error', 'Tidak ada workspace');
+
+            return redirect()->route('dashboard')->with([
+                'alert_type' => 'warning',
+                'alert_title' => 'Belum Ada Workspace',
+                'alert_message' => 'Anda belum memiliki workspace di company ini. Silakan buat workspace terlebih dahulu untuk mengakses Laporan Kinerja.',
+                'alert_button' => 'Kelola Workspace',
+                'alert_url' => route('kelola-workspace')
+            ]);
         }
 
         // 4. Set workspace default = workspace pertama
@@ -131,6 +139,19 @@ class StatistikController extends Controller
         );
         Log::info('Tasks Found: ' . $tasks->count());
 
+        // ✅ TAMBAHKAN INI: Calculate rekap kinerja
+        $rekapKinerja = $this->calculateRekapKinerja(
+            $defaultWorkspace->id,
+            $defaultPeriod['start'],
+            $defaultPeriod['end']
+        );
+
+        Log::info('Rekap Kinerja Calculated:', [
+            'total' => $rekapKinerja['total'],
+            'selesai' => $rekapKinerja['selesai'],
+            'performance_score' => $rekapKinerja['performance']['score']
+        ]);
+
         // 8. Generate dropdown periode
         $periodOptions = $this->generatePeriodOptions();
 
@@ -142,6 +163,7 @@ class StatistikController extends Controller
             'defaultWorkspace' => $defaultWorkspace,
             'members' => $members,
             'tasks' => $tasks,
+            'rekapKinerja' => $rekapKinerja, // ✅ TAMBAHKAN INI
             'periodOptions' => $periodOptions,
             'defaultPeriod' => $defaultPeriod,
             'isCompanyAdmin' => $isCompanyAdmin,
@@ -245,11 +267,239 @@ class StatistikController extends Controller
         }
     }
 
+
+    /**
+     * GET /api/statistik/suggestions
+     * Get DSS suggestions for current workspace & period
+     */
+    public function getSuggestions(Request $request, DSSService $dssService)
+    {
+        try {
+            $user = Auth::user();
+            $workspaceId = $request->get('workspace_id');
+            $periodStart = $request->get('start');
+            $periodEnd = $request->get('end');
+
+            Log::info('API: getSuggestions', [
+                'workspace_id' => $workspaceId,
+                'period_start' => $periodStart,
+                'period_end' => $periodEnd
+            ]);
+
+            // 1. Validasi akses workspace
+            $workspace = Workspace::findOrFail($workspaceId);
+
+            if (!$this->userCanAccessWorkspace($workspace, $user)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada akses ke workspace ini'
+                ], 403);
+            }
+
+            // 2. Jika tidak ada periode, pakai default
+            if (!$periodStart || !$periodEnd) {
+                $period = $this->getCurrentWeekPeriod();
+                $periodStart = $period['start'];
+                $periodEnd = $period['end'];
+            }
+
+            // 3. Get DSS data
+            $dssData = $dssService->getWorkspaceSuggestions(
+                $workspaceId,
+                $periodStart,
+                $periodEnd
+            );
+
+            // 4. Get top suggestion for card
+            $topSuggestion = $dssService->getTopSuggestion(
+                $workspaceId,
+                $periodStart,
+                $periodEnd
+            );
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'top_suggestion' => $topSuggestion,
+                    'all_suggestions' => $dssData['suggestions'],
+                    'metrics' => $dssData['metrics'],
+                    'trends' => $dssData['trends'],
+                    'performance' => [
+                        'score' => $dssData['performance_score'],
+                        'quality' => $dssData['quality_score'],
+                        'risk' => $dssData['risk_score'],
+                    ],
+                    'cached' => $dssData['cached'],
+                    'generated_at' => $dssData['generated_at'] ?? now(),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error getSuggestions: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * GET /api/statistik/modal-data
+     * Get full data for DSS modal
+     */
+    public function getModalData(Request $request, DSSService $dssService)
+    {
+        try {
+            $user = Auth::user();
+            $workspaceId = $request->get('workspace_id');
+            $periodStart = $request->get('start');
+            $periodEnd = $request->get('end');
+
+            // 1. Validasi
+            $workspace = Workspace::findOrFail($workspaceId);
+
+            if (!$this->userCanAccessWorkspace($workspace, $user)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada akses'
+                ], 403);
+            }
+
+            // 2. Default period
+            if (!$periodStart || !$periodEnd) {
+                $period = $this->getCurrentWeekPeriod();
+                $periodStart = $period['start'];
+                $periodEnd = $period['end'];
+            }
+
+            // 3. Get modal data
+            $modalData = $dssService->getModalData(
+                $workspaceId,
+                $periodStart,
+                $periodEnd
+            );
+
+            // 4. Get urgent tasks (deadline < 3 days)
+            $urgentTasks = $this->getUrgentTasks($workspaceId, $periodStart, $periodEnd);
+
+            // 5. Get workload distribution
+            $workloadData = $this->getWorkloadDistribution($workspaceId, $periodStart, $periodEnd);
+
+            $modalData['urgent_tasks'] = $urgentTasks;
+            $modalData['workload'] = $workloadData;
+
+            return response()->json([
+                'success' => true,
+                'data' => $modalData
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error getModalData: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * POST /api/statistik/refresh-snapshot
+     * Force recalculate snapshot
+     */
+    public function refreshSnapshot(Request $request, DSSService $dssService)
+    {
+        try {
+            $user = Auth::user();
+            $workspaceId = $request->get('workspace_id');
+            $periodStart = $request->get('start');
+            $periodEnd = $request->get('end');
+
+            Log::info('Refresh Snapshot Request:', [
+                'workspace_id' => $workspaceId,
+                'period_start' => $periodStart,
+                'period_end' => $periodEnd
+            ]);
+
+            // 1. Validasi
+            $workspace = Workspace::findOrFail($workspaceId);
+
+            if (!$this->userCanAccessWorkspace($workspace, $user)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada akses'
+                ], 403);
+            }
+
+            // 2. Default period
+            if (!$periodStart || !$periodEnd) {
+                $period = $this->getCurrentWeekPeriod();
+                $periodStart = $period['start'];
+                $periodEnd = $period['end'];
+            }
+
+            // 3. Force recalculate DSS data
+            $dssData = $dssService->getWorkspaceSuggestions(
+                $workspaceId,
+                $periodStart,
+                $periodEnd,
+                true // ✅ Force recalculate
+            );
+
+            // 4. Get top suggestion (PENTING!)
+            $topSuggestion = $dssService->getTopSuggestion(
+                $workspaceId,
+                $periodStart,
+                $periodEnd
+            );
+
+            Log::info('Refresh Snapshot Response:', [
+                'top_suggestion' => $topSuggestion,
+                'suggestions_count' => count($dssData['suggestions'] ?? []),
+                'generated_at' => $dssData['generated_at']
+            ]);
+
+            // ✅ FIX: Return struktur yang SAMA dengan getSuggestions()
+            return response()->json([
+                'success' => true,
+                'message' => 'Data berhasil diperbarui',
+                'data' => [
+                    'top_suggestion' => $topSuggestion,           // ✅ TAMBAH INI
+                    'all_suggestions' => $dssData['suggestions'], // ✅ RENAME dari 'suggestions'
+                    'metrics' => $dssData['metrics'],
+                    'trends' => $dssData['trends'],               // ✅ TAMBAH INI
+                    'performance' => [                            // ✅ TAMBAH INI
+                        'score' => $dssData['performance_score'],
+                        'quality' => $dssData['quality_score'],
+                        'risk' => $dssData['risk_score'],
+                    ],
+                    'generated_at' => $dssData['generated_at'],
+                    'cached' => false,                            // ✅ Selalu false karena fresh
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error refreshSnapshot:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     /**
      * Calculate performance score (0-100)
      */
     private function calculatePerformanceScore($rekapKinerja)
     {
+        // ✅ FIX: Kalau tidak ada tugas sama sekali, return score 100 (perfect)
+        if ($rekapKinerja['total'] == 0) {
+            return 100;
+        }
+        
         $selesai = $rekapKinerja['selesai'];
         $terlambat = $rekapKinerja['terlambat'];
         $dikerjakan = $rekapKinerja['dikerjakan'];
@@ -280,6 +530,83 @@ class StatistikController extends Controller
             return ['label' => 'Buruk', 'stars' => 1, 'color' => '#ef4444'];
         }
     }
+
+    /**
+     * Get urgent tasks (deadline < 3 days)
+     */
+    private function getUrgentTasks($workspaceId, $periodStart, $periodEnd)
+    {
+        $tasks = Task::where('workspace_id', $workspaceId)
+            ->with(['assignedUsers'])
+            ->where('status', '!=', 'done')
+            ->where(function ($q) use ($periodStart, $periodEnd) {
+                $q->whereBetween('due_datetime', [$periodStart, $periodEnd]);
+            })
+            ->get();
+
+        return $tasks->filter(function ($task) {
+            if (!$task->due_datetime)
+                return false;
+            $daysUntilDue = now()->diffInDays($task->due_datetime, false);
+            return $daysUntilDue >= 0 && $daysUntilDue <= 3;
+        })->map(function ($task) {
+            $daysUntilDue = now()->diffInDays($task->due_datetime, false);
+            return [
+                'id' => $task->id,
+                'title' => $task->title,
+                'priority' => $task->priority ?? 'medium',
+                'status' => $task->status,
+                'due_datetime' => $task->due_datetime->toISOString(),
+                'days_until_due' => $daysUntilDue,
+                'progress' => $task->getProgressPercentage(),
+                'assigned_users' => $task->assignedUsers->map(fn($u) => [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'avatar' => $u->avatar ?? 'https://i.pravatar.cc/40?u=' . $u->id
+                ])
+            ];
+        })->sortBy('days_until_due')->values()->take(5);
+    }
+
+    /**
+     * Get workload distribution
+     */
+    private function getWorkloadDistribution($workspaceId, $periodStart, $periodEnd)
+    {
+        $workspace = Workspace::findOrFail($workspaceId);
+        $members = $workspace->activeMembers;
+
+        $distribution = [];
+        foreach ($members as $member) {
+            $tasks = Task::where('workspace_id', $workspaceId)
+                ->whereHas('assignedUsers', function ($q) use ($member) {
+                    $q->where('users.id', $member->id);
+                })
+                ->where(function ($q) use ($periodStart, $periodEnd) {
+                    $q->whereBetween('start_datetime', [$periodStart, $periodEnd])
+                        ->orWhereBetween('due_datetime', [$periodStart, $periodEnd]);
+                })
+                ->get();
+
+            $total = $tasks->count();
+            $done = $tasks->where('status', 'done')->count();
+            $overdue = $tasks->filter(fn($t) => $t->isOverdue() && $t->status !== 'done')->count();
+
+            $distribution[] = [
+                'user_id' => $member->id,
+                'name' => $member->name,
+                'avatar' => $member->avatar ?? 'https://i.pravatar.cc/40?u=' . $member->id,
+                'total_tasks' => $total,
+                'completed_tasks' => $done,
+                'overdue_tasks' => $overdue,
+                'completion_rate' => $total > 0 ? round(($done / $total) * 100) : 0,
+                'load_percentage' => min(150, $total * 10), // Assume 10 tasks = 100%
+            ];
+        }
+
+        return collect($distribution)->sortByDesc('total_tasks')->values();
+    }
+
 
     /**
      * GET /api/statistik/member/{memberId}

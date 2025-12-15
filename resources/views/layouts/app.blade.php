@@ -59,6 +59,29 @@
             display: none !important;
         }
     </style>
+
+    @if (session('alert_type'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    icon: '{{ session('alert_type') }}', // warning, error, success, info
+                    title: '{{ session('alert_title') }}',
+                    html: '{{ session('alert_message') }}',
+                    showCancelButton: @json(session('alert_button') ? true : false),
+                    confirmButtonText: '{{ session('alert_button') ?? 'OK' }}',
+                    cancelButtonText: 'Tutup',
+                    confirmButtonColor: '#3b82f6',
+                    cancelButtonColor: '#6b7280',
+                }).then((result) => {
+                    @if (session('alert_url'))
+                        if (result.isConfirmed) {
+                            window.location.href = '{{ session('alert_url') }}';
+                        }
+                    @endif
+                });
+            });
+        </script>
+    @endif
 </head>
 
 <body class="bg-[#f3f6fc] flex h-screen overflow-hidden">

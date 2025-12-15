@@ -106,6 +106,9 @@ Route::middleware(['auth'])->group(function () {
     // Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 
+    // Get modal full data
+    Route::get('/statistik/modal-data', [StatistikController::class, 'getModalData']);
+
     // ============================================
     // 🔒 ROUTES DENGAN CheckSubscription
     // ============================================
@@ -132,6 +135,21 @@ Route::middleware(['auth'])->group(function () {
             // Get data by periode (ketika ganti periode)
             Route::get('/periode', [StatistikController::class, 'getPeriodeData'])
                 ->name('periode');
+
+            Route::get('/modal-data', [StatistikController::class, 'getModalData']); // ✅ TAMBAH INI
+        });
+
+        // ✅ DSS (Decision Support System) Routes
+        Route::prefix('statistik')->group(function () {
+
+            // Get DSS suggestions
+            Route::get('/suggestions', [StatistikController::class, 'getSuggestions']);
+
+            // Get full modal data
+            Route::get('/modal-data', [StatistikController::class, 'getModalData']);
+
+            // Refresh snapshot (force recalculate)
+            Route::post('/refresh-snapshot', [StatistikController::class, 'refreshSnapshot']);
         });
 
 
