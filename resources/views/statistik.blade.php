@@ -3,7 +3,7 @@
 @section('title', 'Laporan Kinerja')
 
 @section('content')
-    <div class="bg-[#e9effd] min-h-screen" x-data="{
+    <div class="bg-[#e9effd] min-h-screen mt-4" x-data="{
         // STATE (yang sudah ada)
         selectedMember: null,
         filterMenuOpen: false,
@@ -123,6 +123,17 @@
             }
         },
     
+        // Dalam Alpine component, tambah helper method:
+        showTrendWarning(trend) {
+            return trend?.sample_size_warning === true;
+        },
+    
+        formatTrend(trend) {
+            if (this.showTrendWarning(trend)) {
+                return `${trend.change_absolute > 0 ? '+' : ''}${trend.change_absolute} (sample kecil)`;
+            }
+            return trend.change_percent ? `${trend.change_percent}%` : '-';
+        },
     
         // ✅ TAMBAHKAN METHOD INI (DSS METHODS)
         async loadSuggestions() {
@@ -213,9 +224,40 @@
         // METHOD: Klik Member
         async selectMember(memberId) {
             if (this.selectedMember === memberId) {
+                // ✅ PERBAIKAN: Ketika deselect, reload workspace data
                 this.selectedMember = null;
-                await this.changeWorkspace(this.selectedWorkspace);
-                return;
+    
+                this.isLoadingChart = true;
+                this.isLoadingTasks = true;
+    
+                try {
+                    const period = this.periodOptions.find(p => p.value === this.selectedPeriod);
+    
+                    const data = await window.fetchWorkspaceData(
+                        this.selectedWorkspace,
+                        this.selectedFilter,
+                        period ? period.start : null,
+                        period ? period.end : null
+                    );
+    
+                    if (data.success) {
+                        this.tasks = data.data.tasks;
+                        this.rekapKinerja = data.data.rekap_kinerja; // ✅ Update rekap ke workspace
+    
+                        this.$nextTick(() => {
+                            if (typeof window.initProgressCircles === 'function') {
+                                window.initProgressCircles();
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error deselecting member:', error);
+                } finally {
+                    this.isLoadingChart = false;
+                    this.isLoadingTasks = false;
+                }
+    
+                return; // ✅ Stop execution di sini
             }
     
             // Loading hanya untuk chart dan tasks
@@ -419,7 +461,6 @@
             }
         }
     }">
-        @include('components.workspace-nav')
 
         @vite(['resources/css/statistik.css', 'resources/js/statistik.js'])
 
@@ -490,7 +531,8 @@
                         <div class="mb-6">
                             <div class="grid grid-cols-3 gap-4">
                                 <!-- Performance Score -->
-                                <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 text-white">
+                                <div
+                                    class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 text-white relative group">
                                     <div class="flex items-center justify-between mb-3">
                                         <span class="text-sm font-medium opacity-90">Performance</span>
                                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -498,6 +540,18 @@
                                                 d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                                         </svg>
                                     </div>
+
+                                    <!-- Tooltip -->
+                                    <div
+                                        class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 shadow-xl">
+                                        <div class="font-semibold mb-1">Skor Performa Keseluruhan</div>
+                                        <div class="text-gray-300">Dihitung dari seberapa banyak tugas selesai tepat waktu,
+                                            progress kerja tim, dan keterlambatan yang terjadi.</div>
+                                        <div
+                                            class="absolute -top-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-gray-900">
+                                        </div>
+                                    </div>
+
                                     <div class="flex items-end gap-2">
                                         <span class="text-4xl font-bold" x-text="modalData?.performance?.score || 0"></span>
                                         <span class="text-xl opacity-75 mb-1">/100</span>
@@ -517,7 +571,8 @@
                                 </div>
 
                                 <!-- Quality Score -->
-                                <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-5 text-white">
+                                <div
+                                    class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-5 text-white relative group">
                                     <div class="flex items-center justify-between mb-3">
                                         <span class="text-sm font-medium opacity-90">Quality</span>
                                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -525,6 +580,18 @@
                                                 d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" />
                                         </svg>
                                     </div>
+
+                                    <!-- Tooltip -->
+                                    <div
+                                        class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 shadow-xl">
+                                        <div class="font-semibold mb-1">Kualitas Penyelesaian</div>
+                                        <div class="text-gray-300">Mengukur seberapa baik tim menyelesaikan tugas—apakah
+                                            tepat waktu dan tidak banyak yang terlambat.</div>
+                                        <div
+                                            class="absolute -top-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-gray-900">
+                                        </div>
+                                    </div>
+
                                     <div class="flex items-end gap-2">
                                         <span class="text-4xl font-bold"
                                             x-text="modalData?.performance?.quality || 0"></span>
@@ -537,7 +604,8 @@
                                 </div>
 
                                 <!-- Risk Score -->
-                                <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-5 text-white">
+                                <div
+                                    class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl p-5 text-white relative group">
                                     <div class="flex items-center justify-between mb-3">
                                         <span class="text-sm font-medium opacity-90">Risk Level</span>
                                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -545,8 +613,23 @@
                                                 d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" />
                                         </svg>
                                     </div>
+
+                                    <!-- Tooltip -->
+                                    <div
+                                        class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 shadow-xl">
+                                        <div class="font-semibold mb-1">Tingkat Risiko</div>
+                                        <div class="text-gray-300"> Seberapa besar kemungkinan workspace gagal mencapai
+                                            target.
+                                            Dihitung dari tugas yang belum selesai: jumlah overdue, deadline mendesak,
+                                            dan tugas yang menumpuk.</div>
+                                        <div
+                                            class="absolute -top-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-gray-900">
+                                        </div>
+                                    </div>
+
                                     <div class="flex items-end gap-2">
-                                        <span class="text-4xl font-bold" x-text="modalData?.performance?.risk || 0"></span>
+                                        <span class="text-4xl font-bold"
+                                            x-text="modalData?.performance?.risk || 0"></span>
                                         <span class="text-xl opacity-75 mb-1">/100</span>
                                     </div>
                                     <div class="mt-2 text-sm">
@@ -557,7 +640,7 @@
                             </div>
                         </div>
 
-                        <!-- Critical Issues -->
+                        <!-- Critical Issues with Actions -->
                         <div x-show="modalData?.suggestions?.critical && modalData.suggestions.critical.length > 0"
                             class="mb-6">
                             <div class="bg-red-50 border-2 border-red-200 rounded-xl p-5">
@@ -570,15 +653,15 @@
                                     <template x-for="(issue, idx) in modalData.suggestions.critical"
                                         :key="idx">
                                         <div class="bg-white rounded-lg p-4 border border-red-200">
-                                            <div class="flex items-start gap-3">
+                                            <div class="flex items-start gap-3 mb-3">
                                                 <div
                                                     class="flex-shrink-0 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
                                                     <span class="text-red-700 font-bold text-sm"
-                                                        x-text="`${idx + 1}️⃣`"></span>
+                                                        x-text="`${idx + 1}`"></span>
                                                 </div>
                                                 <div class="flex-1">
                                                     <h4 class="font-bold text-gray-900 mb-1" x-text="issue.title"></h4>
-                                                    <p class="text-sm text-gray-700 mb-3" x-text="issue.description"></p>
+                                                    <p class="text-sm text-gray-700 mb-2" x-text="issue.description"></p>
 
                                                     <!-- Value Badge -->
                                                     <div
@@ -591,13 +674,33 @@
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            <!-- ✅ ACTIONS LANGSUNG DI SINI -->
+                                            <div x-show="issue.actions && issue.actions.length > 0"
+                                                class="mt-4 pl-11 border-l-4 border-blue-200">
+                                                <div class="flex items-center gap-2 mb-2">
+                                                    <span class="text-lg">💡</span>
+                                                    <h5 class="text-sm font-bold text-gray-900">TINDAKAN:</h5>
+                                                </div>
+                                                <div class="space-y-2">
+                                                    <template x-for="(action, aIdx) in issue.actions"
+                                                        :key="aIdx">
+                                                        <div class="flex items-start gap-2">
+                                                            <input type="checkbox"
+                                                                class="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                                                            <span class="flex-1 text-sm text-gray-800"
+                                                                x-text="action"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
                                         </div>
                                     </template>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Warnings -->
+                        <!-- Warnings with Suggestions -->
                         <div x-show="modalData?.suggestions?.warning && modalData.suggestions.warning.length > 0"
                             class="mb-6">
                             <div class="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-5">
@@ -606,31 +709,53 @@
                                     <h3 class="text-lg font-bold text-yellow-900">HAL YANG PERLU DIPERHATIKAN</h3>
                                 </div>
 
-                                <div class="grid grid-cols-1 gap-3">
+                                <div class="space-y-3">
                                     <template x-for="(warning, idx) in modalData.suggestions.warning"
                                         :key="idx">
-                                        <div
-                                            class="bg-white rounded-lg p-4 border border-yellow-200 flex items-start gap-3">
-                                            <svg class="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="currentColor"
-                                                viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd"
-                                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" />
-                                            </svg>
-                                            <div class="flex-1">
-                                                <h4 class="font-semibold text-gray-900 text-sm" x-text="warning.title">
-                                                </h4>
-                                                <p class="text-xs text-gray-600 mt-1" x-text="warning.description"></p>
+                                        <div class="bg-white rounded-lg p-4 border border-yellow-200">
+                                            <div class="flex items-start gap-3">
+                                                <svg class="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5"
+                                                    fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd"
+                                                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" />
+                                                </svg>
+                                                <div class="flex-1">
+                                                    <h4 class="font-semibold text-gray-900 text-sm mb-1"
+                                                        x-text="warning.title"></h4>
+                                                    <p class="text-xs text-gray-600 mb-2" x-text="warning.description">
+                                                    </p>
+
+                                                    <!-- ✅ SUGGESTIONS LANGSUNG DI SINI -->
+                                                    <div x-show="warning.suggestions && warning.suggestions.length > 0"
+                                                        class="mt-3 pl-4 border-l-2 border-yellow-300">
+                                                        <div class="flex items-center gap-1 mb-1">
+                                                            <span class="text-sm">💡</span>
+                                                            <h6 class="text-xs font-bold text-gray-700">SARAN:</h6>
+                                                        </div>
+                                                        <ul class="space-y-1">
+                                                            <template x-for="(sug, sIdx) in warning.suggestions"
+                                                                :key="sIdx">
+                                                                <li class="text-xs text-gray-700 flex items-start gap-1">
+                                                                    <span>•</span>
+                                                                    <span x-text="sug"></span>
+                                                                </li>
+                                                            </template>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                                <span
+                                                    class="text-xs font-bold text-yellow-700 bg-yellow-100 px-2 py-1 rounded"
+                                                    x-text="warning.value"></span>
                                             </div>
-                                            <span class="text-xs font-bold text-yellow-700 bg-yellow-100 px-2 py-1 rounded"
-                                                x-text="warning.value"></span>
                                         </div>
                                     </template>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Urgent Tasks -->
-                        <div x-show="modalData?.urgent_tasks && modalData.urgent_tasks.length > 0" class="mb-6">
+                        <!-- Urgent Tasks (Show 3, Expandable) -->
+                        <div x-show="modalData?.urgent_tasks && modalData.urgent_tasks.length > 0" class="mb-6"
+                            x-data="{ showAllUrgent: false }">
                             <div class="bg-white border border-gray-200 rounded-xl p-5">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center gap-2">
@@ -638,11 +763,14 @@
                                         <h3 class="text-lg font-bold text-gray-900">TUGAS YANG HARUS DICEK HARI INI</h3>
                                     </div>
                                     <span class="text-sm text-gray-500"
-                                        x-text="`${modalData.urgent_tasks.length} tugas`"></span>
+                                        x-text="`${showAllUrgent ? modalData.urgent_tasks.length : Math.min(3, modalData.urgent_tasks.length)} dari ${modalData.urgent_tasks.length} tugas`">
+                                    </span>
                                 </div>
 
                                 <div class="space-y-3">
-                                    <template x-for="(task, idx) in modalData.urgent_tasks.slice(0, 5)"
+                                    <!-- ✅ DEFAULT: Show 3 tasks -->
+                                    <template
+                                        x-for="(task, idx) in showAllUrgent ? modalData.urgent_tasks : modalData.urgent_tasks.slice(0, 3)"
                                         :key="task.id">
                                         <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer"
                                             @click="console.log('Open task:', task.id)">
@@ -651,6 +779,9 @@
                                                     <div class="flex items-center gap-2 mb-2">
                                                         <span class="px-2 py-0.5 text-xs font-bold rounded"
                                                             :class="{
+                                                                'bg-red-600 text-white animate-pulse': task
+                                                                    .priority === 'overdue',
+                                                                'bg-red-500 text-white': task.priority === 'urgent',
                                                                 'bg-red-100 text-red-700': task
                                                                     .priority === 'high',
                                                                 'bg-yellow-100 text-yellow-700': task
@@ -658,7 +789,7 @@
                                                                 'bg-gray-100 text-gray-700': task
                                                                     .priority === 'low'
                                                             }"
-                                                            x-text="task.priority?.toUpperCase() || 'MEDIUM'">
+                                                            x-text="task.priority === 'overdue' ? 'TERLAMBAT' : task.priority?.toUpperCase() || 'MEDIUM'">
                                                         </span>
                                                         <span class="text-sm font-bold text-gray-900"
                                                             x-text="task.title"></span>
@@ -671,7 +802,18 @@
                                                                     d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" />
                                                             </svg>
                                                             <span
-                                                                x-text="`Deadline: ${task.days_until_due} hari lagi`"></span>
+                                                                :class="{
+                                                                    'text-red-600 font-bold': task.days_until_due < 0,
+                                                                    'text-orange-600 font-semibold': task
+                                                                        .days_until_due >= 0 && task.days_until_due <=
+                                                                        1,
+                                                                    'text-yellow-600': task.days_until_due > 1 && task
+                                                                        .days_until_due <= 3
+                                                                }"
+                                                                x-text="task.days_until_due < 0 ? 
+                                                                `Telat ${Math.floor(Math.abs(task.days_until_due))} hari ${Math.floor((Math.abs(task.days_until_due) % 1) * 24)} jam` : 
+                                                                `H-${Math.floor(task.days_until_due)}`">
+                                                            </span>
                                                         </span>
                                                         <span class="flex items-center gap-1">
                                                             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -691,13 +833,14 @@
                                                                 :key="user.id">
                                                                 <img :src="user.avatar" :alt="user.name"
                                                                     :title="user.name"
-                                                                    class="w-6 h-6 rounded-full border-2 border-white">
+                                                                    class="w-8 h-8 rounded-full border-2 border-white">
                                                             </template>
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <button
+                                                {{-- Tombol yang nanti ketikea dipencet membuak modal taks --}}
+                                                {{-- <button
                                                     class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1">
                                                     <span>Buka</span>
                                                     <svg class="w-3 h-3" fill="none" stroke="currentColor"
@@ -706,15 +849,29 @@
                                                             stroke-width="2"
                                                             d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                                     </svg>
-                                                </button>
+                                                </button> --}}
                                             </div>
                                         </div>
                                     </template>
                                 </div>
+
+                                <!-- ✅ EXPAND BUTTON -->
+                                <div x-show="modalData.urgent_tasks.length > 3" class="mt-4 text-center">
+                                    <button @click="showAllUrgent = !showAllUrgent"
+                                        class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2 mx-auto">
+                                        <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': showAllUrgent }"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                        <span
+                                            x-text="showAllUrgent ? 'Sembunyikan' : `Tampilkan ${modalData.urgent_tasks.length - 3} tugas lainnya`"></span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Workload Distribution -->
+                        <!-- Workload with Recommendations -->
                         <div x-show="modalData?.workload && modalData.workload.length > 0" class="mb-6">
                             <div class="bg-white border border-gray-200 rounded-xl p-5">
                                 <div class="flex items-center gap-2 mb-4">
@@ -722,7 +879,7 @@
                                     <h3 class="text-lg font-bold text-gray-900">BEBAN KERJA ANGGOTA</h3>
                                 </div>
 
-                                <div class="space-y-4">
+                                <div class="space-y-4 mb-4">
                                     <template x-for="member in modalData.workload" :key="member.user_id">
                                         <div class="border border-gray-200 rounded-lg p-4">
                                             <div class="flex items-center gap-3 mb-3">
@@ -763,11 +920,30 @@
                                         </div>
                                     </template>
                                 </div>
+
+                                <!-- ✅ WORKLOAD RECOMMENDATIONS -->
+                                <div x-show="modalData?.workload_recommendations && modalData.workload_recommendations.length > 0"
+                                    class="mt-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <span class="text-lg">💡</span>
+                                        <h5 class="text-sm font-bold text-blue-900">REKOMENDASI:</h5>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <template x-for="(rec, rIdx) in modalData.workload_recommendations"
+                                            :key="rIdx">
+                                            <div class="flex items-start gap-2">
+                                                <input type="checkbox"
+                                                    class="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                                                <span class="flex-1 text-sm text-gray-800" x-text="rec"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Action Items -->
-                        <div x-show="modalData?.suggestions?.actions && modalData.suggestions.actions.length > 0"
+                        {{-- <div x-show="modalData?.suggestions?.actions && modalData.suggestions.actions.length > 0"
                             class="mb-6">
                             <div class="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-5">
                                 <div class="flex items-center gap-2 mb-4">
@@ -787,7 +963,7 @@
                                     </template>
                                 </div>
                             </div>
-                        </div>
+                        </div> --}}
 
                         <!-- Positive Feedback -->
                         <div x-show="modalData?.suggestions?.positive && modalData.suggestions.positive.length > 0">
@@ -832,22 +1008,13 @@
                         </div>
 
                         <div class="flex items-center gap-3">
-                            <!-- Download PDF Button (placeholder) -->
-                            <button
-                                class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg transition-colors flex items-center gap-2"
-                                title="Download PDF (Coming Soon)">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                <span>Download PDF</span>
-                            </button>
+
 
                             <!-- Close Button -->
-                            <button @click="showDSSModal = false"
+                            {{-- <button @click="showDSSModal = false"
                                 class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors">
                                 Tutup
-                            </button>
+                            </button> --}}
                         </div>
                     </div>
 
@@ -908,9 +1075,9 @@
                             <div class="flex flex-col">
                                 <span class="text-white text-md font-bold tracking-wide uppercase"
                                     x-text="topSuggestion?.type === 'critical' ? 'MASALAH KRITIS' :
-                      topSuggestion?.type === 'warning' ? 'PERLU PERHATIAN' :
-                      topSuggestion?.type === 'positive' ? 'PERFORMA BAGUS' : 
-                      topSuggestion?.type === 'empty' ? 'BELUM ADA DATA' : 'INFORMASI'">
+                                    topSuggestion?.type === 'warning' ? 'PERLU PERHATIAN' :
+                                    topSuggestion?.type === 'positive' ? 'PERFORMA BAGUS' : 
+                                    topSuggestion?.type === 'empty' ? 'BELUM ADA DATA' : 'INFORMASI'">
                                 </span>
                                 <span class="text-white/80 text-s font-medium"
                                     x-show="topSuggestion?.type === 'critical' || topSuggestion?.type === 'warning'"
@@ -1199,9 +1366,9 @@
                                     :style="{ color: rekapKinerja?.performance?.color || '#3b82f6' }"
                                     x-text="rekapKinerja?.performance?.stars || 3">
                                 </span> dari 5 bintang
-                                <span style="display: block; margin-top: 4px; font-size: 11px;">
+                                {{-- <span style="display: block; margin-top: 4px; font-size: 11px;">
                                     (Score: <span x-text="rekapKinerja?.performance?.score || 0"></span>/100)
-                                </span>
+                                </span> --}}
                             </div>
                         </div>
                     </div> <!-- ✅ TUTUP Profile Card di sini -->
@@ -1298,7 +1465,7 @@
                                     <div style="display: flex; align-items: center; gap: 8px;">
                                         <div style="width: 12px; height: 12px; background: #10b981; border-radius: 3px;">
                                         </div>
-                                        <span style="font-size: 12px; color: #374151;">Selesai</span>
+                                        <span style="font-size: 12px; color: #374151;">Selesai Tepat Waktu</span>
                                     </div>
                                     <span style="font-size: 13px; font-weight: 600; color: #111827;"
                                         x-text="(rekapKinerja?.selesai || 0) + '%'"></span>

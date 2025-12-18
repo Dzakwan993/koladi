@@ -32,6 +32,19 @@ class TrendAnalyzer
      */
     private function calculateTrend($current, $previous, $metricName)
     {
+        // ✅ TAMBAHKAN INI DI AWAL
+        if ($previous < 10 && $metricName !== 'totalTasks') {
+            return [
+                'current' => $current,
+                'previous' => $previous,
+                'change_percent' => null,
+                'change_absolute' => round($current - $previous, 1),
+                'direction' => $current > $previous ? 'up' : ($current < $previous ? 'down' : 'stable'),
+                'icon' => $current > $previous ? '↑' : ($current < $previous ? '↓' : '→'),
+                'status' => 'neutral',
+                'sample_size_warning' => true,  // ✅ Flag untuk UI
+            ];
+        }
         if ($previous == 0) {
             return [
                 'current' => $current,

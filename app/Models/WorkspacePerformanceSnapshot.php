@@ -21,6 +21,7 @@ class WorkspacePerformanceSnapshot extends Model
         'quality_score',
         'risk_score',
         'suggestions',
+        'version', // ✅ TAMBAH INI
     ];
 
     protected $casts = [

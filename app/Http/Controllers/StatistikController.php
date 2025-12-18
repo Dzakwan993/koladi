@@ -27,7 +27,7 @@ class StatistikController extends Controller
         Log::info('User ID: ' . $user->id);
         Log::info('User Name: ' . $user->name);
 
-        // ✅ FIX: Ambil dari SESSION seperti Dashboard
+        // ✅ Ambil dari SESSION
         $activeCompanyId = session('active_company_id');
 
         if (!$activeCompanyId) {
@@ -35,46 +35,32 @@ class StatistikController extends Controller
             return redirect()->route('dashboard')->with('error', 'Tidak ada company aktif');
         }
 
-        // ✅ Ambil company berdasarkan session
-        $activeCompany = $user->userCompanies()
-            ->where('company_id', $activeCompanyId)
-            ->with('company')
-            ->first();
+        // ✅ Get user role in company
+        $companyRole = $this->getUserRoleInCompany($user, $activeCompanyId);
 
-        Log::info('Active Company Query Result:', [
-            'session_company_id' => $activeCompanyId,
-            'found' => $activeCompany ? 'yes' : 'no',
-            'company_id' => $activeCompany?->company_id,
-            'company_name' => $activeCompany?->company?->name ?? 'N/A',
-            'role_id' => $activeCompany?->roles_id ?? 'N/A'
+        Log::info('Company Role:', [
+            'company_id' => $activeCompanyId,
+            'role' => $companyRole
         ]);
 
-        if (!$activeCompany) {
-            Log::warning('Active company not found in user companies');
+        if (!$companyRole) {
+            Log::warning('User has no role in active company');
             return redirect()->route('dashboard')->with('error', 'Tidak ada akses ke company ini');
         }
 
-        // 2. Cek role di company
-        $isCompanyAdmin = in_array($activeCompany->roles_id, [
-            self::ROLE_SUPERADMIN,
-            self::ROLE_ADMINISTRATOR
-        ]);
-
-        Log::info('Is Company Admin: ' . ($isCompanyAdmin ? 'YES' : 'NO'));
-
-        // 3. Ambil workspaces berdasarkan role
-        if ($isCompanyAdmin) {
-            // SuperAdmin/Administrator: Lihat SEMUA workspace di company aktif
-            $workspaces = Workspace::where('company_id', $activeCompanyId) // ✅ Pakai session ID
-                ->with('activeMembers') // ✅ Pakai activeMembers (ga pakai ->using())
+        // ✅ Ambil workspaces berdasarkan role di COMPANY
+        if (in_array($companyRole, ['superadmin', 'admin'])) {
+            // SuperAdmin/Admin: Lihat SEMUA workspace di company aktif
+            $workspaces = Workspace::where('company_id', $activeCompanyId)
+                ->with('activeMembers')
                 ->get();
 
             Log::info('Company Admin - All Workspaces:', [
                 'count' => $workspaces->count(),
-                'workspace_ids' => $workspaces->pluck('id')->toArray(),
-                'workspace_names' => $workspaces->pluck('name')->toArray()
+                'workspace_ids' => $workspaces->pluck('id')->toArray()
             ]);
         } else {
+            // Manager/Member: Lihat workspace yang dia ikuti SAJA
             $workspaces = Workspace::where('company_id', $activeCompanyId)
                 ->where(function ($q) use ($user) {
                     $q->where('created_by', $user->id)
@@ -82,16 +68,13 @@ class StatistikController extends Controller
                             $subQ->where('users.id', $user->id);
                         });
                 })
-                ->with('activeMembers') // ✅ Pakai activeMembers
+                ->with('activeMembers')
                 ->get();
 
             Log::info('User Workspaces:', [
-                'company_id_filter' => $activeCompanyId,
+                'company_id' => $activeCompanyId,
                 'count' => $workspaces->count(),
-                'workspace_ids' => $workspaces->pluck('id')->toArray(),
-                'workspace_names' => $workspaces->pluck('name')->toArray(),
-                'workspace_companies' => $workspaces->pluck('company_id')->toArray(),
-                'created_by_user' => $workspaces->where('created_by', $user->id)->pluck('name')->toArray()
+                'workspace_ids' => $workspaces->pluck('id')->toArray()
             ]);
         }
 
@@ -101,58 +84,47 @@ class StatistikController extends Controller
             return redirect()->route('dashboard')->with([
                 'alert_type' => 'warning',
                 'alert_title' => 'Belum Ada Workspace',
-                'alert_message' => 'Anda belum memiliki workspace di company ini. Silakan buat workspace terlebih dahulu untuk mengakses Laporan Kinerja.',
+                'alert_message' => 'Anda belum memiliki workspace di company ini.',
                 'alert_button' => 'Kelola Workspace',
                 'alert_url' => route('kelola-workspace')
             ]);
         }
 
-        // 4. Set workspace default = workspace pertama
+        // ✅ Set workspace default = workspace pertama
         $defaultWorkspace = $workspaces->first();
+
         Log::info('Default Workspace:', [
             'id' => $defaultWorkspace->id,
-            'name' => $defaultWorkspace->name,
-            'company_id' => $defaultWorkspace->company_id, // ✅ Debug
-            'created_by' => $defaultWorkspace->created_by,
-            'is_user_creator' => $defaultWorkspace->created_by === $user->id ? 'YES' : 'NO'
+            'name' => $defaultWorkspace->name
         ]);
 
-        // 5. Ambil members berdasarkan hak akses
-        $members = $this->getAccessibleMembers($defaultWorkspace, $user, $isCompanyAdmin);
+        // ✅ Ambil members berdasarkan role
+        $members = $this->getAccessibleMembers($defaultWorkspace, $user, $activeCompanyId);
 
         Log::info('Accessible Members:', [
             'count' => $members->count(),
-            'user_ids' => $members->pluck('id')->toArray(),
-            'user_names' => $members->pluck('name')->toArray()
+            'user_ids' => $members->pluck('id')->toArray()
         ]);
 
-        // 6. Set periode default = "Minggu ini"
+        // ✅ Set periode default
         $defaultPeriod = $this->getCurrentWeekPeriod();
-        Log::info('Default Period:', $defaultPeriod);
 
-        // 7. Ambil tasks
+        // ✅ Get tasks
         $tasks = $this->getTasksByPeriodAndStatus(
             $defaultWorkspace->id,
             $defaultPeriod['start'],
             $defaultPeriod['end'],
             'todo'
         );
-        Log::info('Tasks Found: ' . $tasks->count());
 
-        // ✅ TAMBAHKAN INI: Calculate rekap kinerja
+        // ✅ Calculate rekap kinerja
         $rekapKinerja = $this->calculateRekapKinerja(
             $defaultWorkspace->id,
             $defaultPeriod['start'],
             $defaultPeriod['end']
         );
 
-        Log::info('Rekap Kinerja Calculated:', [
-            'total' => $rekapKinerja['total'],
-            'selesai' => $rekapKinerja['selesai'],
-            'performance_score' => $rekapKinerja['performance']['score']
-        ]);
-
-        // 8. Generate dropdown periode
+        // ✅ Generate dropdown periode
         $periodOptions = $this->generatePeriodOptions();
 
         Log::info('=== RENDERING VIEW: statistik ===');
@@ -163,10 +135,10 @@ class StatistikController extends Controller
             'defaultWorkspace' => $defaultWorkspace,
             'members' => $members,
             'tasks' => $tasks,
-            'rekapKinerja' => $rekapKinerja, // ✅ TAMBAHKAN INI
+            'rekapKinerja' => $rekapKinerja,
             'periodOptions' => $periodOptions,
             'defaultPeriod' => $defaultPeriod,
-            'isCompanyAdmin' => $isCompanyAdmin,
+            'companyRole' => $companyRole, // ✅ Pass ke view
         ]);
     }
 
@@ -192,19 +164,15 @@ class StatistikController extends Controller
                 ], 403);
             }
 
-            // 2. Check role
-            $activeCompanyId = session('active_company_id');
-            $activeCompany = $user->userCompanies()
-                ->where('company_id', $activeCompanyId)
-                ->first();
+            // 2. Get company ID dari WORKSPACE, bukan session
+            $companyId = $workspace->company_id;
 
-            $isCompanyAdmin = in_array($activeCompany->roles_id, [
-                self::ROLE_SUPERADMIN,
-                self::ROLE_ADMINISTRATOR
-            ]);
+            // 3. Get user role in company
+            $companyRole = $this->getUserRoleInCompany($user, $companyId);
+
 
             // 3. Get members
-            $members = $this->getAccessibleMembers($workspace, $user, $isCompanyAdmin);
+            $members = $this->getAccessibleMembers($workspace, $user, $companyId);
 
             // ✅ JADI INI:
             // 4. Get periode (dari request atau default)
@@ -385,8 +353,13 @@ class StatistikController extends Controller
             // 5. Get workload distribution
             $workloadData = $this->getWorkloadDistribution($workspaceId, $periodStart, $periodEnd);
 
+            // ✅ TAMBAHKAN INI: Generate workload recommendations
+            $workloadRecommendations = app(\App\Services\DSS\RecommendationEngine::class)
+                ->generateWorkloadRecommendations($workloadData);
+
             $modalData['urgent_tasks'] = $urgentTasks;
             $modalData['workload'] = $workloadData;
+            $modalData['workload_recommendations'] = $workloadRecommendations; // ✅ Sudah ada
 
             return response()->json([
                 'success' => true,
@@ -495,22 +468,61 @@ class StatistikController extends Controller
      */
     private function calculatePerformanceScore($rekapKinerja)
     {
-        // ✅ FIX: Kalau tidak ada tugas sama sekali, return score 100 (perfect)
-        if ($rekapKinerja['total'] == 0) {
-            return 100;
+        $total = $rekapKinerja['total'] ?? 0;
+
+        // ✅ Empty state
+        if ($total == 0) {
+            return 100; // Perfect score untuk empty workspace
         }
-        
-        $selesai = $rekapKinerja['selesai'];
-        $terlambat = $rekapKinerja['terlambat'];
-        $dikerjakan = $rekapKinerja['dikerjakan'];
-        $belum = $rekapKinerja['belum'];
 
-        // Scoring dengan bobot
-        $score = ($selesai * 2) + ($dikerjakan * 0.5) - ($terlambat * 3) - ($belum * 1);
+        $selesai = $rekapKinerja['selesai'] ?? 0;
+        $terlambat = $rekapKinerja['terlambat'] ?? 0;
+        $dikerjakan = $rekapKinerja['dikerjakan'] ?? 0;
+        $belum = $rekapKinerja['belum'] ?? 0;
 
-        // Normalisasi ke 0-100
-        $normalizedScore = (($score + 300) / 500) * 100;
-        return max(0, min(100, round($normalizedScore)));
+        // ✅ CHECK: Apakah ada task selesai?
+        $hasCompleted = ($selesai > 0);
+
+        // ============================================
+        // CASE 1: WORKSPACE BARU (Belum ada completed)
+        // ============================================
+        if (!$hasCompleted) {
+            $baseScore = 70; // Netral
+
+            // Bonus: Ada progress
+            $progressBonus = ($dikerjakan > 0) ? 10 : 0;
+
+            // Penalty: Overdue
+            $overduePenalty = $terlambat * 0.5;
+
+            // Penalty: Idle terlalu tinggi
+            $idlePenalty = ($belum > 80) ? 10 : 0;
+
+            // Penalty: Stagnant (idle tinggi + no progress)
+            $stagnantPenalty = ($belum > 90 && $dikerjakan == 0) ? 15 : 0;
+
+            $finalScore = $baseScore + $progressBonus - $overduePenalty - $idlePenalty - $stagnantPenalty;
+
+            return max(50, min(100, round($finalScore)));
+        }
+
+        // ============================================
+        // CASE 2: WORKSPACE AKTIF (Sudah ada completed)
+        // ============================================
+
+        // Simplified formula (mirip DSS tapi lebih ringan)
+
+        // Komponen positif
+        $completionWeight = $selesai * 0.8;      // Max 80 points
+        $progressWeight = $dikerjakan * 0.3;      // Max 30 points
+
+        // Komponen negatif
+        $overduePenalty = $terlambat * 0.6;       // Penalty overdue
+        $idlePenalty = ($belum > 40) ? ($belum * 0.2) : 0; // Penalty idle tinggi
+
+        $finalScore = $completionWeight + $progressWeight - $overduePenalty - $idlePenalty;
+
+        return max(0, min(100, round($finalScore)));
     }
 
     /**
@@ -534,38 +546,61 @@ class StatistikController extends Controller
     /**
      * Get urgent tasks (deadline < 3 days)
      */
+    /**
+     * Get urgent tasks (overdue + deadline < 3 days)
+     * ✅ PERBAIKAN: Include tugas yang SUDAH TERLAMBAT
+     */
     private function getUrgentTasks($workspaceId, $periodStart, $periodEnd)
     {
         $tasks = Task::where('workspace_id', $workspaceId)
             ->with(['assignedUsers'])
+            // ✅ FIX: Hanya tugas yang BELUM SELESAI
             ->where('status', '!=', 'done')
             ->where(function ($q) use ($periodStart, $periodEnd) {
-                $q->whereBetween('due_datetime', [$periodStart, $periodEnd]);
+                // Tugas yang due-nya di periode ini atau sebelumnya
+                $q->where('due_datetime', '<=', $periodEnd);
             })
             ->get();
 
         return $tasks->filter(function ($task) {
             if (!$task->due_datetime)
                 return false;
+
             $daysUntilDue = now()->diffInDays($task->due_datetime, false);
-            return $daysUntilDue >= 0 && $daysUntilDue <= 3;
-        })->map(function ($task) {
-            $daysUntilDue = now()->diffInDays($task->due_datetime, false);
-            return [
-                'id' => $task->id,
-                'title' => $task->title,
-                'priority' => $task->priority ?? 'medium',
-                'status' => $task->status,
-                'due_datetime' => $task->due_datetime->toISOString(),
-                'days_until_due' => $daysUntilDue,
-                'progress' => $task->getProgressPercentage(),
-                'assigned_users' => $task->assignedUsers->map(fn($u) => [
-                    'id' => $u->id,
-                    'name' => $u->name,
-                    'avatar' => $u->avatar ?? 'https://i.pravatar.cc/40?u=' . $u->id
-                ])
-            ];
-        })->sortBy('days_until_due')->values()->take(5);
+
+            // Include tugas yang sudah lewat (negatif) atau deadline < 3 hari
+            return $daysUntilDue <= 3;
+        })
+            ->map(function ($task) {
+                $daysUntilDue = now()->diffInDays($task->due_datetime, false);
+
+                // Auto-promote priority jika sudah telat
+                $priority = $task->priority ?? 'medium';
+                if ($daysUntilDue < 0) {
+                    $priority = 'overdue';
+                } elseif ($daysUntilDue <= 1) {
+                    $priority = 'urgent';
+                } elseif ($daysUntilDue <= 3) {
+                    $priority = 'high';
+                }
+
+                return [
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'priority' => $priority,
+                    'status' => $task->status,
+                    'due_datetime' => $task->due_datetime->toISOString(),
+                    'days_until_due' => $daysUntilDue,
+                    'progress' => $task->getProgressPercentage(),
+                    'assigned_users' => $task->assignedUsers->map(fn($u) => [
+                        'id' => $u->id,
+                        'name' => $u->name,
+                        'avatar' => $u->avatar ?? 'https://i.pravatar.cc/40?u=' . $u->id
+                    ])
+                ];
+            })
+            ->sortBy('days_until_due') // Sort by urgency
+            ->values();
     }
 
     /**
@@ -575,6 +610,14 @@ class StatistikController extends Controller
     {
         $workspace = Workspace::findOrFail($workspaceId);
         $members = $workspace->activeMembers;
+
+        // ✅ TAMBAHKAN: Hitung total task di workspace
+        $totalWorkspaceTasks = Task::where('workspace_id', $workspaceId)
+            ->where(function ($q) use ($periodStart, $periodEnd) {
+                $q->whereBetween('start_datetime', [$periodStart, $periodEnd])
+                    ->orWhereBetween('due_datetime', [$periodStart, $periodEnd]);
+            })
+            ->count();
 
         $distribution = [];
         foreach ($members as $member) {
@@ -592,6 +635,11 @@ class StatistikController extends Controller
             $done = $tasks->where('status', 'done')->count();
             $overdue = $tasks->filter(fn($t) => $t->isOverdue() && $t->status !== 'done')->count();
 
+            // ✅ PERBAIKAN: Hitung berdasarkan share dari total workspace
+            $loadPercentage = $totalWorkspaceTasks > 0
+                ? round(($total / $totalWorkspaceTasks) * 100, 1)
+                : 0;
+
             $distribution[] = [
                 'user_id' => $member->id,
                 'name' => $member->name,
@@ -600,7 +648,7 @@ class StatistikController extends Controller
                 'completed_tasks' => $done,
                 'overdue_tasks' => $overdue,
                 'completion_rate' => $total > 0 ? round(($done / $total) * 100) : 0,
-                'load_percentage' => min(150, $total * 10), // Assume 10 tasks = 100%
+                'load_percentage' => $loadPercentage, // ✅ Sekarang relatif terhadap total workspace
             ];
         }
 
@@ -814,49 +862,36 @@ class StatistikController extends Controller
     /**
      * Check apakah user bisa akses workspace
      */
+    /**
+     * Check apakah user bisa akses workspace
+     */
     private function userCanAccessWorkspace($workspace, $user)
     {
-        $activeCompanyId = session('active_company_id');
+        // ✅ PERBAIKAN: Ambil dari workspace, bukan session
+        $companyId = $workspace->company_id;
 
-        $activeCompany = $user->userCompanies()
-            ->where('company_id', $activeCompanyId)
-            ->first();
+        // ✅ Check company role
+        $companyRole = $this->getUserRoleInCompany($user, $companyId);
 
-        if (!$activeCompany)
+        if (!$companyRole)
             return false;
 
-        $isCompanyAdmin = in_array($activeCompany->roles_id, [
-            self::ROLE_SUPERADMIN,
-            self::ROLE_ADMINISTRATOR
-        ]);
-
-        if ($isCompanyAdmin)
+        // ✅ SuperAdmin/Admin company → Akses semua
+        if (in_array($companyRole, ['superadmin', 'admin'])) {
             return true;
+        }
 
-        if ($workspace->created_by === $user->id)
-            return true;
+        // ✅ Check workspace role
+        $workspaceRole = $this->getUserRoleInWorkspace($workspace->id, $user->id);
 
-        // ✅ Query langsung
-        return UserWorkspace::where('workspace_id', $workspace->id)
-            ->where('user_id', $user->id)
-            ->where('status_active', true)
-            ->exists();
+        // ✅ Ada role di workspace (creator, manager, member)
+        return $workspaceRole !== null;
     }
 
     /**
      * Check apakah user adalah company admin
      */
-    private function isCompanyAdmin($user, $companyId)
-    {
-        $userCompany = $user->userCompanies()
-            ->where('company_id', $companyId)
-            ->first();
 
-        return $userCompany && in_array($userCompany->roles_id, [
-            self::ROLE_SUPERADMIN,
-            self::ROLE_ADMINISTRATOR
-        ]);
-    }
 
     /**
      * Map filter name ke status database
@@ -950,6 +985,9 @@ class StatistikController extends Controller
     /**
      * Calculate rekap kinerja workspace
      */
+    /**
+     * Calculate rekap kinerja workspace
+     */
     private function calculateRekapKinerja($workspaceId, $periodStart, $periodEnd)
     {
         $allTasks = Task::where('workspace_id', $workspaceId)
@@ -964,21 +1002,50 @@ class StatistikController extends Controller
             ->get();
 
         $total = $allTasks->count();
-        $belum = $allTasks->where('status', 'todo')->count();
-        $dikerjakan = $allTasks->where('status', 'inprogress')->count();
-        $selesai = $allTasks->where('status', 'done')->count();
-        $terlambat = $allTasks->filter(fn($t) => $t->isOverdue() && $t->status !== 'done')->count();
 
-        $selesaiTepatWaktu = $allTasks->filter(function ($t) {
+        // ✅ PERBAIKAN: TERLAMBAT = Belum selesai ATAU Selesai telat
+        $terlambat = $allTasks->filter(function ($t) {
+            // Belum selesai DAN lewat deadline
+            if ($t->status !== 'done' && $t->isOverdue()) {
+                return true;
+            }
+            // ATAU Selesai tapi telat
+            if ($t->status === 'done' && $t->isCompletedLate()) {
+                return true;
+            }
+            return false;
+        });
+        $terlambatCount = $terlambat->count();
+
+        // ✅ Hitung sisanya (yang TIDAK termasuk terlambat)
+        $notLate = $allTasks->filter(function ($t) {
+            // Exclude yang belum selesai DAN lewat deadline
+            if ($t->status !== 'done' && $t->isOverdue()) {
+                return false;
+            }
+            // Exclude yang selesai tapi telat
+            if ($t->status === 'done' && $t->isCompletedLate()) {
+                return false;
+            }
+            return true;
+        });
+
+        $belum = $notLate->where('status', 'todo')->count();
+        $dikerjakan = $notLate->where('status', 'inprogress')->count();
+
+        // ✅ SELESAI = Hanya yang selesai TEPAT WAKTU
+        $selesai = $allTasks->filter(function ($t) {
             return $t->status === 'done' && !$t->isCompletedLate();
         })->count();
+
+        $selesaiTepatWaktu = $selesai; // Sudah sama
 
         // ✅ BUAT ARRAY REKAP
         $rekap = [
             'belum' => round($total > 0 ? ($belum / $total) * 100 : 0),
             'dikerjakan' => round($total > 0 ? ($dikerjakan / $total) * 100 : 0),
             'selesai' => round($total > 0 ? ($selesai / $total) * 100 : 0),
-            'terlambat' => round($total > 0 ? ($terlambat / $total) * 100 : 0),
+            'terlambat' => round($total > 0 ? ($terlambatCount / $total) * 100 : 0), // ✅ GANTI INI
             'total' => $total,
             'completed_on_time' => $selesaiTepatWaktu . ' dari ' . $total
         ];
@@ -1007,31 +1074,66 @@ class StatistikController extends Controller
                 $q->where('users.id', $memberId);
             })
             ->where(function ($q) use ($periodStart, $periodEnd) {
-                $q->whereBetween('start_datetime', [$periodStart, $periodEnd])
-                    ->orWhereBetween('due_datetime', [$periodStart, $periodEnd])
-                    ->orWhere(function ($sub) use ($periodStart, $periodEnd) {
-                        $sub->where('start_datetime', '<=', $periodEnd)
-                            ->where('due_datetime', '>=', $periodStart);
-                    });
+                // ✅ LOGIC SAMA DENGAN getTasksInPeriod()
+                $q->where(function ($sub) use ($periodStart, $periodEnd) {
+                    $sub->whereBetween('start_datetime', [$periodStart, $periodEnd])
+                        ->orWhereBetween('due_datetime', [$periodStart, $periodEnd])
+                        ->orWhere(function ($span) use ($periodStart, $periodEnd) {
+                            $span->where('start_datetime', '<=', $periodEnd)
+                                ->where('due_datetime', '>=', $periodStart);
+                        });
+                })
+                    // ✅ TAMBAH: Include overdue dari periode sebelumnya
+                    ->orWhere(function ($overdue) use ($periodEnd) {
+                    $overdue->where('status', '!=', 'done')
+                        ->where('due_datetime', '<', now())
+                        ->where('due_datetime', '<=', $periodEnd);
+                });
             })
             ->get();
 
         $total = $allTasks->count();
-        $belum = $allTasks->where('status', 'todo')->count();
-        $dikerjakan = $allTasks->where('status', 'inprogress')->count();
-        $selesai = $allTasks->where('status', 'done')->count();
-        $terlambat = $allTasks->filter(fn($t) => $t->isOverdue() && $t->status !== 'done')->count();
 
-        $selesaiTepatWaktu = $allTasks->filter(function ($t) {
+
+
+        // ✅ PERBAIKAN: SAMA SEPERTI DI ATAS
+        $terlambat = $allTasks->filter(function ($t) {
+            if ($t->status !== 'done' && $t->isOverdue()) {
+                return true;
+            }
+            if ($t->status === 'done' && $t->isCompletedLate()) {
+                return true;
+            }
+            return false;
+        });
+        $terlambatCount = $terlambat->count();
+
+        $notLate = $allTasks->filter(function ($t) {
+            if ($t->status !== 'done' && $t->isOverdue()) {
+                return false;
+            }
+            if ($t->status === 'done' && $t->isCompletedLate()) {
+                return false;
+            }
+            return true;
+        });
+
+        $belum = $notLate->where('status', 'todo')->count();
+        $dikerjakan = $notLate->where('status', 'inprogress')->count();
+
+        // ✅ SELESAI = Hanya yang tepat waktu
+        $selesai = $allTasks->filter(function ($t) {
             return $t->status === 'done' && !$t->isCompletedLate();
         })->count();
+
+        $selesaiTepatWaktu = $selesai;
 
         // ✅ BUAT ARRAY REKAP
         $rekap = [
             'belum' => round($total > 0 ? ($belum / $total) * 100 : 0),
             'dikerjakan' => round($total > 0 ? ($dikerjakan / $total) * 100 : 0),
             'selesai' => round($total > 0 ? ($selesai / $total) * 100 : 0),
-            'terlambat' => round($total > 0 ? ($terlambat / $total) * 100 : 0),
+            'terlambat' => round($total > 0 ? ($terlambatCount / $total) * 100 : 0), // ✅ GANTI INI
             'total' => $total,
             'completed_on_time' => $selesaiTepatWaktu . ' dari ' . $total
         ];
@@ -1053,32 +1155,37 @@ class StatistikController extends Controller
     /**
      * Get members yang bisa diakses user berdasarkan role
      */
-    private function getAccessibleMembers($workspace, $user, $isCompanyAdmin)
+    /**
+     * Get members yang bisa diakses user berdasarkan role
+     */
+    private function getAccessibleMembers($workspace, $user, $companyId)
     {
-        if ($isCompanyAdmin) {
-            return $workspace->activeMembers; // ✅ Langsung akses property
-        }
+        $companyRole = $this->getUserRoleInCompany($user, $companyId);
 
-        if ($workspace->created_by === $user->id) {
+
+        Log::info('getAccessibleMembers DEBUG:', [
+            'workspace_id' => $workspace->id,
+            'user_id' => $user->id,
+            'company_role' => $companyRole
+        ]);
+
+        // ✅ SuperAdmin/Admin company → Lihat semua member
+        if (in_array($companyRole, ['superadmin', 'admin'])) {
             return $workspace->activeMembers;
         }
 
-        // ✅ Query langsung ke UserWorkspace model
-        $userWorkspace = UserWorkspace::where('workspace_id', $workspace->id)
-            ->where('user_id', $user->id)
-            ->where('status_active', true)
-            ->first();
+        // ✅ Check role di workspace
+        $workspaceRole = $this->getUserRoleInWorkspace($workspace->id, $user->id);
 
-        if (!$userWorkspace) {
-            return collect([$user]);
-        }
+        Log::info('Workspace role:', ['role' => $workspaceRole]);
 
-        $isManager = $userWorkspace->roles_id === self::ROLE_MANAGER;
-
-        if ($isManager) {
+        // ✅ Creator atau Manager workspace → Lihat semua member
+        if (in_array($workspaceRole, ['creator', 'manager'])) {
             return $workspace->activeMembers;
         }
 
+        Log::info('Return: Self only (member)');
+        // ✅ Manager/Member company DAN bukan manager/creator workspace → Cuma lihat diri sendiri
         return collect([$user]);
     }
 
@@ -1129,6 +1236,81 @@ class StatistikController extends Controller
 
         return $options;
     }
+
+    /**
+     * Get user role in company
+     */
+    private function getUserRoleInCompany($user, $companyId)
+    {
+        $userCompany = $user->userCompanies()
+            ->where('company_id', $companyId)
+            ->first();
+
+        if (!$userCompany)
+            return null;
+
+        $roleId = $userCompany->roles_id;
+
+        if ($roleId === self::ROLE_SUPERADMIN)
+            return 'superadmin';
+        if ($roleId === self::ROLE_ADMINISTRATOR)
+            return 'admin';
+        if ($roleId === self::ROLE_MANAGER)
+            return 'manager';
+        if ($roleId === self::ROLE_MEMBER)
+            return 'member';
+
+        return null;
+    }
+
+    /**
+     * Get user role in workspace
+     */
+    private function getUserRoleInWorkspace($workspaceId, $userId)
+    {
+        $workspace = Workspace::find($workspaceId);
+
+        if (!$workspace)
+            return null;
+
+        // Check if creator
+        if ($workspace->created_by === $userId) {
+            return 'creator';
+        }
+
+        // Check role in workspace
+        $userWorkspace = UserWorkspace::where('workspace_id', $workspaceId)
+            ->where('user_id', $userId)
+            ->where('status_active', true)
+            ->first();
+
+        if (!$userWorkspace)
+            return null;
+
+        if ($userWorkspace->roles_id === self::ROLE_MANAGER)
+            return 'manager';
+
+        return 'member';
+    }
+
+    /**
+     * Check if user can see all workspaces in company
+     */
+    private function canSeeAllWorkspaces($user, $companyId)
+    {
+        $role = $this->getUserRoleInCompany($user, $companyId);
+        return in_array($role, ['superadmin', 'admin']);
+    }
+
+    /**
+     * Check if user can see all members in workspace
+     */
+    private function canSeeAllMembersInWorkspace($workspaceId, $userId)
+    {
+        $workspaceRole = $this->getUserRoleInWorkspace($workspaceId, $userId);
+        return in_array($workspaceRole, ['creator', 'manager']);
+    }
+
 
     /**
      * Helper: Get tasks berdasarkan periode dan status

@@ -153,6 +153,19 @@ class Task extends Model
         }
     }
 
+    // File: app/Models/Task.php
+
+    public function getDaysUntilDueAttribute()
+    {
+        if (!$this->due_datetime) {
+            return null;
+        }
+
+        // Hitung selisih hari antara sekarang dan deadline
+        return now()->diffInDays($this->due_datetime, false);
+        // false = bisa negatif (misal: -2 = telat 2 hari)
+    }
+
 
 
 
@@ -426,7 +439,7 @@ class Task extends Model
         return $newTask;
     }
 
-    
+
 
     /**
      * Format data untuk response API

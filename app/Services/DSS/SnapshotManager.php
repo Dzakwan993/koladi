@@ -8,6 +8,8 @@ use Carbon\Carbon;
 
 class SnapshotManager
 {
+    // ✅ TAMBAH INI: Bump version setiap update logic DSS
+    const DSS_VERSION = '2.0';
     /**
      * Save snapshot to database
      */
@@ -17,7 +19,8 @@ class SnapshotManager
             'workspace_id' => $workspaceId,
             'period_start' => $periodStart,
             'period_end' => $periodEnd,
-            'period_type' => $periodType
+            'period_type' => $periodType,
+            'version' => self::DSS_VERSION
         ]);
 
         try {
@@ -34,10 +37,15 @@ class SnapshotManager
                     'quality_score' => $metrics['qualityScore'] ?? 0,
                     'risk_score' => $metrics['riskScore'] ?? 0,
                     'suggestions' => $suggestions,
+                    'version' => self::DSS_VERSION, // ✅ TAMBAH INI
+                    'updated_at' => now(),
                 ]
             );
 
-            Log::info('Snapshot saved successfully', ['snapshot_id' => $snapshot->id]);
+            Log::info('Snapshot saved successfully', [
+                'snapshot_id' => $snapshot->id,
+                'version' => $snapshot->version
+            ]);
 
             return $snapshot;
         } catch (\Exception $e) {
@@ -54,14 +62,29 @@ class SnapshotManager
         Log::info('SnapshotManager: Getting snapshot', [
             'workspace_id' => $workspaceId,
             'period_start' => $periodStart,
-            'period_end' => $periodEnd
+            'period_end' => $periodEnd,
+            'version' => self::DSS_VERSION
         ]);
 
-        return WorkspacePerformanceSnapshot::where('workspace_id', $workspaceId)
+        $snapshot = WorkspacePerformanceSnapshot::where('workspace_id', $workspaceId)
             ->where('period_start', $periodStart)
             ->where('period_end', $periodEnd)
+            ->where('version', self::DSS_VERSION) // ✅ TAMBAH INI
+            ->where('updated_at', '>=', now()->subHours(6)) // ✅ Cache max 6 jam
             ->latest()
             ->first();
+
+        if ($snapshot) {
+            Log::info('Snapshot found', [
+                'snapshot_id' => $snapshot->id,
+                'version' => $snapshot->version,
+                'age_hours' => now()->diffInHours($snapshot->updated_at)
+            ]);
+        } else {
+            Log::info('No valid snapshot found (will recalculate)');
+        }
+
+        return $snapshot;
     }
 
     /**
