@@ -24,6 +24,7 @@ class Task extends Model
         'description',
         'status',
         'board_column_id',
+        'completed_at',
         'priority',
         'is_secret',
         'start_datetime',
@@ -41,6 +42,7 @@ class Task extends Model
         'is_secret' => 'boolean',
         'start_datetime' => 'datetime',
         'due_datetime' => 'datetime',
+        'completed_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime'
@@ -108,8 +110,7 @@ class Task extends Model
     public function assignedUsers()
     {
         return $this->belongsToMany(User::class, 'task_assignments', 'task_id', 'user_id')
-            ->withPivot('assigned_at')
-            ->withTimestamps(false);
+            ->withPivot('assigned_at');
     }
 
     // ✅ OPTION 2: Relasi melalui model TaskAssignment (jika butuh lebih banyak logika)
@@ -150,6 +151,19 @@ class Task extends Model
             // Konversi ke lowercase dan replace spasi dengan underscore
             $this->status = strtolower(str_replace(' ', '_', $columnName));
         }
+    }
+
+    // File: app/Models/Task.php
+
+    public function getDaysUntilDueAttribute()
+    {
+        if (!$this->due_datetime) {
+            return null;
+        }
+
+        // Hitung selisih hari antara sekarang dan deadline
+        return now()->diffInDays($this->due_datetime, false);
+        // false = bisa negatif (misal: -2 = telat 2 hari)
     }
 
 
@@ -266,15 +280,20 @@ class Task extends Model
     }
 
     // ===== HELPER METHODS =====
+    public function isCompletedLate()
+    {
+        return $this->completed_at && $this->due_datetime &&
+            $this->completed_at > $this->due_datetime;
+    }
 
     /**
      * Cek apakah tugas sudah lewat deadline
      */
     public function isOverdue()
     {
-        return $this->due_datetime &&
-            $this->due_datetime->lt(now()) &&
-            !in_array($this->status, ['done', 'cancel']);
+        return $this->status !== 'done' &&
+            $this->due_datetime &&
+            $this->due_datetime->lt(now());
     }
 
     /**
@@ -371,8 +390,24 @@ class Task extends Model
             throw new \InvalidArgumentException("Board column tidak valid");
         }
 
+        // ✅ SIMPAN STATUS LAMA
+        $oldStatus = $this->status;
+
         $this->board_column_id = $boardColumnId;
         $this->syncStatusFromColumn(); // Sync status otomatis
+
+        // ✅ TANGANI completed_at SETELAH syncStatusFromColumn()
+        $newStatus = $this->status; // Status sudah berubah setelah syncStatusFromColumn()
+
+        // Set completed_at saat pindah ke 'done'
+        if ($newStatus === 'done' && $oldStatus !== 'done') {
+            $this->completed_at = now();
+        }
+
+        // Clear completed_at kalau dipindah dari 'done' ke kolom lain
+        if ($oldStatus === 'done' && $newStatus !== 'done') {
+            $this->completed_at = null;
+        }
 
         return $this->save();
     }
@@ -403,6 +438,8 @@ class Task extends Model
 
         return $newTask;
     }
+
+
 
     /**
      * Format data untuk response API

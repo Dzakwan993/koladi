@@ -35,7 +35,7 @@ class Checklist extends Model
 
         static::creating(function ($model) {
             $model->id = $model->id ?: Str::uuid()->toString();
-            
+
             // Set position jika tidak disediakan
             if (is_null($model->position)) {
                 $maxPosition = static::where('task_id', $model->task_id)->max('position');
@@ -54,6 +54,11 @@ class Checklist extends Model
     public function scopeDone($query)
     {
         return $query->where('is_done', true);
+    }
+
+    public function checklists()
+    {
+        return $this->hasMany(Checklist::class, 'task_id'); // atau TaskChecklist::class
     }
 
     // Scope untuk item yang belum selesai
