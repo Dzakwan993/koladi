@@ -263,77 +263,71 @@
                                             <td class="py-3 px-4">
                                                 @if ($invoice->status === 'paid')
                                                     <span
-                                                        class="inline-flex items-center gap-1 bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full">
-                                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fill-rule="evenodd"
-                                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                                                clip-rule="evenodd" />
-                                                        </svg>
-                                                        Lunas
-                                                    </span>
-                                                @elseif($invoice->status === 'pending')
+                                                        class="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full">✅
+                                                        Lunas</span>
+                                                @elseif($invoice->status === 'failed')
                                                     <span
-                                                        class="inline-flex items-center gap-1 bg-yellow-100 text-yellow-700 text-xs font-bold px-3 py-1 rounded-full">
-                                                        <svg class="w-3 h-3 animate-spin" fill="none"
-                                                            stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                                        </svg>
-                                                        Menunggu
-                                                    </span>
+                                                        class="bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full">❌
+                                                        Ditolak</span>
+                                                @elseif($invoice->status === 'pending' && $invoice->proof_of_payment)
+                                                    <span
+                                                        class="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1 rounded-full">⏳
+                                                        Verifikasi Admin</span>
                                                 @else
-                                                    <span
-                                                        class="inline-flex items-center gap-1 bg-red-100 text-red-700 text-xs font-bold px-3 py-1 rounded-full">
-                                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fill-rule="evenodd"
-                                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                                                clip-rule="evenodd" />
-                                                        </svg>
-                                                        Kadaluarsa
-                                                    </span>
+                                                    {!! $invoice->status_badge !!}
                                                 @endif
                                             </td>
+
                                             <td class="py-3 px-4 text-sm text-gray-700">
                                                 {{ $invoice->created_at->format('d M Y') }}
                                             </td>
                                             <td class="py-3 px-4 text-sm text-gray-800">
-                                                <span
-                                                    class="font-semibold">{{ $invoice->subscription->plan->plan_name ?? '-' }}</span>
-                                                @if ($invoice->subscription->addons_user_count > 0)
+                                                <span class="font-semibold">{{ $invoice->purchased_plan_name }}</span>
+                                                @if ($invoice->purchased_addon_count > 0)
                                                     <br><span class="text-xs text-gray-500">+
-                                                        {{ $invoice->subscription->addons_user_count }} user addon</span>
+                                                        {{ $invoice->purchased_addon_count }} user addon</span>
                                                 @endif
                                             </td>
                                             <td class="py-3 px-4 text-sm font-bold text-gray-900">
                                                 Rp {{ number_format($invoice->amount, 0, ',', '.') }}
                                             </td>
+
                                             <td class="py-3 px-4 text-center">
-                                                @if ($invoice->status === 'pending' && $invoice->payment_url)
-                                                    <a href="{{ $invoice->payment_url }}" target="_blank"
-                                                        class="inline-flex items-center gap-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                            viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                                                        </svg>
-                                                        Bayar Sekarang
-                                                    </a>
+                                                @if ($invoice->status === 'failed')
+                                                    {{-- Tombol Lihat Alasan jika Ditolak --}}
+                                                    <button
+                                                        onclick="showRejectionReason('{{ $invoice->admin_notes ?? 'Tidak ada alasan spesifik dari admin.' }}')"
+                                                        class="bg-gray-800 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-gray-900 transition shadow-md whitespace-nowrap">
+                                                        🔍 Lihat Alasan
+                                                    </button>
+                                                @elseif($invoice->status === 'pending')
+                                                    @if ($invoice->payment_method === 'manual' && !$invoice->proof_of_payment)
+                                                        {{-- Tombol untuk buka modal upload ulang jika belum upload bukti --}}
+                                                        <button
+                                                            onclick="openUploadModal('{{ $invoice->external_id }}', {{ $invoice->amount }})"
+                                                            class="bg-orange-500 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-orange-600 transition shadow-md">
+                                                            📤 Upload Bukti
+                                                        </button>
+                                                    @elseif($invoice->payment_url)
+                                                        {{-- Tombol bayar untuk Midtrans --}}
+                                                        <a href="{{ $invoice->payment_url }}" target="_blank"
+                                                            class="inline-flex items-center gap-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-xs font-bold px-4 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition shadow-md">
+                                                            💰 Bayar Sekarang
+                                                        </a>
+                                                    @else
+                                                        <span class="text-xs text-gray-500 italic">⏳ Menunggu
+                                                            Verifikasi</span>
+                                                    @endif
                                                 @elseif($invoice->status === 'paid')
-                                                    <span class="text-xs text-gray-500">✓ Selesai</span>
+                                                    <span class="text-xs text-green-600 font-semibold">✓ Selesai</span>
                                                 @else
                                                     <button onclick="openModal()"
-                                                        class="inline-flex items-center gap-1 bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-600 transition-all shadow-md hover:shadow-lg">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor"
-                                                            viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                                        </svg>
-                                                        Buat Baru
+                                                        class="bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded-lg hover:bg-blue-600">
+                                                        🔄 Buat Baru
                                                     </button>
                                                 @endif
                                             </td>
+
                                         </tr>
                                     @empty
                                         <tr>
@@ -374,10 +368,6 @@
 
 @push('scripts')
     <script>
-        let plans = [];
-        let addon = null;
-        let plansLoaded = false;
-
         document.addEventListener('DOMContentLoaded', function() {
             const timestamp = new Date().getTime();
             fetch('/api/plans?_=' + timestamp)
@@ -400,6 +390,16 @@
         function closeModal() {
             document.getElementById('modalPilihPaket').classList.add('hidden');
             document.getElementById('modalPilihPaket').classList.remove('flex');
+        }
+
+        function showRejectionReason(reason) {
+            Swal.fire({
+                title: 'Alasan Penolakan',
+                text: reason,
+                icon: 'info',
+                confirmButtonText: 'Tutup',
+                confirmButtonColor: '#1e40af'
+            });
         }
     </script>
 @endpush

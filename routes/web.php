@@ -83,6 +83,7 @@ Route::middleware(['auth', 'check.system.admin'])->prefix('admin')->name('admin.
     Route::get('/companies/{id}', [AdminController::class, 'showCompany'])->name('companies.show');
     Route::post('/companies/{id}/toggle-status', [AdminController::class, 'toggleCompanyStatus'])->name('companies.toggle-status');
 
+    Route::post('/pembayaran/{id}/verify', [AdminController::class, 'verifyPayment'])->name('pembayaran.verify');
     // Edit Paket & Addon Routes
     Route::post('/plans/{id}/update', [AdminController::class, 'updatePlan'])->name('plans.update');
     Route::post('/addons/{id}/update', [AdminController::class, 'updateAddon'])->name('addons.update');
@@ -121,6 +122,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/subscription/create', [SubscriptionController::class, 'createSubscription'])->name('subscription.create');
     Route::get('/api/subscription/status', [SubscriptionController::class, 'checkTrialStatus'])->name('api.subscription.status');
 
+    // 🔥 BARU - Manual Payment Routes
+    Route::post('/subscription/upload-proof', [SubscriptionController::class, 'uploadProof'])->name('subscription.upload-proof');
+
+    // 🔥 BARU - Admin Payment Verification (dengan middleware admin)
+    Route::middleware(['check.system.admin'])->group(function () {
+        Route::post('/subscription/verify-payment', [SubscriptionController::class, 'verifyManualPayment'])->name('subscription.verify-payment');
+    });
+
     // ========================================
     // 🔥 NEW: API ROUTES UNTUK DOKUMEN
     // (Letakkan DI AWAL setelah Route::middleware(['auth'])->group)
@@ -145,11 +154,6 @@ Route::middleware(['auth'])->group(function () {
 
     // Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
-
-
-    //     Route::get('/admin/dashboard', function () {
-    //     return view('dashboard_admin');
-    // })->name('admin.dashboard');
 
     // Get modal full data
     Route::get('/statistik/modal-data', [StatistikController::class, 'getModalData']);
