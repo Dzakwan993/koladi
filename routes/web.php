@@ -28,25 +28,29 @@ use App\Http\Controllers\DocumentCommentController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CompanyDokumenController;
 use App\Http\Controllers\CompanyDocumentCommentController;
+use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\LandingPageController;
 
 // 🔥 Broadcasting Routes
 Broadcast::routes(['middleware' => ['web', 'auth']]);
 
-Route::get('/landingpage', function () {
-    return view('landingpage');
-})->name('landing.page');
+Route::get('/', [LandingPageController::class, 'index'])
+    ->name('landingpage');
 
-// ✅ Route Landing Page
-Route::get('/', function () {
-    if (Auth::check()) {
-        // 🔥 CEK APAKAH USER ADALAH ADMIN SISTEM
-        if (Auth::user()->isSystemAdmin()) {
-            return redirect()->route('admin.dashboard');
-        }
-        return redirect()->route('dashboard');
-    }
-    return view('landingpage');
-});
+Route::post('/feedback', [FeedbackController::class, 'store'])
+    ->name('feedback.store');
+
+// // ✅ Route Landing Page
+// Route::get('/', function () {
+//     if (Auth::check()) {
+//         // 🔥 CEK APAKAH USER ADALAH ADMIN SISTEM
+//         if (Auth::user()->isSystemAdmin()) {
+//             return redirect()->route('admin.dashboard');
+//         }
+//         return redirect()->route('dashboard');
+//     }
+//     return view('landingpage');
+// });
 
 // ✅ Authentication Routes
 Route::get('/daftar', [AuthController::class, 'showRegister'])->name('daftar');

@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/png" href="/images/LogoAtas.svg">
     <title>Dashboard Admin - Koladi</title>
     @vite('resources/css/app.css')
 </head>
@@ -357,7 +358,7 @@
             </button>
         </div>
 
-        <a href="{{ route('admin.companies.export') }}" 
+        <a href="{{ route('admin.companies.export') }}"
             class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fill-rule="evenodd"
@@ -924,7 +925,7 @@
 
 
             const exportBtn = document.querySelector('a[href*="export"]');
-        
+
         if (exportBtn) {
             exportBtn.addEventListener('click', function(e) {
                 // Ganti isi button
@@ -937,7 +938,7 @@
                     Mengexport...
                 `;
                 this.classList.add('pointer-events-none', 'opacity-75');
-                
+
                 // Kembalikan setelah 3 detik
                 setTimeout(() => {
                     this.innerHTML = originalHTML;
@@ -945,7 +946,7 @@
                 }, 3000);
             });
         }
-        
+
         });
     </script>
 
