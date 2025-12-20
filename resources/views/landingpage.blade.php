@@ -126,22 +126,22 @@
 
                 <div class="hidden md:flex items-center space-x-4">
                     <a href="{{ route('masuk') }}">
-                    <button
-                        class="px-6 py-2.5 bg-blue-600 text-white font-bold text-[13px] rounded-full
+                        <button
+                            class="px-6 py-2.5 bg-blue-600 text-white font-bold text-[13px] rounded-full
                hover:bg-blue-700 hover:-translate-y-0.5 active:scale-95
                transition-all duration-200 shadow-sm hover:shadow-md">
-                        Masuk
-                    </button>
+                            Masuk
+                        </button>
                     </a>
 
                     <!-- Button Daftar -->
                     <a href="{{ route('daftar') }}">
-                    <button
-                        class="px-6 py-2.5 bg-gray-200 text-black font-bold text-[13px] rounded-full
+                        <button
+                            class="px-6 py-2.5 bg-gray-200 text-black font-bold text-[13px] rounded-full
                hover:bg-gray-300 hover:-translate-y-0.5 active:scale-95
                transition-all duration-200 shadow-sm hover:shadow-md">
-                        Daftar
-                    </button>
+                            Daftar
+                        </button>
                     </a>
 
                 </div>
@@ -165,22 +165,22 @@
                 <a href="#paket" class="block hover:text-purple-600 transition-colors">Paket</a>
                 <div class="flex flex-col space-y-2 pt-4">
                     <a href="{{ route('masuk') }}">
-                    <button
-                        class="px-6 py-2.5 bg-blue-600 text-white font-bold text-[13px] rounded-full
+                        <button
+                            class="px-6 py-2.5 bg-blue-600 text-white font-bold text-[13px] rounded-full
                hover:bg-blue-700 hover:-translate-y-0.5 active:scale-95
                transition-all duration-200 shadow-sm hover:shadow-md">
-                        Masuk
-                    </button>
+                            Masuk
+                        </button>
                     </a>
 
                     <!-- Button Daftar -->
                     <a href="{{ route('daftar') }}">
-                    <button
-                        class="px-6 py-2.5 bg-gray-200 text-black font-bold text-[13px] rounded-full
+                        <button
+                            class="px-6 py-2.5 bg-gray-200 text-black font-bold text-[13px] rounded-full
                hover:bg-gray-300 hover:-translate-y-0.5 active:scale-95
                transition-all duration-200 shadow-sm hover:shadow-md">
-                        Daftar
-                    </button>
+                            Daftar
+                        </button>
                     </a>
                 </div>
             </div>
@@ -191,15 +191,6 @@
     <section id="beranda"
         class="min-h-screen flex items-center bg-gradient-to-br from-indigo-100 via-white-500 to-blue-100 overflow-hidden relative">
         <!-- Animated Background Elements -->
-        <div class="absolute inset-0 overflow-hidden">
-            <div
-                class="absolute top-20 left-10 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-float">
-            </div>
-            <div class="absolute top-40 right-10 w-72 h-72 bg-red-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-float"
-                style="animation-delay: 2s"></div>
-            <div class="absolute -bottom-8 left-20 w-72 h-72 bg-yellow-400 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-float"
-                style="animation-delay: 4s"></div>
-        </div>
 
         <div class="container mx-auto px-4 lg:px-8 relative z-10 pt-20">
             <div class="grid lg:grid-cols-2 gap-12 items-center">
@@ -215,13 +206,13 @@
                     </h1>
 
                     <p class="text-xl md:text-2xl font-bold text-blue-800 mb-8">
-                        WORKSPACES LOKAL HARGA MASOK AKAL
+                        WORKSPACES LOKAL HARGA MASUK AKAL
                     </p>
                     <a href="{{ route('daftar') }}">
-                    <button
-                        class="px-3 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg text-lg font-bold hover:shadow-2xl transform hover:scale-105 transition-all duration-300 hover:-translate-y-1">
-                        <p class="">COBA GRATIS -></p>
-                    </button>
+                        <button
+                            class="px-3 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg text-lg font-bold hover:shadow-2xl transform hover:scale-105 transition-all duration-300 hover:-translate-y-1">
+                            <p class="">COBA GRATIS -></p>
+                        </button>
                     </a>
                 </div>
 
@@ -253,24 +244,17 @@
         </div>
 
         <!-- Scroll Indicator -->
-        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+        {{-- <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
             <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3">
                 </path>
             </svg>
-        </div>
+        </div> --}}
     </section>
 
     <!-- Problem Section -->
     <section class="py-20 bg-gradient-to-br from-blue-400 via-blue-100 to-blue-100 relative overflow-hidden">
         <!-- Animated Background -->
-        <div class="absolute inset-0 opacity-30">
-            <div
-                class="absolute top-10 left-10 w-64 h-64 bg-blue-900 rounded-full mix-blend-multiply filter blur-3xl animate-float">
-            </div>
-            <div class="absolute bottom-10 right-10 w-64 h-64 bg-blue-700 rounded-full mix-blend-multiply filter blur-3xl animate-float"
-                style="animation-delay: 2s"></div>
-        </div>
 
         <div class="container mx-auto px-4 lg:px-8 relative z-10">
             <div class="max-w-6xl mx-auto">
@@ -286,8 +270,9 @@
                     <div
                         class="text-center p-8 rounded-3xl bg-gradient-to-br from-blue-400 to-blue-900 text-white shadow-2xl transform hover:scale-110 hover:rotate-2 transition-all duration-300">
                         <div class="text-7xl font-black mb-4 animate-pulse">80%</div>
-                        <p class="font-semibold text-lg">responden mengatakan: "Sulit menemukan waktu rapat yang cocok
-                            untuk semua orang."</p>
+                        <p class="font-semibold text-lg"> responden mengatakan: "Dokumen kerja sering tersebar di banyak
+                            tempat dan sulit ditemukan saat dibutuhkan."
+                        </p>
                     </div>
 
                     <div
@@ -309,10 +294,10 @@
                         Hasilnya? Waktu habis cuma buat sinkronisasi, bukan kerja penting.
                     </p>
                     <a href="{{ route('daftar') }}">
-                    <button
-                        class="px-8 py-4 bg-white text-blue-600 rounded-full text-lg font-bold hover:shadow-2xl transform hover:scale-110 transition-all duration-300 animate-bounce">
-                        COBA SOLUSINYA GRATIS! →
-                    </button>
+                        <button
+                            class="px-8 py-4 bg-white text-blue-600 rounded-full text-lg font-bold hover:shadow-2xl transform hover:scale-110 transition-all duration-300 animate-bounce">
+                            COBA SOLUSINYA GRATIS! →
+                        </button>
                     </a>
                 </div>
             </div>
@@ -322,13 +307,6 @@
     <!-- Problems List -->
     <section class="py-20 bg-gradient-to-br from-white via-white to-white relative overflow-hidden">
         <!-- Animated Background -->
-        <div class="absolute inset-0 opacity-20">
-            <div
-                class="absolute top-20 right-20 w-96 h-96 bg-blue-0 rounded-full mix-blend-multiply filter blur-3xl animate-float">
-            </div>
-            <div class="absolute bottom-20 left-20 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl animate-float"
-                style="animation-delay: 3s"></div>
-        </div>
 
         <div class="container mx-auto px-4 lg:px-8 relative z-10">
             <h2 class="text-3xl md:text-5xl font-extrabold text-center mb-6 text-black">
@@ -339,31 +317,31 @@
             <div class="flex flex-wrap gap-6 justify-center max-w-4xl mx-auto mb-16">
 
                 <div
-                    class="w-40 h-40 rounded-full bg-blue-600/40 backdrop-blur-2xl border border-blue-400/40 shadow-[0_0_25px_rgba(30,144,255,0.35)] flex flex-col items-center justify-center hover:bg-blue-600/60 hover:shadow-[0_0_35px_rgba(30,144,255,0.55)] transition-all duration-300">
+                    class="w-40 h-40 rounded-full bg-blue-800/80 backdrop-blur-2xl border border-blue-400/40 shadow-[0_0_25px_rgba(30,144,255,0.35)] flex flex-col items-center justify-center hover:bg-blue-600/60 hover:shadow-[0_0_35px_rgba(30,144,255,0.55)] transition-all duration-300">
                     <div class="text-4xl mb-2 text-white">📅</div>
                     <p class="text-sm text-white text-center px-3 font-semibold">Waktu rapat susah cocok</p>
                 </div>
 
                 <div
-                    class="w-40 h-40 rounded-full bg-blue-600/40 backdrop-blur-2xl border border-blue-400/40 shadow-[0_0_25px_rgba(30,144,255,0.35)] flex flex-col items-center justify-center hover:bg-blue-600/60 hover:shadow-[0_0_35px_rgba(30,144,255,0.55)] transition-all duration-300">
+                    class="w-40 h-40 rounded-full bg-blue-800/80 backdrop-blur-2xl border border-blue-400/40 shadow-[0_0_25px_rgba(30,144,255,0.35)] flex flex-col items-center justify-center hover:bg-blue-600/60 hover:shadow-[0_0_35px_rgba(30,144,255,0.55)] transition-all duration-300">
                     <div class="text-4xl mb-2 text-white">💬</div>
                     <p class="text-sm text-white text-center px-3 font-semibold">Chat penting tenggelam</p>
                 </div>
 
                 <div
-                    class="w-40 h-40 rounded-full bg-blue-600/40 backdrop-blur-2xl border border-blue-400/40 shadow-[0_0_25px_rgba(30,144,255,0.35)] flex flex-col items-center justify-center hover:bg-blue-600/60 hover:shadow-[0_0_35px_rgba(30,144,255,0.55)] transition-all duration-300">
+                    class="w-40 h-40 rounded-full bg-blue-800/80 backdrop-blur-2xl border border-blue-400/40 shadow-[0_0_25px_rgba(30,144,255,0.35)] flex flex-col items-center justify-center hover:bg-blue-600/60 hover:shadow-[0_0_35px_rgba(30,144,255,0.55)] transition-all duration-300">
                     <div class="text-4xl mb-2 text-white">🧩</div>
                     <p class="text-sm text-white text-center px-3 font-semibold">Terlalu banyak tools</p>
                 </div>
 
                 <div
-                    class="w-40 h-40 rounded-full bg-blue-600/40 backdrop-blur-2xl border border-blue-400/40 shadow-[0_0_25px_rgba(30,144,255,0.35)] flex flex-col items-center justify-center hover:bg-blue-600/60 hover:shadow-[0_0_35px_rgba(30,144,255,0.55)] transition-all duration-300">
+                    class="w-40 h-40 rounded-full bg-blue-800/80 backdrop-blur-2xl border border-blue-400/40 shadow-[0_0_25px_rgba(30,144,255,0.35)] flex flex-col items-center justify-center hover:bg-blue-600/60 hover:shadow-[0_0_35px_rgba(30,144,255,0.55)] transition-all duration-300">
                     <div class="text-4xl mb-2 text-white">📂</div>
                     <p class="text-sm text-white text-center px-3 font-semibold">File berserakan</p>
                 </div>
 
                 <div
-                    class="w-40 h-40 rounded-full bg-blue-600/40 backdrop-blur-2xl border border-blue-400/40 shadow-[0_0_25px_rgba(30,144,255,0.35)] flex flex-col items-center justify-center hover:bg-blue-600/60 hover:shadow-[0_0_35px_rgba(30,144,255,0.55)] transition-all duration-300">
+                    class="w-40 h-40 rounded-full bg-blue-800/80 backdrop-blur-2xl border border-blue-400/40 shadow-[0_0_25px_rgba(30,144,255,0.35)] flex flex-col items-center justify-center hover:bg-blue-600/60 hover:shadow-[0_0_35px_rgba(30,144,255,0.55)] transition-all duration-300">
                     <div class="text-4xl mb-2 text-white">🚫</div>
                     <p class="text-sm text-white text-center px-3 font-semibold">Progress tidak sinkron</p>
                 </div>
@@ -379,10 +357,10 @@
                 </p>
                 <div class="space-y-4">
                     <a href="{{ route('daftar') }}">
-                    <button
-                        class="px-4 py-3 bg-white text-blue-600 rounded-full text-[14px] font-bold hover:shadow-2xl transform hover:scale-110 transition-all duration-300 animate-bounce">
-                        COBA SOLUSINYA GRATIS! →
-                    </button>
+                        <button
+                            class="px-4 py-3 bg-white text-blue-600 rounded-full text-[14px] font-bold hover:shadow-2xl transform hover:scale-110 transition-all duration-300 animate-bounce">
+                            COBA SOLUSINYA GRATIS! →
+                        </button>
                     </a>
                     <p class="text-white font-semibold text-[15px]">Gratis 7 hari, tanpa tanpa biaya apapun</p>
                 </div>
@@ -494,10 +472,10 @@
                 </h3>
                 <p class=" text-white mb-6 font-bold text[16px]">Coba selama 7 hari tanpa biaya apapun</p>
                 <a href="{{ route('daftar') }}">
-                <button
-                    class="px-4 py-3 bg-white text-blue-600 rounded-full text-[13px] font-black hover:bg-gray-100 shadow-2xl transform hover:scale-110 transition-all duration-300 animate-pulse">
-                    MULAI GRATIS SEKARANG! →
-                </button>
+                    <button
+                        class="px-4 py-3 bg-white text-blue-600 rounded-full text-[13px] font-black hover:bg-gray-100 shadow-2xl transform hover:scale-110 transition-all duration-300 animate-pulse">
+                        MULAI GRATIS SEKARANG! →
+                    </button>
                 </a>
             </div>
         </div>
@@ -535,7 +513,10 @@
                     class="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-200 hover:border-purple-500 transform hover:-translate-y-2 transition-all duration-300">
                     <h3 class="text-2xl font-bold mb-4 text-gray-800">Basic</h3>
                     <div class="mb-6">
-                        <span class="text-4xl font-bold text-purple-600">Rp. 15.000</span>
+                        <div class="text-gray-500 line-through text-lg leading-none mb-1">Rp
+                            {{ number_format($basicPrice * 2, 0, ',', '.') }}</div>
+                        <span class="text-3xl font-bold text-purple-600">Rp
+                            {{ number_format($basicPrice, 0, ',', '.') }}</span>
                         <span class="text-gray-600">/ bulan</span>
                     </div>
                     <button
@@ -559,7 +540,9 @@
                         POPULER</div>
                     <h3 class="text-2xl font-bold mb-4">Standard</h3>
                     <div class="mb-6">
-                        <span class="text-4xl font-bold">Rp. 45.000</span>
+                        <div class="text-white line-through text-lg leading-none mb-1">Rp
+                            {{ number_format($standardPrice * 2, 0, ',', '.') }}</div>
+                        <span class="text-3xl font-bold">Rp {{ number_format($standardPrice, 0, ',', '.') }}</span>
                         <span>/ bulan</span>
                     </div>
                     <button
@@ -580,7 +563,10 @@
                     class="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-200 hover:border-purple-500 transform hover:-translate-y-2 transition-all duration-300">
                     <h3 class="text-2xl font-bold mb-4 text-gray-800">Premium</h3>
                     <div class="mb-6">
-                        <span class="text-4xl font-bold text-purple-600">Rp. 100.000</span>
+                        <div class="text-gray-500 line-through text-lg leading-none mb-1">Rp
+                            {{ number_format($businessPrice * 2, 0, ',', '.') }}</div>
+                        <span class="text-3xl font-bold text-purple-600">Rp
+                            {{ number_format($businessPrice, 0, ',', '.') }}</span>
                         <span class="text-gray-600">/ bulan</span>
                     </div>
                     <button
@@ -599,8 +585,10 @@
         </div>
     </section>
 
+
     <!-- Feedback Section -->
-    <section class="py-20 bg-gradient-to-br from-black via-blue-700 to-blue-800 relative overflow-hidden">
+    <section id="feedback"
+        class="py-20 bg-gradient-to-br from-black via-blue-700 to-blue-800 relative overflow-hidden">
         <!-- Animated Background -->
         <div class="absolute inset-0 opacity-30">
             <div
@@ -624,25 +612,26 @@
                 </div>
 
                 <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 md:p-12 shadow-2xl border-2 border-white/20">
-                    <form class="space-y-6">
+                    <form action="{{ route('feedback.store') }}" method="POST" class="space-y-6">
+                        @csrf
                         <div>
                             <label class="block text-white font-bold mb-3 text-lg">Nama Anda (Opsional)</label>
-                            <input type="text" placeholder="Masukkan nama Anda..."
+                            <input type="text" name="name" placeholder="Masukkan nama Anda..."
                                 class="w-full px-6 py-4 rounded-2xl border-2 border-white/30 bg-white/20 text-white placeholder-white/60 focus:border-yellow-400 focus:outline-none transition-colors backdrop-blur-sm">
                         </div>
 
                         <div>
                             <label class="block text-white font-bold mb-3 text-lg">Email (Opsional)</label>
-                            <input type="email" placeholder="email@example.com"
+                            <input type="email" name="email" placeholder="email@example.com"
                                 class="w-full px-6 py-4 rounded-2xl border-2 border-white/30 bg-white/20 text-white placeholder-white/60 focus:border-yellow-400 focus:outline-none transition-colors backdrop-blur-sm">
                         </div>
 
                         <div>
                             <label class="block text-white font-bold mb-3 text-lg">Masukan Anda</label>
-                            <textarea rows="6" placeholder="Ceritakan pengalaman Anda, saran, atau fitur yang Anda inginkan..."
+                            <textarea name="message" rows="6"
+                                placeholder="Ceritakan pengalaman Anda, saran, atau fitur yang Anda inginkan..."
                                 class="w-full px-6 py-4 rounded-2xl border-2 border-white/30 bg-white/20 text-white placeholder-white/60 focus:border-yellow-400 focus:outline-none transition-colors resize-none backdrop-blur-sm"></textarea>
                         </div>
-
                         <button type="submit"
                             class="w-full py-4 bg-white text-blue-700 rounded-2xl text-[18px] font-black
                         hover:bg-blue-700 hover:text-white
@@ -652,14 +641,114 @@
 
                     </form>
                 </div>
+                @if (session('success'))
+                    <div id="successPopup"
+                        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" role="dialog"
+                        aria-modal="true" aria-labelledby="successTitle" aria-describedby="successDesc">
+                        <div
+                            class="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/10
+             animate-[pop_180ms_ease-out]">
+                            <!-- Header -->
+                            <div class="flex items-start gap-4 px-6 pt-6">
+                                <div
+                                    class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                                    <svg class="h-6 w-6 text-emerald-600" viewBox="0 0 24 24" fill="none"
+                                        aria-hidden="true">
+                                        <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5"
+                                            stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </div>
+
+                                <div class="min-w-0 flex-1">
+                                    <h3 id="successTitle" class="text-lg font-semibold text-gray-900 leading-snug">
+                                        Berhasil
+                                    </h3>
+                                    <p id="successDesc" class="mt-1 text-sm text-gray-600 leading-relaxed">
+                                        {{ session('success') }}
+                                    </p>
+                                </div>
+
+                                <!-- Close icon -->
+                                <button type="button" data-success-close
+                                    class="ml-1 inline-flex h-9 w-9 items-center justify-center rounded-lg text-gray-500
+                 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                    aria-label="Tutup">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                        <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.5"
+                                            stroke-linecap="round" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="px-6 pb-6 pt-5">
+                                <button type="button" data-success-close
+                                    class="w-full rounded-xl bg-blue-600 py-3 text-sm font-semibold text-white shadow-sm
+                 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 transition">
+                                    OKE
+                                </button>
+
+                                <p class="mt-3 text-center text-xs text-gray-500">
+                                    Popup akan tertutup otomatis dalam <span class="font-semibold">3 detik</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <style>
+                        @keyframes pop {
+                            0% {
+                                opacity: 0;
+                                transform: translateY(8px) scale(.98);
+                            }
+
+                            100% {
+                                opacity: 1;
+                                transform: translateY(0) scale(1);
+                            }
+                        }
+                    </style>
+
+                    <script>
+                        (() => {
+                            const popup = document.getElementById('successPopup');
+                            if (!popup) return;
+
+                            const close = () => popup.remove();
+
+                            // close button(s)
+                            popup.querySelectorAll('[data-success-close]').forEach(btn => {
+                                btn.addEventListener('click', close);
+                            });
+
+                            // click backdrop
+                            popup.addEventListener('click', (e) => {
+                                if (e.target === popup) close();
+                            });
+
+                            // ESC
+                            const onKeydown = (e) => {
+                                if (e.key === 'Escape') close();
+                            };
+                            document.addEventListener('keydown', onKeydown);
+
+                            // auto close 3s
+                            const t = setTimeout(() => {
+                                document.removeEventListener('keydown', onKeydown);
+                                close();
+                            }, 3000);
+                        })();
+                    </script>
+                @endif
+
 
                 <div class="mt-12 text-center bg-white/10 backdrop-blur-lg rounded-2xl p-8 border-2 border-white/20">
                     <p class="text-white text-lg font-bold mb-4">Atau langsung coba Koladi GRATIS!</p>
                     <a href="{{ route('daftar') }}">
-                    <button
-                        class="px-7 py-3 bg-white text-purple-600 rounded-full text-[13px] font-black hover:bg-gray-100 shadow-xl transform hover:scale-110 transition-all duration-300 animate-pulse">
-                        MULAI TRIAL 14 HARI GRATIS →
-                    </button>
+                        <button
+                            class="px-7 py-3 bg-white text-purple-600 rounded-full text-[13px] font-black hover:bg-gray-100 shadow-xl transform hover:scale-110 transition-all duration-300 animate-pulse">
+                            MULAI TRIAL 7 HARI GRATIS →
+                        </button>
                     </a>
                     <p class="text-purple-100 mt-4 text-sm">Tanpa kartu kredit • Batalkan kapan saja • Setup mudah
                     </p>

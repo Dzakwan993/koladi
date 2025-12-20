@@ -112,7 +112,6 @@ class Workspace extends Model
             'user_id'
         )
             ->withPivot('roles_id', 'status_active', 'join_date')
-            ->using(UserWorkspace::class)
             ->withTimestamps();
     }
 

@@ -32,4 +32,8 @@ class Plan extends Model
     {
         return 'Rp ' . number_format((float) $this->price_monthly, 0, ',', '.');
     }
+    public function getDisplayNameAttribute()
+    {
+        return str_replace('Paket ', '', $this->plan_name);
+    }
 }

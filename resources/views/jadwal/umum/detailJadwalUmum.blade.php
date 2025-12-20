@@ -171,11 +171,11 @@
                                                     Batal
                                                 </button>
 
-                                                <a href="{{ $event->meeting_link }}" target="_blank"
-                                                    @click="openPopup = false"
+                                                <button
+                                                    onclick="event.preventDefault(); openPopup = false; joinMeetingWithAttendance('{{ $event->id }}', '{{ $event->meeting_link }}')"
                                                     class="bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-6 rounded-lg transition-colors text-sm">
                                                     Gabung Rapat
-                                                </a>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -794,6 +794,181 @@
             });
         });
 
+        // ✅ FIXED - Complete Attendance Recording Function
+        // Letakkan di bagian bawah script pada kedua file detail jadwal
+
+        /**
+         * ✅ Function untuk gabung rapat dengan record attendance
+         * @param {string} eventId - ID event/jadwal
+         * @param {string} meetingLink - Link meeting (Zoom, Google Meet, dll)
+         */
+        async function joinMeetingWithAttendance(eventId, meetingLink) {
+            console.log('🔵 Starting attendance record for event:', eventId);
+
+            try {
+                // 1️⃣ Record attendance dulu sebelum buka link
+                const response = await fetch(`/calendar/event/${eventId}/attendance`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
+                            'content'),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                console.log('🟢 Response status:', response.status);
+
+                // ✅ Cek apakah response OK (status 200-299)
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('🟢 Response data:', data);
+
+                if (data.success) {
+                    // 2️⃣ Tampilkan notifikasi sukses
+                    showNotification('success', 'Kehadiran Anda telah dicatat!');
+
+                    // 3️⃣ Buka link rapat di tab baru setelah delay kecil
+                    setTimeout(() => {
+                        window.open(meetingLink, '_blank');
+                    }, 500);
+
+                    // 4️⃣ Reload halaman setelah 2 detik untuk update UI (opsional)
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+
+                } else {
+                    // Jika success false tapi response OK
+                    console.warn('⚠️ Attendance recording returned success:false -', data.message);
+                    showNotification('warning', data.message || 'Gagal mencatat kehadiran');
+
+                    // Tetap buka meeting sebagai fallback
+                    window.open(meetingLink, '_blank');
+                }
+
+            } catch (error) {
+                console.error('🔴 Error recording attendance:', error);
+
+                // Tampilkan error ke user
+                showNotification('error', 'Terjadi kesalahan saat mencatat kehadiran');
+
+                // Fallback: tetap buka meeting link meskipun gagal record
+                window.open(meetingLink, '_blank');
+            }
+        }
+
+        /**
+         * ✅ Helper function untuk menampilkan notifikasi
+         * @param {string} type - 'success', 'error', 'warning', 'info'
+         * @param {string} message - Pesan yang akan ditampilkan
+         */
+        function showNotification(type, message) {
+            // Jika pakai SweetAlert2
+            if (typeof Swal !== 'undefined') {
+                const iconMap = {
+                    'success': 'success',
+                    'error': 'error',
+                    'warning': 'warning',
+                    'info': 'info'
+                };
+
+                Swal.fire({
+                    icon: iconMap[type] || 'info',
+                    title: type === 'success' ? 'Berhasil!' : type === 'error' ? 'Error!' : type === 'warning' ?
+                        'Perhatian!' : 'Info',
+                    text: message,
+                    timer: 3000,
+                    showConfirmButton: false,
+                    position: 'top-end',
+                    toast: true,
+                    timerProgressBar: true
+                });
+            } else {
+                // Fallback: gunakan alert biasa jika SweetAlert tidak ada
+                alert(message);
+            }
+        }
+
+        /**
+         * ✅ OPSIONAL: Function untuk load attendance stats
+         * Bisa dipanggil saat halaman dimuat untuk menampilkan statistik kehadiran
+         */
+        async function loadAttendanceStats(eventId) {
+            try {
+                const response = await fetch(`/calendar/event/${eventId}/attendance-stats`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load attendance stats');
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayAttendanceStats(data.data);
+                }
+
+            } catch (error) {
+                console.error('Error loading attendance stats:', error);
+            }
+        }
+
+        /**
+         * ✅ Display attendance stats di UI (contoh implementasi)
+         */
+        function displayAttendanceStats(stats) {
+            console.log('📊 Attendance Stats:', stats);
+
+            // Contoh: Update badge atau info di UI
+            const attendanceInfo = document.getElementById('attendance-info');
+            if (attendanceInfo) {
+                attendanceInfo.innerHTML = `
+            <div class="flex items-center gap-2 text-sm mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                <i class="fas fa-check-circle text-green-600"></i>
+                <span class="text-gray-700">Kehadiran:</span>
+                <span class="font-semibold text-green-700">${stats.attended}/${stats.total_participants} hadir</span>
+                <span class="text-gray-500">(${stats.attendance_rate}%)</span>
+            </div>
+        `;
+            }
+
+            // Update badge di setiap peserta (contoh)
+            stats.participants.forEach(participant => {
+                const participantDiv = document.querySelector(`[data-user-id="${participant.id}"]`);
+                if (participantDiv) {
+                    // Tambah badge "Hadir" jika user sudah attend
+                    if (participant.attended) {
+                        const existingBadge = participantDiv.querySelector('.attendance-badge');
+                        if (!existingBadge) {
+                            const badge = document.createElement('span');
+                            badge.className =
+                                'attendance-badge absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shadow';
+                            badge.innerHTML = '<i class="fas fa-check text-xs"></i>';
+                            badge.title = 'Hadir';
+                            participantDiv.appendChild(badge);
+                        }
+                    }
+                }
+            });
+        }
+
+        // ✅ Optional: Panggil saat halaman dimuat
+        // Uncomment jika ingin auto-load stats
+        document.addEventListener('DOMContentLoaded', function() {
+            const eventId = "{{ $event->id }}"; // Dari Blade
+            loadAttendanceStats(eventId);
+        });
         function confirmDelete() {
             Swal.fire({
                 title: 'Hapus Jadwal?',

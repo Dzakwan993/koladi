@@ -28,25 +28,30 @@ use App\Http\Controllers\DocumentCommentController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CompanyDokumenController;
 use App\Http\Controllers\CompanyDocumentCommentController;
+use App\Http\Controllers\StatistikController;
+use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\LandingPageController;
 
 // 🔥 Broadcasting Routes
 Broadcast::routes(['middleware' => ['web', 'auth']]);
 
-Route::get('/landingpage', function () {
-    return view('landingpage');
-})->name('landing.page');
+Route::get('/', [LandingPageController::class, 'index'])
+    ->name('landingpage');
 
-// ✅ Route Landing Page
-Route::get('/', function () {
-    if (Auth::check()) {
-        // 🔥 CEK APAKAH USER ADALAH ADMIN SISTEM
-        if (Auth::user()->isSystemAdmin()) {
-            return redirect()->route('admin.dashboard');
-        }
-        return redirect()->route('dashboard');
-    }
-    return view('landingpage');
-});
+Route::post('/feedback', [FeedbackController::class, 'store'])
+    ->name('feedback.store');
+
+// // ✅ Route Landing Page
+// Route::get('/', function () {
+//     if (Auth::check()) {
+//         // 🔥 CEK APAKAH USER ADALAH ADMIN SISTEM
+//         if (Auth::user()->isSystemAdmin()) {
+//             return redirect()->route('admin.dashboard');
+//         }
+//         return redirect()->route('dashboard');
+//     }
+//     return view('landingpage');
+// });
 
 // ✅ Authentication Routes
 Route::get('/daftar', [AuthController::class, 'showRegister'])->name('daftar');
@@ -82,6 +87,7 @@ Route::middleware(['auth', 'check.system.admin'])->prefix('admin')->name('admin.
     Route::get('/companies/{id}', [AdminController::class, 'showCompany'])->name('companies.show');
     Route::post('/companies/{id}/toggle-status', [AdminController::class, 'toggleCompanyStatus'])->name('companies.toggle-status');
 
+    Route::post('/pembayaran/{id}/verify', [AdminController::class, 'verifyPayment'])->name('pembayaran.verify');
     // Edit Paket & Addon Routes
     Route::post('/plans/{id}/update', [AdminController::class, 'updatePlan'])->name('plans.update');
     Route::post('/addons/{id}/update', [AdminController::class, 'updateAddon'])->name('addons.update');
@@ -120,6 +126,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/subscription/create', [SubscriptionController::class, 'createSubscription'])->name('subscription.create');
     Route::get('/api/subscription/status', [SubscriptionController::class, 'checkTrialStatus'])->name('api.subscription.status');
 
+    // 🔥 BARU - Manual Payment Routes
+    Route::post('/subscription/upload-proof', [SubscriptionController::class, 'uploadProof'])->name('subscription.upload-proof');
+
+    // 🔥 BARU - Admin Payment Verification (dengan middleware admin)
+    Route::middleware(['check.system.admin'])->group(function () {
+        Route::post('/subscription/verify-payment', [SubscriptionController::class, 'verifyManualPayment'])->name('subscription.verify-payment');
+    });
+
     // ========================================
     // 🔥 NEW: API ROUTES UNTUK DOKUMEN
     // (Letakkan DI AWAL setelah Route::middleware(['auth'])->group)
@@ -145,16 +159,52 @@ Route::middleware(['auth'])->group(function () {
     // Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 
-
-    //     Route::get('/admin/dashboard', function () {
-    //     return view('dashboard_admin');
-    // })->name('admin.dashboard');
-
+    // Get modal full data
+    Route::get('/statistik/modal-data', [StatistikController::class, 'getModalData']);
 
     // ============================================
     // 🔒 ROUTES DENGAN CheckSubscription
     // ============================================
     Route::middleware(['check.subscription'])->group(function () {
+
+        // Router Statistik
+        Route::get('/statistik', [StatistikController::class, 'index'])->name('statistik.index');
+
+        // API Routes untuk AJAX (tambahan baru)
+        Route::prefix('api/statistik')->name('api.statistik.')->group(function () {
+
+            // Get data workspace (ketika ganti workspace)
+            Route::get('/workspace/{workspaceId}', [StatistikController::class, 'getWorkspaceData'])
+                ->name('workspace');
+
+            // Get data member (ketika klik member tertentu)
+            Route::get('/member/{memberId}', [StatistikController::class, 'getMemberData'])
+                ->name('member');
+
+            // Get tasks by filter (ketika ganti filter status)
+            Route::get('/tasks', [StatistikController::class, 'getTasksByFilter'])
+                ->name('tasks');
+
+            // Get data by periode (ketika ganti periode)
+            Route::get('/periode', [StatistikController::class, 'getPeriodeData'])
+                ->name('periode');
+
+            Route::get('/modal-data', [StatistikController::class, 'getModalData']); // ✅ TAMBAH INI
+        });
+
+        // ✅ DSS (Decision Support System) Routes
+        Route::prefix('statistik')->group(function () {
+
+            // Get DSS suggestions
+            Route::get('/suggestions', [StatistikController::class, 'getSuggestions']);
+
+            // Get full modal data
+            Route::get('/modal-data', [StatistikController::class, 'getModalData']);
+
+            // Refresh snapshot (force recalculate)
+            Route::post('/refresh-snapshot', [StatistikController::class, 'refreshSnapshot']);
+        });
+
 
         // Tambahkan di routes/web.php dalam group middleware 'auth' dan 'check.subscription'
         // Dashboard - All Events (Company + Workspace)
@@ -341,6 +391,10 @@ Route::middleware(['auth'])->group(function () {
                 ->name('tasks.custom-columns.delete');
         });
 
+        Route::post('/calendar/event/{eventId}/attendance', [CalendarController::class, 'recordAttendance'])
+            ->name('calendar.attendance');
+        Route::get('/calendar/event/{eventId}/attendance-stats', [CalendarController::class, 'getAttendanceStats'])
+            ->name('calendar.attendance.stats');
         // ========================================
         // 🔥 CALENDAR & SCHEDULE ROUTES
         // ========================================
@@ -371,7 +425,6 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/check-conflicts', [CalendarController::class, 'checkCompanyConflicts'])
                 ->name('jadwal-umum.check-conflicts');
         });
-
         Route::get('/notulensi-umum', [CalendarController::class, 'companyNotulensi'])->name('notulensi-umum');
 
         // ========================================
@@ -467,15 +520,6 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/pengumuman-perusahaan/{id}', [\App\Http\Controllers\PengumumanPerusahaanController::class, 'destroy'])->name('pengumuman-perusahaan.destroy');
         });
 
-        // ========================================
-        // 🔥 STATISTICS ROUTES
-        // ========================================
-        Route::get('/statistik', function () {
-            return view('statistik');
-        })->name('statistik');
-        Route::get('/statistikRuangKerja', function () {
-            return view('statistikRuangKerja');
-        })->name('statistikRuangKerja');
 
         // ========================================
         // 🔥 ROLE MANAGEMENT ROUTES

@@ -3559,15 +3559,9 @@ window.documentCommentSection = function () {
 window.documentEditors = {};
 
 // Export functions untuk akses global
-window.createEditorForDocument =
-    window.documentCommentSection.prototype.createEditorForDocument;
-window.destroyEditorForDocument =
-    window.documentCommentSection.prototype.destroyEditorForDocument;
-window.getDocumentEditorData =
-    window.documentCommentSection.prototype.getDocumentEditorData;
-window.initReplyEditorForDocument =
-    window.documentCommentSection.prototype.initReplyEditorForDocument;
-window.destroyReplyEditorForDocument =
-    window.documentCommentSection.prototype.destroyReplyEditorForDocument;
-window.getDocumentReplyEditorDataFor =
-    window.documentCommentSection.prototype.getDocumentReplyEditorDataFor;
+window.createEditorForDocument = window.documentCommentSection.prototype.createEditorForDocument;
+window.destroyEditorForDocument = window.documentCommentSection.prototype.destroyEditorForDocument;
+window.getDocumentEditorData = window.documentCommentSection.prototype.getDocumentEditorData;
+window.initReplyEditorForDocument = window.documentCommentSection.prototype.initReplyEditorForDocument;
+window.destroyReplyEditorForDocument = window.documentCommentSection.prototype.destroyReplyEditorForDocument;
+window.getDocumentReplyEditorDataFor = window.documentCommentSection.prototype.getDocumentReplyEditorDataFor;``
