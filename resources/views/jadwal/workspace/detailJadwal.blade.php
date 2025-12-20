@@ -139,8 +139,7 @@
                             @if ($event->is_online_meeting && $event->meeting_link)
                                 <button @click="openPopup = true"
                                     class="mt-2 bg-[#2563eb] text-white font-semibold py-2 px-4 rounded-lg text-sm hover:bg-blue-700 transition-colors flex items-center gap-2">
-                                    <img src="{{ asset('images/icons/ZoomPutih.svg') }}" alt="Zoom Icon"
-                                        class="w-5 h-5">
+                                    <img src="{{ asset('images/icons/ZoomPutih.svg') }}" alt="Zoom Icon" class="w-5 h-5">
                                     <span>Gabung rapat</span>
                                 </button>
 
@@ -167,11 +166,11 @@
                                                 Batal
                                             </button>
 
-                                            <a href="{{ $event->meeting_link }}" target="_blank"
-                                                @click="openPopup = false"
+                                            <button
+                                                onclick="event.preventDefault(); openPopup = false; joinMeetingWithAttendance('{{ $event->id }}', '{{ $event->meeting_link }}')"
                                                 class="bg-blue-800 hover:bg-blue-900 text-white font-semibold py-2 px-6 rounded-lg transition-colors text-sm">
                                                 Gabung Rapat
-                                            </a>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -763,6 +762,112 @@
                 delete editors[k];
             });
         });
+
+        async function joinMeetingWithAttendance(eventId, meetingLink) {
+            try {
+                // 1. Record attendance dulu
+                const response = await fetch(`/calendar/event/${eventId}/attendance`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
+                            'content'),
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // 2. Tampilkan notifikasi sukses
+                    showNotification('success', 'Kehadiran Anda telah dicatat! Mengarahkan ke rapat...');
+
+                    // 3. Buka link rapat di tab baru
+                    setTimeout(() => {
+                        window.open(meetingLink, '_blank');
+                    }, 500);
+                } else {
+                    // Tetap buka meeting meskipun gagal record (fallback)
+                    console.warn('Failed to record attendance:', data.message);
+                    window.open(meetingLink, '_blank');
+                }
+
+            } catch (error) {
+                console.error('Error recording attendance:', error);
+                // Fallback: tetap buka meeting
+                window.open(meetingLink, '_blank');
+            }
+        }
+
+        // ✅ Helper function untuk notifikasi (gunakan SweetAlert jika ada, atau buat custom)
+        function showNotification(type, message) {
+            // Jika pakai SweetAlert
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: type,
+                    title: type === 'success' ? 'Berhasil!' : 'Perhatian',
+                    text: message,
+                    timer: 2000,
+                    showConfirmButton: false,
+                    position: 'top-end',
+                    toast: true
+                });
+            } else {
+                // Fallback: alert biasa
+                alert(message);
+            }
+        }
+
+        // ✅ Load attendance stats saat halaman dimuat
+        async function loadAttendanceStats(eventId) {
+            try {
+                const response = await fetch(`/calendar/event/${eventId}/attendance-stats`, {
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) throw new Error('Failed to load stats');
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayAttendanceStats(data.data);
+                }
+
+            } catch (error) {
+                console.error('Error loading attendance stats:', error);
+            }
+        }
+
+        // ✅ Display stats di UI (contoh)
+        function displayAttendanceStats(stats) {
+            // Contoh: Update badge atau info di UI
+            const attendanceInfo = document.getElementById('attendance-info');
+            if (attendanceInfo) {
+                attendanceInfo.innerHTML = `
+            <div class="flex items-center gap-2 text-sm">
+                <span class="text-gray-600">Kehadiran:</span>
+                <span class="font-semibold text-green-600">${stats.attended}/${stats.total_participants}</span>
+                <span class="text-gray-500">(${stats.attendance_rate}%)</span>
+            </div>
+        `;
+            }
+
+            // Update badge di setiap peserta
+            stats.participants.forEach(participant => {
+                const badge = document.querySelector(`[data-user-id="${participant.id}"] .attendance-badge`);
+                if (badge) {
+                    if (participant.attended) {
+                        badge.classList.remove('hidden');
+                        badge.classList.add('bg-green-500');
+                        badge.title = 'Hadir';
+                    }
+                }
+            });
+        }
 
         function confirmDelete() {
             Swal.fire({

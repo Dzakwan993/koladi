@@ -367,13 +367,138 @@
     <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
 
     <script>
-        body: JSON.stringify({
-            start_datetime: startDatetime,
-            end_datetime: endDatetime,
-            participants: participants,
-            exclude_event_id: '{{ $event->id }}' // ✅ Exclude jadwal yang sedang diedit
-        })
         let catatanEditor = null;
+        let conflictCheckTimeout = null;
+
+        // ✅ Function untuk cek konflik jadwal
+        async function checkScheduleConflicts() {
+            const startDate = document.getElementById('start_date').value;
+            const startTime = document.getElementById('start_time').value;
+            const endDate = document.getElementById('end_date').value;
+            const endTime = document.getElementById('end_time').value;
+
+            if (!startDate || !startTime || !endDate || !endTime) {
+                return;
+            }
+
+            const startDatetime = `${startDate} ${startTime}`;
+            const endDatetime = `${endDate} ${endTime}`;
+
+            const start = new Date(`${startDate} ${startTime}`);
+            const end = new Date(`${endDate} ${endTime}`);
+
+            if (end <= start) {
+                return;
+            }
+
+            // Ambil peserta dari Alpine.js component
+            const participantsEl = document.querySelector('[x-data*="selectedParticipants"]');
+            const participantsData = participantsEl ? Alpine.$data(participantsEl) : null;
+            const participants = participantsData ? participantsData.selectedParticipants : [];
+
+            // ✅ FIXED: Gunakan endpoint workspace dengan exclude event yang sedang diedit
+            const workspaceId = '{{ $workspaceId }}';
+            const apiUrl = `/workspace/${workspaceId}/calendar/check-conflicts`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        start_datetime: startDatetime,
+                        end_datetime: endDatetime,
+                        participants: participants,
+                        exclude_event_id: '{{ $event->id }}' // ✅ Exclude jadwal yang sedang diedit
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.has_conflicts) {
+                    showConflictWarning(data.conflicts);
+                }
+            } catch (error) {
+                console.error('Error checking conflicts:', error);
+            }
+        }
+
+        // ✅ Function untuk tampilkan warning konflik
+        function showConflictWarning(conflicts) {
+            let conflictHtml = '<div class="text-left">';
+
+            Object.entries(conflicts).forEach(([userId, userData]) => {
+                conflictHtml += `
+            <div class="mb-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <p class="font-semibold text-gray-800 mb-2">
+                    <i class="fas fa-user-circle text-yellow-600"></i> ${userData.user_name}
+                </p>
+                <div class="space-y-2">
+        `;
+
+                userData.conflicts.forEach(conflict => {
+                    const typeLabel = conflict.type === 'company' ? 'Jadwal Umum' :
+                        `Workspace: ${conflict.workspace_name}`;
+                    const locationIcon = conflict.is_online ? 'fa-video' : 'fa-map-marker-alt';
+
+                    conflictHtml += `
+                <div class="pl-4 border-l-2 border-yellow-400 py-1">
+                    <p class="text-sm font-medium text-gray-700">📅 ${conflict.title}</p>
+                    <p class="text-xs text-gray-600">
+                        <i class="far fa-clock"></i> ${conflict.start} - ${conflict.end}
+                    </p>
+                    <p class="text-xs text-gray-600">
+                        <i class="fas ${locationIcon}"></i> ${conflict.location}
+                    </p>
+                    <span class="inline-block mt-1 px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded">
+                        ${typeLabel}
+                    </span>
+                </div>
+            `;
+                });
+
+                conflictHtml += `</div></div>`;
+            });
+
+            conflictHtml += '</div>';
+
+            Swal.fire({
+                icon: 'warning',
+                title: '⚠️ Jadwal Bentrok Terdeteksi!',
+                html: `
+            <div class="text-sm text-gray-600 mb-3">
+                Terdapat jadwal yang bentrok dengan waktu yang Anda pilih:
+            </div>
+            ${conflictHtml}
+            <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p class="text-xs text-gray-700">
+                    <i class="fas fa-info-circle text-blue-600"></i>
+                    Anda tetap dapat melanjutkan update jadwal ini, namun peserta mungkin tidak dapat hadir di kedua jadwal.
+                </p>
+            </div>
+        `,
+                width: '600px',
+                showCancelButton: true,
+                confirmButtonText: 'Lanjutkan Tetap',
+                cancelButtonText: 'Ubah Waktu',
+                confirmButtonColor: '#f59e0b',
+                cancelButtonColor: '#6b7280',
+                customClass: {
+                    popup: 'text-left'
+                }
+            });
+        }
+
+        // ✅ Debounced conflict check
+        function scheduleConflictCheck() {
+            clearTimeout(conflictCheckTimeout);
+            conflictCheckTimeout = setTimeout(() => {
+                checkScheduleConflicts();
+            }, 1000);
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date().toISOString().split('T')[0];
@@ -382,6 +507,15 @@
 
             document.getElementById('start_date').addEventListener('change', function() {
                 document.getElementById('end_date').min = this.value;
+            });
+
+            // ✅ Event listeners untuk conflict check
+            const dateTimeInputs = ['start_date', 'start_time', 'end_date', 'end_time'];
+            dateTimeInputs.forEach(inputId => {
+                const input = document.getElementById(inputId);
+                if (input) {
+                    input.addEventListener('change', scheduleConflictCheck);
+                }
             });
 
             // Initialize CKEditor dengan data existing
@@ -420,15 +554,12 @@
                 })
                 .then(editor => {
                     catatanEditor = editor;
-                    // Set existing content
-                    const existingContent = {!! json_encode(old('description', $event->description)) !!};
-                    if (existingContent) {
-                        editor.setData(existingContent);
-                    }
+                    // Set existing content (di blade template akan ada variable $event->description)
                 })
                 .catch(error => console.error('CKEditor error:', error));
 
-            document.getElementById('scheduleForm').addEventListener('submit', function(e) {
+            // ✅ Form submit dengan validasi dan conflict check
+            document.getElementById('scheduleForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
 
                 const startDate = document.getElementById('start_date').value;
@@ -466,9 +597,98 @@
                     return false;
                 }
 
-                this.submit();
+                // ✅ CEK KONFLIK SEBELUM SUBMIT
+                const participantsEl = document.querySelector('[x-data*="selectedParticipants"]');
+                const participantsData = participantsEl ? Alpine.$data(participantsEl) : null;
+                const participants = participantsData ? participantsData.selectedParticipants : [];
+
+                const workspaceId = '{{ $workspaceId }}';
+                const apiUrl = `/workspace/${workspaceId}/calendar/check-conflicts`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                .content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            start_datetime: `${startDate} ${startTime}`,
+                            end_datetime: `${endDate} ${endTime}`,
+                            participants: participants,
+                            exclude_event_id: '{{ $event->id }}' // ✅ Exclude jadwal yang sedang diedit
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.has_conflicts) {
+                        const result = await Swal.fire({
+                            icon: 'warning',
+                            title: '⚠️ Jadwal Bentrok Terdeteksi!',
+                            html: buildConflictHtml(data.conflicts),
+                            width: '600px',
+                            showCancelButton: true,
+                            confirmButtonText: 'Ya, Update Jadwal',
+                            cancelButtonText: 'Batalkan',
+                            confirmButtonColor: '#f59e0b',
+                            cancelButtonColor: '#6b7280'
+                        });
+
+                        if (result.isConfirmed) {
+                            this.submit();
+                        }
+                    } else {
+                        this.submit();
+                    }
+                } catch (error) {
+                    console.error('Error checking conflicts:', error);
+                    // Tetap submit jika ada error saat check conflict
+                    this.submit();
+                }
             });
         });
+
+        // ✅ Helper function untuk build conflict HTML
+        function buildConflictHtml(conflicts) {
+            let html = '<div class="text-left text-sm">';
+            html += '<p class="text-gray-600 mb-3">Terdapat jadwal yang bentrok:</p>';
+
+            Object.entries(conflicts).forEach(([userId, userData]) => {
+                html += `
+            <div class="mb-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <p class="font-semibold text-gray-800 mb-2">
+                    <i class="fas fa-user-circle text-yellow-600"></i> ${userData.user_name}
+                </p>
+        `;
+
+                userData.conflicts.forEach(conflict => {
+                    const typeLabel = conflict.type === 'company' ? 'Jadwal Umum' :
+                        `Workspace: ${conflict.workspace_name}`;
+                    html += `
+                <div class="pl-3 border-l-2 border-yellow-400 mb-2">
+                    <p class="font-medium text-gray-700">${conflict.title}</p>
+                    <p class="text-xs text-gray-600">
+                        <i class="far fa-clock"></i> ${conflict.start} - ${conflict.end}
+                    </p>
+                    <span class="inline-block mt-1 px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs rounded">
+                        ${typeLabel}
+                    </span>
+                </div>
+            `;
+                });
+
+                html += '</div>';
+            });
+
+            html +=
+                '<p class="mt-3 text-xs text-gray-600"><i class="fas fa-info-circle text-blue-600"></i> Lanjutkan update jadwal?</p>';
+            html += '</div>';
+
+            return html;
+        }
     </script>
 
     @if (session('success'))

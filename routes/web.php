@@ -387,6 +387,10 @@ Route::middleware(['auth'])->group(function () {
                 ->name('tasks.custom-columns.delete');
         });
 
+        Route::post('/calendar/event/{eventId}/attendance', [CalendarController::class, 'recordAttendance'])
+            ->name('calendar.attendance');
+        Route::get('/calendar/event/{eventId}/attendance-stats', [CalendarController::class, 'getAttendanceStats'])
+            ->name('calendar.attendance.stats');
         // ========================================
         // 🔥 CALENDAR & SCHEDULE ROUTES
         // ========================================
@@ -417,7 +421,6 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/check-conflicts', [CalendarController::class, 'checkCompanyConflicts'])
                 ->name('jadwal-umum.check-conflicts');
         });
-
         Route::get('/notulensi-umum', [CalendarController::class, 'companyNotulensi'])->name('notulensi-umum');
 
         // ========================================

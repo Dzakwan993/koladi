@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\User; // ✅ TAMBAHKAN INI
+use App\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
@@ -17,11 +17,14 @@ class SubscriptionInvoice extends Model
         'amount',
         'billing_month',
         'status',
-        'payment_method',        // 🔥 Baru
-        'proof_of_payment',      // 🔥 Baru
-        'admin_notes',           // 🔥 Baru
-        'verified_at',           // 🔥 Baru
-        'verified_by',           // 🔥 Baru
+        'payment_method',
+        'proof_of_payment',
+        'payer_name',           // 🔥 Baru
+        'payer_bank',           // 🔥 Baru
+        'payer_account_number', // 🔥 Baru
+        'admin_notes',
+        'verified_at',
+        'verified_by',
         'paid_at',
         'payment_details'
     ];
@@ -29,7 +32,7 @@ class SubscriptionInvoice extends Model
     protected $casts = [
         'amount' => 'decimal:2',
         'paid_at' => 'datetime',
-        'verified_at' => 'datetime',  // 🔥 Baru
+        'verified_at' => 'datetime',
         'payment_details' => 'array'
     ];
 
@@ -50,20 +53,20 @@ class SubscriptionInvoice extends Model
         return 'Rp ' . number_format((float)$this->amount, 0, ',', '.');
     }
 
-    // 🔥 Helper: Cek apakah invoice expired (3 hari)
+    // Helper: Cek apakah invoice expired (3 hari)
     public function isExpired()
     {
         if ($this->status === 'paid') return false;
         return $this->created_at->addDays(3) < now();
     }
 
-    // 🔥 Helper: Cek apakah manual payment
+    // Helper: Cek apakah manual payment
     public function isManualPayment()
     {
         return $this->payment_method === 'manual';
     }
 
-    // 🔥 Helper: Cek apakah sudah diverifikasi
+    // Helper: Cek apakah sudah diverifikasi
     public function isVerified()
     {
         return !is_null($this->verified_at);
@@ -92,19 +95,18 @@ class SubscriptionInvoice extends Model
             ->whereNotNull('proof_of_payment');
     }
 
-    // 🔥 Helper: Status badge untuk display
+    // Helper: Status badge untuk display
     public function getStatusBadgeAttribute()
     {
         $badges = [
             'paid' => '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">✅ Lunas</span>',
             'pending' => '<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold">⏳ Menunggu</span>',
             'expired' => '<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold">❌ Kadaluarsa</span>',
-            'failed' => '<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold">❌ Ditolak</span>', // 🔥 Pastikan ini ada
+            'failed' => '<span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold">❌ Ditolak</span>',
         ];
 
         return $badges[$this->status] ?? $badges['pending'];
     }
-    // 🔥 TAMBAHKAN 3 METHOD INI DI BARIS PALING BAWAH
 
     /**
      * Ambil paket yang dibeli (bukan paket aktif saat ini)
@@ -118,7 +120,6 @@ class SubscriptionInvoice extends Model
             }
         }
 
-        // Fallback ke paket aktif jika tidak ada di payment_details
         return $this->subscription->plan ?? null;
     }
 

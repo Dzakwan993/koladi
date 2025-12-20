@@ -66,13 +66,15 @@
     <div
         class="flex flex-wrap items-center justify-start sm:justify-end gap-3 sm:gap-4 text-sm md:text-base w-full sm:w-auto">
 
+        {{-- ✅ TUGAS - Icon berubah saat active --}}
         <a href="{{ $currentWorkspaceId ? route('kanban-tugas', $currentWorkspaceId) : '#' }}"
             class="flex items-center gap-2 {{ $active == 'tugas' ? 'active text-blue-600 font-semibold border-b-2 border-blue-600 pb-1' : 'text-gray-600 hover:text-blue-600' }} {{ !$currentWorkspaceId ? 'opacity-50 cursor-not-allowed' : '' }}">
-            <img src="{{ asset('images/icons/workspace_tugas.svg') }}" alt="Tugas Icon"
-                class="nav-icon w-4 h-4 sm:w-5 sm:h-5">
+            <img src="{{ asset('images/icons/' . ($active == 'tugas' ? 'workspace_tugas1.svg' : 'workspace_tugas.svg')) }}"
+                alt="Tugas Icon" class="nav-icon w-4 h-4 sm:w-5 sm:h-5">
             <span class="nav-text">Tugas</span>
         </a>
 
+        {{-- ✅ CHAT - Icon berubah saat active --}}
         <a href="{{ $currentWorkspaceId ? route('chat', $currentWorkspaceId) : '#' }}"
             class="flex items-center gap-2 {{ $active == 'chat' ? 'active text-blue-600 font-semibold border-b-2 border-blue-600 pb-1' : 'text-gray-600 hover:text-blue-600' }} {{ !$currentWorkspaceId ? 'opacity-50 cursor-not-allowed' : '' }}">
             <img src="{{ asset('images/icons/' . ($active == 'chat' ? 'workspace_chat1.svg' : 'workspace_chat.svg')) }}"
@@ -80,13 +82,15 @@
             <span class="nav-text">Chat</span>
         </a>
 
+        {{-- ✅ DOKUMEN - Icon berubah saat active --}}
         <a href="{{ $currentWorkspaceId ? route('dokumen-dan-file', $currentWorkspaceId) : '#' }}"
             class="flex items-center gap-2 {{ $active == 'dokumen' ? 'active text-blue-600 font-semibold border-b-2 border-blue-600 pb-1' : 'text-gray-600 hover:text-blue-600' }} {{ !$currentWorkspaceId ? 'opacity-50 cursor-not-allowed' : '' }}">
-            <img src="{{ asset('images/icons/workspace_dokumen&file.svg') }}" alt="Dokumen Icon"
-                class="nav-icon w-4 h-4 sm:w-5 sm:h-5">
+            <img src="{{ asset('images/icons/' . ($active == 'dokumen' ? 'workspace_dokumen&file1.svg' : 'workspace_dokumen&file.svg')) }}"
+                alt="Dokumen Icon" class="nav-icon w-4 h-4 sm:w-5 sm:h-5">
             <span class="nav-text">Dokumen</span>
         </a>
 
+        {{-- ✅ JADWAL - Icon berubah saat active --}}
         <a href="{{ $currentWorkspaceId ? route('jadwal', ['workspaceId' => $currentWorkspaceId]) : '#' }}"
             class="flex items-center gap-2 {{ $active == 'jadwal' ? 'active text-blue-600 font-semibold border-b-2 border-blue-600 pb-1' : 'text-gray-600 hover:text-blue-600' }} {{ !$currentWorkspaceId ? 'opacity-50 cursor-not-allowed' : '' }}">
             <img src="{{ asset('images/icons/' . ($active == 'jadwal' ? 'workspace_kalender1.svg' : 'workspace_kalender.svg')) }}"
@@ -94,6 +98,7 @@
             <span class="nav-text">Jadwal</span>
         </a>
 
+        {{-- ✅ PENGUMUMAN - Icon berubah saat active --}}
         <a href="{{ $currentWorkspaceId ? route('workspace.pengumuman', ['workspace' => $currentWorkspaceId]) : '#' }}"
             class="flex items-center gap-2 {{ $active == 'pengumuman' ? 'active text-blue-600 font-semibold border-b-2 border-blue-600 pb-1' : 'text-gray-600 hover:text-blue-600' }} {{ !$currentWorkspaceId ? 'opacity-50 cursor-not-allowed' : '' }}">
             <img src="{{ asset('images/icons/' . ($active == 'pengumuman' ? 'workspace_pengumuman1.svg' : 'workspace_pengumuman.svg')) }}"

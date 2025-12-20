@@ -319,12 +319,25 @@ class SubscriptionController extends Controller
     }
 
     // 🔥 UPLOAD BUKTI TRANSFER
+    // 🔥 UPLOAD BUKTI TRANSFER - UPDATED VERSION
     public function uploadProof(Request $request)
     {
         try {
             $request->validate([
                 'invoice_id' => 'required|string',
-                'proof_file' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+                'proof_file' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+                'payer_name' => 'required|string|max:255',
+                'payer_bank' => 'required|string|max:100',
+                'payer_account_number' => 'required|string|max:50'
+            ], [
+                'invoice_id.required' => 'Invoice ID tidak ditemukan',
+                'proof_file.required' => 'File bukti transfer wajib diupload',
+                'proof_file.image' => 'File harus berupa gambar',
+                'proof_file.mimes' => 'Format file harus JPG, JPEG, atau PNG',
+                'proof_file.max' => 'Ukuran file maksimal 2MB',
+                'payer_name.required' => 'Nama pengirim wajib diisi',
+                'payer_bank.required' => 'Bank pengirim wajib dipilih',
+                'payer_account_number.required' => 'Nomor rekening wajib diisi'
             ]);
 
             DB::beginTransaction();
@@ -366,9 +379,12 @@ class SubscriptionController extends Controller
             $filename = 'proof_' . $invoice->id . '_' . time() . '.' . $file->getClientOriginalExtension();
             $path = $file->storeAs('payment_proofs', $filename, 'public');
 
-            // Update invoice
+            // Update invoice dengan informasi pembayaran
             $invoice->update([
                 'proof_of_payment' => $path,
+                'payer_name' => $request->payer_name,
+                'payer_bank' => $request->payer_bank,
+                'payer_account_number' => $request->payer_account_number,
                 'status' => 'pending'
             ]);
 
@@ -383,7 +399,8 @@ class SubscriptionController extends Controller
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Validasi gagal: ' . implode(', ', $e->validator->errors()->all())
+                'message' => 'Validasi gagal',
+                'errors' => $e->validator->errors()
             ], 422);
         } catch (\Exception $e) {
             DB::rollBack();

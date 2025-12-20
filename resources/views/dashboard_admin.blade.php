@@ -609,8 +609,13 @@
                 </div>
             </div>
 
+            {{-- Update bagian tabel verifikasi pembayaran di dashboard_admin.blade.php --}}
+
+            {{-- 🔥 PERBAIKAN STRUKTUR - Ganti bagian pembayaran-content dengan ini --}}
+
             <div id="pembayaran-content" class="content-section hidden">
                 <div class="space-y-6">
+                    {{-- 📌 SECTION 1: Verifikasi Pembayaran Manual --}}
                     <div class="bg-white p-4 md:p-6 rounded-xl shadow-md border border-blue-100">
                         <div class="mb-4">
                             <h2 class="text-xl font-bold text-blue-700">Verifikasi Pembayaran Manual</h2>
@@ -623,6 +628,7 @@
                                     <tr>
                                         <th class="p-4 font-bold text-gray-700">Invoice / Perusahaan</th>
                                         <th class="p-4 font-bold text-gray-700">Paket & Total</th>
+                                        <th class="p-4 font-bold text-gray-700">Info Pembayaran</th>
                                         <th class="p-4 font-bold text-gray-700">Bukti</th>
                                         <th class="p-4 font-bold text-gray-700 text-center">Aksi</th>
                                     </tr>
@@ -630,6 +636,7 @@
                                 <tbody class="divide-y">
                                     @forelse($pendingInvoices as $inv)
                                         <tr class="hover:bg-gray-50 transition" id="row-inv-{{ $inv->id }}">
+                                            {{-- Invoice / Perusahaan --}}
                                             <td class="p-4">
                                                 <p class="font-bold text-blue-600 leading-tight">
                                                     {{ $inv->external_id }}</p>
@@ -638,6 +645,8 @@
                                                 <p class="text-[10px] text-gray-400 italic">
                                                     {{ $inv->created_at->diffForHumans() }}</p>
                                             </td>
+
+                                            {{-- Paket & Total --}}
                                             <td class="p-4">
                                                 <p class="font-semibold text-gray-700">
                                                     {{ $inv->purchased_plan_name ?? 'Paket Tidak Tersedia' }}
@@ -646,10 +655,56 @@
                                                     <p class="text-xs text-gray-500">+
                                                         {{ $inv->purchased_addon_count }} user addon</p>
                                                 @endif
-                                                <p class="text-blue-700 font-bold">Rp
+                                                <p class="text-blue-700 font-bold mt-1">Rp
                                                     {{ number_format($inv->amount, 0, ',', '.') }}</p>
                                             </td>
 
+                                            {{-- 🔥 Info Pembayaran --}}
+                                            <td class="p-4">
+                                                <div class="space-y-1">
+                                                    <div class="flex items-center gap-2">
+                                                        <svg class="w-4 h-4 text-gray-400" fill="none"
+                                                            stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                        </svg>
+                                                        <span class="text-xs">
+                                                            <span class="text-gray-500">Nama:</span>
+                                                            <span
+                                                                class="font-semibold text-gray-800">{{ $inv->payer_name ?? '-' }}</span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="flex items-center gap-2">
+                                                        <svg class="w-4 h-4 text-gray-400" fill="none"
+                                                            stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                        </svg>
+                                                        <span class="text-xs">
+                                                            <span class="text-gray-500">Bank:</span>
+                                                            <span
+                                                                class="font-semibold text-gray-800">{{ $inv->payer_bank ?? '-' }}</span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="flex items-center gap-2">
+                                                        <svg class="w-4 h-4 text-gray-400" fill="none"
+                                                            stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                                                        </svg>
+                                                        <span class="text-xs">
+                                                            <span class="text-gray-500">No. Rek:</span>
+                                                            <span
+                                                                class="font-mono font-semibold text-gray-800">{{ $inv->payer_account_number ?? '-' }}</span>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            {{-- Bukti Transfer --}}
                                             <td class="p-4">
                                                 <button
                                                     onclick="viewImage('{{ Storage::url($inv->proof_of_payment) }}')"
@@ -660,13 +715,18 @@
                                                         class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 rounded-lg transition">
                                                         <svg class="w-5 h-5 text-white" fill="none"
                                                             stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                            <path
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
+                                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                                stroke-width="2"
                                                                 d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                         </svg>
                                                     </div>
                                                 </button>
                                             </td>
+
+                                            {{-- Aksi --}}
                                             <td class="p-4">
                                                 <div class="flex flex-col md:flex-row gap-2 justify-center">
                                                     <button
@@ -682,7 +742,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="4" class="p-8 text-center text-gray-400 italic">Tidak ada
+                                            <td colspan="5" class="p-8 text-center text-gray-400 italic">Tidak ada
                                                 antrean verifikasi.</td>
                                         </tr>
                                     @endforelse
@@ -691,66 +751,210 @@
                         </div>
                     </div>
 
+                    {{-- 📌 SECTION 2: Riwayat Pembayaran --}}
                     <div class="bg-white p-4 md:p-6 rounded-xl shadow-md border border-gray-200">
-                        <div class="mb-4">
-                            <h2 class="text-xl font-bold text-gray-800">Riwayat Pembayaran</h2>
-                            <p class="text-sm text-gray-500">Data transaksi manual yang sudah diproses</p>
+                        <div class="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-800">📋 Riwayat Pembayaran</h2>
+                                <p class="text-sm text-gray-500">Data transaksi manual yang sudah diproses</p>
+                            </div>
+                            <span class="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full font-medium">
+                                Total: {{ $historyInvoices->total() }} transaksi
+                            </span>
                         </div>
 
                         <div class="overflow-x-auto rounded-lg border">
                             <table class="w-full text-left text-sm">
                                 <thead class="bg-gray-50 border-b">
                                     <tr>
-                                        <th class="p-4 font-bold text-gray-600 italic">No. Invoice</th>
-                                        <th class="p-4 font-bold text-gray-600">Perusahaan</th>
-                                        <th class="p-4 font-bold text-gray-600">Total Bayar</th>
-                                        <th class="p-4 font-bold text-gray-600">Status</th>
-                                        <th class="p-4 font-bold text-gray-600">Diverifikasi Oleh</th>
+                                        <th class="p-3 md:p-4 font-bold text-gray-600 text-xs">No. Invoice</th>
+                                        <th class="p-3 md:p-4 font-bold text-gray-600 text-xs">Perusahaan</th>
+                                        <th class="p-3 md:p-4 font-bold text-gray-600 text-xs">Paket</th>
+                                        <th class="p-3 md:p-4 font-bold text-gray-600 text-xs">Info Pembayaran</th>
+                                        <th class="p-3 md:p-4 font-bold text-gray-600 text-xs">Total</th>
+                                        <th class="p-3 md:p-4 font-bold text-gray-600 text-xs">Status</th>
+                                        <th class="p-3 md:p-4 font-bold text-gray-600 text-xs">Diverifikasi</th>
+                                        <th class="p-3 md:p-4 font-bold text-gray-600 text-xs text-center">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y">
-                                    @foreach ($historyInvoices as $hist)
+                                    @forelse($historyInvoices as $hist)
                                         <tr class="hover:bg-gray-50 transition">
-                                            <td class="p-4 font-mono text-xs text-gray-500">{{ $hist->external_id }}
+                                            {{-- Invoice --}}
+                                            <td class="p-3 md:p-4">
+                                                <p class="font-mono text-xs text-gray-500 mb-1">
+                                                    {{ $hist->external_id }}</p>
+                                                <p class="text-[10px] text-gray-400">
+                                                    {{ $hist->created_at->format('d/m/Y H:i') }}</p>
                                             </td>
-                                            <td class="p-4 font-medium text-gray-900">
-                                                {{ $hist->subscription?->company?->name ?? 'Perusahaan Tidak Ditemukan' }}
-                                                <p class="text-[10px] text-gray-500 italic">
-                                                    {{ $hist->purchased_plan_name ?? 'N/A' }}
-                                                </p>
+
+                                            {{-- Perusahaan --}}
+                                            <td class="p-3 md:p-4">
+                                                <p class="font-medium text-gray-900 text-xs">
+                                                    {{ $hist->subscription?->company?->name ?? 'N/A' }}</p>
                                             </td>
-                                            <td class="p-4 font-bold text-gray-700">Rp
-                                                {{ number_format($hist->amount, 0, ',', '.') }}</td>
-                                            <td class="p-4">
-                                                @if ($hist->status === 'paid')
-                                                    <span
-                                                        class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold uppercase">Lunas</span>
-                                                @else
-                                                    <div class="flex flex-col gap-1 items-start">
-                                                        <span
-                                                            class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-[10px] font-bold uppercase">Ditolak</span>
-                                                        <button
-                                                            onclick="showRejectReason('{{ $hist->admin_notes ?? 'Tidak ada alasan spesifik.' }}')"
-                                                            class="text-[10px] text-blue-600 hover:underline font-medium">
-                                                            🔍 Lihat Alasan
-                                                        </button>
-                                                    </div>
+
+                                            {{-- Paket --}}
+                                            <td class="p-3 md:p-4">
+                                                <p class="font-semibold text-gray-700 text-xs">
+                                                    {{ $hist->purchased_plan_name ?? 'N/A' }}</p>
+                                                @if ($hist->purchased_addon_count > 0)
+                                                    <p class="text-[10px] text-gray-500">+
+                                                        {{ $hist->purchased_addon_count }} addon</p>
                                                 @endif
                                             </td>
-                                            <td class="p-4 text-xs text-gray-500">
-                                                {{ $hist->verifiedBy->full_name ?? 'System' }}
-                                                <p class="text-[10px]">
-                                                    {{ $hist->verified_at ? $hist->verified_at->format('d/m/y H:i') : '-' }}
-                                                </p>
+
+                                            {{-- Info Pembayaran --}}
+                                            <td class="p-3 md:p-4">
+                                                @if ($hist->payer_name)
+                                                    <div class="space-y-0.5">
+                                                        <div class="flex items-center gap-1.5 text-xs">
+                                                            <svg class="w-3 h-3 text-gray-400 flex-shrink-0"
+                                                                fill="none" stroke="currentColor"
+                                                                viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2"
+                                                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                            </svg>
+                                                            <span class="text-gray-600">{{ $hist->payer_name }}</span>
+                                                        </div>
+                                                        <div class="flex items-center gap-1.5 text-xs">
+                                                            <svg class="w-3 h-3 text-gray-400 flex-shrink-0"
+                                                                fill="none" stroke="currentColor"
+                                                                viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2"
+                                                                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                                            </svg>
+                                                            <span class="text-gray-600">{{ $hist->payer_bank }}</span>
+                                                        </div>
+                                                        <div class="flex items-center gap-1.5 text-xs">
+                                                            <svg class="w-3 h-3 text-gray-400 flex-shrink-0"
+                                                                fill="none" stroke="currentColor"
+                                                                viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2"
+                                                                    d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                                                            </svg>
+                                                            <span
+                                                                class="font-mono text-gray-600">{{ $hist->payer_account_number }}</span>
+                                                        </div>
+                                                    </div>
+                                                @else
+                                                    <span class="text-xs text-gray-400 italic">-</span>
+                                                @endif
+                                            </td>
+
+                                            {{-- Total --}}
+                                            <td class="p-3 md:p-4 font-bold text-gray-900 text-sm">
+                                                Rp {{ number_format($hist->amount, 0, ',', '.') }}
+                                            </td>
+
+                                            {{-- Status --}}
+                                            <td class="p-3 md:p-4">
+                                                @if ($hist->status === 'paid')
+                                                    <span
+                                                        class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold uppercase inline-flex items-center gap-1">
+                                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fill-rule="evenodd"
+                                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                                clip-rule="evenodd" />
+                                                        </svg>
+                                                        Lunas
+                                                    </span>
+                                                @else
+                                                    <span
+                                                        class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-[10px] font-bold uppercase inline-flex items-center gap-1">
+                                                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fill-rule="evenodd"
+                                                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                                                clip-rule="evenodd" />
+                                                        </svg>
+                                                        Ditolak
+                                                    </span>
+                                                @endif
+                                            </td>
+
+                                            {{-- Diverifikasi --}}
+                                            <td class="p-3 md:p-4">
+                                                <div class="text-xs">
+                                                    <p class="font-medium text-gray-700">
+                                                        {{ $hist->verifiedBy?->full_name ?? 'System' }}</p>
+                                                    <p class="text-[10px] text-gray-400">
+                                                        {{ $hist->verified_at ? $hist->verified_at->format('d/m/y H:i') : '-' }}
+                                                    </p>
+                                                </div>
+                                            </td>
+
+                                            {{-- Aksi --}}
+                                            <td class="p-3 md:p-4 text-center">
+                                                <div class="flex flex-col gap-1.5">
+                                                    @if ($hist->proof_of_payment)
+                                                        <button
+                                                            onclick="viewImage('{{ Storage::url($hist->proof_of_payment) }}')"
+                                                            class="text-xs bg-blue-50 text-blue-600 px-2 py-1.5 rounded-lg hover:bg-blue-100 transition font-medium inline-flex items-center justify-center gap-1 whitespace-nowrap">
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                                viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2"
+                                                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2"
+                                                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                            </svg>
+                                                            Bukti
+                                                        </button>
+                                                    @endif
+
+                                                    @if ($hist->status === 'failed' && $hist->admin_notes)
+                                                        <button
+                                                            onclick="showRejectReason('{{ addslashes($hist->admin_notes) }}')"
+                                                            class="text-xs bg-red-50 text-red-600 px-2 py-1.5 rounded-lg hover:bg-red-100 transition font-medium inline-flex items-center justify-center gap-1 whitespace-nowrap">
+                                                            <svg class="w-3 h-3" fill="currentColor"
+                                                                viewBox="0 0 20 20">
+                                                                <path fill-rule="evenodd"
+                                                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                                                                    clip-rule="evenodd" />
+                                                            </svg>
+                                                            Alasan
+                                                        </button>
+                                                    @endif
+                                                </div>
                                             </td>
                                         </tr>
-                                    @endforeach
+                                    @empty
+                                        <tr>
+                                            <td colspan="8" class="p-8 text-center">
+                                                <div class="flex flex-col items-center gap-3">
+                                                    <svg class="w-16 h-16 text-gray-300" fill="none"
+                                                        stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    <p class="text-gray-500 font-medium">Belum ada riwayat pembayaran
+                                                    </p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforelse
                                 </tbody>
                             </table>
                         </div>
-                        <div class="mt-4">
-                            {{ $historyInvoices->links() }}
-                        </div>
+
+                        {{-- Pagination --}}
+                        @if ($historyInvoices->hasPages())
+                            <div class="mt-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+                                <div class="text-sm text-gray-600">
+                                    Menampilkan {{ $historyInvoices->firstItem() }} -
+                                    {{ $historyInvoices->lastItem() }}
+                                    dari {{ $historyInvoices->total() }} transaksi
+                                </div>
+                                <div class="flex gap-2">
+                                    {{ $historyInvoices->links('pagination::tailwind') }}
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>

@@ -120,7 +120,7 @@
     </div>
 </div>
 
-<!-- 🔥 Modal Upload Bukti Transfer - RESPONSIVE -->
+<!-- 🔥 MODAL UPLOAD BUKTI TRANSFER - UPDATED WITH FORM FIELDS -->
 <div id="modalUploadProof" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm p-4">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative">
         <!-- Close Button -->
@@ -131,74 +131,138 @@
         </button>
 
         <div class="p-6 sm:p-8">
-            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-6">Upload Bukti Transfer</h3>
+            <h3 class="text-xl sm:text-2xl font-bold text-gray-900 mb-6">📤 Upload Bukti Transfer</h3>
 
             <div class="space-y-4 sm:space-y-6">
                 <!-- Info Rekening -->
                 <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 sm:p-6">
-                    <h4 class="font-bold text-blue-900 mb-3 sm:mb-4 text-sm sm:text-base">📋 Informasi Rekening</h4>
+                    <h4 class="font-bold text-blue-900 mb-3 sm:mb-4 text-sm sm:text-base">📋 Informasi Rekening Tujuan</h4>
                     <div class="space-y-2 text-xs sm:text-sm">
                         <div class="flex justify-between">
                             <span class="text-gray-600">Bank:</span>
-                            <span class="font-semibold">BCA</span>
+                            <span class="font-bold text-gray-900">BCA</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">No. Rekening:</span>
-                            <span class="font-semibold">1234567890</span>
+                            <span class="font-bold text-gray-900">1234567890</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Atas Nama:</span>
-                            <span class="font-semibold">PT Koladi Digital</span>
+                            <span class="font-bold text-gray-900">PT Koladi Digital</span>
                         </div>
                         <hr class="my-3 border-blue-200">
                         <div class="flex justify-between items-center">
                             <span class="text-gray-700 font-semibold">Total Bayar:</span>
-                            <span id="uploadAmount" class="text-lg sm:text-xl font-bold text-blue-900">Rp 0</span>
+                            <span id="uploadAmount" class="text-lg sm:text-2xl font-bold text-blue-600">Rp 0</span>
                         </div>
                         <p class="text-xs text-gray-500 mt-2">
-                            Invoice: <span id="uploadInvoiceId" class="font-mono bg-gray-100 px-2 py-0.5 rounded">-</span>
+                            Invoice: <span id="uploadInvoiceId" class="font-mono bg-white px-2 py-1 rounded font-semibold">-</span>
                         </p>
                     </div>
                 </div>
 
-                <!-- Upload Form -->
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">
-                        📤 Upload Bukti Transfer <span class="text-red-500">*</span>
-                    </label>
-                    <input type="file" id="proofFile" accept="image/jpeg,image/png,image/jpg"
-                        class="w-full border-2 border-gray-300 rounded-lg p-2 sm:p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                    <p class="text-xs text-gray-500 mt-2 flex items-start gap-1">
-                        <svg class="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                        </svg>
-                        <span>Format: JPG, PNG (Max 2MB)</span>
-                    </p>
-                    <p id="fileError" class="text-xs text-red-600 mt-1 hidden font-semibold"></p>
-                </div>
-
-                <!-- Preview -->
-                <div id="previewContainer" class="hidden">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">👁️ Preview:</label>
-                    <div class="relative rounded-lg overflow-hidden border-2 border-gray-300">
-                        <img id="previewImage" class="w-full h-auto" alt="Preview">
-                        <button onclick="removePreview()" type="button"
-                            class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition shadow-lg">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                <!-- Form -->
+                <form id="uploadProofForm" class="space-y-4">
+                    <!-- 🔥 Nama Pengirim -->
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            👤 Nama Pengirim <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="payerName" required
+                            class="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                            placeholder="Nama sesuai rekening pengirim">
+                        <p class="text-xs text-gray-500 mt-1">Masukkan nama sesuai dengan rekening yang digunakan untuk transfer</p>
                     </div>
-                </div>
+
+                    <!-- 🔥 Bank Pengirim -->
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            🏦 Bank Pengirim <span class="text-red-500">*</span>
+                        </label>
+                        <select id="payerBank" required
+                            class="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                            <option value="">-- Pilih Bank --</option>
+                            <option value="BCA">BCA</option>
+                            <option value="BNI">BNI</option>
+                            <option value="BRI">BRI</option>
+                            <option value="Mandiri">Mandiri</option>
+                            <option value="CIMB Niaga">CIMB Niaga</option>
+                            <option value="Permata">Permata</option>
+                            <option value="Danamon">Danamon</option>
+                            <option value="BTN">BTN</option>
+                            <option value="BSI">BSI (Bank Syariah Indonesia)</option>
+                            <option value="Muamalat">Bank Muamalat</option>
+                            <option value="Syariah Mandiri">Bank Syariah Mandiri</option>
+                            <option value="OCBC NISP">OCBC NISP</option>
+                            <option value="Panin">Bank Panin</option>
+                            <option value="Mega">Bank Mega</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+
+                    <!-- 🔥 Nomor Rekening -->
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            💳 Nomor Rekening Pengirim <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="payerAccountNumber" required pattern="[0-9]*" inputmode="numeric"
+                            class="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                            placeholder="Contoh: 1234567890">
+                        <p class="text-xs text-gray-500 mt-1">Masukkan nomor rekening tanpa spasi atau karakter khusus</p>
+                    </div>
+
+                    <!-- 🔥 Upload File -->
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            📤 Upload Bukti Transfer <span class="text-red-500">*</span>
+                        </label>
+
+                        <!-- Custom Upload Area -->
+                        <div class="relative border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-500 transition cursor-pointer bg-gray-50"
+                             onclick="document.getElementById('proofFile').click()">
+                            <input type="file" id="proofFile" accept="image/jpeg,image/png,image/jpg" class="hidden" required>
+
+                            <!-- Upload Placeholder -->
+                            <div id="uploadPlaceholder" class="text-center">
+                                <svg class="w-12 h-12 mx-auto text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                <p class="text-gray-600 font-medium mb-1">Klik untuk pilih file</p>
+                                <p class="text-xs text-gray-500">JPG, PNG (Max 2MB)</p>
+                            </div>
+
+                            <!-- Preview Container -->
+                            <div id="previewContainer" class="hidden">
+                                <div class="relative">
+                                    <img id="previewImage" class="max-h-48 mx-auto rounded-lg shadow-md" alt="Preview">
+                                    <button type="button" onclick="removePreview(); event.stopPropagation();"
+                                        class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition shadow-lg">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <p id="fileName" class="text-sm text-gray-600 text-center mt-3"></p>
+                            </div>
+                        </div>
+
+                        <p id="fileError" class="text-xs text-red-600 mt-2 hidden font-semibold flex items-center gap-1">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                            </svg>
+                            <span></span>
+                        </p>
+                    </div>
+                </form>
 
                 <!-- Buttons -->
                 <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-2">
-                    <button onclick="closeUploadModal()"
+                    <button type="button" onclick="closeUploadModal()"
                         class="w-full sm:flex-1 bg-gray-200 text-gray-700 font-bold py-3 rounded-lg hover:bg-gray-300 transition text-sm sm:text-base order-2 sm:order-1">
                         ❌ Batal
                     </button>
-                    <button onclick="submitProof()" id="btnUpload"
-                        class="w-full sm:flex-1 bg-[#4A63E7] text-white font-bold py-3 rounded-lg hover:bg-[#3a4fc7] transition disabled:bg-gray-300 disabled:cursor-not-allowed text-sm sm:text-base order-1 sm:order-2">
+                    <button type="button" onclick="submitProof()" id="btnUpload"
+                        class="w-full sm:flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base order-1 sm:order-2 shadow-lg">
                         <span id="btnUploadText">✅ Upload Bukti</span>
                         <span id="btnUploadLoading" class="hidden flex items-center justify-center gap-2">
                             <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -221,35 +285,39 @@ let selectedPlan = null;
 let plansLoaded = false;
 let currentInvoiceId = null;
 
-// Preview image saat dipilih
 // 🔥 Preview image dengan validasi
 document.getElementById('proofFile')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
     const fileError = document.getElementById('fileError');
+    const errorSpan = fileError.querySelector('span');
     const previewContainer = document.getElementById('previewContainer');
+    const uploadPlaceholder = document.getElementById('uploadPlaceholder');
     const previewImage = document.getElementById('previewImage');
+    const fileName = document.getElementById('fileName');
 
     // Reset error
     fileError.classList.add('hidden');
-    fileError.textContent = '';
+    errorSpan.textContent = '';
 
     if (file) {
         // Validasi ukuran (2MB = 2097152 bytes)
         if (file.size > 2097152) {
-            fileError.textContent = '⚠️ Ukuran file terlalu besar! Maksimal 2MB.';
+            errorSpan.textContent = 'Ukuran file terlalu besar! Maksimal 2MB.';
             fileError.classList.remove('hidden');
             e.target.value = '';
             previewContainer.classList.add('hidden');
+            uploadPlaceholder.classList.remove('hidden');
             return;
         }
 
         // Validasi tipe file
         const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
         if (!validTypes.includes(file.type)) {
-            fileError.textContent = '⚠️ Format file tidak valid! Gunakan JPG atau PNG.';
+            errorSpan.textContent = 'Format file tidak valid! Gunakan JPG atau PNG.';
             fileError.classList.remove('hidden');
             e.target.value = '';
             previewContainer.classList.add('hidden');
+            uploadPlaceholder.classList.remove('hidden');
             return;
         }
 
@@ -257,14 +325,21 @@ document.getElementById('proofFile')?.addEventListener('change', function(e) {
         const reader = new FileReader();
         reader.onload = function(e) {
             previewImage.src = e.target.result;
+            fileName.textContent = file.name;
+            uploadPlaceholder.classList.add('hidden');
             previewContainer.classList.remove('hidden');
         };
         reader.readAsDataURL(file);
     } else {
         previewContainer.classList.add('hidden');
+        uploadPlaceholder.classList.remove('hidden');
     }
 });
 
+// 🔥 Only allow numbers in account number
+document.getElementById('payerAccountNumber')?.addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '');
+});
 
 function openModal() {
     document.getElementById('modalPilihPaket').classList.remove('hidden');
@@ -286,25 +361,28 @@ function closeModal() {
 
 function openUploadModal(invoiceId, amount) {
     currentInvoiceId = invoiceId;
-    document.getElementById('uploadAmount').textContent = formatNumber(amount);
+    document.getElementById('uploadAmount').textContent = 'Rp ' + formatNumber(amount);
     document.getElementById('uploadInvoiceId').textContent = invoiceId;
     document.getElementById('modalUploadProof').classList.remove('hidden');
     document.getElementById('modalUploadProof').classList.add('flex');
-    document.body.style.overflow = 'hidden'; // Prevent scroll
+    document.body.style.overflow = 'hidden';
 }
 
 function closeUploadModal() {
     document.getElementById('modalUploadProof').classList.add('hidden');
     document.getElementById('modalUploadProof').classList.remove('flex');
-    document.getElementById('proofFile').value = '';
+    document.getElementById('uploadProofForm').reset();
     document.getElementById('previewContainer').classList.add('hidden');
+    document.getElementById('uploadPlaceholder').classList.remove('hidden');
     document.getElementById('fileError').classList.add('hidden');
-    document.body.style.overflow = ''; // Restore scroll
+    document.body.style.overflow = '';
 }
 
 function removePreview() {
     document.getElementById('proofFile').value = '';
     document.getElementById('previewContainer').classList.add('hidden');
+    document.getElementById('uploadPlaceholder').classList.remove('hidden');
+    document.getElementById('fileError').classList.add('hidden');
 }
 
 async function loadPlans() {
@@ -498,28 +576,86 @@ async function proceedPayment() {
 }
 
 async function submitProof() {
+    const payerName = document.getElementById('payerName').value.trim();
+    const payerBank = document.getElementById('payerBank').value;
+    const payerAccountNumber = document.getElementById('payerAccountNumber').value.trim();
     const fileInput = document.getElementById('proofFile');
     const file = fileInput.files[0];
+
+    // Validasi manual
+    if (!payerName) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Data Tidak Lengkap',
+            text: 'Nama pengirim wajib diisi!',
+            confirmButtonColor: '#dc2626'
+        });
+        return;
+    }
+
+    if (!payerBank) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Data Tidak Lengkap',
+            text: 'Bank pengirim wajib dipilih!',
+            confirmButtonColor: '#dc2626'
+        });
+        return;
+    }
+
+    if (!payerAccountNumber) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Data Tidak Lengkap',
+            text: 'Nomor rekening wajib diisi!',
+            confirmButtonColor: '#dc2626'
+        });
+        return;
+    }
+
+    if (!file) {
+        Swal.fire({
+            icon: 'error',
+            title: 'File Belum Dipilih',
+            text: 'Silakan pilih file bukti transfer terlebih dahulu!',
+            confirmButtonColor: '#dc2626'
+        });
+        return;
+    }
+
     const btnUpload = document.getElementById('btnUpload');
     const btnText = document.getElementById('btnUploadText');
     const btnLoading = document.getElementById('btnUploadLoading');
 
-    if (!file) {
-        alert('⚠️ Pilih file bukti transfer terlebih dahulu');
-        return;
-    }
-
+    // Show loading on button
     btnUpload.disabled = true;
     btnText.classList.add('hidden');
     btnLoading.classList.remove('hidden');
 
+    // Show SweetAlert loading
+    Swal.fire({
+        title: 'Mengupload...',
+        html: 'Mohon tunggu, sedang memproses bukti transfer Anda',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
     try {
         const formData = new FormData();
         formData.append('invoice_id', currentInvoiceId);
+        formData.append('payer_name', payerName);
+        formData.append('payer_bank', payerBank);
+        formData.append('payer_account_number', payerAccountNumber);
         formData.append('proof_file', file);
 
         console.log('📤 Uploading:', {
             invoice_id: currentInvoiceId,
+            payer_name: payerName,
+            payer_bank: payerBank,
+            payer_account_number: payerAccountNumber,
             file_name: file.name,
             file_size: file.size,
             file_type: file.type
@@ -534,35 +670,81 @@ async function submitProof() {
         });
 
         console.log('📥 Response status:', response.status);
-        console.log('📥 Response headers:', response.headers.get('content-type'));
 
-        // 🔥 Cek apakah response adalah JSON
+        // Cek content type
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
             const text = await response.text();
             console.error('❌ Response bukan JSON:', text);
-            throw new Error('Server mengembalikan response yang tidak valid. Cek console untuk detail.');
+            throw new Error('Server mengembalikan response yang tidak valid');
         }
 
         const data = await response.json();
         console.log('✅ Data:', data);
 
         if (data.success) {
-            alert('✅ ' + data.message);
+            await Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                html: `
+                    <p class="text-gray-700 mb-2">${data.message}</p>
+                    <div class="bg-blue-50 rounded-lg p-4 mt-4 text-left">
+                        <p class="text-sm text-gray-600 mb-2"><strong>Detail Pembayaran:</strong></p>
+                        <ul class="text-sm text-gray-700 space-y-1">
+                            <li>👤 Nama: ${payerName}</li>
+                            <li>🏦 Bank: ${payerBank}</li>
+                            <li>💳 No. Rek: ${payerAccountNumber}</li>
+                        </ul>
+                    </div>
+                `,
+                confirmButtonColor: '#16a34a',
+                confirmButtonText: 'OK'
+            });
+
             closeUploadModal();
+            closeModal(); // Close pilih paket modal juga
             window.location.reload();
         } else {
-            throw new Error(data.message || 'Upload gagal');
+            // Handle validation errors
+            let errorMessage = data.message || 'Upload gagal';
+
+            if (data.errors) {
+                const errors = Object.values(data.errors).flat();
+                errorMessage = errors.join('<br>');
+            }
+
+            await Swal.fire({
+                icon: 'error',
+                title: 'Upload Gagal',
+                html: errorMessage,
+                confirmButtonColor: '#dc2626'
+            });
         }
     } catch (error) {
         console.error('❌ Error:', error);
-        alert('❌ Terjadi kesalahan: ' + error.message);
+        await Swal.fire({
+            icon: 'error',
+            title: 'Terjadi Kesalahan',
+            text: error.message || 'Gagal mengupload bukti transfer. Silakan coba lagi.',
+            confirmButtonColor: '#dc2626'
+        });
     } finally {
         btnUpload.disabled = false;
         btnText.classList.remove('hidden');
         btnLoading.classList.add('hidden');
     }
 }
+
+// Close modal on ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const uploadModal = document.getElementById('modalUploadProof');
+        if (!uploadModal.classList.contains('hidden')) {
+            closeUploadModal();
+        }
+    }
+});
+
 function resetModal() {
     selectedPlan = null;
     document.getElementById('addonUserCount').value = 0;

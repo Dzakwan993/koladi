@@ -1307,4 +1307,90 @@ class CalendarController extends Controller
     {
         return $this->checkConflicts($request, null);
     }
+
+    public function recordAttendance(Request $request, $eventId)
+    {
+        try {
+            $user = Auth::user();
+
+            // ✅ Cari atau buat participant baru
+            $participant = CalendarParticipant::firstOrCreate(
+                [
+                    'event_id' => $eventId,
+                    'user_id' => $user->id,
+                ],
+                [
+                    'id' => Str::uuid()->toString(),
+                    'status' => 'accepted', // Auto-accept karena dia join meeting
+                    'attendance' => false
+                ]
+            );
+
+            // ✅ Update attendance menjadi true
+            $participant->update(['attendance' => true]);
+
+            // Log untuk tracking
+            Log::info('User joined meeting', [
+                'user_id' => $user->id,
+                'event_id' => $eventId,
+                'was_new_participant' => $participant->wasRecentlyCreated,
+                'timestamp' => now()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Kehadiran berhasil dicatat',
+                'was_new_participant' => $participant->wasRecentlyCreated
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error recording attendance: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mencatat kehadiran'
+            ], 500);
+        }
+    }
+
+    /**
+     * ✅ BARU: Get attendance statistics untuk event
+     */
+    public function getAttendanceStats($eventId)
+    {
+        try {
+            $event = CalendarEvent::with('participants')->findOrFail($eventId);
+
+            $totalParticipants = $event->participants->count();
+            $attended = $event->participants->where('attendance', true)->count();
+            $notAttended = $totalParticipants - $attended;
+
+            $attendanceRate = $totalParticipants > 0
+                ? round(($attended / $totalParticipants) * 100, 2)
+                : 0;
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_participants' => $totalParticipants,
+                    'attended' => $attended,
+                    'not_attended' => $notAttended,
+                    'attendance_rate' => $attendanceRate,
+                    'participants' => $event->participants->map(function ($p) {
+                        return [
+                            'id' => $p->user_id,
+                            'name' => $p->user->full_name,
+                            'avatar' => $this->getAvatarUrl($p->user),
+                            'attended' => $p->attendance,
+                            'attended_at' => $p->updated_at // Jika attendance true, berarti dia update saat join
+                        ];
+                    })
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting attendance stats: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil statistik kehadiran'
+            ], 500);
+        }
+    }
 }
