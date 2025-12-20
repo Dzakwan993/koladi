@@ -76,8 +76,8 @@
 
                     </div>
 
-        {{-- Halaman Balas Komentar --}}
-            @include('components.balas-komentar')
+                    {{-- Halaman Balas Komentar --}}
+                    @include('components.balas-komentar')
 
                     {{-- All Modals --}}
                     @include('components.modal-tugas')
@@ -1145,19 +1145,19 @@
                     }
                 </style>
 
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
-    <script>
-            ['todo', 'inprogress', 'done', 'cancel'].forEach(id => {
-                let el = document.getElementById(id);
-                if (el) {
-                    new Sortable(el, {
-                        group: 'kanban',
-                        animation: 150,
-                        ghostClass: 'bg-blue-300'
+                <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+                <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+                <script>
+                    ['todo', 'inprogress', 'done', 'cancel'].forEach(id => {
+                        let el = document.getElementById(id);
+                        if (el) {
+                            new Sortable(el, {
+                                group: 'kanban',
+                                animation: 150,
+                                ghostClass: 'bg-blue-300'
+                            });
+                        }
                     });
-                }
-            });
 
                     function kanbanApp() {
                         return {
@@ -1616,7 +1616,8 @@
                             // ✅ PERBAIKI: Method untuk membuka detail tugas
                             async openDetail(taskId) {
                                 try {
-                                    console.log('🔄 Loading task detail for:', taskId);
+                                    console.log('🔄 Opening task detail:', taskId);
+                                    console.log('📍 Current workspace:', this.getCurrentWorkspaceId());
 
                                     const response = await fetch(`/tasks/${taskId}/detail`, {
                                         headers: {
@@ -1624,13 +1625,17 @@
                                         }
                                     });
 
+                                    console.log('📡 Response status:', response.status);
+
                                     if (!response.ok) {
                                         throw new Error(`HTTP error! status: ${response.status}`);
                                     }
 
                                     const data = await response.json();
+                                    console.log('📦 Response data:', data);
 
                                     if (data.success) {
+                                        console.log('✅ Task data loaded successfully');
                                         // SET CURRENT TASK dengan comments
                                         this.currentTask = {
                                             id: data.task.id,
@@ -1672,8 +1677,10 @@
                                         this.openTaskDetail = true;
 
                                         console.log('✅ Task detail loaded with', data.task.comments?.length || 0, 'comments');
+                                        console.log('✅ Modal opened, currentTask:', this.currentTask.id);
 
                                     } else {
+                                        console.error('❌ API returned success=false:', data.message);
                                         this.showNotification('Gagal memuat detail tugas: ' + data.message, 'error');
                                     }
 
@@ -1970,16 +1977,16 @@
                             },
 
                             openTaskModalForColumn(columnId = null) {
-    this.currentColumnId = columnId;
-    this.openTaskModal = true;
-    
-    // ✅ TAMBAHKAN: Initialize editor setelah modal terbuka
-    this.$nextTick(() => {
-        setTimeout(() => {
-            this.initializeTaskFormEditor();
-        }, 300);
-    });
-},
+                                this.currentColumnId = columnId;
+                                this.openTaskModal = true;
+
+                                // ✅ TAMBAHKAN: Initialize editor setelah modal terbuka
+                                this.$nextTick(() => {
+                                    setTimeout(() => {
+                                        this.initializeTaskFormEditor();
+                                    }, 300);
+                                });
+                            },
 
                             // Enable edit mode
                             // Di method enableEditMode() atau saat modal dibuka
@@ -2566,61 +2573,61 @@
                             // Update method resetTaskForm
                             // ✅ Update method resetTaskForm
                             // ✅ Update method resetTaskForm
-resetTaskForm() {
-    // Destroy CKEditor terlebih dahulu
-    const editorId = 'editor-catatan';
-    const el = document.getElementById(editorId);
-    
-    if (el && el._editor) {
-        try {
-            el._editor.destroy()
-                .then(() => {
-                    el._editor = null;
-                    el.innerHTML = '';
-                    if (window.taskEditors?.[editorId]) {
-                        delete window.taskEditors[editorId];
-                    }
-                })
-                .catch(() => {
-                    el._editor = null;
-                    el.innerHTML = '';
-                });
-        } catch (err) {
-            el._editor = null;
-            el.innerHTML = '';
-        }
-    }
+                            resetTaskForm() {
+                                // Destroy CKEditor terlebih dahulu
+                                const editorId = 'editor-catatan';
+                                const el = document.getElementById(editorId);
 
-    this.taskForm = {
-        title: '',
-        phase: '',
-        members: [],
-        is_secret: false,
-        description: '',
-        attachments: [],
-        checklists: [],
-        labels: [],
-        startDate: '',
-        startTime: '',
-        dueDate: '',
-        dueTime: ''
-    };
+                                if (el && el._editor) {
+                                    try {
+                                        el._editor.destroy()
+                                            .then(() => {
+                                                el._editor = null;
+                                                el.innerHTML = '';
+                                                if (window.taskEditors?.[editorId]) {
+                                                    delete window.taskEditors[editorId];
+                                                }
+                                            })
+                                            .catch(() => {
+                                                el._editor = null;
+                                                el.innerHTML = '';
+                                            });
+                                    } catch (err) {
+                                        el._editor = null;
+                                        el.innerHTML = '';
+                                    }
+                                }
 
-    // Reset selected state di labelData
-    this.labelData.labels.forEach(label => {
-        label.selected = false;
-    });
+                                this.taskForm = {
+                                    title: '',
+                                    phase: '',
+                                    members: [],
+                                    is_secret: false,
+                                    description: '',
+                                    attachments: [],
+                                    checklists: [],
+                                    labels: [],
+                                    startDate: '',
+                                    startTime: '',
+                                    dueDate: '',
+                                    dueTime: ''
+                                };
 
-    this.uploading = false;
-    this.uploadProgress = 0;
-    
-    // ✅ TAMBAHKAN: Re-initialize editor setelah reset
-    this.$nextTick(() => {
-        setTimeout(() => {
-            this.initializeTaskFormEditor();
-        }, 300);
-    });
-},
+                                // Reset selected state di labelData
+                                this.labelData.labels.forEach(label => {
+                                    label.selected = false;
+                                });
+
+                                this.uploading = false;
+                                this.uploadProgress = 0;
+
+                                // ✅ TAMBAHKAN: Re-initialize editor setelah reset
+                                this.$nextTick(() => {
+                                    setTimeout(() => {
+                                        this.initializeTaskFormEditor();
+                                    }, 300);
+                                });
+                            },
 
                             // Members
                             filteredMembers() {
@@ -3469,6 +3476,40 @@ resetTaskForm() {
                                 } catch (error) {
                                     console.error('❌ Error initializing app:', error);
                                 }
+
+
+                                // ✅ PERBAIKI: Auto-open task modal dengan timing yang lebih baik
+                                this.$nextTick(() => {
+                                    const autoOpenTaskId = localStorage.getItem('autoOpenTaskId');
+                                    if (autoOpenTaskId) {
+                                        console.log('🔍 Found autoOpenTaskId:', autoOpenTaskId);
+                                        localStorage.setItem('pendingTaskOpen', autoOpenTaskId); // ✅ Tambah ini
+                                        localStorage.removeItem('autoOpenTaskId');
+
+                                        // ✅ Tunggu sampai tasks loaded
+                                        const checkTasksLoaded = setInterval(() => {
+                                            if (this.tasks && this.tasks.length > 0) {
+                                                console.log('✅ Tasks loaded, opening detail for:', autoOpenTaskId);
+                                                clearInterval(checkTasksLoaded);
+
+                                                // Delay sedikit untuk memastikan DOM ready
+                                                setTimeout(() => {
+                                                    this.openDetail(autoOpenTaskId);
+                                                }, 500);
+                                            }
+                                        }, 100); // Check setiap 100ms
+
+                                        // Timeout setelah 5 detik
+                                        setTimeout(() => {
+                                            clearInterval(checkTasksLoaded);
+                                            if (!this.openTaskDetail) {
+                                                console.error('❌ Timeout: Failed to open task after 5s');
+                                            }
+                                        }, 5000);
+                                    } else {
+                                        console.log('ℹ️ No autoOpenTaskId found');
+                                    }
+                                });
                             },
 
                             // ✅ NEW: Method untuk load tasks dari database
@@ -4350,6 +4391,7 @@ resetTaskForm() {
                             async loadKanbanTasks() {
                                 try {
                                     const workspaceId = this.getCurrentWorkspaceId();
+                                    console.log('📊 Loading kanban tasks for workspace:', workspaceId);
                                     if (!workspaceId) return;
 
                                     const response = await fetch(`/tasks/workspace/${workspaceId}/kanban-tasks`);
@@ -4387,9 +4429,12 @@ resetTaskForm() {
                                             is_overdue: task.is_overdue,
                                             created_at: task.created_at,
                                             updated_at: task.updated_at
+
                                         }));
 
                                         console.log('✅ Tasks loaded from database:', this.tasks.length);
+                                        console.log('✅ Loaded', this.tasks.length, 'tasks');
+                                        console.log('📋 Task IDs:', this.tasks.map(t => t.id));
                                     } else {
                                         console.error('Gagal memuat tasks:', data.message);
                                     }
@@ -4533,7 +4578,7 @@ resetTaskForm() {
                                     const phaseName = phaseMap[phaseId];
                                     phaseTasks = this.tasks.filter(task => {
                                         const taskPhase = task.phase ? task.phase.toLowerCase().trim().replace(/\s+/g, ' ') :
-                                        '';
+                                            '';
                                         const targetPhase = phaseName.toLowerCase().trim().replace(/\s+/g, ' ');
                                         return taskPhase === targetPhase;
                                     });
@@ -4626,102 +4671,153 @@ resetTaskForm() {
 
 
                             async initializeTaskFormEditor() {
-    const editorId = 'editor-catatan';
-    const el = document.getElementById(editorId);
-    
-    if (!el) {
-        console.warn('❌ Task form editor element not found');
-        return;
-    }
+                                const editorId = 'editor-catatan';
+                                const el = document.getElementById(editorId);
 
-    // ✅ CRITICAL: Prevent duplicate initialization
-    if (el._editor || window.taskEditors?.[editorId]) {
-        console.log('⚠️ Task form editor already exists');
-        return;
-    }
+                                if (!el) {
+                                    console.warn('❌ Task form editor element not found');
+                                    return;
+                                }
 
-    // Clean existing CKEditor DOM
-    const existingCKEditor = el.querySelector('.ck-editor');
-    if (existingCKEditor) {
-        existingCKEditor.remove();
-    }
+                                // ✅ CRITICAL: Prevent duplicate initialization
+                                if (el._editor || window.taskEditors?.[editorId]) {
+                                    console.log('⚠️ Task form editor already exists');
+                                    return;
+                                }
 
-    el.innerHTML = '';
+                                // Clean existing CKEditor DOM
+                                const existingCKEditor = el.querySelector('.ck-editor');
+                                if (existingCKEditor) {
+                                    existingCKEditor.remove();
+                                }
 
-    try {
-        const editor = await ClassicEditor.create(el, {
-            toolbar: {
-                items: [
-                    'undo', 'redo', '|',
-                    'heading', '|',
-                    'bold', 'italic', 'underline', 'strikethrough', '|',
-                    'fontColor', 'fontBackgroundColor', '|',
-                    'link', 'blockQuote', 'code', '|',
-                    'bulletedList', 'numberedList', 'outdent', 'indent', '|',
-                    'insertTable', 'imageUpload', 'mediaEmbed'
-                ],
-                shouldNotGroupWhenFull: true
-            },
-            heading: {
-                options: [
-                    { model: 'paragraph', title: 'Paragraf', class: 'ck-heading_paragraph' },
-                    { model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1' },
-                    { model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2' },
-                    { model: 'heading3', view: 'h3', title: 'Heading 3', class: 'ck-heading_heading3' }
-                ]
-            },
-            fontColor: {
-                colors: [
-                    { color: 'black', label: 'Hitam' },
-                    { color: 'red', label: 'Merah' },
-                    { color: 'blue', label: 'Biru' },
-                    { color: 'green', label: 'Hijau' },
-                    { color: 'orange', label: 'Oranye' },
-                    { color: 'purple', label: 'Ungu' }
-                ]
-            },
-            fontBackgroundColor: {
-                colors: [
-                    { color: 'yellow', label: 'Kuning' },
-                    { color: 'lightgreen', label: 'Hijau Muda' },
-                    { color: 'lightblue', label: 'Biru Muda' },
-                    { color: 'pink', label: 'Merah Muda' },
-                    { color: 'gray', label: 'Abu-abu' }
-                ]
-            },
-            image: {
-                toolbar: ['imageTextAlternative', 'imageStyle:inline', 'imageStyle:block', 'imageStyle:side']
-            },
-            table: {
-                contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
-            },
-            mediaEmbed: {
-                previewsInData: true
-            },
-            placeholder: 'Tulis catatan tugas di sini...'
-        });
+                                el.innerHTML = '';
 
-        // ✅ Store reference
-        el._editor = editor;
-        if (!window.taskEditors) {
-            window.taskEditors = {};
-        }
-        window.taskEditors[editorId] = editor;
+                                try {
+                                    const editor = await ClassicEditor.create(el, {
+                                        toolbar: {
+                                            items: [
+                                                'undo', 'redo', '|',
+                                                'heading', '|',
+                                                'bold', 'italic', 'underline', 'strikethrough', '|',
+                                                'fontColor', 'fontBackgroundColor', '|',
+                                                'link', 'blockQuote', 'code', '|',
+                                                'bulletedList', 'numberedList', 'outdent', 'indent', '|',
+                                                'insertTable', 'imageUpload', 'mediaEmbed'
+                                            ],
+                                            shouldNotGroupWhenFull: true
+                                        },
+                                        heading: {
+                                            options: [{
+                                                    model: 'paragraph',
+                                                    title: 'Paragraf',
+                                                    class: 'ck-heading_paragraph'
+                                                },
+                                                {
+                                                    model: 'heading1',
+                                                    view: 'h1',
+                                                    title: 'Heading 1',
+                                                    class: 'ck-heading_heading1'
+                                                },
+                                                {
+                                                    model: 'heading2',
+                                                    view: 'h2',
+                                                    title: 'Heading 2',
+                                                    class: 'ck-heading_heading2'
+                                                },
+                                                {
+                                                    model: 'heading3',
+                                                    view: 'h3',
+                                                    title: 'Heading 3',
+                                                    class: 'ck-heading_heading3'
+                                                }
+                                            ]
+                                        },
+                                        fontColor: {
+                                            colors: [{
+                                                    color: 'black',
+                                                    label: 'Hitam'
+                                                },
+                                                {
+                                                    color: 'red',
+                                                    label: 'Merah'
+                                                },
+                                                {
+                                                    color: 'blue',
+                                                    label: 'Biru'
+                                                },
+                                                {
+                                                    color: 'green',
+                                                    label: 'Hijau'
+                                                },
+                                                {
+                                                    color: 'orange',
+                                                    label: 'Oranye'
+                                                },
+                                                {
+                                                    color: 'purple',
+                                                    label: 'Ungu'
+                                                }
+                                            ]
+                                        },
+                                        fontBackgroundColor: {
+                                            colors: [{
+                                                    color: 'yellow',
+                                                    label: 'Kuning'
+                                                },
+                                                {
+                                                    color: 'lightgreen',
+                                                    label: 'Hijau Muda'
+                                                },
+                                                {
+                                                    color: 'lightblue',
+                                                    label: 'Biru Muda'
+                                                },
+                                                {
+                                                    color: 'pink',
+                                                    label: 'Merah Muda'
+                                                },
+                                                {
+                                                    color: 'gray',
+                                                    label: 'Abu-abu'
+                                                }
+                                            ]
+                                        },
+                                        image: {
+                                            toolbar: ['imageTextAlternative', 'imageStyle:inline', 'imageStyle:block',
+                                                'imageStyle:side'
+                                            ]
+                                        },
+                                        table: {
+                                            contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells']
+                                        },
+                                        mediaEmbed: {
+                                            previewsInData: true
+                                        },
+                                        placeholder: 'Tulis catatan tugas di sini...'
+                                    });
 
-        console.log('✅ Task form editor initialized successfully');
-        return editor;
+                                    // ✅ Store reference
+                                    el._editor = editor;
+                                    if (!window.taskEditors) {
+                                        window.taskEditors = {};
+                                    }
+                                    window.taskEditors[editorId] = editor;
 
-    } catch (error) {
-        console.error('❌ Failed to initialize task form editor:', error);
-        
-        // Fallback to textarea
-        el.innerHTML = `
+                                    console.log('✅ Task form editor initialized successfully');
+                                    return editor;
+
+                                } catch (error) {
+                                    console.error('❌ Failed to initialize task form editor:', error);
+
+                                    // Fallback to textarea
+                                    el.innerHTML = `
             <textarea id="${editorId}-fallback" 
                       class="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg bg-white resize-none"
                       placeholder="Tulis catatan tugas di sini..."></textarea>
         `;
-    }
-},
+                                }
+                            },
 
 
 
@@ -4879,77 +4975,77 @@ resetTaskForm() {
 
                     // Alpine.js component untuk komentar tugas
                     function taskCommentSection() {
-    return {
-        comments: [],
-        replyView: {
-            active: false,
-            parentComment: null
-        },
-        currentUserAvatar: '{{ Auth::user()->avatar ?? "https://i.pravatar.cc/40?img=11" }}',
-        loading: false,
-        error: null,
-        taskId: null,
-        editorInstances: {}, // ✅ TAMBAHKAN: Track semua editor instances
+                        return {
+                            comments: [],
+                            replyView: {
+                                active: false,
+                                parentComment: null
+                            },
+                            currentUserAvatar: '{{ Auth::user()->avatar ?? 'https://i.pravatar.cc/40?img=11' }}',
+                            loading: false,
+                            error: null,
+                            taskId: null,
+                            editorInstances: {}, // ✅ TAMBAHKAN: Track semua editor instances
 
                             init() {
-            console.log('🔄 Initializing comment section...');
-            
-            const parentEl = this.$el.closest('[x-data*="kanbanApp"]');
-            const parentData = parentEl ? Alpine.$data(parentEl) : null;
-            
-            if (parentData && parentData.currentTask) {
-                this.taskId = parentData.currentTask.id;
-                console.log('✅ Task ID initialized:', this.taskId);
-                
-                if (parentData.currentTask.comments) {
-                    this.comments = this.formatComments(parentData.currentTask.comments);
-                    console.log('✅ Loaded', this.comments.length, 'comments from currentTask');
-                }
-            }
+                                console.log('🔄 Initializing comment section...');
 
-            // ✅ PERBAIKI: Delay initialization untuk memastikan DOM ready
-            this.$nextTick(() => {
-                setTimeout(() => {
-                    this.initializeMainEditor();
-                }, 300);
-            });
+                                const parentEl = this.$el.closest('[x-data*="kanbanApp"]');
+                                const parentData = parentEl ? Alpine.$data(parentEl) : null;
 
-            // Watch for task changes
-            let lastTaskId = this.taskId;
-            const watchInterval = setInterval(() => {
-                const parentEl = this.$el.closest('[x-data*="kanbanApp"]');
-                const parentData = parentEl ? Alpine.$data(parentEl) : null;
-                const newTaskId = parentData?.currentTask?.id;
-                
-                if (newTaskId && newTaskId !== lastTaskId) {
-                    console.log('📝 Task changed from', lastTaskId, 'to', newTaskId);
-                    lastTaskId = newTaskId;
-                    this.taskId = newTaskId;
-                    this.error = null;
-                    
-                    // ✅ PERBAIKI: Destroy old editors before loading new task
-                    this.destroyAllEditors();
-                    
-                    if (parentData.currentTask.comments) {
-                        this.comments = this.formatComments(parentData.currentTask.comments);
-                    }
-                    
-                    // ✅ PERBAIKI: Re-initialize main editor with delay
-                    this.$nextTick(() => {
-                        setTimeout(() => {
-                            this.initializeMainEditor();
-                        }, 300);
-                    });
-                }
-            }, 500);
-            
-            this.$watch('$el', (value) => {
-                if (!value) {
-                    clearInterval(watchInterval);
-                    this.destroyAllEditors(); // ✅ TAMBAHKAN: Cleanup on component destroy
-                }
-            });
-        },
+                                if (parentData && parentData.currentTask) {
+                                    this.taskId = parentData.currentTask.id;
+                                    console.log('✅ Task ID initialized:', this.taskId);
+
+                                    if (parentData.currentTask.comments) {
+                                        this.comments = this.formatComments(parentData.currentTask.comments);
+                                        console.log('✅ Loaded', this.comments.length, 'comments from currentTask');
+                                    }
+                                }
+
+                                // ✅ PERBAIKI: Delay initialization untuk memastikan DOM ready
+                                this.$nextTick(() => {
+                                    setTimeout(() => {
+                                        this.initializeMainEditor();
+                                    }, 300);
+                                });
+
+                                // Watch for task changes
+                                let lastTaskId = this.taskId;
+                                const watchInterval = setInterval(() => {
+                                    const parentEl = this.$el.closest('[x-data*="kanbanApp"]');
+                                    const parentData = parentEl ? Alpine.$data(parentEl) : null;
+                                    const newTaskId = parentData?.currentTask?.id;
+
+                                    if (newTaskId && newTaskId !== lastTaskId) {
+                                        console.log('📝 Task changed from', lastTaskId, 'to', newTaskId);
+                                        lastTaskId = newTaskId;
+                                        this.taskId = newTaskId;
+                                        this.error = null;
+
+                                        // ✅ PERBAIKI: Destroy old editors before loading new task
+                                        this.destroyAllEditors();
+
+                                        if (parentData.currentTask.comments) {
+                                            this.comments = this.formatComments(parentData.currentTask.comments);
+                                        }
+
+                                        // ✅ PERBAIKI: Re-initialize main editor with delay
+                                        this.$nextTick(() => {
+                                            setTimeout(() => {
+                                                this.initializeMainEditor();
+                                            }, 300);
+                                        });
+                                    }
+                                }, 500);
+
+                                this.$watch('$el', (value) => {
+                                    if (!value) {
+                                        clearInterval(watchInterval);
+                                        this.destroyAllEditors(); // ✅ TAMBAHKAN: Cleanup on component destroy
+                                    }
+                                });
+                            },
 
                             formatComments(comments) {
                                 return comments.map(c => ({
@@ -4963,155 +5059,155 @@ resetTaskForm() {
                                 }));
                             },
 
-                           async initializeMainEditor() {
-            const editorId = 'task-main-comment-editor';
-            const el = document.getElementById(editorId);
-            
-            if (!el) {
-                console.warn('❌ Editor element not found:', editorId);
-                return;
-            }
+                            async initializeMainEditor() {
+                                const editorId = 'task-main-comment-editor';
+                                const el = document.getElementById(editorId);
 
-            // ✅ CRITICAL: Check if editor already exists
-            if (el._editor || this.editorInstances[editorId]) {
-                console.log('⚠️ Editor already exists for:', editorId);
-                return; // Prevent duplicate initialization
-            }
+                                if (!el) {
+                                    console.warn('❌ Editor element not found:', editorId);
+                                    return;
+                                }
 
-            // ✅ CRITICAL: Check for existing CKEditor instances
-            const existingCKEditor = el.querySelector('.ck-editor');
-            if (existingCKEditor) {
-                console.log('⚠️ Found existing CKEditor DOM, cleaning up...');
-                existingCKEditor.remove();
-            }
+                                // ✅ CRITICAL: Check if editor already exists
+                                if (el._editor || this.editorInstances[editorId]) {
+                                    console.log('⚠️ Editor already exists for:', editorId);
+                                    return; // Prevent duplicate initialization
+                                }
 
-            // Clear element content
-            el.innerHTML = '';
+                                // ✅ CRITICAL: Check for existing CKEditor instances
+                                const existingCKEditor = el.querySelector('.ck-editor');
+                                if (existingCKEditor) {
+                                    console.log('⚠️ Found existing CKEditor DOM, cleaning up...');
+                                    existingCKEditor.remove();
+                                }
 
-            const commentId = this.generateUUID();
-            window.currentMainCommentId = commentId;
+                                // Clear element content
+                                el.innerHTML = '';
 
-            try {
-                const editor = await ClassicEditor.create(el, {
-                    toolbar: {
-                        items: [
-                            'undo', 'redo', '|',
-                            'heading', '|',
-                            'bold', 'italic', '|',
-                            'link', 'blockQuote', '|',
-                            'bulletedList', 'numberedList', '|',
-                            'insertTable'
-                        ],
-                        shouldNotGroupWhenFull: true
-                    },
-                    placeholder: 'Tulis komentar Anda...'
-                });
+                                const commentId = this.generateUUID();
+                                window.currentMainCommentId = commentId;
 
-                // ✅ CRITICAL: Store reference to prevent duplicates
-                el._editor = editor;
-                this.editorInstances[editorId] = editor;
-                
-                console.log('✅ Main editor initialized successfully');
-                
-                // Tambahkan tombol upload
-                this.insertUploadImageButton(editor, commentId);
-                this.insertUploadFileButton(editor, commentId);
-                
-            } catch (err) {
-                console.error('❌ Failed to init main editor:', err);
-                
-                // Fallback to textarea
-                el.innerHTML = `
+                                try {
+                                    const editor = await ClassicEditor.create(el, {
+                                        toolbar: {
+                                            items: [
+                                                'undo', 'redo', '|',
+                                                'heading', '|',
+                                                'bold', 'italic', '|',
+                                                'link', 'blockQuote', '|',
+                                                'bulletedList', 'numberedList', '|',
+                                                'insertTable'
+                                            ],
+                                            shouldNotGroupWhenFull: true
+                                        },
+                                        placeholder: 'Tulis komentar Anda...'
+                                    });
+
+                                    // ✅ CRITICAL: Store reference to prevent duplicates
+                                    el._editor = editor;
+                                    this.editorInstances[editorId] = editor;
+
+                                    console.log('✅ Main editor initialized successfully');
+
+                                    // Tambahkan tombol upload
+                                    this.insertUploadImageButton(editor, commentId);
+                                    this.insertUploadFileButton(editor, commentId);
+
+                                } catch (err) {
+                                    console.error('❌ Failed to init main editor:', err);
+
+                                    // Fallback to textarea
+                                    el.innerHTML = `
                     <textarea id="${editorId}-fallback" 
                               class="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg bg-white resize-none"
                               placeholder="Tulis komentar Anda..."></textarea>
                 `;
-            }
-        },
+                                }
+                            },
 
                             async initializeReplyEditor(commentId) {
-            const editorId = `task-reply-editor-${commentId}`;
-            const el = document.getElementById(editorId);
-            
-            if (!el) {
-                console.warn('❌ Reply editor element not found:', editorId);
-                return;
-            }
+                                const editorId = `task-reply-editor-${commentId}`;
+                                const el = document.getElementById(editorId);
 
-            // ✅ CRITICAL: Prevent duplicate initialization
-            if (el._editor || this.editorInstances[editorId]) {
-                console.log('⚠️ Reply editor already exists for:', editorId);
-                return;
-            }
+                                if (!el) {
+                                    console.warn('❌ Reply editor element not found:', editorId);
+                                    return;
+                                }
 
-            // ✅ CRITICAL: Clean up existing CKEditor DOM
-            const existingCKEditor = el.querySelector('.ck-editor');
-            if (existingCKEditor) {
-                console.log('⚠️ Found existing reply CKEditor DOM, cleaning up...');
-                existingCKEditor.remove();
-            }
+                                // ✅ CRITICAL: Prevent duplicate initialization
+                                if (el._editor || this.editorInstances[editorId]) {
+                                    console.log('⚠️ Reply editor already exists for:', editorId);
+                                    return;
+                                }
 
-            el.innerHTML = '';
+                                // ✅ CRITICAL: Clean up existing CKEditor DOM
+                                const existingCKEditor = el.querySelector('.ck-editor');
+                                if (existingCKEditor) {
+                                    console.log('⚠️ Found existing reply CKEditor DOM, cleaning up...');
+                                    existingCKEditor.remove();
+                                }
 
-            const replyId = this.generateUUID();
-            window[`currentReplyId_${commentId}`] = replyId;
+                                el.innerHTML = '';
 
-            try {
-                const editor = await ClassicEditor.create(el, {
-                    toolbar: {
-                        items: [
-                            'undo', 'redo', '|',
-                            'bold', 'italic', '|',
-                            'link', 'blockQuote', '|',
-                            'bulletedList', 'numberedList'
-                        ],
-                        shouldNotGroupWhenFull: true
-                    },
-                    placeholder: 'Tulis balasan Anda...'
-                });
+                                const replyId = this.generateUUID();
+                                window[`currentReplyId_${commentId}`] = replyId;
 
-                // ✅ CRITICAL: Store reference
-                el._editor = editor;
-                this.editorInstances[editorId] = editor;
-                
-                console.log('✅ Reply editor initialized:', editorId);
-                
-                // Tambahkan tombol upload
-                this.insertUploadImageButton(editor, replyId);
-                this.insertUploadFileButton(editor, replyId);
-                
-            } catch (err) {
-                console.error('❌ Failed to init reply editor:', err);
-                
-                // Fallback to textarea
-                el.innerHTML = `
+                                try {
+                                    const editor = await ClassicEditor.create(el, {
+                                        toolbar: {
+                                            items: [
+                                                'undo', 'redo', '|',
+                                                'bold', 'italic', '|',
+                                                'link', 'blockQuote', '|',
+                                                'bulletedList', 'numberedList'
+                                            ],
+                                            shouldNotGroupWhenFull: true
+                                        },
+                                        placeholder: 'Tulis balasan Anda...'
+                                    });
+
+                                    // ✅ CRITICAL: Store reference
+                                    el._editor = editor;
+                                    this.editorInstances[editorId] = editor;
+
+                                    console.log('✅ Reply editor initialized:', editorId);
+
+                                    // Tambahkan tombol upload
+                                    this.insertUploadImageButton(editor, replyId);
+                                    this.insertUploadFileButton(editor, replyId);
+
+                                } catch (err) {
+                                    console.error('❌ Failed to init reply editor:', err);
+
+                                    // Fallback to textarea
+                                    el.innerHTML = `
                     <textarea id="${editorId}-fallback" 
                               class="w-full min-h-[100px] p-3 border border-gray-300 rounded-lg bg-white resize-none"
                               placeholder="Tulis balasan Anda..."></textarea>
                 `;
-            }
-        },
+                                }
+                            },
 
-        destroyAllEditors() {
-            console.log('🔄 Destroying all editors...');
-            
-            // Destroy tracked instances
-            Object.keys(this.editorInstances).forEach(editorId => {
-                this.destroyEditor(editorId);
-            });
-            
-            // Clean up any orphaned CKEditor instances
-            document.querySelectorAll('.ck-editor').forEach(ckEditor => {
-                const parent = ckEditor.parentElement;
-                if (parent) {
-                    console.log('🧹 Cleaning up orphaned CKEditor:', parent.id);
-                    ckEditor.remove();
-                    parent.innerHTML = '';
-                }
-            });
-            
-            this.editorInstances = {};
-        },
+                            destroyAllEditors() {
+                                console.log('🔄 Destroying all editors...');
+
+                                // Destroy tracked instances
+                                Object.keys(this.editorInstances).forEach(editorId => {
+                                    this.destroyEditor(editorId);
+                                });
+
+                                // Clean up any orphaned CKEditor instances
+                                document.querySelectorAll('.ck-editor').forEach(ckEditor => {
+                                    const parent = ckEditor.parentElement;
+                                    if (parent) {
+                                        console.log('🧹 Cleaning up orphaned CKEditor:', parent.id);
+                                        ckEditor.remove();
+                                        parent.innerHTML = '';
+                                    }
+                                });
+
+                                this.editorInstances = {};
+                            },
 
                             insertUploadImageButton(editor, commentId) {
                                 const toolbarEl = editor.ui.view.toolbar.element;
@@ -5167,9 +5263,9 @@ resetTaskForm() {
                                                     const insertPos = editor.model.document.selection
                                                         .getFirstPosition();
                                                     const imageElement = writer.createElement(
-                                                    'imageBlock', {
-                                                        src: data.url
-                                                    });
+                                                        'imageBlock', {
+                                                            src: data.url
+                                                        });
                                                     editor.model.insertContent(imageElement, insertPos);
                                                 });
 
@@ -5290,47 +5386,47 @@ resetTaskForm() {
                             },
 
                             destroyEditor(editorId) {
-            const el = document.getElementById(editorId);
-            
-            // Destroy from tracked instances
-            if (this.editorInstances[editorId]) {
-                try {
-                    this.editorInstances[editorId].destroy()
-                        .then(() => {
-                            delete this.editorInstances[editorId];
-                            console.log('✅ Destroyed tracked editor:', editorId);
-                        })
-                        .catch(err => {
-                            console.warn('⚠️ Error destroying tracked editor:', err);
-                            delete this.editorInstances[editorId];
-                        });
-                } catch (err) {
-                    console.warn('⚠️ Error in destroy:', err);
-                    delete this.editorInstances[editorId];
-                }
-            }
-            
-            // Destroy from element reference
-            if (el && el._editor) {
-                try {
-                    el._editor.destroy()
-                        .then(() => {
-                            el._editor = null;
-                            el.innerHTML = '';
-                            console.log('✅ Destroyed element editor:', editorId);
-                        })
-                        .catch(err => {
-                            console.warn('⚠️ Error destroying element editor:', err);
-                            el._editor = null;
-                            el.innerHTML = '';
-                        });
-                } catch (err) {
-                    console.warn('⚠️ Error in element destroy:', err);
-                    el._editor = null;
-                    if (el) el.innerHTML = '';
-                }
-            }
-        },
+                                const el = document.getElementById(editorId);
+
+                                // Destroy from tracked instances
+                                if (this.editorInstances[editorId]) {
+                                    try {
+                                        this.editorInstances[editorId].destroy()
+                                            .then(() => {
+                                                delete this.editorInstances[editorId];
+                                                console.log('✅ Destroyed tracked editor:', editorId);
+                                            })
+                                            .catch(err => {
+                                                console.warn('⚠️ Error destroying tracked editor:', err);
+                                                delete this.editorInstances[editorId];
+                                            });
+                                    } catch (err) {
+                                        console.warn('⚠️ Error in destroy:', err);
+                                        delete this.editorInstances[editorId];
+                                    }
+                                }
+
+                                // Destroy from element reference
+                                if (el && el._editor) {
+                                    try {
+                                        el._editor.destroy()
+                                            .then(() => {
+                                                el._editor = null;
+                                                el.innerHTML = '';
+                                                console.log('✅ Destroyed element editor:', editorId);
+                                            })
+                                            .catch(err => {
+                                                console.warn('⚠️ Error destroying element editor:', err);
+                                                el._editor = null;
+                                                el.innerHTML = '';
+                                            });
+                                    } catch (err) {
+                                        console.warn('⚠️ Error in element destroy:', err);
+                                        el._editor = null;
+                                        if (el) el.innerHTML = '';
+                                    }
+                                }
+                            },
 
                             async submitMainComment() {
                                 if (!this.taskId) {
@@ -5467,14 +5563,14 @@ resetTaskForm() {
                             },
 
                             closeReplyView() {
-            if (this.replyView.parentComment) {
-                this.destroyEditor(`task-reply-editor-${this.replyView.parentComment.id}`);
-                delete window[`currentReplyId_${this.replyView.parentComment.id}`];
-            }
-            
-            this.replyView.active = false;
-            this.replyView.parentComment = null;
-        },
+                                if (this.replyView.parentComment) {
+                                    this.destroyEditor(`task-reply-editor-${this.replyView.parentComment.id}`);
+                                    delete window[`currentReplyId_${this.replyView.parentComment.id}`];
+                                }
+
+                                this.replyView.active = false;
+                                this.replyView.parentComment = null;
+                            },
 
                             formatCommentDate(dateString) {
                                 if (!dateString) return '';
