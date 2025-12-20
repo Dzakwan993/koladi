@@ -22,8 +22,14 @@ class CalendarParticipant extends Model
         'id',
         'event_id',
         'user_id',
-        'status'
+        'status',
+        'attendance'
     ];
+
+    protected $casts = [
+        'attendance' => 'boolean',
+    ];
+
 
     protected static function boot()
     {

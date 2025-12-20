@@ -3,7 +3,7 @@
 @section('title', 'Laporan Kinerja')
 
 @section('content')
-    <div class="bg-[#e9effd] min-h-screen mt-4" x-data="{
+    <div class="bg-[#e9effd] min-h-screen" x-data="{
         // STATE (yang sudah ada)
         selectedMember: null,
         filterMenuOpen: false,
@@ -27,6 +27,7 @@
         suggestionTimestamp: null,
         isCached: false,
         topSuggestion: null,
+        memberAttendance: null,
         showDSSModal: false,
         loadingModalData: false,
         modalData: null,
@@ -222,10 +223,12 @@
         },
     
         // METHOD: Klik Member
+        // METHOD: Klik Member
         async selectMember(memberId) {
             if (this.selectedMember === memberId) {
                 // ✅ PERBAIKAN: Ketika deselect, reload workspace data
                 this.selectedMember = null;
+                this.memberAttendance = null; // ✅ Reset attendance
     
                 this.isLoadingChart = true;
                 this.isLoadingTasks = true;
@@ -242,7 +245,8 @@
     
                     if (data.success) {
                         this.tasks = data.data.tasks;
-                        this.rekapKinerja = data.data.rekap_kinerja; // ✅ Update rekap ke workspace
+                        this.rekapKinerja = data.data.rekap_kinerja;
+                        this.memberAttendance = null; // ✅ PASTIKAN NULL saat deselect
     
                         this.$nextTick(() => {
                             if (typeof window.initProgressCircles === 'function') {
@@ -257,7 +261,7 @@
                     this.isLoadingTasks = false;
                 }
     
-                return; // ✅ Stop execution di sini
+                return;
             }
     
             // Loading hanya untuk chart dan tasks
@@ -267,20 +271,26 @@
             this.selectedMember = memberId;
     
             try {
-                // ✅ KIRIM PERIODE JUGA
                 const period = this.periodOptions.find(p => p.value === this.selectedPeriod);
     
                 const data = await window.fetchMemberData(
                     this.selectedWorkspace,
                     memberId,
                     this.selectedFilter,
-                    period ? period.start : null, // ✅ Tambah
-                    period ? period.end : null // ✅ Tambah
+                    period ? period.start : null,
+                    period ? period.end : null
                 );
     
                 if (data.success) {
                     this.tasks = data.data.tasks;
                     this.rekapKinerja = data.data.rekap_kinerja;
+                    // ✅ FIX: SET memberAttendance dari API response
+                    this.memberAttendance = data.data.attendance;
+    
+                    console.log('✅ Member Selected & Attendance Set:', {
+                        member_id: memberId,
+                        attendance: this.memberAttendance // ✅ Debug
+                    });
     
                     this.$nextTick(() => {
                         if (typeof window.initProgressCircles === 'function') {
@@ -1211,7 +1221,7 @@
         </div>
 
         <!-- Dashboard Container -->
-        <div class="dashboard-container">
+        <div class="dashboard-container m">
 
             <div class="container">
 
@@ -1233,19 +1243,15 @@
 
                     <!-- Content -->
                     <div :class="{ 'loading-hidden': isLoadingProfile }">
-                        <!-- Workspace Info dengan Gradient Background -->
-                        <div style="padding: 4px 0; margin-bottom: 16px;">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <!-- Icon Workspace -->
+                        <!-- Member/Workspace Info - CONDITIONAL -->
+                        <!-- Member/Workspace Info - CONDITIONAL (More Compact) -->
+                        <div style="display: flex; align-items: center; gap: 12px; padding: 4px 0; margin-bottom: 16px;">
+
+                            <!-- Avatar/Icon -->
+                            <template x-if="selectedMember === null">
+                                <!-- Workspace Icon -->
                                 <div
-                                    style="width: 40px; 
-                   height: 40px; 
-                   background: #f3f4f6;
-                   border-radius: 10px;
-                   display: flex;
-                   align-items: center;
-                   justify-content: center;
-                   flex-shrink: 0;">
+                                    style="width: 40px; height: 40px; background: #f3f4f6; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"
                                         viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round">
@@ -1254,36 +1260,65 @@
                                         <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
                                     </svg>
                                 </div>
+                            </template>
 
-                                <!-- Workspace Name & Description -->
-                                <div style="flex: 1; min-width: 0;">
-                                    <h3 style="font-size: 16px; 
-                      font-weight: 700; 
-                      color: #111827; 
-                      margin: 0 0 2px 0;"
-                                        x-text="workspaceData ? workspaceData.name : '{{ $defaultWorkspace->name }}'">
-                                    </h3>
-                                    <p style="font-size: 12px; 
-                     color: #6b7280; 
-                     margin: 0;
-                     overflow: hidden;
-                     text-overflow: ellipsis;
-                     white-space: nowrap;"
-                                        x-text="workspaceData ? workspaceData.description : '{{ $defaultWorkspace->description ?? 'Workspace aktif' }}'">
-                                    </p>
-                                </div>
+                            <template x-if="selectedMember !== null">
+                                <!-- Member Avatar -->
+                                <img :src="members.find(m => m.id === selectedMember)?.avatar || 'https://i.pravatar.cc/40'"
+                                    :alt="members.find(m => m.id === selectedMember)?.name"
+                                    style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+                            </template>
+
+                            <!-- Name & Subtitle (Conditional) -->
+                            <div style="flex: 1; min-width: 0;">
+                                <!-- Workspace Mode -->
+                                <template x-if="selectedMember === null">
+                                    <div>
+                                        <h3 style="font-size: 16px; font-weight: 700; color: #111827; margin: 0 0 2px 0;"
+                                            x-text="workspaceData ? workspaceData.name : '{{ $defaultWorkspace->name }}'">
+                                        </h3>
+                                        <p style="font-size: 12px; color: #6b7280; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                                            x-text="workspaceData ? workspaceData.description : '{{ $defaultWorkspace->description ?? 'Workspace aktif' }}'">
+                                        </p>
+                                    </div>
+                                </template>
+
+                                <!-- Member Mode -->
+                                <template x-if="selectedMember !== null">
+                                    <div>
+                                        <h3 style="font-size: 16px; font-weight: 700; color: #111827; margin: 0 0 2px 0;"
+                                            x-text="members.find(m => m.id === selectedMember)?.name"></h3>
+                                        <p style="font-size: 12px; color: #6b7280; margin: 0;">Member</p>
+                                    </div>
+                                </template>
                             </div>
                         </div>
 
-                        <!-- Periode Info dengan Icon -->
+                        <!-- Kehadiran Rapat Info (Only show when member selected) -->
+                        <div x-show="selectedMember !== null"
+                            style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f3f4f6; border-radius: 8px; margin-bottom: 16px;">
+
+                            <img src="{{ asset('images/icons/Attendance.svg') }}" width="18" height="18"
+                                style="display: block;" alt="Attendance Icon" />
+
+                            <span style="font-size: 13px; color: #6b7280;">Kehadiran Rapat:</span>
+                            <!-- ✅ GANTI INI -->
+                            <strong style="font-size: 13px; color: #111827; font-weight: 600;">
+                                <span
+                                    x-text="`Hadir ${memberAttendance?.attended || 0} dari ${memberAttendance?.total || 0} rapat`"></span>
+                            </strong>
+
+                            {{-- <!-- ✅ OPTIONAL: Tampilkan persentase -->
+                            <span x-show="memberAttendance?.total > 0"
+                                style="font-size: 11px; color: #6b7280; margin-left: auto;"
+                                x-text="`(${memberAttendance?.percentage || 0}%)`">
+                            </span> --}}
+                        </div>
+
+
+                        <!-- Periode Info (Always show) -->
                         <div
-                            style="display: flex; 
-                    align-items: center; 
-                    gap: 8px; 
-                    padding: 10px 12px;
-                    background: #f3f4f6;
-                    border-radius: 8px;
-                    margin-bottom: 16px;">
+                            style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: #f3f4f6; border-radius: 8px; margin-bottom: 16px;">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
                                 fill="none" stroke="#6b7280" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round">

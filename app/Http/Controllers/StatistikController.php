@@ -711,11 +711,20 @@ class StatistikController extends Controller
                 $periodEnd     // ✅ Pakai periode
             );
 
+            // ✅ TAMBAHKAN INI sebelum return response
+            $attendance = $this->getMeetingAttendance(
+                $memberId,
+                $workspaceId,
+                $periodStart,
+                $periodEnd
+            );
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'tasks' => $tasks,
-                    'rekap_kinerja' => $rekapKinerja
+                    'rekap_kinerja' => $rekapKinerja,
+                    'attendance' => $attendance  // ✅ TAMBAH INI
                 ]
             ]);
 
@@ -1074,7 +1083,6 @@ class StatistikController extends Controller
                 $q->where('users.id', $memberId);
             })
             ->where(function ($q) use ($periodStart, $periodEnd) {
-                // ✅ LOGIC SAMA DENGAN getTasksInPeriod()
                 $q->where(function ($sub) use ($periodStart, $periodEnd) {
                     $sub->whereBetween('start_datetime', [$periodStart, $periodEnd])
                         ->orWhereBetween('due_datetime', [$periodStart, $periodEnd])
@@ -1083,20 +1091,16 @@ class StatistikController extends Controller
                                 ->where('due_datetime', '>=', $periodStart);
                         });
                 })
-                    // ✅ TAMBAH: Include overdue dari periode sebelumnya
                     ->orWhere(function ($overdue) use ($periodEnd) {
-                    $overdue->where('status', '!=', 'done')
-                        ->where('due_datetime', '<', now())
-                        ->where('due_datetime', '<=', $periodEnd);
-                });
+                        $overdue->where('status', '!=', 'done')
+                            ->where('due_datetime', '<', now())
+                            ->where('due_datetime', '<=', $periodEnd);
+                    });
             })
             ->get();
 
         $total = $allTasks->count();
 
-
-
-        // ✅ PERBAIKAN: SAMA SEPERTI DI ATAS
         $terlambat = $allTasks->filter(function ($t) {
             if ($t->status !== 'done' && $t->isOverdue()) {
                 return true;
@@ -1120,26 +1124,32 @@ class StatistikController extends Controller
 
         $belum = $notLate->where('status', 'todo')->count();
         $dikerjakan = $notLate->where('status', 'inprogress')->count();
-
-        // ✅ SELESAI = Hanya yang tepat waktu
         $selesai = $allTasks->filter(function ($t) {
             return $t->status === 'done' && !$t->isCompletedLate();
         })->count();
 
         $selesaiTepatWaktu = $selesai;
 
-        // ✅ BUAT ARRAY REKAP
+        // ✅ GET ATTENDANCE DATA
+        $attendance = $this->getMeetingAttendance(
+            $memberId,
+            $workspaceId,
+            $periodStart,
+            $periodEnd
+        );
+
         $rekap = [
             'belum' => round($total > 0 ? ($belum / $total) * 100 : 0),
             'dikerjakan' => round($total > 0 ? ($dikerjakan / $total) * 100 : 0),
             'selesai' => round($total > 0 ? ($selesai / $total) * 100 : 0),
-            'terlambat' => round($total > 0 ? ($terlambatCount / $total) * 100 : 0), // ✅ GANTI INI
+            'terlambat' => round($total > 0 ? ($terlambatCount / $total) * 100 : 0),
             'total' => $total,
-            'completed_on_time' => $selesaiTepatWaktu . ' dari ' . $total
+            'completed_on_time' => $selesaiTepatWaktu . ' dari ' . $total,
+            'attendance' => $attendance // ✅ TAMBAH INI
         ];
 
-        // ✅ TAMBAHKAN PERFORMANCE
-        $score = $this->calculatePerformanceScore($rekap);
+        // ✅ HITUNG PERFORMANCE DENGAN ATTENDANCE
+        $score = $this->calculateMemberPerformanceScore($rekap); // ✅ Method baru
         $rating = $this->getPerformanceRating($score);
 
         $rekap['performance'] = [
@@ -1150,6 +1160,87 @@ class StatistikController extends Controller
         ];
 
         return $rekap;
+    }
+
+    /**
+     * ✅ FIXED: Calculate performance untuk MEMBER (include attendance)
+     */
+    private function calculateMemberPerformanceScore($rekapKinerja)
+    {
+        $total = $rekapKinerja['total'] ?? 0;
+
+        // ✅ GET ATTENDANCE DATA
+        $attendance = $rekapKinerja['attendance'] ?? null;
+        $attendancePercentage = $attendance['percentage'] ?? 0;
+        $hasAttendanceData = $attendance && $attendance['total'] > 0;
+
+        // ✅ FIX: Empty state DENGAN attendance check
+        if ($total == 0) {
+            // Jika tidak ada tugas TAPI tidak hadir rapat = BURUK
+            if ($hasAttendanceData && $attendancePercentage < 50) {
+                return 30; // Buruk (1 bintang)
+            }
+            // Jika tidak ada tugas DAN hadir rapat = Netral
+            if ($hasAttendanceData && $attendancePercentage >= 50) {
+                return 60; // Cukup (3 bintang)
+            }
+            // Jika tidak ada tugas DAN tidak ada rapat = Netral
+            return 100; // Bagus (4 bintang) - karena belum ada data untuk dinilai
+        }
+
+        $selesai = $rekapKinerja['selesai'] ?? 0;
+        $terlambat = $rekapKinerja['terlambat'] ?? 0;
+        $dikerjakan = $rekapKinerja['dikerjakan'] ?? 0;
+        $belum = $rekapKinerja['belum'] ?? 0;
+
+        $hasCompleted = ($selesai > 0);
+
+        // WORKSPACE BARU (Belum ada completed)
+        if (!$hasCompleted) {
+            $baseScore = 70;
+            $progressBonus = ($dikerjakan > 0) ? 10 : 0;
+            $overduePenalty = $terlambat * 0.5;
+            $idlePenalty = ($belum > 80) ? 10 : 0;
+            $stagnantPenalty = ($belum > 90 && $dikerjakan == 0) ? 15 : 0;
+
+            // ✅ ATTENDANCE IMPACT (lebih besar penalty)
+            $attendanceImpact = 0;
+            if ($hasAttendanceData) {
+                if ($attendancePercentage >= 80) {
+                    $attendanceImpact = 10; // Bonus naik dari 5 ke 10
+                } elseif ($attendancePercentage >= 50) {
+                    $attendanceImpact = 0; // Netral
+                } else {
+                    $attendanceImpact = -15; // Penalty keras jika bolos
+                }
+            }
+
+            $finalScore = $baseScore + $progressBonus + $attendanceImpact - $overduePenalty - $idlePenalty - $stagnantPenalty;
+
+            return max(30, min(100, round($finalScore))); // Min 30 bukan 50
+        }
+
+        // WORKSPACE AKTIF (Sudah ada completed)
+        $completionWeight = $selesai * 0.7;
+        $progressWeight = $dikerjakan * 0.3;
+        $overduePenalty = $terlambat * 0.6;
+        $idlePenalty = ($belum > 40) ? ($belum * 0.2) : 0;
+
+        // ✅ ATTENDANCE IMPACT (diperkuat)
+        $attendanceBonus = 0;
+        if ($hasAttendanceData) {
+            // Formula: attendance % dibagi 10 = max 10 points
+            $attendanceBonus = ($attendancePercentage / 10);
+
+            // Extra penalty jika attendance sangat rendah
+            if ($attendancePercentage < 50) {
+                $attendanceBonus -= 10; // Naik dari -5 ke -10
+            }
+        }
+
+        $finalScore = $completionWeight + $progressWeight + $attendanceBonus - $overduePenalty - $idlePenalty;
+
+        return max(30, min(100, round($finalScore))); // Min 30 bukan 0
     }
 
     /**
@@ -1309,6 +1400,107 @@ class StatistikController extends Controller
     {
         $workspaceRole = $this->getUserRoleInWorkspace($workspaceId, $userId);
         return in_array($workspaceRole, ['creator', 'manager']);
+    }
+
+    /**
+     * Get meeting attendance untuk member dalam periode tertentu
+     */
+    private function getMeetingAttendance($memberId, $workspaceId, $periodStart, $periodEnd)
+    {
+        Log::info('=== getMeetingAttendance DEBUG ===', [
+            'member_id' => $memberId,
+            'workspace_id' => $workspaceId,
+            'period_start' => $periodStart,
+            'period_end' => $periodEnd
+        ]);
+
+        // ✅ PERBAIKAN: Pastikan end date sampai akhir hari (23:59:59)
+        $periodEndFull = $periodEnd . ' 23:59:59';
+        $periodStartFull = $periodStart . ' 00:00:00';
+
+        // Ambil semua meeting di workspace yang masuk periode
+        $meetings = \App\Models\CalendarEvent::where('workspace_id', $workspaceId)
+            ->where('is_online_meeting', true)
+            ->whereNull('deleted_at')
+            ->where(function ($q) use ($periodStartFull, $periodEndFull) {
+                $q->whereBetween('start_datetime', [$periodStartFull, $periodEndFull])
+                    ->orWhereBetween('end_datetime', [$periodStartFull, $periodEndFull])
+                    ->orWhere(function ($sub) use ($periodStartFull, $periodEndFull) {
+                        $sub->where('start_datetime', '<=', $periodEndFull)
+                            ->where('end_datetime', '>=', $periodStartFull);
+                    });
+            })
+            ->get();
+
+        // ✅ TAMBAHKAN: Log query SQL untuk debug
+        Log::info('SQL Query:', [
+            'query' => \App\Models\CalendarEvent::where('workspace_id', $workspaceId)
+                ->where('is_online_meeting', true)
+                ->whereNull('deleted_at')
+                ->where(function ($q) use ($periodStartFull, $periodEndFull) {
+                    $q->whereBetween('start_datetime', [$periodStartFull, $periodEndFull])
+                        ->orWhereBetween('end_datetime', [$periodStartFull, $periodEndFull]);
+                })
+                ->toSql()
+        ]);
+
+        Log::info('Meetings Found:', [
+            'count' => $meetings->count(),
+            'meetings' => $meetings->map(fn($m) => [
+                'id' => $m->id,
+                'title' => $m->title,
+                'workspace_id' => $m->workspace_id,
+                'start' => $m->start_datetime,
+                'end' => $m->end_datetime,
+                'is_online' => $m->is_online_meeting,
+                'deleted_at' => $m->deleted_at
+            ])
+        ]);
+
+        $meetingIds = $meetings->pluck('id');
+
+        if ($meetingIds->isEmpty()) {
+            Log::warning('No meetings found in period');
+            return [
+                'attended' => 0,
+                'total' => 0,
+                'percentage' => 0
+            ];
+        }
+
+        // Hitung berapa meeting yang dihadiri
+        $participants = \App\Models\CalendarParticipant::where('user_id', $memberId)
+            ->whereIn('event_id', $meetingIds)
+            ->get(); // ✅ get() dulu untuk debug
+
+        // ✅ DEBUG: Log participants
+        Log::info('Participants Found:', [
+            'member_id' => $memberId,
+            'count' => $participants->count(),
+            'participants' => $participants->map(fn($p) => [
+                'id' => $p->id,
+                'event_id' => $p->event_id,
+                'user_id' => $p->user_id,
+                'status' => $p->status,
+                'attendance' => $p->attendance
+            ])
+        ]);
+
+        $attended = $participants->where('attendance', true)->count();
+        $total = $meetingIds->count();
+
+        // ✅ DEBUG: Log hasil akhir
+        Log::info('Attendance Result:', [
+            'attended' => $attended,
+            'total' => $total,
+            'percentage' => $total > 0 ? round(($attended / $total) * 100) : 0
+        ]);
+
+        return [
+            'attended' => $attended,
+            'total' => $total,
+            'percentage' => $total > 0 ? round(($attended / $total) * 100) : 0
+        ];
     }
 
 
