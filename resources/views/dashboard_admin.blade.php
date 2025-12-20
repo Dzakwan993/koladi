@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" type="image/png" href="/images/LogoAtas.svg">
     <title>Dashboard Admin - Koladi</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     @vite('resources/css/app.css')
@@ -413,6 +414,17 @@
                             </button>
                         </div>
 
+        <a href="{{ route('admin.companies.export') }}"
+            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd"
+                    d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                    clip-rule="evenodd" />
+            </svg>
+            Export Excel
+        </a>
+    </div>
+</div>
                         <a href="{{ route('admin.companies.export') }}"
                             class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
@@ -1523,6 +1535,12 @@
 
             const exportBtn = document.querySelector('a[href*="export"]');
 
+        if (exportBtn) {
+            exportBtn.addEventListener('click', function(e) {
+                // Ganti isi button
+                const originalHTML = this.innerHTML;
+                this.innerHTML = `
+
             if (exportBtn) {
                 exportBtn.addEventListener('click', function(e) {
                     // Ganti isi button
@@ -1534,6 +1552,16 @@
                     </svg>
                     Mengexport...
                 `;
+                this.classList.add('pointer-events-none', 'opacity-75');
+
+                // Kembalikan setelah 3 detik
+                setTimeout(() => {
+                    this.innerHTML = originalHTML;
+                    this.classList.remove('pointer-events-none', 'opacity-75');
+                }, 3000);
+            });
+        }
+
                     this.classList.add('pointer-events-none', 'opacity-75');
 
                     // Kembalikan setelah 3 detik
