@@ -220,7 +220,7 @@ class WorkspaceController extends Controller
     public function manageMembers(Request $request, $workspaceId)
     {
         $request->validate([
-            'user_ids' => 'required|array',
+            'user_ids' => 'array',
             'user_ids.*' => 'exists:users,id',
             'role_id' => 'required|exists:roles,id'
         ]);
