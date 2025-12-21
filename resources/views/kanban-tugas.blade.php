@@ -1178,50 +1178,50 @@
                         }
                     });
 
-                    function kanbanApp()                     {
+                    function kanbanApp() {
 
 
 
-                    function showSwalAlert(message, type = 'info', confirmButton = false) {
-                        const iconMap = {
-                            'success': 'success',
-                            'error': 'error',
-                            'warning': 'warning',
-                            'info': 'info'
-                        };
+                        function showSwalAlert(message, type = 'info', confirmButton = false) {
+                            const iconMap = {
+                                'success': 'success',
+                                'error': 'error',
+                                'warning': 'warning',
+                                'info': 'info'
+                            };
 
-                        const titleMap = {
-                            'success': 'Berhasil!',
-                            'error': 'Gagal!',
-                            'warning': 'Perhatian!',
-                            'info': 'Informasi'
-                        };
+                            const titleMap = {
+                                'success': 'Berhasil!',
+                                'error': 'Gagal!',
+                                'warning': 'Perhatian!',
+                                'info': 'Informasi'
+                            };
 
-                        Swal.fire({
-                            icon: iconMap[type] || 'info',
-                            title: titleMap[type] || 'Notifikasi',
-                            text: message,
-                            showConfirmButton: confirmButton,
-                            timer: confirmButton ? undefined : 2000,
-                            timerProgressBar: !confirmButton,
-                            position: 'center',
-                            toast: false,
-                            background: '#f7faff',
-                            color: '#2b2b2b',
-                            customClass: {
-                                popup: 'swal-custom-popup',
-                                title: 'swal-custom-title',
-                                htmlContainer: 'swal-custom-text'
-                            },
-                            didOpen: (popup) => {
-                                popup.classList.add('swal-fade-in');
-                            },
-                            willClose: (popup) => {
-                                popup.classList.remove('swal-fade-in');
-                                popup.classList.add('swal-fade-out');
-                            }
-                        });
-                    }
+                            Swal.fire({
+                                icon: iconMap[type] || 'info',
+                                title: titleMap[type] || 'Notifikasi',
+                                text: message,
+                                showConfirmButton: confirmButton,
+                                timer: confirmButton ? undefined : 2000,
+                                timerProgressBar: !confirmButton,
+                                position: 'center',
+                                toast: false,
+                                background: '#f7faff',
+                                color: '#2b2b2b',
+                                customClass: {
+                                    popup: 'swal-custom-popup',
+                                    title: 'swal-custom-title',
+                                    htmlContainer: 'swal-custom-text'
+                                },
+                                didOpen: (popup) => {
+                                    popup.classList.add('swal-fade-in');
+                                },
+                                willClose: (popup) => {
+                                    popup.classList.remove('swal-fade-in');
+                                    popup.classList.add('swal-fade-out');
+                                }
+                            });
+                        }
 
 
 
@@ -1919,47 +1919,48 @@
 
                                 // Konfirmasi sebelum hapus
                                 const result = await Swal.fire({
-    icon: 'warning',
-    title: 'Konfirmasi Hapus',
-    text: `Apakah Anda yakin ingin menghapus tugas "${this.currentTask.title}"?`,
-    showCancelButton: true,
-    confirmButtonText: 'Ya, Hapus',
-    cancelButtonText: 'Batal',
-    confirmButtonColor: '#ef4444',
-    cancelButtonColor: '#6b7280',
-    background: '#f7faff',
-    customClass: {
-        popup: 'swal-custom-popup',
-        title: 'swal-custom-title',
-        htmlContainer: 'swal-custom-text'
-    }
-});
+                                    icon: 'warning',
+                                    title: 'Konfirmasi Hapus',
+                                    text: `Apakah Anda yakin ingin menghapus tugas "${this.currentTask.title}"?`,
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Ya, Hapus',
+                                    cancelButtonText: 'Batal',
+                                    confirmButtonColor: '#ef4444',
+                                    cancelButtonColor: '#6b7280',
+                                    background: '#f7faff',
+                                    customClass: {
+                                        popup: 'swal-custom-popup',
+                                        title: 'swal-custom-title',
+                                        htmlContainer: 'swal-custom-text'
+                                    }
+                                });
 
-if (!result.isConfirmed) {
-    return;
-}
+                                if (!result.isConfirmed) {
+                                    return;
+                                }
 
                                 // Konfirmasi tambahan untuk tugas penting
-                                if (this.currentTask.is_secret || this.currentTask.priority === 'high' || this.currentTask.priority === 'urgent') {
-    const result = await Swal.fire({
-        icon: 'warning',
-        title: 'Peringatan!',
-        text: 'Tugas ini memiliki prioritas tinggi/rahasia. Anda yakin ingin menghapus?',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Hapus',
-        cancelButtonText: 'Batal',
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#6b7280',
-        background: '#f7faff',
-        customClass: {
-            popup: 'swal-custom-popup',
-            title: 'swal-custom-title',
-            htmlContainer: 'swal-custom-text'
-        }
-    });
-    
-    if (!result.isConfirmed) return;
-}
+                                if (this.currentTask.is_secret || this.currentTask.priority === 'high' || this.currentTask
+                                    .priority === 'urgent') {
+                                    const result = await Swal.fire({
+                                        icon: 'warning',
+                                        title: 'Peringatan!',
+                                        text: 'Tugas ini memiliki prioritas tinggi/rahasia. Anda yakin ingin menghapus?',
+                                        showCancelButton: true,
+                                        confirmButtonText: 'Ya, Hapus',
+                                        cancelButtonText: 'Batal',
+                                        confirmButtonColor: '#ef4444',
+                                        cancelButtonColor: '#6b7280',
+                                        background: '#f7faff',
+                                        customClass: {
+                                            popup: 'swal-custom-popup',
+                                            title: 'swal-custom-title',
+                                            htmlContainer: 'swal-custom-text'
+                                        }
+                                    });
+
+                                    if (!result.isConfirmed) return;
+                                }
 
                                 await this.deleteTask(this.currentTask.id);
                             },
@@ -2013,25 +2014,25 @@ if (!result.isConfirmed) {
                             // ✅ OPTIONAL: Method untuk force delete (permanen)
                             async forceDeleteTask(taskId) {
                                 const result = await Swal.fire({
-    icon: 'error',
-    title: 'Hapus Permanen?',
-    text: 'Tugas tidak dapat dikembalikan!',
-    showCancelButton: true,
-    confirmButtonText: 'Ya, Hapus Permanen',
-    cancelButtonText: 'Batal',
-    confirmButtonColor: '#dc2626',
-    cancelButtonColor: '#6b7280',
-    background: '#f7faff',
-    customClass: {
-        popup: 'swal-custom-popup',
-        title: 'swal-custom-title',
-        htmlContainer: 'swal-custom-text'
-    }
-});
+                                    icon: 'error',
+                                    title: 'Hapus Permanen?',
+                                    text: 'Tugas tidak dapat dikembalikan!',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Ya, Hapus Permanen',
+                                    cancelButtonText: 'Batal',
+                                    confirmButtonColor: '#dc2626',
+                                    cancelButtonColor: '#6b7280',
+                                    background: '#f7faff',
+                                    customClass: {
+                                        popup: 'swal-custom-popup',
+                                        title: 'swal-custom-title',
+                                        htmlContainer: 'swal-custom-text'
+                                    }
+                                });
 
-if (!result.isConfirmed) {
-    return;
-}
+                                if (!result.isConfirmed) {
+                                    return;
+                                }
 
                                 try {
                                     const response = await fetch(`/tasks/${taskId}/force`, {
@@ -2095,25 +2096,25 @@ if (!result.isConfirmed) {
                                 if (!item) return;
 
                                 const result = await Swal.fire({
-    icon: 'question',
-    title: 'Konfirmasi',
-    text: `Hapus item "${item.title}"?`,
-    showCancelButton: true,
-    confirmButtonText: 'Ya, Hapus',
-    cancelButtonText: 'Batal',
-    confirmButtonColor: '#ef4444',
-    cancelButtonColor: '#6b7280',
-    background: '#f7faff',
-    customClass: {
-        popup: 'swal-custom-popup',
-        title: 'swal-custom-title',
-        htmlContainer: 'swal-custom-text'
-    }
-});
+                                    icon: 'question',
+                                    title: 'Konfirmasi',
+                                    text: `Hapus item "${item.title}"?`,
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Ya, Hapus',
+                                    cancelButtonText: 'Batal',
+                                    confirmButtonColor: '#ef4444',
+                                    cancelButtonColor: '#6b7280',
+                                    background: '#f7faff',
+                                    customClass: {
+                                        popup: 'swal-custom-popup',
+                                        title: 'swal-custom-title',
+                                        htmlContainer: 'swal-custom-text'
+                                    }
+                                });
 
-if (!result.isConfirmed) {
-    return;
-}
+                                if (!result.isConfirmed) {
+                                    return;
+                                }
 
                                 try {
                                     // ✅ JIKA ITEM BARU (temp-), LANGSUNG HAPUS DARI ARRAY
@@ -2270,9 +2271,9 @@ if (!result.isConfirmed) {
 
                             // ✅ Helper untuk notification yang lebih baik
                             showNotification(message, type = 'info') {
-    const confirmButton = type === 'error' || type === 'warning';
-    showSwalAlert(message, type, confirmButton);
-},
+                                const confirmButton = type === 'error' || type === 'warning';
+                                showSwalAlert(message, type, confirmButton);
+                            },
 
 
 
@@ -2344,55 +2345,55 @@ if (!result.isConfirmed) {
 
                             // ✅ NEW: Method untuk menghapus attachment dari detail
                             async removeAttachmentFromDetail(index) {
-    if (!this.currentTask?.attachments || !this.currentTask.attachments[index]) {
-        console.error('❌ Invalid attachment index:', index);
-        return;
-    }
+                                if (!this.currentTask?.attachments || !this.currentTask.attachments[index]) {
+                                    console.error('❌ Invalid attachment index:', index);
+                                    return;
+                                }
 
-    const file = this.currentTask.attachments[index];
+                                const file = this.currentTask.attachments[index];
 
-    // 🔄 SweetAlert2 konfirmasi
-    const result = await Swal.fire({
-        icon: 'question',
-        title: 'Konfirmasi',
-        text: `Hapus file ${file.name}?`,
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Hapus',
-        cancelButtonText: 'Batal',
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#6b7280',
-        background: '#f7faff',
-        customClass: {
-            popup: 'swal-custom-popup',
-            title: 'swal-custom-title',
-            htmlContainer: 'swal-custom-text'
-        }
-    });
+                                // 🔄 SweetAlert2 konfirmasi
+                                const result = await Swal.fire({
+                                    icon: 'question',
+                                    title: 'Konfirmasi',
+                                    text: `Hapus file ${file.name}?`,
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Ya, Hapus',
+                                    cancelButtonText: 'Batal',
+                                    confirmButtonColor: '#ef4444',
+                                    cancelButtonColor: '#6b7280',
+                                    background: '#f7faff',
+                                    customClass: {
+                                        popup: 'swal-custom-popup',
+                                        title: 'swal-custom-title',
+                                        htmlContainer: 'swal-custom-text'
+                                    }
+                                });
 
-    if (!result.isConfirmed) {
-        console.log('❌ Batal hapus.');
-        return;
-    }
+                                if (!result.isConfirmed) {
+                                    console.log('❌ Batal hapus.');
+                                    return;
+                                }
 
-    // 🔥 Hapus dari server jika ada ID
-    if (file.id) {
-        this.deleteAttachmentFromServer(file.id);
-    }
+                                // 🔥 Hapus dari server jika ada ID
+                                if (file.id) {
+                                    this.deleteAttachmentFromServer(file.id);
+                                }
 
-    // 🗑 Hapus dari array
-    this.currentTask.attachments.splice(index, 1);
+                                // 🗑 Hapus dari array
+                                this.currentTask.attachments.splice(index, 1);
 
-    console.log('✅ File removed:', file.name);
+                                console.log('✅ File removed:', file.name);
 
-    // Notifikasi sukses
-    Swal.fire({
-        icon: 'success',
-        title: 'Berhasil',
-        text: 'File berhasil dihapus.',
-        timer: 1500,
-        showConfirmButton: false
-    });
-},
+                                // Notifikasi sukses
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil',
+                                    text: 'File berhasil dihapus.',
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                });
+                            },
 
                             openTaskModalForColumn(columnId = null) {
                                 this.currentColumnId = columnId;
@@ -2811,109 +2812,256 @@ if (!result.isConfirmed) {
 
                             // Create new task
                             // Di dalam kanbanApp() - perbaiki method createTask
-                            async createTask() {
-                                try {
-                                    const catatanContent = this.getCKEditorContent('editor-catatan');
-                                    this.taskForm.description = catatanContent;
+                            // Letakkan di kanban-tugas.blade.php, ganti method createTask() yang lama
 
-                                    console.log('CKEditor content:', catatanContent);
+async createTask() {
+    try {
+        // ✅ GET CKEDITOR CONTENT
+        const catatanContent = this.getCKEditorContent('editor-catatan');
+        this.taskForm.description = catatanContent;
 
-                                    // Validasi
-                                    if (!this.taskForm.title?.trim()) {
-                                        this.showNotification('Judul tugas harus diisi', 'error');
-                                        return;
-                                    }
+        console.log('🔄 Validating task form...', {
+            title: this.taskForm.title,
+            description: catatanContent?.length,
+            startDate: this.taskForm.startDate,
+            startTime: this.taskForm.startTime,
+            dueDate: this.taskForm.dueDate,
+            dueTime: this.taskForm.dueTime
+        });
 
-                                    if (!this.taskForm.phase?.trim()) {
-                                        this.showNotification('Phase harus diisi', 'error');
-                                        return;
-                                    }
+        // ✅ VALIDASI FIELD WAJIB
+        const validationErrors = [];
 
-                                    if (!this.currentColumnId) {
-                                        this.showNotification('Kolom tujuan tidak ditemukan', 'error');
-                                        return;
-                                    }
+        // Validasi Nama Tugas
+        if (!this.taskForm.title || !this.taskForm.title.trim()) {
+            validationErrors.push('• Nama tugas harus diisi');
+        }
 
-                                    try {
-                                        const workspaceId = this.getCurrentWorkspaceId();
-                                        if (!workspaceId) {
-                                            this.showNotification('Workspace tidak valid', 'error');
-                                            return;
-                                        }
+        // Validasi Catatan
+        if (!catatanContent || !catatanContent.trim() || catatanContent.trim() === '<p>&nbsp;</p>' || catatanContent.trim() === '<p></p>') {
+            validationErrors.push('• Catatan harus diisi');
+        }
 
-                                        // Siapkan data untuk backend
-                                        const formData = {
-                                            workspace_id: this.getCurrentWorkspaceId(),
-                                            board_column_id: this.currentColumnId,
-                                            title: this.taskForm.title,
-                                            description: this.taskForm.description,
-                                            phase: this.taskForm.phase,
-                                            user_ids: this.taskForm.members.map(m => m.id),
-                                            is_secret: this.taskForm.is_secret,
-                                            label_ids: this.taskForm.labels.map(l => l.id),
-                                            checklists: this.taskForm.checklists.map(item => ({
-                                                title: item.title,
-                                                is_done: item.is_done || false
-                                            })),
-                                            attachment_ids: this.taskForm.attachments.map(att => att.id)
-                                        };
+        // Validasi Tanggal Mulai
+        if (!this.taskForm.startDate) {
+            validationErrors.push('• Tanggal mulai harus diisi');
+        }
 
-                                        // Tambahkan datetime jika ada
-                                        if (this.taskForm.startDate && this.taskForm.startTime) {
-                                            formData.start_datetime = `${this.taskForm.startDate} ${this.taskForm.startTime}:00`;
-                                        }
-                                        if (this.taskForm.dueDate && this.taskForm.dueTime) {
-                                            formData.due_datetime = `${this.taskForm.dueDate} ${this.taskForm.dueTime}:00`;
-                                        }
+        // Validasi Jam Mulai
+        if (!this.taskForm.startTime) {
+            validationErrors.push('• Jam mulai harus diisi');
+        }
 
-                                        // Hapus null values
-                                        Object.keys(formData).forEach(key => {
-                                            if (formData[key] === null || formData[key] === undefined || formData[key] ===
-                                                '') {
-                                                delete formData[key];
-                                            }
-                                        });
+        // Validasi Tenggat
+        if (!this.taskForm.dueDate) {
+            validationErrors.push('• Tenggat harus diisi');
+        }
 
-                                        console.log('Sending task data:', formData);
+        // Validasi Jam Tenggat
+        if (!this.taskForm.dueTime) {
+            validationErrors.push('• Jam tenggat harus diisi');
+        }
 
-                                        const response = await fetch('/tasks/create-with-assignments', {
-                                            method: 'POST',
-                                            headers: {
-                                                'Content-Type': 'application/json',
-                                                'X-CSRF-TOKEN': this.getCsrfToken(),
-                                                'Accept': 'application/json'
-                                            },
-                                            body: JSON.stringify(formData)
-                                        });
+        // ✅ VALIDASI LOGIKA TANGGAL (hanya jika semua field tanggal terisi)
+        if (this.taskForm.startDate && this.taskForm.startTime && 
+            this.taskForm.dueDate && this.taskForm.dueTime) {
+            
+            const startDateTime = new Date(`${this.taskForm.startDate}T${this.taskForm.startTime}:00`);
+            const dueDateTime = new Date(`${this.taskForm.dueDate}T${this.taskForm.dueTime}:00`);
 
-                                        const data = await response.json();
+            console.log('📅 Date validation:', {
+                start: startDateTime,
+                due: dueDateTime,
+                isValid: dueDateTime > startDateTime
+            });
 
-                                        if (!response.ok) {
-                                            throw new Error(data.message || `HTTP error! status: ${response.status}`);
-                                        }
+            if (dueDateTime <= startDateTime) {
+                validationErrors.push('• Tenggat harus setelah waktu mulai');
+            }
+        }
 
-                                        if (data.success) {
-                                            this.showNotification('Tugas berhasil dibuat!', 'success');
+        // ✅ TAMPILKAN ERROR JIKA ADA
+        if (validationErrors.length > 0) {
+            console.error('❌ Validation failed:', validationErrors);
+            
+            const errorMessage = validationErrors.length === 1 
+                ? validationErrors[0].replace('• ', '')
+                : 'Harap lengkapi field berikut:\n\n' + validationErrors.join('\n');
 
-                                            // ✅ TAMBAHKAN: Update state Alpine.js dengan tugas baru
-                                            this.addNewTaskToKanban(data.task);
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Data Tidak Lengkap',
+                html: errorMessage.replace(/\n/g, '<br>'),
+                confirmButtonText: 'OK, Saya Mengerti',
+                confirmButtonColor: '#3b82f6',
+                background: '#f7faff',
+                customClass: {
+                    popup: 'swal-custom-popup',
+                    title: 'swal-custom-title',
+                    htmlContainer: 'swal-custom-text'
+                }
+            });
+            return;
+        }
 
-                                            this.resetTaskForm();
-                                            this.openTaskModal = false;
+        // ✅ VALIDASI KOLOM
+        if (!this.currentColumnId) {
+            this.showNotification('Kolom tujuan tidak ditemukan', 'error');
+            return;
+        }
 
-                                        } else {
-                                            throw new Error(data.message || 'Gagal membuat tugas');
-                                        }
+        // ✅ VALIDASI WORKSPACE
+        const workspaceId = this.getCurrentWorkspaceId();
+        if (!workspaceId) {
+            this.showNotification('Workspace tidak valid', 'error');
+            return;
+        }
 
-                                    } catch (error) {
-                                        console.error('Error creating task:', error);
-                                        this.showNotification(`Gagal membuat tugas: ${error.message}`, 'error');
-                                    }
-                                } catch (error) {
-                                    console.error('Error in createTask:', error);
-                                    this.showNotification('Terjadi kesalahan saat membuat tugas', 'error');
-                                }
-                            },
+        console.log('✅ All validations passed, creating task...');
+
+        try {
+            // ✅ SIAPKAN DATA UNTUK BACKEND
+            const formData = {
+                workspace_id: workspaceId,
+                board_column_id: this.currentColumnId,
+                
+                // Field Wajib
+                title: this.taskForm.title.trim(),
+                description: catatanContent,
+                start_datetime: `${this.taskForm.startDate} ${this.taskForm.startTime}:00`,
+                due_datetime: `${this.taskForm.dueDate} ${this.taskForm.dueTime}:00`,
+                
+                // Field Opsional
+                phase: this.taskForm.phase?.trim() || null,
+                is_secret: this.taskForm.is_secret || false,
+                priority: this.taskForm.priority || 'medium'
+            };
+
+            // ✅ TAMBAHKAN FIELD OPSIONAL (HANYA JIKA ADA ISI)
+            
+            // Anggota (user_ids)
+            if (this.taskForm.members && this.taskForm.members.length > 0) {
+                formData.user_ids = this.taskForm.members.map(m => m.id);
+            }
+
+            // Label (label_ids)
+            if (this.taskForm.labels && this.taskForm.labels.length > 0) {
+                formData.label_ids = this.taskForm.labels.map(l => l.id);
+            }
+
+            // Checklist
+            if (this.taskForm.checklists && this.taskForm.checklists.length > 0) {
+                formData.checklists = this.taskForm.checklists
+                    .filter(item => item.title && item.title.trim()) // Filter yang kosong
+                    .map(item => ({
+                        title: item.title.trim(),
+                        is_done: item.is_done || false
+                    }));
+                
+                // Hapus jika semua checklist kosong
+                if (formData.checklists.length === 0) {
+                    delete formData.checklists;
+                }
+            }
+
+            // Attachment (attachment_ids)
+            if (this.taskForm.attachments && this.taskForm.attachments.length > 0) {
+                formData.attachment_ids = this.taskForm.attachments.map(att => att.id);
+            }
+
+            console.log('📤 Sending task data:', {
+                ...formData,
+                description_length: formData.description?.length,
+                has_phase: !!formData.phase,
+                has_members: !!formData.user_ids,
+                has_labels: !!formData.label_ids,
+                has_checklists: !!formData.checklists,
+                has_attachments: !!formData.attachment_ids
+            });
+
+            // ✅ KIRIM REQUEST KE BACKEND
+            const response = await fetch('/tasks/create-with-assignments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': this.getCsrfToken(),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            console.log('📥 Response status:', response.status);
+
+            // ✅ CEK RESPONSE
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('❌ Server error:', errorData);
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('📥 Response data:', data);
+
+            if (data.success) {
+                console.log('✅ Task created successfully:', data.task);
+
+                // ✅ TAMPILKAN NOTIFIKASI SUKSES
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Tugas berhasil dibuat',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    background: '#f7faff',
+                    customClass: {
+                        popup: 'swal-custom-popup'
+                    }
+                });
+
+                // ✅ UPDATE KANBAN BOARD
+                this.addNewTaskToKanban(data.task);
+
+                // ✅ RESET FORM & TUTUP MODAL
+                this.resetTaskForm();
+                this.openTaskModal = false;
+
+                // ✅ RELOAD KANBAN DATA UNTUK SINKRONISASI
+                await this.loadKanbanTasks();
+
+            } else {
+                throw new Error(data.message || 'Gagal membuat tugas');
+            }
+
+        } catch (error) {
+            console.error('❌ Error creating task:', error);
+            
+            await Swal.fire({
+                icon: 'error',
+                title: 'Gagal Membuat Tugas',
+                text: error.message || 'Terjadi kesalahan saat membuat tugas',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#ef4444',
+                background: '#f7faff',
+                customClass: {
+                    popup: 'swal-custom-popup',
+                    title: 'swal-custom-title',
+                    htmlContainer: 'swal-custom-text'
+                }
+            });
+        }
+    } catch (error) {
+        console.error('❌ Critical error in createTask:', error);
+        
+        await Swal.fire({
+            icon: 'error',
+            title: 'Kesalahan Sistem',
+            text: 'Terjadi kesalahan yang tidak terduga. Silakan coba lagi.',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#ef4444',
+            background: '#f7faff'
+        });
+    }
+},
 
 
 
@@ -3244,57 +3392,57 @@ if (!result.isConfirmed) {
                             },
 
                             // Attachments
-async removeAttachment(index) {
-    if (!this.taskForm.attachments || !this.taskForm.attachments[index]) {
-        console.error('❌ Invalid attachment index:', index);
-        return;
-    }
+                            async removeAttachment(index) {
+                                if (!this.taskForm.attachments || !this.taskForm.attachments[index]) {
+                                    console.error('❌ Invalid attachment index:', index);
+                                    return;
+                                }
 
-    const file = this.taskForm.attachments[index];
+                                const file = this.taskForm.attachments[index];
 
-    // 🔄 SweetAlert2 konfirmasi
-    const result = await Swal.fire({
-        icon: 'question',
-        title: 'Konfirmasi',
-        text: `Hapus file ${file.name}?`,
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Hapus',
-        cancelButtonText: 'Batal',
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#6b7280',
-        background: '#f7faff',
-        customClass: {
-            popup: 'swal-custom-popup',
-            title: 'swal-custom-title',
-            htmlContainer: 'swal-custom-text'
-        }
-    });
+                                // 🔄 SweetAlert2 konfirmasi
+                                const result = await Swal.fire({
+                                    icon: 'question',
+                                    title: 'Konfirmasi',
+                                    text: `Hapus file ${file.name}?`,
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Ya, Hapus',
+                                    cancelButtonText: 'Batal',
+                                    confirmButtonColor: '#ef4444',
+                                    cancelButtonColor: '#6b7280',
+                                    background: '#f7faff',
+                                    customClass: {
+                                        popup: 'swal-custom-popup',
+                                        title: 'swal-custom-title',
+                                        htmlContainer: 'swal-custom-text'
+                                    }
+                                });
 
-    if (!result.isConfirmed) {
-        console.log('❌ Batal hapus.');
-        return;
-    }
+                                if (!result.isConfirmed) {
+                                    console.log('❌ Batal hapus.');
+                                    return;
+                                }
 
-    // 🔥 Hapus dari server jika bukan file temp
-    if (file.id && !file.id.toString().startsWith('temp-')) {
-        this.deleteAttachmentFromServer(file.id);
-    }
+                                // 🔥 Hapus dari server jika bukan file temp
+                                if (file.id && !file.id.toString().startsWith('temp-')) {
+                                    this.deleteAttachmentFromServer(file.id);
+                                }
 
-    // 🗑 Hapus dari array
-    this.taskForm.attachments.splice(index, 1);
+                                // 🗑 Hapus dari array
+                                this.taskForm.attachments.splice(index, 1);
 
-    console.log('✅ File removed:', file.name);
-    console.log('📊 Remaining attachments:', this.taskForm.attachments.length);
+                                console.log('✅ File removed:', file.name);
+                                console.log('📊 Remaining attachments:', this.taskForm.attachments.length);
 
-    // Notifikasi sukses
-    Swal.fire({
-        icon: 'success',
-        title: 'Berhasil',
-        text: 'File berhasil dihapus.',
-        timer: 1500,
-        showConfirmButton: false
-    });
-},
+                                // Notifikasi sukses
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil',
+                                    text: 'File berhasil dihapus.',
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                });
+                            },
 
                             // Add new list
                             // Add new list
@@ -3806,18 +3954,18 @@ async removeAttachment(index) {
                             // Di dalam kanbanApp() - PERBAIKI method addNewColumn
                             async addNewColumn() {
                                 if (!this.newListName.trim()) {
-    showSwalAlert('Nama kolom tidak boleh kosong', 'warning', true);
-    return;
-}
+                                    showSwalAlert('Nama kolom tidak boleh kosong', 'warning', true);
+                                    return;
+                                }
 
 
                                 try {
                                     this.addingColumn = true;
                                     const workspaceId = this.getCurrentWorkspaceId();
                                     if (!workspaceId) {
-    showSwalAlert('Workspace tidak valid', 'error', true);
-    return;
-}
+                                        showSwalAlert('Workspace tidak valid', 'error', true);
+                                        return;
+                                    }
 
                                     const response = await fetch('/tasks/board-columns', {
                                         method: 'POST',
@@ -3850,36 +3998,36 @@ async removeAttachment(index) {
 
                                         this.showNotification('Kolom berhasil ditambahkan', 'success');
                                     } else {
-    showSwalAlert('Gagal menambahkan kolom: ' + data.message, 'error', true);
-}
+                                        showSwalAlert('Gagal menambahkan kolom: ' + data.message, 'error', true);
+                                    }
                                 } catch (error) {
-    console.error('Error adding column:', error);
-    showSwalAlert('Terjadi kesalahan saat menambahkan kolom', 'error', true);
-} finally {
+                                    console.error('Error adding column:', error);
+                                    showSwalAlert('Terjadi kesalahan saat menambahkan kolom', 'error', true);
+                                } finally {
                                     this.addingColumn = false;
                                 }
                             },
 
                             // ✅ NEW: Method untuk menghapus kolom
                             async deleteColumn(columnId) {
-const result = await Swal.fire({
-    icon: 'warning',
-    title: 'Konfirmasi',
-    text: 'Hapus kolom ini?',
-    showCancelButton: true,
-    confirmButtonText: 'Ya, Hapus',
-    cancelButtonText: 'Batal',
-    confirmButtonColor: '#ef4444',
-    cancelButtonColor: '#6b7280',
-    background: '#f7faff',
-    customClass: {
-        popup: 'swal-custom-popup',
-        title: 'swal-custom-title',
-        htmlContainer: 'swal-custom-text'
-    }
-});
+                                const result = await Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Konfirmasi',
+                                    text: 'Hapus kolom ini?',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Ya, Hapus',
+                                    cancelButtonText: 'Batal',
+                                    confirmButtonColor: '#ef4444',
+                                    cancelButtonColor: '#6b7280',
+                                    background: '#f7faff',
+                                    customClass: {
+                                        popup: 'swal-custom-popup',
+                                        title: 'swal-custom-title',
+                                        htmlContainer: 'swal-custom-text'
+                                    }
+                                });
 
-if (!result.isConfirmed) return;
+                                if (!result.isConfirmed) return;
                                 try {
                                     const response = await fetch(`/tasks/board-columns/${columnId}`, {
                                         method: 'DELETE',
@@ -4666,9 +4814,9 @@ if (!result.isConfirmed) return;
                             // ✅ PERBAIKI: Method createNewLabel dengan debugging
                             async createNewLabel() {
                                 if (!this.labelData.newLabelName.trim()) {
-    showSwalAlert('Nama label harus diisi', 'warning', true);
-    return null;
-}
+                                    showSwalAlert('Nama label harus diisi', 'warning', true);
+                                    return null;
+                                }
 
                                 if (!this.labelData.newLabelColor) {
                                     alert('Warna label harus dipilih');
@@ -4924,56 +5072,56 @@ if (!result.isConfirmed) return;
                             },
 
                             async removeChecklistItem(index) {
-    if (!this.taskForm.checklists || !this.taskForm.checklists[index]) {
-        console.error('❌ Invalid checklist index:', index);
-        return;
-    }
+                                if (!this.taskForm.checklists || !this.taskForm.checklists[index]) {
+                                    console.error('❌ Invalid checklist index:', index);
+                                    return;
+                                }
 
-    const item = this.taskForm.checklists[index];
+                                const item = this.taskForm.checklists[index];
 
-    // 🔄 SweetAlert2 konfirmasi
-    const result = await Swal.fire({
-        icon: 'question',
-        title: 'Konfirmasi',
-        text: 'Hapus item checklist ini?',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Hapus',
-        cancelButtonText: 'Batal',
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#6b7280',
-        background: '#f7faff',
-        customClass: {
-            popup: 'swal-custom-popup',
-            title: 'swal-custom-title',
-            htmlContainer: 'swal-custom-text'
-        }
-    });
+                                // 🔄 SweetAlert2 konfirmasi
+                                const result = await Swal.fire({
+                                    icon: 'question',
+                                    title: 'Konfirmasi',
+                                    text: 'Hapus item checklist ini?',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Ya, Hapus',
+                                    cancelButtonText: 'Batal',
+                                    confirmButtonColor: '#ef4444',
+                                    cancelButtonColor: '#6b7280',
+                                    background: '#f7faff',
+                                    customClass: {
+                                        popup: 'swal-custom-popup',
+                                        title: 'swal-custom-title',
+                                        htmlContainer: 'swal-custom-text'
+                                    }
+                                });
 
-    if (!result.isConfirmed) {
-        console.log('❌ Batal hapus checklist.');
-        return;
-    }
+                                if (!result.isConfirmed) {
+                                    console.log('❌ Batal hapus checklist.');
+                                    return;
+                                }
 
-    // 🔥 Hapus dari server jika sudah ada ID (bukan temp)
-    if (item.id && !item.id.toString().startsWith('temp-')) {
-        this.deleteChecklistFromAPI(item.id);
-    }
+                                // 🔥 Hapus dari server jika sudah ada ID (bukan temp)
+                                if (item.id && !item.id.toString().startsWith('temp-')) {
+                                    this.deleteChecklistFromAPI(item.id);
+                                }
 
-    // 🗑 Hapus dari array
-    this.taskForm.checklists.splice(index, 1);
+                                // 🗑 Hapus dari array
+                                this.taskForm.checklists.splice(index, 1);
 
-    // 📌 Update posisi checklist di UI / DB
-    this.updateChecklistPositions();
+                                // 📌 Update posisi checklist di UI / DB
+                                this.updateChecklistPositions();
 
-    // Notifikasi sukses
-    Swal.fire({
-        icon: 'success',
-        title: 'Berhasil',
-        text: 'Checklist berhasil dihapus.',
-        timer: 1500,
-        showConfirmButton: false
-    });
-},
+                                // Notifikasi sukses
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil',
+                                    text: 'Checklist berhasil dihapus.',
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                });
+                            },
 
                             async updateChecklistItem(item) {
                                 // Jika item sudah ada di database, update via API
@@ -5331,79 +5479,79 @@ if (!result.isConfirmed) return;
 
 
                             async loadTimelineData() {
-    this.loadingTimeline = true;
-    try {
-        const workspaceId = this.getCurrentWorkspaceId();
-        if (!workspaceId) return;
+                                this.loadingTimeline = true;
+                                try {
+                                    const workspaceId = this.getCurrentWorkspaceId();
+                                    if (!workspaceId) return;
 
-        const response = await fetch(`/tasks/workspace/${workspaceId}/timeline`);
-        const data = await response.json();
+                                    const response = await fetch(`/tasks/workspace/${workspaceId}/timeline`);
+                                    const data = await response.json();
 
-        if (data.success) {
-            this.timelineData = data.timeline_data;
-            
-            // Debug log untuk melihat data yang diterima
-            console.log('📊 Timeline data loaded:', {
-                total_phases: data.timeline_data.length,
-                phases: data.timeline_data.map(p => ({
-                    name: p.name,
-                    total_tasks: p.total_tasks,
-                    start_date: p.start_date,
-                    end_date: p.end_date
-                })),
-                duplicate_check: this.checkForDuplicates(data.timeline_data)
-            });
-        } else {
-            console.error('Gagal memuat timeline data:', data.message);
-        }
-    } catch (error) {
-        console.error('Error loading timeline data:', error);
-    } finally {
-        this.loadingTimeline = false;
-    }
-},
+                                    if (data.success) {
+                                        this.timelineData = data.timeline_data;
 
-// Helper untuk mendeteksi duplicate
-checkForDuplicates(phases) {
-    const seen = new Set();
-    const duplicates = [];
-    
-    phases.forEach(phase => {
-        const key = phase.name.toLowerCase().trim();
-        if (seen.has(key)) {
-            duplicates.push(phase.name);
-        }
-        seen.add(key);
-    });
-    
-    return duplicates;
-},
+                                        // Debug log untuk melihat data yang diterima
+                                        console.log('📊 Timeline data loaded:', {
+                                            total_phases: data.timeline_data.length,
+                                            phases: data.timeline_data.map(p => ({
+                                                name: p.name,
+                                                total_tasks: p.total_tasks,
+                                                start_date: p.start_date,
+                                                end_date: p.end_date
+                                            })),
+                                            duplicate_check: this.checkForDuplicates(data.timeline_data)
+                                        });
+                                    } else {
+                                        console.error('Gagal memuat timeline data:', data.message);
+                                    }
+                                } catch (error) {
+                                    console.error('Error loading timeline data:', error);
+                                } finally {
+                                    this.loadingTimeline = false;
+                                }
+                            },
+
+                            // Helper untuk mendeteksi duplicate
+                            checkForDuplicates(phases) {
+                                const seen = new Set();
+                                const duplicates = [];
+
+                                phases.forEach(phase => {
+                                    const key = phase.name.toLowerCase().trim();
+                                    if (seen.has(key)) {
+                                        duplicates.push(phase.name);
+                                    }
+                                    seen.add(key);
+                                });
+
+                                return duplicates;
+                            },
 
                             // Update method getProjectPhases() untuk menggunakan data real
                             // Di dalam kanbanApp() - update method getProjectPhases()
-getProjectPhases() {
-    if (this.timelineData && this.timelineData.length > 0) {
-        // Filter phase yang memiliki tasks
-        const phasesWithTasks = this.timelineData.filter(phase => phase.total_tasks > 0);
-        
-        return phasesWithTasks.map(phase => ({
-            id: phase.id,
-            name: phase.name,
-            normalized_name: phase.normalized_name || phase.name.toLowerCase().trim(),
-            total_tasks: phase.total_tasks,
-            completed_tasks: phase.completed_tasks,
-            progress_percentage: phase.progress_percentage,
-            start_date: phase.start_date,
-            end_date: phase.end_date,
-            duration: phase.duration,
-            duration_percentage: phase.duration_percentage || 10,
-            description: `${phase.completed_tasks}/${phase.total_tasks} tugas selesai`
-        }));
-    }
+                            getProjectPhases() {
+                                if (this.timelineData && this.timelineData.length > 0) {
+                                    // Filter phase yang memiliki tasks
+                                    const phasesWithTasks = this.timelineData.filter(phase => phase.total_tasks > 0);
 
-    // Fallback ke data kosong
-    return [];
-},
+                                    return phasesWithTasks.map(phase => ({
+                                        id: phase.id,
+                                        name: phase.name,
+                                        normalized_name: phase.normalized_name || phase.name.toLowerCase().trim(),
+                                        total_tasks: phase.total_tasks,
+                                        completed_tasks: phase.completed_tasks,
+                                        progress_percentage: phase.progress_percentage,
+                                        start_date: phase.start_date,
+                                        end_date: phase.end_date,
+                                        duration: phase.duration,
+                                        duration_percentage: phase.duration_percentage || 10,
+                                        description: `${phase.completed_tasks}/${phase.total_tasks} tugas selesai`
+                                    }));
+                                }
+
+                                // Fallback ke data kosong
+                                return [];
+                            },
 
                             // 🔧 PERBAIKI: Method getTasksByPhaseId
                             // Di dalam kanbanApp() - UPDATE method ini
@@ -5724,25 +5872,25 @@ getProjectPhases() {
                             // Di dalam kanbanApp() - tambahkan method ini
                             async deleteCustomColumn(columnId) {
                                 const result = await Swal.fire({
-    icon: 'warning',
-    title: 'Konfirmasi Hapus Kolom',
-    text: 'Semua tugas harus dipindahkan terlebih dahulu.',
-    showCancelButton: true,
-    confirmButtonText: 'Ya, Hapus',
-    cancelButtonText: 'Batal',
-    confirmButtonColor: '#ef4444',
-    cancelButtonColor: '#6b7280',
-    background: '#f7faff',
-    customClass: {
-        popup: 'swal-custom-popup',
-        title: 'swal-custom-title',
-        htmlContainer: 'swal-custom-text'
-    }
-});
+                                    icon: 'warning',
+                                    title: 'Konfirmasi Hapus Kolom',
+                                    text: 'Semua tugas harus dipindahkan terlebih dahulu.',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Ya, Hapus',
+                                    cancelButtonText: 'Batal',
+                                    confirmButtonColor: '#ef4444',
+                                    cancelButtonColor: '#6b7280',
+                                    background: '#f7faff',
+                                    customClass: {
+                                        popup: 'swal-custom-popup',
+                                        title: 'swal-custom-title',
+                                        htmlContainer: 'swal-custom-text'
+                                    }
+                                });
 
-if (!result.isConfirmed) {
-    return;
-}
+                                if (!result.isConfirmed) {
+                                    return;
+                                }
                                 try {
                                     console.log('🔄 Deleting custom column:', columnId);
 
@@ -6392,9 +6540,9 @@ if (!result.isConfirmed) {
 
                                 const content = this.getEditorData('task-main-comment-editor').trim();
                                 if (!content) {
-    showSwalAlert('Komentar tidak boleh kosong', 'warning', true);
-    return;
-}
+                                    showSwalAlert('Komentar tidak boleh kosong', 'warning', true);
+                                    return;
+                                }
 
                                 try {
                                     const preId = window.currentMainCommentId || this.generateUUID();
@@ -6455,9 +6603,9 @@ if (!result.isConfirmed) {
                                 const content = this.getEditorData(editorId).trim();
 
                                 if (!content) {
-    showSwalAlert('Balasan tidak boleh kosong', 'warning', true);
-    return;
-}
+                                    showSwalAlert('Balasan tidak boleh kosong', 'warning', true);
+                                    return;
+                                }
 
                                 try {
                                     const preId = window[`currentReplyId_${parent.id}`] || this.generateUUID();

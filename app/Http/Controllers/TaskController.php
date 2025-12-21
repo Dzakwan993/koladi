@@ -26,7 +26,7 @@ class TaskController extends Controller
 {
 
 
-     // ✅ TAMBAH INI
+    // ✅ TAMBAH INI
     protected $notificationService;
 
     public function __construct(NotificationService $notificationService)
@@ -558,26 +558,33 @@ class TaskController extends Controller
     /**
      * Create task dengan sync status otomatis
      */
+    // Di TaskController.php - Method storeWithAssignments
+    // Ganti bagian validasi dengan yang baru ini:
+
     public function storeWithAssignments(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'workspace_id' => 'required|exists:workspaces,id',
             'board_column_id' => 'required|exists:board_columns,id',
+
+            // ✅ FIELD WAJIB
             'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'phase' => 'required|string|max:255',
-            'user_ids' => 'array',
+            'description' => 'required|string',
+            'start_datetime' => 'required|date_format:Y-m-d H:i:s',
+            'due_datetime' => 'required|date_format:Y-m-d H:i:s|after:start_datetime',
+
+            // ✅ FIELD OPSIONAL
+            'phase' => 'nullable|string|max:255', // Ubah dari required menjadi nullable
+            'user_ids' => 'nullable|array', // Anggota opsional
             'user_ids.*' => 'exists:users,id',
-            'label_ids' => 'array',
+            'label_ids' => 'nullable|array', // Label opsional
             'label_ids.*' => 'exists:labels,id',
-            'checklists' => 'array',
+            'checklists' => 'nullable|array', // Checklist opsional
             'checklists.*.title' => 'required|string|max:255',
             'checklists.*.is_done' => 'boolean',
             'is_secret' => 'boolean',
-            'attachment_ids' => 'array',
+            'attachment_ids' => 'nullable|array', // Attachment opsional
             'attachment_ids.*' => 'exists:attachments,id',
-            'start_datetime' => 'nullable|date_format:Y-m-d H:i:s',
-            'due_datetime' => 'nullable|date_format:Y-m-d H:i:s|after:start_datetime'
         ]);
 
         if ($validator->fails()) {
@@ -612,7 +619,7 @@ class TaskController extends Controller
 
             DB::beginTransaction();
 
-            // Tentukan status berdasarkan kolom (mengikuti nama kolom untuk custom)
+            // Tentukan status berdasarkan kolom
             $status = $this->mapColumnToStatus($boardColumn->name);
 
             // Buat task
@@ -623,23 +630,17 @@ class TaskController extends Controller
                 'created_by' => $user->id,
                 'title' => $request->title,
                 'description' => $request->description,
-                'phase' => $request->phase,
+                'phase' => $request->phase ?: null, // ✅ Set null jika tidak ada
                 'status' => $status,
                 'priority' => $request->priority ?? 'medium',
-                'is_secret' => $request->is_secret ?? false
+                'is_secret' => $request->is_secret ?? false,
+                'start_datetime' => $request->start_datetime,
+                'due_datetime' => $request->due_datetime
             ];
-
-            // Tambahkan datetime jika ada
-            if ($request->start_datetime) {
-                $taskData['start_datetime'] = $request->start_datetime;
-            }
-            if ($request->due_datetime) {
-                $taskData['due_datetime'] = $request->due_datetime;
-            }
 
             $task = Task::create($taskData);
 
-            // Assign anggota
+            // Assign anggota (jika ada)
             if (!empty($request->user_ids)) {
                 foreach ($request->user_ids as $userId) {
                     TaskAssignment::create([
@@ -651,10 +652,12 @@ class TaskController extends Controller
                 }
             }
 
+            // Attach labels (jika ada)
             if (!empty($request->label_ids)) {
                 $task->labels()->attach($request->label_ids);
             }
 
+            // Create checklists (jika ada)
             if (!empty($request->checklists)) {
                 foreach ($request->checklists as $index => $checklistData) {
                     Checklist::create([
@@ -667,8 +670,8 @@ class TaskController extends Controller
                 }
             }
 
+            // Update attachments (jika ada)
             if (!empty($request->attachment_ids)) {
-                // ✅ PERBAIKAN: Update attachments tanpa mass assignment
                 foreach ($request->attachment_ids as $attachmentId) {
                     $attachment = Attachment::find($attachmentId);
                     if ($attachment) {
@@ -682,22 +685,21 @@ class TaskController extends Controller
 
             $this->notificationService->notifyTaskCreated($task);
 
-
-            // ✅ PERBAIKI: Load data dengan format yang diharapkan frontend
+            // Load data dengan format yang diharapkan frontend
             $task->load([
-                'assignments.user', // Tetap load assignments
+                'assignments.user',
                 'labels.color',
                 'checklists',
                 'attachments',
                 'boardColumn',
-                'creator' // Load creator jika ada relasi
+                'creator'
             ]);
 
-            // ✅ PERBAIKI: Format response untuk frontend
+            // Format response untuk frontend
             $formattedTask = [
                 'id' => $task->id,
                 'title' => $task->title,
-                'phase' => $task->phase,
+                'phase' => $task->phase, // Bisa null
                 'status' => $task->status,
                 'board_column_id' => $task->board_column_id,
                 'description' => $task->description,
@@ -710,7 +712,6 @@ class TaskController extends Controller
                 'created_at' => $task->created_at,
                 'updated_at' => $task->updated_at,
 
-                // ✅ FORMAT assignees yang diharapkan frontend
                 'assignees' => $task->assignments->map(function ($assignment) {
                     return [
                         'id' => $assignment->user->id,
@@ -720,16 +721,14 @@ class TaskController extends Controller
                     ];
                 }),
 
-                // ✅ FORMAT labels yang diharapkan frontend
                 'labels' => $task->labels->map(function ($label) {
                     return [
                         'id' => $label->id,
                         'name' => $label->name,
-                        'color' => $label->color->rgb // Pastikan ada field rgb
+                        'color' => $label->color->rgb
                     ];
                 }),
 
-                // ✅ FORMAT checklists yang diharapkan frontend
                 'checklists' => $task->checklists->map(function ($checklist) {
                     return [
                         'id' => $checklist->id,
@@ -739,7 +738,6 @@ class TaskController extends Controller
                     ];
                 }),
 
-                // ✅ FORMAT attachments yang diharapkan frontend
                 'attachments' => $task->attachments->map(function ($attachment) {
                     return [
                         'id' => $attachment->id,
@@ -760,7 +758,7 @@ class TaskController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Tugas berhasil dibuat',
-                'task' => $formattedTask, // ✅ Gunakan formatted task
+                'task' => $formattedTask,
                 'new_column_name' => $boardColumn->name
             ]);
         } catch (\Exception $e) {
@@ -1932,7 +1930,7 @@ class TaskController extends Controller
 
             DB::commit();
 
-                        $this->notificationService->notifyTaskUpdated($task, $user);
+            $this->notificationService->notifyTaskUpdated($task, $user);
 
 
             // ✅ PERBAIKAN: Reload task dengan relasi lengkap
