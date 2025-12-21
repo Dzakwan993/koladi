@@ -120,7 +120,7 @@ class NotificationService
      * 
      * Rules:
      * - Chat Perusahaan Group: Semua anggota perusahaan (kecuali pengirim)
-     * - Chat Workspace Group: Semua anggota workspace (kecuali pengirim)
+     * - Chat Workspace Group: Semua anggota workspace + SuperAdmin/Administrator/Manager perusahaan (kecuali pengirim)
      * - Chat Personal (Private): HANYA penerima 1-on-1 (tidak termasuk admin!)
      */
     public function notifyNewMessage($message)
@@ -172,9 +172,20 @@ class NotificationService
                 Log::info("Processing company group chat for company: {$conversation->company_id}");
                 $recipients = $this->getCompanyMembers($conversation->company_id);
             } else {
-                // ✅ Workspace group chat - ALL workspace members except sender
+                // ✅ Workspace group chat - ALL workspace members + ADMINS
                 Log::info("Processing workspace group chat for workspace: {$conversation->workspace_id}");
-                $recipients = $this->getWorkspaceMembers($conversation->workspace_id);
+                
+                // Get workspace members
+                $workspaceMembers = $this->getWorkspaceMembers($conversation->workspace_id);
+                Log::info("Workspace members: " . json_encode($workspaceMembers));
+                
+                // Get company admins (SuperAdmin, Administrator, Manager)
+                $companyAdmins = $this->getCompanyAdmins($companyId, null); // Don't exclude anyone yet
+                Log::info("Company admins: " . json_encode($companyAdmins));
+                
+                // Merge workspace members + admins
+                $recipients = array_unique(array_merge($workspaceMembers, $companyAdmins));
+                Log::info("Combined recipients (workspace + admins): " . json_encode($recipients));
             }
             
             Log::info("Recipients before filtering sender: " . json_encode($recipients));
