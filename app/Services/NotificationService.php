@@ -41,15 +41,15 @@ class NotificationService
             Log::warning("Workspace not found: {$workspaceId}");
             return [];
         }
-        
+
         // ✅ FIX: Gunakan relationship users, bukan UserWorkspace
         $members = $workspace->users()
             ->wherePivot('status_active', true)
             ->pluck('users.id')
             ->toArray();
-        
+
         Log::info("Workspace {$workspaceId} members: " . json_encode($members));
-        
+
         return $members;
     }
 
@@ -104,7 +104,7 @@ class NotificationService
         foreach ($userIds as $userId) {
             $notificationData = array_merge($data, ['user_id' => $userId]);
             $notification = $this->send($notificationData);
-            
+
             if ($notification) {
                 $notifications[] = $notification;
             }
@@ -159,11 +159,11 @@ class NotificationService
             $allParticipants = $conversation->participants()
                 ->pluck('user_id')
                 ->toArray();
-            
+
             Log::info("All participants in private chat: " . json_encode($allParticipants));
-            
+
             $recipients = array_filter($allParticipants, fn($id) => $id !== $sender->id);
-            
+
             Log::info("Recipients after filtering sender: " . json_encode($recipients));
         } else {
             // Group chat
@@ -174,25 +174,25 @@ class NotificationService
             } else {
                 // ✅ Workspace group chat - ALL workspace members + ADMINS
                 Log::info("Processing workspace group chat for workspace: {$conversation->workspace_id}");
-                
+
                 // Get workspace members
                 $workspaceMembers = $this->getWorkspaceMembers($conversation->workspace_id);
                 Log::info("Workspace members: " . json_encode($workspaceMembers));
-                
+
                 // Get company admins (SuperAdmin, Administrator, Manager)
                 $companyAdmins = $this->getCompanyAdmins($companyId, null); // Don't exclude anyone yet
                 Log::info("Company admins: " . json_encode($companyAdmins));
-                
+
                 // Merge workspace members + admins
                 $recipients = array_unique(array_merge($workspaceMembers, $companyAdmins));
                 Log::info("Combined recipients (workspace + admins): " . json_encode($recipients));
             }
-            
+
             Log::info("Recipients before filtering sender: " . json_encode($recipients));
-            
+
             // Remove sender from recipients
             $recipients = array_filter($recipients, fn($id) => $id !== $sender->id);
-            
+
             Log::info("Recipients after filtering sender: " . json_encode($recipients));
         }
 
@@ -244,13 +244,13 @@ class NotificationService
 
         // Get company admins (excluding creator)
         $companyAdmins = $this->getCompanyAdmins($workspace->company_id, $creator->id);
-        
+
         // Get assigned members
         $assignedMembers = $task->assignments->pluck('user_id')->toArray();
-        
+
         // Merge and remove duplicates
         $recipients = array_unique(array_merge($companyAdmins, $assignedMembers));
-        
+
         // Ensure creator is not in recipients
         $recipients = array_filter($recipients, fn($id) => $id !== $creator->id);
 
@@ -284,11 +284,11 @@ class NotificationService
 
         // Get company admins (excluding updater)
         $companyAdmins = $this->getCompanyAdmins($workspace->company_id, $updater->id);
-        
+
         // Get assigned members + creator
         $assignedMembers = $task->assignments->pluck('user_id')->toArray();
         $recipients = array_unique(array_merge($companyAdmins, $assignedMembers, [$task->created_by]));
-        
+
         // Ensure updater is not in recipients
         $recipients = array_filter($recipients, fn($id) => $id !== $updater->id);
 
@@ -314,27 +314,44 @@ class NotificationService
      * ========================================
      * 
      * Rules:
-     * - Admins (SuperAdmin, Administrator, Manager) EXCEPT creator
-     * - Specified recipients (if private)
+     * - Admins (SuperAdmin, Administrator, Manager) EXCEPT creator  
+     * - Specified recipients (peserta yang dipilih)
+     * 
+     * Logic:
+     * - Jika ada recipients → Notif ke admins + recipients
+     * - Jika tidak ada recipients → Notif ke admins only
      */
     public function notifyAnnouncementCreated($announcement)
     {
         $creator = $announcement->creator;
-        
+
+        Log::info("=== ANNOUNCEMENT NOTIFICATION DEBUG ===");
+        Log::info("Announcement ID: {$announcement->id}");
+        Log::info("Title: {$announcement->title}");
+        Log::info("Is Private: " . ($announcement->is_private ? 'Yes' : 'No'));
+        Log::info("Workspace ID: " . ($announcement->workspace_id ?? 'NULL (Company level)'));
+        Log::info("Creator ID: {$creator->id}");
+
         if ($announcement->workspace_id) {
             // Workspace announcement
             $workspace = $announcement->workspace;
-            
+
             // Get company admins (excluding creator)
             $companyAdmins = $this->getCompanyAdmins($workspace->company_id, $creator->id);
-            
-            if ($announcement->is_private) {
-                // ✅ Private announcement - admins + specified recipients
-                $specifiedRecipients = $announcement->recipients->pluck('user_id')->toArray();
+            Log::info("Company admins: " . json_encode($companyAdmins));
+
+            // Get specified recipients (peserta yang dipilih)
+            $specifiedRecipients = $announcement->recipients()->pluck('user_id')->toArray();
+            Log::info("Specified recipients: " . json_encode($specifiedRecipients));
+
+            // ✅ FIX: Selalu merge admins + recipients (tidak peduli private/public)
+            if (!empty($specifiedRecipients)) {
                 $recipients = array_unique(array_merge($companyAdmins, $specifiedRecipients));
+                Log::info("Merged recipients (admins + specified): " . json_encode($recipients));
             } else {
-                // ✅ Public announcement - admins only
+                // Tidak ada recipients dipilih → hanya admins
                 $recipients = $companyAdmins;
+                Log::info("No recipients specified, using admins only");
             }
 
             $context = $workspace->name;
@@ -342,14 +359,27 @@ class NotificationService
         } else {
             // Company announcement
             $companyAdmins = $this->getCompanyAdmins($announcement->company_id, $creator->id);
-            
-            if ($announcement->is_private) {
-                // ✅ Private - admins + specified recipients
-                $specifiedRecipients = $announcement->recipients->pluck('user_id')->toArray() ?? [];
+            Log::info("Company admins: " . json_encode($companyAdmins));
+
+            // 🔥 FIX: Company announcement TIDAK punya recipients di form
+            // Tapi tetap cek jika ada data recipients (untuk backward compatibility)
+            $specifiedRecipients = $announcement->recipients->pluck('user_id')->toArray() ?? [];
+            Log::info("Specified recipients: " . json_encode($specifiedRecipients));
+
+            if (!empty($specifiedRecipients)) {
                 $recipients = array_unique(array_merge($companyAdmins, $specifiedRecipients));
+                Log::info("Merged recipients (admins + specified): " . json_encode($recipients));
             } else {
-                // ✅ Public - admins only
-                $recipients = $companyAdmins;
+                // Untuk company announcement, notif ke SEMUA member company
+                if ($announcement->is_private) {
+                    // Private → hanya admins
+                    $recipients = $companyAdmins;
+                    Log::info("Private company announcement, admins only");
+                } else {
+                    // Public → SEMUA anggota perusahaan
+                    $recipients = $this->getCompanyMembers($announcement->company_id);
+                    Log::info("Public company announcement, all company members");
+                }
             }
 
             $context = 'Pengumuman Perusahaan';
@@ -358,9 +388,18 @@ class NotificationService
 
         // Ensure creator is not in recipients
         $recipients = array_filter($recipients, fn($id) => $id !== $creator->id);
+        $recipients = array_values($recipients); // Re-index array
+
+        Log::info("Final recipients (excluding creator): " . json_encode($recipients));
+        Log::info("Final recipients count: " . count($recipients));
+
+        if (empty($recipients)) {
+            Log::warning("No recipients for announcement notification");
+            return [];
+        }
 
         $notificationData = [
-            'company_id' => $announcement->company_id,
+            'company_id' => $announcement->workspace_id ? $workspace->company_id : $announcement->company_id,
             'workspace_id' => $announcement->workspace_id,
             'type' => 'announcement',
             'title' => 'Pengumuman baru',
@@ -371,6 +410,8 @@ class NotificationService
             'actor_id' => $creator->id,
             'action_url' => $actionUrl,
         ];
+
+        Log::info("Sending announcement notifications to " . count($recipients) . " users");
 
         return $this->sendBulk($recipients, $notificationData);
     }
@@ -387,17 +428,17 @@ class NotificationService
     public function notifyEventCreated($event)
     {
         $creator = $event->creator;
-        
+
         if ($event->workspace_id) {
             // Workspace event
             $workspace = $event->workspace;
-            
+
             // Get company admins (excluding creator)
             $companyAdmins = $this->getCompanyAdmins($workspace->company_id, $creator->id);
-            
+
             // Get participants
             $participants = $event->participants->pluck('user_id')->toArray();
-            
+
             // Merge admins + participants
             $recipients = array_unique(array_merge($companyAdmins, $participants));
 
@@ -407,10 +448,10 @@ class NotificationService
             // Company event
             // Get company admins (excluding creator)
             $companyAdmins = $this->getCompanyAdmins($event->company_id, $creator->id);
-            
+
             // Get participants
             $participants = $event->participants->pluck('user_id')->toArray();
-            
+
             // Merge admins + participants
             $recipients = array_unique(array_merge($companyAdmins, $participants));
 
@@ -445,9 +486,9 @@ class NotificationService
         if (!$message) {
             return '';
         }
-        
-        return strlen($message) > $length 
-            ? substr($message, 0, $length) . '...' 
+
+        return strlen($message) > $length
+            ? substr($message, 0, $length) . '...'
             : $message;
     }
 
@@ -462,7 +503,7 @@ class NotificationService
 
         $type = $conversation->type === 'private' ? 'Chat Pribadi' : 'Grup';
         $workspaceName = $conversation->workspace?->name ?? 'Unknown';
-        
+
         return $type . ' · ' . $workspaceName;
     }
 
