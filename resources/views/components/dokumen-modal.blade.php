@@ -28,7 +28,8 @@
                 <div class="flex items-center justify-between py-2">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                            <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                             </svg>
@@ -52,7 +53,8 @@
 
             {{-- Footer Modal --}}
             <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-                <button type="button" @click="showCreateFolderModal = false; newFolderName = ''; isSecretFolder = false"
+                <button type="button"
+                    @click="showCreateFolderModal = false; newFolderName = ''; isSecretFolder = false"
                     class="px-4 py-2 text-sm text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 transition">
                     Batal
                 </button>
@@ -137,7 +139,8 @@
                             style="appearance: none !important; -webkit-appearance: none !important; -moz-appearance: none !important; background-image: none !important;">
                             <option value="" disabled selected>-- Pilih Workspace --</option>
                             <template x-for="workspace in availableWorkspaces" :key="workspace.id">
-                                <option :value="workspace.id" x-text="`${workspace.name} (${workspace.type})`"></option>
+                                <option :value="workspace.id" x-text="`${workspace.name} (${workspace.type})`">
+                                </option>
                             </template>
                         </select>
                         {{-- Dropdown Arrow --}}
@@ -177,7 +180,8 @@
                                             d="M9 5l7 7-7 7" />
                                     </svg>
                                     <button @click="navigateToModalFolder(crumb)"
-                                        :class="index === modalBreadcrumbs.length - 1 ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-blue-600'"
+                                        :class="index === modalBreadcrumbs.length - 1 ? 'text-blue-600 font-medium' :
+                                            'text-gray-600 hover:text-blue-600'"
                                         class="px-2 py-1 hover:bg-blue-50 rounded transition whitespace-nowrap"
                                         x-text="crumb.name">
                                     </button>
@@ -247,7 +251,8 @@
             </button>
 
             <button @click="submitMoveDocuments()" :disabled="!selectedWorkspace || selectedDocuments.length === 0"
-                :class="(!selectedWorkspace || selectedDocuments.length === 0) ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+                :class="(!selectedWorkspace || selectedDocuments.length === 0) ? 'bg-gray-300 cursor-not-allowed' :
+                'bg-blue-600 hover:bg-blue-700'"
                 class="px-5 py-2.5 text-sm font-medium text-white rounded-lg transition flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -352,14 +357,16 @@
 
             <p class="text-sm text-gray-600 mb-4">Masukkan nama folder</p>
 
-            <input type="text" name="name" x-model="editFolderName" placeholder="Nama folder" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 
+            <input type="text" name="name" x-model="editFolderName" placeholder="Nama folder"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 
                                 focus:ring-blue-500 focus:border-blue-500 transition mb-4">
 
             {{-- Switch untuk Folder Rahasia --}}
             <div class="flex items-center justify-between py-2">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
@@ -374,13 +381,15 @@
                 <input type="hidden" name="is_private" :value="editIsSecretFolder ? 1 : 0">
 
                 <button type="button" @click="editIsSecretFolder = !editIsSecretFolder"
-                    :class="editIsSecretFolder ? 'bg-blue-600' : 'bg-gray-200'" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full 
+                    :class="editIsSecretFolder ? 'bg-blue-600' : 'bg-gray-200'"
+                    class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full 
                                     border-2 border-transparent transition-colors duration-200 ease-in-out 
                                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
 
                     <span class="sr-only">Folder Rahasia</span>
 
-                    <span :class="editIsSecretFolder ? 'translate-x-5' : 'translate-x-0'" class="pointer-events-none inline-block h-5 w-5 transform rounded-full 
+                    <span :class="editIsSecretFolder ? 'translate-x-5' : 'translate-x-0'"
+                        class="pointer-events-none inline-block h-5 w-5 transform rounded-full 
                                         bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
                 </button>
 
@@ -390,16 +399,19 @@
         {{-- Footer Modal --}}
         <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
 
-            <button type="button" @click="showEditFolderModal = false" class="px-4 py-2 text-sm text-blue-600 bg-white border border-blue-600 
+            <button type="button" @click="showEditFolderModal = false"
+                class="px-4 py-2 text-sm text-blue-600 bg-white border border-blue-600 
                                 rounded-lg hover:bg-gray-50 transition">
                 Batal
             </button>
 
-            <button type="submit" :disabled="editFolderName.trim() === originalFolderName.trim() 
-                                            && editIsSecretFolder === originalIsSecretFolder" :class="(editFolderName.trim() === originalFolderName.trim() 
-                                        && editIsSecretFolder === originalIsSecretFolder)
-                                    ? 'bg-gray-300 cursor-not-allowed' 
-                                    : 'bg-blue-600 hover:bg-blue-700'"
+            <button type="submit"
+                :disabled="editFolderName.trim() === originalFolderName.trim() &&
+                    editIsSecretFolder === originalIsSecretFolder"
+                :class="(editFolderName.trim() === originalFolderName.trim() &&
+                    editIsSecretFolder === originalIsSecretFolder) ?
+                'bg-gray-300 cursor-not-allowed' :
+                'bg-blue-600 hover:bg-blue-700'"
                 class="px-4 py-2 text-sm text-white rounded-lg transition">
                 Simpan
             </button>
@@ -453,7 +465,8 @@
                 Batal
             </button>
 
-            <button type="button" @click="
+            <button type="button"
+                @click="
                                         showDeleteFolderModal = false;
                                         openConfirmModal(
                                             'Konfirmasi Hapus',
@@ -512,7 +525,8 @@
                 Batal
             </button>
 
-            <button type="button" @click="
+            <button type="button"
+                @click="
                                         showDeleteFileModal = false;
                                         openConfirmModal(
                                             'Konfirmasi Hapus',
@@ -573,6 +587,52 @@
     </div>
 </div>
 
+<!-- Modal Delete Multiple -->
+<div x-show="showDeleteMultipleModal" x-cloak
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+
+    <div class="bg-white rounded-lg w-full max-w-md" @click.outside="showDeleteMultipleModal = false">
+
+        {{-- Header Modal --}}
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800">Hapus Berkas</h3>
+        </div>
+
+        {{-- Content Modal --}}
+        <div class="px-6 py-6">
+            <div class="flex items-center justify-center mb-4">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </div>
+            </div>
+
+            <p class="text-center text-gray-700 font-medium">
+                Anda yakin ingin menghapus <span class="font-bold" x-text="selectedDocuments.length"></span> berkas
+                yang dipilih?
+            </p>
+            <p class="text-center text-gray-600 text-sm mt-2">
+                Tindakan ini tidak dapat dibatalkan.
+            </p>
+        </div>
+
+        {{-- Footer Modal --}}
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+            <button type="button" @click="showDeleteMultipleModal = false"
+                class="px-4 py-2 text-sm text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                Batal
+            </button>
+
+            <button type="button" @click="submitDeleteMultiple()"
+                class="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-lg transition">
+                Ya, Hapus Semua
+            </button>
+        </div>
+
+    </div>
+</div>
 
 
 <!-- Modal Edit File -->
@@ -618,7 +678,8 @@
             <div class="flex items-center justify-between py-2">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
@@ -647,9 +708,10 @@
                 Batal
             </button>
 
-            <button type="submit" :disabled="editFileIsSecret === originalIsSecretFile" :class="editFileIsSecret === originalIsSecretFile
-                                    ? 'bg-gray-300 cursor-not-allowed'
-                                    : 'bg-blue-600 hover:bg-blue-700'"
+            <button type="submit" :disabled="editFileIsSecret === originalIsSecretFile"
+                :class="editFileIsSecret === originalIsSecretFile ?
+                    'bg-gray-300 cursor-not-allowed' :
+                    'bg-blue-600 hover:bg-blue-700'"
                 class="px-4 py-2 text-sm text-white rounded-lg transition">
                 Simpan
             </button>

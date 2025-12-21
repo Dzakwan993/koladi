@@ -7,7 +7,7 @@ function showCustomSwal({
     icon,
     title,
     text,
-    timer = 2000,
+    timer = 1000,
     showConfirmButton = false,
 }) {
     if (!window.Swal) {
@@ -74,6 +74,7 @@ export default function documentSearch() {
         currentWorkspace: null,
         newFolderName: "",
         isSecretFolder: false,
+        showDeleteMultipleModal: false,
         editFolderName: "",
         editIsSecretFolder: false,
         originalIsSecretFolder: null,
@@ -395,6 +396,126 @@ export default function documentSearch() {
             return this.folders.filter((f) => f.parent_id === null);
         },
 
+        // Tambahkan di bagian methods
+        confirmDeleteMultiple() {
+            if (this.selectedDocuments.length === 0) return;
+
+            this.showDeleteMultipleModal = true;
+        },
+
+        async submitDeleteMultiple() {
+            if (this.selectedDocuments.length === 0) return;
+
+            // ✅ Loading dengan progress yang mirip upload
+            Swal.fire({
+                title: "Menghapus berkas...",
+                html: `
+            <div class="mb-4">
+                <div class="text-sm text-gray-600 mb-2">
+                    Sedang menghapus <span id="deleteProgress">0</span> dari ${this.selectedDocuments.length} berkas
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                    <div id="deleteProgressBar" class="bg-red-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+        `,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                background: "#f7faff",
+                customClass: {
+                    popup: "swal-custom-popup",
+                },
+            });
+
+            try {
+                const csrfToken = document.querySelector(
+                    'meta[name="csrf-token"]'
+                )?.content;
+
+                // ✅ Tentukan endpoint berdasarkan context
+                const endpoint =
+                    this.currentContext === "company"
+                        ? "/company-documents/delete-multiple"
+                        : "/documents/delete-multiple";
+
+                console.log("🗑️ Deleting from endpoint:", endpoint);
+
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": csrfToken,
+                        Accept: "application/json",
+                    },
+                    body: JSON.stringify({
+                        documents: this.selectedDocuments.map((doc) => ({
+                            id: doc.id,
+                            type: doc.type === "Folder" ? "folder" : "file",
+                        })),
+                    }),
+                });
+
+                // ✅ Simulasi progress (karena delete tidak bisa track real progress)
+                let progress = 0;
+                const interval = setInterval(() => {
+                    progress += 10;
+                    if (progress <= 90) {
+                        document.getElementById(
+                            "deleteProgressBar"
+                        ).style.width = progress + "%";
+                        const currentCount = Math.floor(
+                            (progress / 100) * this.selectedDocuments.length
+                        );
+                        document.getElementById("deleteProgress").textContent =
+                            currentCount;
+                    }
+                }, 100);
+
+                const data = await response.json();
+                clearInterval(interval);
+
+                // ✅ Set progress ke 100%
+                document.getElementById("deleteProgressBar").style.width =
+                    "100%";
+                document.getElementById("deleteProgress").textContent =
+                    this.selectedDocuments.length;
+
+                if (data.success) {
+                    this.showDeleteMultipleModal = false;
+                    this.selectedDocuments = [];
+                    this.selectMode = false;
+
+                    showCustomSwal({
+                        icon: "success",
+                        title: "Berhasil!",
+                        text: data.message || "Berkas berhasil dihapus",
+                        timer: 1000,
+                        showConfirmButton: false,
+                    });
+
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showCustomSwal({
+                        icon: "error",
+                        title: "Gagal!",
+                        text: data.message || "Gagal menghapus berkas",
+                        showConfirmButton: true,
+                    });
+                }
+            } catch (error) {
+                console.error("❌ Error deleting documents:", error);
+                showCustomSwal({
+                    icon: "error",
+                    title: "Error!",
+                    text: "Terjadi kesalahan saat menghapus berkas",
+                    showConfirmButton: true,
+                });
+            }
+        },
+
         processBackendData() {
             // Process folders
             this.folders = this.backendFolders.map((folder) => ({
@@ -692,79 +813,162 @@ export default function documentSearch() {
         // ==========================================
 
         // 1️⃣ Handle Upload File
-        async handleFileUpload(event) {
-            console.log("🚀 handleFileUpload called");
-            console.log("📍 history.length BEFORE upload:", history.length);
+        // 1️⃣ Handle Upload File (MULTIPLE SUPPORT)
+// 1️⃣ Handle Upload File (MULTIPLE SUPPORT)
+async handleFileUpload(event) {
+    console.log("🚀 handleFileUpload called");
 
-            const form = event.target;
-            const formData = new FormData(form);
-            const url = form.action;
+    // ✅ FIX: Ambil fileInput dari form, bukan dari event.target
+    const form = event.target;
+    const fileInput = form.querySelector('input[type="file"]');
+    
+    if (!fileInput || !fileInput.files) {
+        console.error("❌ File input not found");
+        return;
+    }
 
-            // Loading
+    const files = Array.from(fileInput.files);
+
+    if (files.length === 0) return;
+
+    // ✅ Validasi semua file dulu
+    const validFiles = [];
+    for (const file of files) {
+        const fileSizeMB = file.size / 1024 / 1024;
+        const isVideo = file.type.startsWith("video/");
+
+        if (isVideo && fileSizeMB > 100) {
             showCustomSwal({
-                title: "Mengunggah file...",
-                text: "Mohon tunggu sebentar",
-                showConfirmButton: false,
+                icon: "error",
+                title: "File Terlalu Besar!",
+                text: `Video "${file.name}" maksimal 100 MB (${fileSizeMB.toFixed(2)} MB).`,
+                showConfirmButton: true,
             });
+            continue;
+        }
 
-            if (window.Swal) Swal.showLoading();
+        if (!isVideo && fileSizeMB > 20) {
+            showCustomSwal({
+                icon: "error",
+                title: "File Terlalu Besar!",
+                text: `"${file.name}" maksimal 20 MB (${fileSizeMB.toFixed(2)} MB).`,
+                showConfirmButton: true,
+            });
+            continue;
+        }
 
-            try {
-                const response = await fetch(url, {
-                    method: "POST",
-                    body: formData,
-                    headers: {
-                        "X-Requested-With": "XMLHttpRequest",
-                        Accept: "application/json",
-                    },
-                });
+        validFiles.push(file);
+    }
 
-                const data = await response.json();
-                console.log("✅ Upload response:", data);
+    if (validFiles.length === 0) {
+        fileInput.value = "";
+        return;
+    }
 
-                if (data.success && data.redirect_url) {
-                    // Success alert
-                    if (data.alert) {
-                        showCustomSwal({
-                            icon: data.alert.icon,
-                            title: data.alert.title,
-                            text: data.alert.text,
-                            timer: 1700,
-                            showConfirmButton: false,
-                        });
-                    }
+    // ✅ Show modal dengan list semua file
+    const fileListHTML = validFiles.map((f, idx) => `
+        <div class="flex items-center justify-between py-2 border-b">
+            <span class="text-sm text-gray-700 truncate flex-1">${idx + 1}. ${f.name}</span>
+            <div class="flex items-center gap-2">
+                <span id="progress-${idx}" class="text-xs text-gray-500">0%</span>
+                <div class="w-16 bg-gray-200 rounded-full h-1.5">
+                    <div id="bar-${idx}" class="bg-blue-600 h-1.5 rounded-full transition-all" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    `).join('');
 
-                    // Redirect
-                    setTimeout(() => {
-                        console.log(
-                            "📍 history.length BEFORE replace:",
-                            history.length
-                        );
-                        window.location.replace(data.redirect_url);
-                    }, 1000);
-                } else {
-                    showCustomSwal({
-                        icon: "error",
-                        title: "Error!",
-                        text:
-                            data.message ||
-                            "Terjadi kesalahan saat upload file",
-                        showConfirmButton: true,
-                    });
-                }
-            } catch (error) {
-                console.error("❌ Upload error:", error);
+    Swal.fire({
+        title: "Mengunggah File...",
+        html: `
+            <div class="text-left max-h-64 overflow-y-auto">
+                ${fileListHTML}
+            </div>
+            <div class="mt-4 text-sm text-gray-600">
+                <span id="currentFile">0</span> / ${validFiles.length} file selesai
+            </div>
+        `,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        background: "#f7faff",
+    });
 
-                showCustomSwal({
-                    icon: "error",
-                    title: "Error!",
-                    text: "Terjadi kesalahan saat upload file",
-                    showConfirmButton: true,
-                });
+    // ✅ Upload satu per satu
+    for (let i = 0; i < validFiles.length; i++) {
+        await this.uploadSingleDocumentFile(validFiles[i], i, validFiles.length);
+    }
+
+    fileInput.value = "";
+
+    showCustomSwal({
+        icon: "success",
+        title: "Berhasil!",
+        text: `${validFiles.length} file berhasil diunggah`,
+        timer: 2000,
+        showConfirmButton: false,
+    });
+
+    setTimeout(() => {
+        window.location.reload();
+    }, 2000);
+},
+
+// 2️⃣ Upload single DOCUMENT file (NAMA BARU)
+async uploadSingleDocumentFile(file, index, totalFiles) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    if (this.currentFolder) {
+        formData.append("folder_id", this.currentFolder.id);
+    }
+
+    if (this.currentContext === "workspace") {
+        formData.append("workspace_id", this.currentWorkspaceId);
+    } else if (this.currentContext === "company") {
+        formData.append("company_id", this.currentCompanyId);
+    }
+
+    const endpoint = this.currentContext === "company"
+        ? "/company-documents/file"
+        : "/file";
+
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener("progress", (e) => {
+            if (e.lengthComputable) {
+                const percent = Math.round((e.loaded / e.total) * 100);
+                const barEl = document.getElementById(`bar-${index}`);
+                const progressEl = document.getElementById(`progress-${index}`);
+                if (barEl) barEl.style.width = percent + "%";
+                if (progressEl) progressEl.textContent = percent + "%";
             }
+        });
 
-            form.reset();
-        },
+        xhr.onload = function () {
+            if (xhr.status === 200) {
+                const data = JSON.parse(xhr.responseText);
+                if (data.success) {
+                    const counterEl = document.getElementById("currentFile");
+                    if (counterEl) counterEl.textContent = index + 1;
+                    resolve(data);
+                } else {
+                    reject(new Error(data.message || "Upload failed"));
+                }
+            } else {
+                reject(new Error(`HTTP ${xhr.status}`));
+            }
+        };
+
+        xhr.onerror = () => reject(new Error("Network error"));
+
+        xhr.open("POST", endpoint);
+        xhr.setRequestHeader("X-CSRF-TOKEN", document.querySelector('meta[name="csrf-token"]').content);
+        xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+        xhr.send(formData);
+    });
+},
 
         // Tambahkan method baru (sekitar baris 800-900, setelah method lainnya)
         async loadAvailableWorkspaces() {
@@ -2171,21 +2375,6 @@ export default function documentSearch() {
             this.showConfirmModal = false;
         },
 
-        // openDeleteFileModal(file) {
-        // this.deletingFile = file;
-        // this.showDeleteFileModal = true;
-        // },
-
-        // confirmDeleteFile() {
-        // if (!this.deletingFile) return;
-
-        // this.deleteFile(this.deletingFile);
-        // this.showSuccessMessage(`File "${this.deletingFile.name}" berhasil dihapus`);
-
-        // this.showDeleteFileModal = false;
-        // this.deletingFile = null;
-        // },
-
         // Folder Operations
         openEditFolder(folder) {
             this.editingFolder = folder;
@@ -3559,9 +3748,16 @@ window.documentCommentSection = function () {
 window.documentEditors = {};
 
 // Export functions untuk akses global
-window.createEditorForDocument = window.documentCommentSection.prototype.createEditorForDocument;
-window.destroyEditorForDocument = window.documentCommentSection.prototype.destroyEditorForDocument;
-window.getDocumentEditorData = window.documentCommentSection.prototype.getDocumentEditorData;
-window.initReplyEditorForDocument = window.documentCommentSection.prototype.initReplyEditorForDocument;
-window.destroyReplyEditorForDocument = window.documentCommentSection.prototype.destroyReplyEditorForDocument;
-window.getDocumentReplyEditorDataFor = window.documentCommentSection.prototype.getDocumentReplyEditorDataFor;``
+window.createEditorForDocument =
+    window.documentCommentSection.prototype.createEditorForDocument;
+window.destroyEditorForDocument =
+    window.documentCommentSection.prototype.destroyEditorForDocument;
+window.getDocumentEditorData =
+    window.documentCommentSection.prototype.getDocumentEditorData;
+window.initReplyEditorForDocument =
+    window.documentCommentSection.prototype.initReplyEditorForDocument;
+window.destroyReplyEditorForDocument =
+    window.documentCommentSection.prototype.destroyReplyEditorForDocument;
+window.getDocumentReplyEditorDataFor =
+    window.documentCommentSection.prototype.getDocumentReplyEditorDataFor;
+``;
