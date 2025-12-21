@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Company;
@@ -75,44 +76,6 @@ class CompanyController extends Controller
 
         // Hanya SuperAdmin, Admin, dan Manager yang bisa undang
         return in_array($role, ['SuperAdmin', 'Super Admin', 'Admin', 'Administrator', 'Manager']);
-    }
-
-    // Method untuk dashboard
-    public function dashboard()
-    {
-        $user = Auth::user();
-        $companies = $user->companies()->get();
-
-        if ($companies->isEmpty()) {
-            return redirect()->route('buat-perusahaan')
-                ->with('info', 'Anda belum memiliki perusahaan. Silakan buat perusahaan baru.');
-        }
-
-        $activeCompany = null;
-        $companyIdSession = session('active_company_id');
-
-        if ($companyIdSession) {
-            $hasAccess = UserCompany::where('user_id', $user->id)
-                ->where('company_id', $companyIdSession)
-                ->exists();
-
-            if ($hasAccess) {
-                $activeCompany = Company::find($companyIdSession);
-            } else {
-                session()->forget('active_company_id');
-                $removedCompany = Company::find($companyIdSession);
-                session(['removed_from_company' => $removedCompany->name ?? 'Perusahaan']);
-                return redirect()->route('member.removed');
-            }
-        } else {
-            $activeCompany = $companies->first();
-        }
-
-        if ($activeCompany) {
-            session(['active_company_id' => $activeCompany->id]);
-        }
-
-        return view('dashboard', compact('companies', 'activeCompany'));
     }
 
     // Halaman notifikasi member dihapus
@@ -272,34 +235,6 @@ class CompanyController extends Controller
         return view('buat-perusahaan');
     }
 
-    // Simpan perusahaan baru
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-        ]);
-
-        $company = Company::create([
-            'id' => Str::uuid()->toString(),
-            'name' => $request->name,
-            'email' => $request->email,
-            'address' => $request->address,
-            'phone' => $request->phone,
-        ]);
-
-        $superAdminRole = Role::where('name', 'SuperAdmin')->first();
-
-        UserCompany::create([
-            'user_id' => Auth::id(),
-            'company_id' => $company->id,
-            'roles_id' => $superAdminRole->id ?? null,
-        ]);
-
-        session(['active_company_id' => $company->id]);
-        return redirect()->route('dashboard-awal')
-            ->with('success', 'Perusahaan berhasil dibuat!');
-    }
-
     // ✅ Update perusahaan - HANYA SUPER ADMIN
     public function update(Request $request, $id)
     {
@@ -429,5 +364,117 @@ class CompanyController extends Controller
             ->get(['id', 'name']);
 
         return response()->json($roles);
+    }
+    // app/Http/Controllers/CompanyController.php
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $company = Company::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'address' => $request->address,
+                'status' => 'trial',
+                'trial_start' => Carbon::now(),
+                'trial_end' => Carbon::now()->addDays(7),
+            ]);
+
+            Log::info('Company Created:', [
+                'id' => $company->id,
+                'name' => $company->name,
+                'status' => $company->status,
+                'trial_start' => $company->trial_start,
+                'trial_end' => $company->trial_end,
+                'trial_is_future' => Carbon::parse($company->trial_end)->isFuture(),
+            ]);
+
+            $superAdminRole = Role::where('name', 'SuperAdmin')
+                ->orWhere('name', 'Super Admin')
+                ->first();
+
+            if (!$superAdminRole) {
+                throw new \Exception('Role SuperAdmin tidak ditemukan di database');
+            }
+
+            $company->users()->attach(Auth::id(), [
+                'roles_id' => $superAdminRole->id,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            session(['active_company_id' => $company->id]);
+
+            Log::info('Session Set:', [
+                'active_company_id' => session('active_company_id'),
+                'company_found' => Company::find(session('active_company_id')) ? 'YES' : 'NO'
+            ]);
+
+            // ✅ SET ONBOARDING TYPE UNTUK FOUNDER (FULL TUTORIAL)
+            $user = Auth::user();
+            if (!$user->onboarding_type) {
+                $user->onboarding_type = 'full';  // ⬅️ TAMBAHAN INI
+                $user->has_seen_onboarding = false;
+                $user->onboarding_step = null;
+                $user->save();
+
+                Log::info('✅ Onboarding type set for founder:', [
+                    'user_id' => $user->id,
+                    'type' => 'full'
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()->route('dashboard')
+                ->with('success', 'Perusahaan berhasil dibuat dengan 7 hari trial gratis!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Gagal membuat perusahaan: ' . $e->getMessage());
+            return back()->with('error', 'Gagal membuat perusahaan: ' . $e->getMessage());
+        }
+    }
+
+    public function checkTrialExpiration()
+    {
+        $companyId = session('active_company_id');
+
+        if (!$companyId) {
+            return redirect()->route('dashboard')
+                ->with('error', 'Silakan pilih perusahaan terlebih dahulu.');
+        }
+
+        $company = Company::findOrFail($companyId);
+
+        if ($company->status === 'trial' && $company->trial_end) {
+            $trialEnds = Carbon::parse($company->trial_end);
+
+            // Jika trial sudah lewat dan tidak ada subscription aktif
+            if ($trialEnds->isPast()) {
+                $hasActiveSubscription = $company->subscription &&
+                    $company->subscription->status === 'active' &&
+                    Carbon::parse($company->subscription->end_date)->isFuture();
+
+                if (!$hasActiveSubscription) {
+                    // Matikan akses company
+                    $company->update([
+                        'status' => 'expired'
+                    ]);
+
+                    return redirect()->route('pembayaran')
+                        ->with('warning', 'Trial Anda telah berakhir. Silakan pilih paket untuk melanjutkan.');
+                }
+            }
+        }
+
+        return null;
     }
 }

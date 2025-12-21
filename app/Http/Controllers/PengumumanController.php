@@ -30,10 +30,17 @@ class PengumumanController extends Controller
         return view('pengumuman', compact('pengumumans', 'workspace', 'user'));
     }
 
-    public function show($id)
+    /**
+     * 🔹 Menampilkan detail pengumuman
+     */
+    public function show(Workspace $workspace, Pengumuman $pengumuman) // Tambahkan Workspace parameter
     {
-        $pengumuman = Pengumuman::with(['recipients', 'creator'])->findOrFail($id);
         $user = Auth::user();
+
+        // Validasi: pastikan pengumuman milik workspace ini
+        if ($pengumuman->workspace_id !== $workspace->id) {
+            abort(404);
+        }
 
         // Kalau private, cek apakah dia pembuat atau penerima
         if ($pengumuman->is_private) {
@@ -45,9 +52,6 @@ class PengumumanController extends Controller
                 // Kalau mau bisa kasih flag untuk blade: $bolehLihat = false misal
             }
         }
-        $workspace = $pengumuman->workspace;
-
-        $pengumuman = Pengumuman::with('creator')->findOrFail($id);
 
         // hitung komentar utama saja
         $commentCount = $pengumuman->comments()->whereNull('parent_comment_id')->count();
@@ -56,15 +60,13 @@ class PengumumanController extends Controller
         $allCommentCount = $pengumuman->comments()->count();
 
         return view('isiPengumuman', compact('pengumuman', 'workspace', 'commentCount', 'allCommentCount'));
-
     }
-
 
 
     /**
      * 🔹 Menyimpan pengumuman baru
      */
-    public function store(Request $request, $id_workspace)
+    public function store(Request $request, Workspace $workspace) // Ganti parameter menjadi Workspace $workspace
     {
         $request->validate([
             'title' => 'required|string',
@@ -85,7 +87,7 @@ class PengumumanController extends Controller
         try {
             $pengumuman = new Pengumuman();
             $pengumuman->id = Str::uuid();
-            $pengumuman->workspace_id = $id_workspace;
+            $pengumuman->workspace_id = $workspace->id; // Gunakan $workspace->id
             $pengumuman->title = $request->title;
             $pengumuman->description = $request->description;
             $pengumuman->created_by = $user->id;
@@ -150,7 +152,11 @@ class PengumumanController extends Controller
 
             DB::commit();
 
-            return redirect()->route('pengumuman.show', $pengumuman->id)->with('alert', [
+            // PERBAIKAN: Redirect dengan parameter yang benar
+            return redirect()->route('pengumuman.show', [
+                'workspace' => $workspace->id, // Gunakan $workspace->id
+                'pengumuman' => $pengumuman->id
+            ])->with('alert', [
                 'icon' => 'success',
                 'title' => 'Berhasil!',
                 'text' => 'Berhasil membuat pengumuman.'
@@ -165,10 +171,14 @@ class PengumumanController extends Controller
     /**
      * 🔹 Menampilkan form edit pengumuman
      */
-    public function getEditData($id)
+    public function getEditData(Workspace $workspace, Pengumuman $pengumuman) // Tambahkan parameter Workspace
     {
-        $pengumuman = Pengumuman::with('recipients')->findOrFail($id);
         $user = Auth::user();
+
+        // Validasi: pastikan pengumuman milik workspace ini
+        if ($pengumuman->workspace_id !== $workspace->id) {
+            abort(404);
+        }
 
         // Pastikan hanya pembuat yang bisa mengedit
         if ($pengumuman->created_by !== $user->id) {
@@ -225,8 +235,13 @@ class PengumumanController extends Controller
     /**
      * 🔹 Menyimpan perubahan pengumuman
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Workspace $workspace, Pengumuman $pengumuman) // Tambahkan parameter Workspace
     {
+        // Validasi: pastikan pengumuman milik workspace ini
+        if ($pengumuman->workspace_id !== $workspace->id) {
+            abort(404);
+        }
+
         $request->validate([
             'title' => 'required|string',
             'description' => 'required|string',
@@ -237,7 +252,6 @@ class PengumumanController extends Controller
         ]);
 
         $user = Auth::user();
-        $pengumuman = Pengumuman::with('recipients')->findOrFail($id);
 
         if ($pengumuman->created_by !== $user->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
@@ -293,9 +307,11 @@ class PengumumanController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Pengumuman berhasil diperbarui.',
-                'redirect' => route('pengumuman.show', $pengumuman->id)
+                'redirect' => route('pengumuman.show', [
+                    'workspace' => $workspace->id,
+                    'pengumuman' => $pengumuman->id
+                ])
             ]);
-
         } catch (\Throwable $th) {
             DB::rollBack();
             return response()->json([
@@ -305,14 +321,18 @@ class PengumumanController extends Controller
         }
     }
 
-
     /**
      * 🔹 Menghapus pengumuman
      */
 
-    public function destroy(Pengumuman $pengumuman)
-{
-    $workspaceId = $pengumuman->workspace_id;
+    public function destroy(Workspace $workspace, Pengumuman $pengumuman) // Tambahkan parameter Workspace
+    {
+        // Validasi: pastikan pengumuman milik workspace ini
+        if ($pengumuman->workspace_id !== $workspace->id) {
+            abort(404);
+        }
+
+        $workspaceId = $pengumuman->workspace_id;
 
     DB::beginTransaction();
 
@@ -392,11 +412,11 @@ class PengumumanController extends Controller
 
         DB::commit();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Pengumuman berhasil dihapus.',
-            'redirect_url' => route('workspace.pengumuman', $workspaceId)
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengumuman berhasil dihapus.',
+                'redirect_url' => route('workspace.pengumuman', $workspaceId)
+            ]);
     } catch (\Throwable $th) {
         DB::rollBack();
         return response()->json([
@@ -405,9 +425,6 @@ class PengumumanController extends Controller
         ], 500);
     }
 }
-
-
-
 
     public function getAnggota($workspaceId)
     {

@@ -24,6 +24,7 @@ class Task extends Model
         'description',
         'status',
         'board_column_id',
+        'completed_at',
         'priority',
         'is_secret',
         'start_datetime',
@@ -41,6 +42,7 @@ class Task extends Model
         'is_secret' => 'boolean',
         'start_datetime' => 'datetime',
         'due_datetime' => 'datetime',
+        'completed_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime'
@@ -52,14 +54,14 @@ class Task extends Model
 
         static::creating(function ($model) {
             $model->id = $model->id ?: Str::uuid()->toString();
-            
+
             // Set default board column jika tidak disediakan
             if (!$model->board_column_id) {
                 try {
                     $defaultColumn = BoardColumn::where('workspace_id', $model->workspace_id)
                         ->where('name', 'like', '%To Do%')
                         ->first();
-                        
+
                     if ($defaultColumn) {
                         $model->board_column_id = $defaultColumn->id;
                     }
@@ -108,8 +110,7 @@ class Task extends Model
     public function assignedUsers()
     {
         return $this->belongsToMany(User::class, 'task_assignments', 'task_id', 'user_id')
-            ->withPivot('assigned_at')
-            ->withTimestamps(false);
+            ->withPivot('assigned_at');
     }
 
     // ✅ OPTION 2: Relasi melalui model TaskAssignment (jika butuh lebih banyak logika)
@@ -127,30 +128,43 @@ class Task extends Model
     }
 
     public function syncStatusFromColumn()
-{
-    if (!$this->boardColumn) {
-        return;
+    {
+        if (!$this->boardColumn) {
+            return;
+        }
+
+        // Mapping nama kolom default ke status
+        $columnStatusMap = [
+            'To Do List' => 'todo',
+            'Dikerjakan' => 'inprogress',
+            'Selesai' => 'done',
+            'Batal' => 'cancel'
+        ];
+
+        $columnName = $this->boardColumn->name;
+
+        if (array_key_exists($columnName, $columnStatusMap)) {
+            // Untuk kolom default, gunakan mapping
+            $this->status = $columnStatusMap[$columnName];
+        } else {
+            // Untuk kolom custom, gunakan nama kolom sebagai status
+            // Konversi ke lowercase dan replace spasi dengan underscore
+            $this->status = strtolower(str_replace(' ', '_', $columnName));
+        }
     }
 
-    // Mapping nama kolom default ke status
-    $columnStatusMap = [
-        'To Do List' => 'todo',
-        'Dikerjakan' => 'inprogress', 
-        'Selesai' => 'done',
-        'Batal' => 'cancel'
-    ];
+    // File: app/Models/Task.php
 
-    $columnName = $this->boardColumn->name;
-    
-    if (array_key_exists($columnName, $columnStatusMap)) {
-        // Untuk kolom default, gunakan mapping
-        $this->status = $columnStatusMap[$columnName];
-    } else {
-        // Untuk kolom custom, gunakan nama kolom sebagai status
-        // Konversi ke lowercase dan replace spasi dengan underscore
-        $this->status = strtolower(str_replace(' ', '_', $columnName));
+    public function getDaysUntilDueAttribute()
+    {
+        if (!$this->due_datetime) {
+            return null;
+        }
+
+        // Hitung selisih hari antara sekarang dan deadline
+        return now()->diffInDays($this->due_datetime, false);
+        // false = bisa negatif (misal: -2 = telat 2 hari)
     }
-}
 
 
 
@@ -164,16 +178,19 @@ class Task extends Model
     }
 
     // Relasi ke Attachments
+    // inside Task model
+
     public function attachments()
     {
         return $this->morphMany(Attachment::class, 'attachable');
     }
 
-    // Relasi ke Comments
     public function comments()
     {
+        // order by created_at desc (frontend expects newest first)
         return $this->morphMany(Comment::class, 'commentable')->orderBy('created_at', 'desc');
     }
+
 
     // Relasi ke Labels
     public function labels()
@@ -189,16 +206,16 @@ class Task extends Model
     }
 
     // ===== SCOPES =====
-    
+
     // Scope untuk tugas berdasarkan akses (secret/non-secret)
     public function scopeWithAccess($query, $user)
     {
         return $query->where(function ($q) use ($user) {
             $q->where('is_secret', false)
-              ->orWhere('created_by', $user->id)
-              ->orWhereHas('assignments', function ($assignmentQuery) use ($user) {
-                  $assignmentQuery->where('user_id', $user->id);
-              });
+                ->orWhere('created_by', $user->id)
+                ->orWhereHas('assignments', function ($assignmentQuery) use ($user) {
+                    $assignmentQuery->where('user_id', $user->id);
+                });
         });
     }
 
@@ -236,14 +253,14 @@ class Task extends Model
     public function scopeOverdue($query)
     {
         return $query->where('due_datetime', '<', now())
-                    ->whereNotIn('status', ['done', 'cancel']);
+            ->whereNotIn('status', ['done', 'cancel']);
     }
 
     // Scope untuk tugas yang akan datang
     public function scopeUpcoming($query)
     {
         return $query->where('start_datetime', '>', now())
-                    ->where('status', 'todo');
+            ->where('status', 'todo');
     }
 
     // Scope berdasarkan workspace
@@ -257,21 +274,26 @@ class Task extends Model
     {
         return $query->where(function ($q) use ($searchTerm) {
             $q->where('title', 'like', "%{$searchTerm}%")
-              ->orWhere('description', 'like', "%{$searchTerm}%")
-              ->orWhere('phase', 'like', "%{$searchTerm}%");
+                ->orWhere('description', 'like', "%{$searchTerm}%")
+                ->orWhere('phase', 'like', "%{$searchTerm}%");
         });
     }
 
     // ===== HELPER METHODS =====
+    public function isCompletedLate()
+    {
+        return $this->completed_at && $this->due_datetime &&
+            $this->completed_at > $this->due_datetime;
+    }
 
     /**
      * Cek apakah tugas sudah lewat deadline
      */
     public function isOverdue()
     {
-        return $this->due_datetime && 
-               $this->due_datetime->lt(now()) && 
-               !in_array($this->status, ['done', 'cancel']);
+        return $this->status !== 'done' &&
+            $this->due_datetime &&
+            $this->due_datetime->lt(now());
     }
 
     /**
@@ -316,9 +338,9 @@ class Task extends Model
         // 1. Tugas tidak rahasia, ATAU
         // 2. User adalah creator tugas, ATAU  
         // 3. User adalah assigned member
-        return !$this->is_secret || 
-               $this->created_by === $user->id || 
-               $this->assignments()->where('user_id', $user->id)->exists();
+        return !$this->is_secret ||
+            $this->created_by === $user->id ||
+            $this->assignments()->where('user_id', $user->id)->exists();
     }
 
     /**
@@ -348,7 +370,7 @@ class Task extends Model
     public function updateStatus($status)
     {
         $validStatuses = ['todo', 'inprogress', 'done', 'cancel'];
-        
+
         if (!in_array($status, $validStatuses)) {
             throw new \InvalidArgumentException("Status tidak valid: {$status}");
         }
@@ -361,18 +383,34 @@ class Task extends Model
      * Pindahkan tugas ke board column lain
      */
     public function moveToColumn($boardColumnId)
-{
-    $column = BoardColumn::find($boardColumnId);
-    
-    if (!$column || $column->workspace_id !== $this->workspace_id) {
-        throw new \InvalidArgumentException("Board column tidak valid");
-    }
+    {
+        $column = BoardColumn::find($boardColumnId);
 
-    $this->board_column_id = $boardColumnId;
-    $this->syncStatusFromColumn(); // Sync status otomatis
-    
-    return $this->save();
-}
+        if (!$column || $column->workspace_id !== $this->workspace_id) {
+            throw new \InvalidArgumentException("Board column tidak valid");
+        }
+
+        // ✅ SIMPAN STATUS LAMA
+        $oldStatus = $this->status;
+
+        $this->board_column_id = $boardColumnId;
+        $this->syncStatusFromColumn(); // Sync status otomatis
+
+        // ✅ TANGANI completed_at SETELAH syncStatusFromColumn()
+        $newStatus = $this->status; // Status sudah berubah setelah syncStatusFromColumn()
+
+        // Set completed_at saat pindah ke 'done'
+        if ($newStatus === 'done' && $oldStatus !== 'done') {
+            $this->completed_at = now();
+        }
+
+        // Clear completed_at kalau dipindah dari 'done' ke kolom lain
+        if ($oldStatus === 'done' && $newStatus !== 'done') {
+            $this->completed_at = null;
+        }
+
+        return $this->save();
+    }
 
     /**
      * Duplikat tugas
@@ -400,6 +438,8 @@ class Task extends Model
 
         return $newTask;
     }
+
+
 
     /**
      * Format data untuk response API
@@ -515,9 +555,9 @@ class Task extends Model
      */
     public function getStatusColorAttribute()
     {
-        return match($this->status) {
+        return match ($this->status) {
             'todo' => 'gray',
-            'inprogress' => 'blue', 
+            'inprogress' => 'blue',
             'done' => 'green',
             'cancel' => 'red',
             default => 'gray'
@@ -529,7 +569,7 @@ class Task extends Model
      */
     public function getPriorityColorAttribute()
     {
-        return match($this->priority) {
+        return match ($this->priority) {
             'low' => 'gray',
             'medium' => 'blue',
             'high' => 'orange',

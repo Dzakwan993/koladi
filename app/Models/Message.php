@@ -1,0 +1,127 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Str;
+
+class Message extends Model
+{
+    use HasFactory;
+
+    public $incrementing = false;
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'id',
+        'conversation_id',
+        'sender_id',
+        'content',
+        'message_type',      // ✅ SUDAH ADA
+        'reply_to_message_id',
+        'is_edited',
+        'is_read',
+        'edited_at',
+        'read_at',
+        'deleted_at'         // ✅ SUDAH ADA
+    ];
+
+    protected $casts = [
+        'is_edited' => 'boolean',
+        'is_read' => 'boolean',
+        'edited_at' => 'datetime',
+        'read_at' => 'datetime',
+        'deleted_at' => 'datetime',  // ✅ SUDAH ADA
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
+    // 🔥 TAMBAHKAN INI: Make sure these fields are always visible in JSON
+    protected $visible = [
+        'id',
+        'conversation_id',
+        'sender_id',
+        'content',
+        'message_type',      // ✅ PENTING!
+        'reply_to_message_id',
+        'is_edited',
+        'is_read',
+        'edited_at',
+        'read_at',
+        'deleted_at',        // ✅ PENTING!
+        'created_at',
+        'updated_at',
+        'sender',
+        'attachments',
+        'reply_to'
+    ];
+
+    // 🔥 TAMBAHKAN INI: Append untuk computed attributes
+    protected $appends = [];
+
+    protected static function booted()
+    {
+        static::creating(function ($message) {
+            $message->id = $message->id ?? Str::uuid();
+        });
+    }
+
+    public function conversation()
+    {
+        return $this->belongsTo(Conversation::class);
+    }
+
+    public function sender()
+    {
+        return $this->belongsTo(User::class, 'sender_id');
+    }
+
+    // 🔥 PENTING: Relasi dengan nama snake_case (sesuai Laravel convention)
+    public function reply_to()
+    {
+        return $this->belongsTo(Message::class, 'reply_to_message_id')
+            ->select(['id', 'sender_id', 'content', 'message_type', 'deleted_at', 'created_at'])
+            ->with([
+                'sender:id,full_name,avatar',
+                'attachments'
+            ]);
+    }
+
+    public function replies()
+    {
+        return $this->hasMany(Message::class, 'reply_to_message_id');
+    }
+
+    public function attachments()
+    {
+        return $this->morphMany(Attachment::class, 'attachable');
+    }
+
+    public function canBeEdited()
+    {
+        if ($this->deleted_at !== null) {
+            return false;
+        }
+
+        $fifteenMinutesAgo = now()->subMinutes(15);
+        return $this->created_at >= $fifteenMinutesAgo;
+    }
+
+    // 🔥 OVERRIDE: toArray method untuk ensure fields terkirim
+    public function toArray()
+    {
+        $array = parent::toArray();
+
+        // Force include message_type and deleted_at even if null
+        if (!isset($array['message_type'])) {
+            $array['message_type'] = $this->message_type;
+        }
+
+        if (!isset($array['deleted_at'])) {
+            $array['deleted_at'] = $this->deleted_at;
+        }
+
+        return $array;
+    }
+}

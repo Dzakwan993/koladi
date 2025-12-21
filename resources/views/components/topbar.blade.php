@@ -22,30 +22,153 @@
 
     <!-- Right Section: Active Users & Action Buttons -->
     <div class="flex items-center gap-3">
-        <!-- Active Users -->
-        <div class="flex items-center gap-2">
-            <div class="flex -space-x-2">
-                <img src="https://i.pravatar.cc/32?img=1" alt="User 1"
-                    class="w-7 h-7 rounded-full border-2 border-white ring-1 ring-gray-200">
-                <img src="https://i.pravatar.cc/32?img=2" alt="User 2"
-                    class="w-7 h-7 rounded-full border-2 border-white ring-1 ring-gray-200">
-                <img src="https://i.pravatar.cc/32?img=6" alt="User 3"
-                    class="w-7 h-7 rounded-full border-2 border-white ring-1 ring-gray-200">
+
+        <!-- Active Users Section -->
+        <div class="flex items-center gap-2" x-data="activeUsersComponent" x-init="init('{{ $activeCompany->id ?? '' }}')">
+
+            <!-- Loading State -->
+            <template x-if="loading">
+                <div class="flex items-center gap-2">
+                    <div class="flex -space-x-2">
+                        <div class="w-7 h-7 rounded-full bg-gray-200 animate-pulse border-2 border-white"></div>
+                        <div class="w-7 h-7 rounded-full bg-gray-200 animate-pulse border-2 border-white"></div>
+                        <div class="w-7 h-7 rounded-full bg-gray-200 animate-pulse border-2 border-white"></div>
+                    </div>
+                    <span class="text-xs text-gray-400">Loading...</span>
+                </div>
+            </template>
+
+            <!-- Active Users Display -->
+            <template x-if="!loading && users.length > 0">
+                <div class="flex items-center gap-2">
+                    <!-- Avatar Stack -->
+                    <div class="flex -space-x-2">
+                        <template x-for="user in users.slice(0, 3)" :key="user.id">
+                            <img :src="user.avatar" :alt="user.name"
+                                :title="user.name + ' (' + user.role + ')'"
+                                class="w-7 h-7 rounded-full border-2 border-white ring-1 ring-gray-200 hover:scale-110 transition-transform cursor-pointer object-cover">
+                        </template>
+                    </div>
+
+                    <!-- Text Info -->
+                    <span class="text-xs text-gray-600 whitespace-nowrap">
+                        <span class="font-medium" x-text="users[0]?.name || 'User'"></span>
+                        <template x-if="users.length > 1">
+                            <span>
+                                dan
+                                <button @click="showAllUsers = true"
+                                    class="text-blue-600 hover:text-blue-700 font-medium"
+                                    x-text="(users.length - 1) + ' lainnya'">
+                                </button>
+                            </span>
+                        </template>
+                        <span>aktif</span>
+                    </span>
+                </div>
+            </template>
+
+            <!-- Empty State -->
+            <template x-if="!loading && users.length === 0">
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                    </div>
+                    <span class="text-xs text-gray-400">Belum ada yang online</span>
+                </div>
+            </template>
+
+            <!-- Modal Daftar Semua User -->
+            <div x-show="showAllUsers" x-cloak @click.self="showAllUsers = false"
+                x-transition:enter="transition ease-out duration-200" x-transition:enter-start="transform opacity-0"
+                x-transition:enter-end="transform opacity-100" x-transition:leave="transition ease-in duration-150"
+                x-transition:leave-start="transform opacity-100" x-transition:leave-end="transform opacity-0"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+
+                <div class="bg-white rounded-2xl shadow-2xl w-[500px] max-h-[600px] overflow-hidden" @click.stop
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="transform opacity-0 scale-95"
+                    x-transition:enter-end="transform opacity-100 scale-100"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="transform opacity-100 scale-100"
+                    x-transition:leave-end="transform opacity-0 scale-95">
+
+                    <!-- Header -->
+                    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                            <h3 class="text-lg font-bold text-gray-900">
+                                Pengguna Aktif (<span x-text="users.length"></span>)
+                            </h3>
+                        </div>
+                        <button @click="showAllUsers = false" class="text-gray-400 hover:text-gray-600 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- User List -->
+                    <div class="overflow-y-auto max-h-[500px] p-4">
+                        <template x-for="user in users" :key="user.id">
+                            <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition">
+                                <div class="relative">
+                                    <img :src="user.avatar" :alt="user.name"
+                                        class="w-10 h-10 rounded-full border-2 border-white ring-2 ring-gray-200 object-cover">
+                                    <!-- Online Indicator -->
+                                    <span
+                                        class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="font-semibold text-base text-gray-900 truncate" x-text="user.name">
+                                        </h4>
+                                        <!-- Role Badge dengan warna sesuai -->
+                                        <span class="px-2.5 py-0.5 text-xs font-semibold rounded-bl-xl rounded-tr-xl"
+                                            :class="{
+                                                'bg-[#102A63] text-white': user.role === 'SuperAdmin' || user
+                                                    .role === 'Super Admin',
+                                                'bg-[#225AD6] text-white': user.role === 'Admin',
+                                                'bg-[#DC2626] text-white': user.role === 'Administrator',
+                                                'bg-[#0FA875] text-white': user.role === 'Manager',
+                                                'bg-[#E4BA13] text-white': user.role === 'Member',
+                                                'bg-gray-100 text-gray-700': !['SuperAdmin', 'Super Admin', 'Admin',
+                                                    'Administrator', 'Manager', 'Member'
+                                                ].includes(user.role)
+                                            }"
+                                            x-text="user.role">
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Empty State in Modal -->
+                        <template x-if="users.length === 0">
+                            <div class="text-center py-12">
+                                <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                                <p class="text-gray-500 font-medium">Belum ada pengguna online</p>
+                                <p class="text-sm text-gray-400 mt-1">Tunggu anggota lain untuk bergabung</p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
             </div>
-            <span class="text-xs text-gray-600 whitespace-nowrap">
-                <span class="font-medium">Sahroni</span> dan
-                <button class="text-blue-600 hover:text-blue-700 font-medium">
-                    5 lainnya
-                </button>
-                aktif
-            </span>
         </div>
 
         <!-- Divider -->
         <div class="h-6 w-px bg-gray-200"></div>
 
         <!-- Action Buttons -->
-        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Atur Akses" onclick="openAccessModal({ type: 'company' })">
+        <button class="p-1 hover:bg-gray-50 rounded-lg transition" title="Atur Akses"
+            onclick="openAccessModal({ type: 'company' })">
             <img src="{{ asset('images/icons/akses.svg') }}" alt="Atur Akses" class="w-5 h-5">
         </button>
 
@@ -62,12 +185,15 @@
             // ✅ Check apakah user adalah Super Admin
             $isSuperAdmin = false;
             if ($activeCompany) {
-                $userCompany = Auth::user()->userCompanies()
+                $userCompany = Auth::user()
+                    ->userCompanies()
                     ->where('company_id', $activeCompany->id)
                     ->with('role')
                     ->first();
 
-                $isSuperAdmin = $userCompany && $userCompany->role &&
+                $isSuperAdmin =
+                    $userCompany &&
+                    $userCompany->role &&
                     in_array($userCompany->role->name, ['SuperAdmin', 'Super Admin']);
             }
         @endphp
@@ -100,12 +226,15 @@
                     @forelse($companies as $company)
                         @php
                             // ✅ Check Super Admin untuk setiap company
-                            $userCompanyItem = Auth::user()->userCompanies()
+                            $userCompanyItem = Auth::user()
+                                ->userCompanies()
                                 ->where('company_id', $company->id)
                                 ->with('role')
                                 ->first();
 
-                            $isSuperAdminForCompany = $userCompanyItem && $userCompanyItem->role &&
+                            $isSuperAdminForCompany =
+                                $userCompanyItem &&
+                                $userCompanyItem->role &&
                                 in_array($userCompanyItem->role->name, ['SuperAdmin', 'Super Admin']);
                         @endphp
 
@@ -129,10 +258,9 @@
                                 {{-- Tombol pengaturan + centang --}}
                                 <div class="flex items-center gap-2 ml-3">
                                     {{-- ✅ HANYA TAMPIL UNTUK SUPER ADMIN --}}
-                                    @if($isSuperAdminForCompany)
+                                    @if ($isSuperAdminForCompany)
                                         <button type="button" @click.stop="showModal = true"
-                                            class="hover:opacity-80 transition"
-                                            title="Edit Perusahaan (Super Admin)">
+                                            class="hover:opacity-80 transition" title="Edit Perusahaan (Super Admin)">
                                             <img src="{{ asset('images/icons/pengaturan.svg') }}" alt="Pengaturan"
                                                 class="w-5 h-5 cursor-pointer">
                                         </button>
@@ -146,7 +274,7 @@
                             </div>
 
                             {{-- ✅ MODAL HANYA BISA DIBUKA JIKA SUPER ADMIN --}}
-                            @if($isSuperAdminForCompany)
+                            @if ($isSuperAdminForCompany)
                                 {{-- Modal Edit Perusahaan --}}
                                 <div x-show="showModal"
                                     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
@@ -166,7 +294,8 @@
 
                                         {{-- Badge Super Admin --}}
                                         <div class="flex justify-center mb-2">
-                                            <span class="px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">
+                                            <span
+                                                class="px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">
                                                 🔑 Super Admin Access
                                             </span>
                                         </div>
@@ -333,3 +462,106 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+    <script>
+       document.addEventListener('alpine:init', () => {
+    Alpine.data('activeUsersComponent', () => ({
+        users: [],
+        loading: true,
+        showAllUsers: false,
+        channel: null,
+        companyId: null,
+
+        init(companyId) {
+            this.companyId = companyId;
+
+            if (!companyId) {
+                console.warn('⚠️ No active company selected');
+                this.loading = false;
+                return;
+            }
+
+            console.log('🚀 Subscribing to company:', companyId);
+            this.subscribeToPresenceChannel(companyId);
+        },
+
+        // ✅ Helper function untuk memproses avatar URL
+        processAvatarUrl(user) {
+            if (!user.avatar) {
+                // Jika tidak ada avatar, gunakan UI Avatars
+                return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=4F46E5&color=fff&bold=true`;
+            }
+
+            // Jika sudah URL lengkap (http/https), return as is
+            if (user.avatar.startsWith('http://') || user.avatar.startsWith('https://')) {
+                return user.avatar;
+            }
+
+            // Jika path relatif, tambahkan base URL
+            // Pastikan tidak ada double slash
+            const cleanPath = user.avatar.startsWith('/') ? user.avatar : `/${user.avatar}`;
+
+            // Cek apakah path sudah mengandung 'storage/' atau tidak
+            if (user.avatar.includes('storage/')) {
+                return `${window.location.origin}${cleanPath}`;
+            } else {
+                return `${window.location.origin}/storage${cleanPath}`;
+            }
+        },
+
+        subscribeToPresenceChannel(companyId) {
+            try {
+                // Join presence channel
+                this.channel = window.Echo.join(`presence-company.${companyId}`)
+                    .here((users) => {
+                        // ✅ Process avatar untuk setiap user
+                        console.log('✅ Users currently online:', users);
+                        this.users = users.map(user => ({
+                            ...user,
+                            avatar: this.processAvatarUrl(user)
+                        }));
+                        this.loading = false;
+                    })
+                    .joining((user) => {
+                        console.log('👋 User joined:', user);
+
+                        // ✅ Process avatar sebelum push
+                        const processedUser = {
+                            ...user,
+                            avatar: this.processAvatarUrl(user)
+                        };
+
+                        // Cek apakah user sudah ada di list (prevent duplicate)
+                        const exists = this.users.find(u => u.id === processedUser.id);
+                        if (!exists) {
+                            this.users.push(processedUser);
+                        }
+                    })
+                    .leaving((user) => {
+                        console.log('👋 User left:', user);
+                        this.users = this.users.filter(u => u.id !== user.id);
+                    })
+                    .error((error) => {
+                        console.error('❌ Presence channel error:', error);
+                        this.loading = false;
+                    });
+
+            } catch (error) {
+                console.error('❌ Failed to subscribe:', error);
+                this.loading = false;
+            }
+        },
+
+        destroy() {
+            // Cleanup saat component di-destroy
+            if (this.channel && this.companyId) {
+                console.log('🔌 Leaving presence channel...');
+                window.Echo.leave(`presence-company.${this.companyId}`);
+                this.channel = null;
+            }
+        }
+    }));
+}); 
+    </script>
+@endpush

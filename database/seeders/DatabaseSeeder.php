@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Color;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -14,7 +15,9 @@ class DatabaseSeeder extends Seeder
         // Jalankan semua seeder penting
         $this->call([
             RolesSeeder::class,
-            UserSeeder::class,
+            ColorSeeder::class,
+            SubscriptionSeeder::class,
+            AdminSistemSeeder::class,
         ]);
     }
 }

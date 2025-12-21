@@ -306,81 +306,6 @@
             </div>
         </div>
 
-        {{-- <!-- HQ Section -->
-        <div class="mt-2 mx-8 mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <button @click="hqOpen = !hqOpen"
-                    class="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition">
-                    <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': !hqOpen }" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
-                        </path>
-                    </svg>
-                    <span class="font-medium">HQ</span>
-                </button>
-                <button
-                    class="w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center transition shadow-lg"
-                    @click="showModal = true; workspaceData.type = 'HQ'">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                </button>
-            </div>
-
-            <div x-show="hqOpen" x-collapse>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    @forelse($workspaces['HQ'] ?? [] as $workspace)
-                        <a href="{{ url('/workspace') }}"
-                            class="block bg-white rounded-xl border border-gray-200 p-4 relative group hover:shadow-md transition-shadow duration-200">
-                            <div class="flex justify-between items-start">
-                                <h3 class="font-semibold text-gray-800">{{ $workspace->name }}</h3>
-
-                                <!-- tombol titik tiga -->
-                                <button @click.stop.prevent="openWorkspaceMenu($event, {{ json_encode($workspace) }})"
-                                    class="p-1 hover:bg-gray-100 rounded-lg">
-                                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M5 12v.01M12 12v.01M19 12v.01
-                                    M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                                    </svg>
-                                </button>
-                            </div>
-
-                            <p class="text-sm text-gray-600 mt-2">
-                                {{ $workspace->description ?? 'Tidak ada deskripsi' }}
-                            </p>
-
-                            <div class="mt-4">
-                                <div class="flex -space-x-2">
-                                    @foreach ($workspace->userWorkspaces->take(4) as $userWorkspace)
-                                        <img src="https://i.pravatar.cc/32?img={{ $loop->index + 1 }}"
-                                            class="w-8 h-8 rounded-full border-2 border-white"
-                                            title="{{ $userWorkspace->user->full_name }}">
-                                    @endforeach
-                                    @if ($workspace->userWorkspaces->count() > 4)
-                                        <div
-                                            class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center">
-                                            <span
-                                                class="text-xs text-gray-600">+{{ $workspace->userWorkspaces->count() - 4 }}</span>
-                                        </div>
-                                    @endif
-                                </div>
-                            </div>
-                        </a>
-                    @empty
-                        <div class="col-span-4 text-center py-8 text-gray-500">
-                            Belum ada workspace HQ
-                        </div>
-                    @endforelse
-                </div>
-            </div>
-        </div> --}}
-
         <!-- Tim Section -->
         <div class="m-8">
             <div class="flex items-center justify-between mb-4">
@@ -436,7 +361,7 @@
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 12v.01M12 12v.01M19 12v.01
-                                                    M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                                                                                                                                        M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                                     </svg>
                                 </button>
                             </div>
@@ -448,10 +373,30 @@
                             <div class="mt-4">
                                 <div class="flex -space-x-2">
                                     @foreach ($workspace->userWorkspaces->take(4) as $userWorkspace)
-                                        <img src="https://i.pravatar.cc/32?img={{ $loop->index + 1 }}"
-                                            class="w-8 h-8 rounded-full border-2 border-white"
-                                            title="{{ $userWorkspace->user->full_name }}">
+                                        @php
+                                            // ✅ TAMBAHKAN LOGIC AVATAR INI
+                                            $member = $userWorkspace->user;
+                                            if (
+                                                $member->avatar &&
+                                                Str::startsWith($member->avatar, ['http://', 'https://'])
+                                            ) {
+                                                $memberAvatar = $member->avatar;
+                                            } elseif ($member->avatar) {
+                                                $memberAvatar = asset('storage/' . $member->avatar);
+                                            } else {
+                                                $memberAvatar =
+                                                    'https://ui-avatars.com/api/?name=' .
+                                                    urlencode($member->full_name ?? 'User') .
+                                                    '&background=4F46E5&color=fff&bold=true';
+                                            }
+                                        @endphp
+
+                                        {{-- ✅ GANTI IMG TAG INI --}}
+                                        <img src="{{ $memberAvatar }}" alt="{{ $member->full_name }}"
+                                            class="w-8 h-8 rounded-full border-2 border-white object-cover"
+                                            title="{{ $member->full_name }}">
                                     @endforeach
+
                                     @if ($workspace->userWorkspaces->count() > 4)
                                         <div
                                             class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center">
@@ -531,7 +476,7 @@
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 12v.01M12 12v.01M19 12v.01
-                                                    M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                                                                                                                                        M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                                     </svg>
                                 </button>
                             </div>
@@ -543,10 +488,30 @@
                             <div class="mt-4">
                                 <div class="flex -space-x-2">
                                     @foreach ($workspace->userWorkspaces->take(4) as $userWorkspace)
-                                        <img src="https://i.pravatar.cc/32?img={{ $loop->index + 1 }}"
-                                            class="w-8 h-8 rounded-full border-2 border-white"
-                                            title="{{ $userWorkspace->user->full_name }}">
+                                        @php
+                                            // ✅ TAMBAHKAN LOGIC AVATAR INI
+                                            $member = $userWorkspace->user;
+                                            if (
+                                                $member->avatar &&
+                                                Str::startsWith($member->avatar, ['http://', 'https://'])
+                                            ) {
+                                                $memberAvatar = $member->avatar;
+                                            } elseif ($member->avatar) {
+                                                $memberAvatar = asset('storage/' . $member->avatar);
+                                            } else {
+                                                $memberAvatar =
+                                                    'https://ui-avatars.com/api/?name=' .
+                                                    urlencode($member->full_name ?? 'User') .
+                                                    '&background=4F46E5&color=fff&bold=true';
+                                            }
+                                        @endphp
+
+                                        {{-- ✅ GANTI IMG TAG INI --}}
+                                        <img src="{{ $memberAvatar }}" alt="{{ $member->full_name }}"
+                                            class="w-8 h-8 rounded-full border-2 border-white object-cover"
+                                            title="{{ $member->full_name }}">
                                     @endforeach
+
                                     @if ($workspace->userWorkspaces->count() > 4)
                                         <div
                                             class="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center">
@@ -704,7 +669,6 @@
             </div>
         </div>
 
-
         <!-- Modal Atur Role -->
         <div x-show="showRoleModal" x-cloak
             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
@@ -792,12 +756,8 @@
 
                 canEditDeleteWorkspace: {{ $canEditDeleteWorkspace ? 'true' : 'false' }},
 
-
                 canManageMembers(workspace) {
                     if (!workspace) return false;
-
-
-
                     // ✅ CEK ROLE USER DI COMPANY (dari PHP)
                     const userCompanyRole = '{{ $userRole }}';
                     const isCompanyAdmin = ['SuperAdmin', 'Administrator', 'Admin'].includes(
@@ -825,7 +785,6 @@
                     this.showWorkspaceMenu = true;
                 },
 
-                // Di bagian JavaScript Alpine.js - modifikasi method createWorkspace()
                 async createWorkspace() {
                     this.isSubmitting = true;
 
@@ -843,17 +802,32 @@
                         });
 
                         const result = await response.json();
+                        console.log('✅ Workspace creation response:', result);
 
                         if (result.success) {
+                            console.log('🎯 show_onboarding:', result.show_onboarding);
+                            console.log('🎯 workspace_name:', result.workspace_name);
+
+                            // Close modal and reset form
                             this.showModal = false;
                             this.workspaceData = {
                                 name: '',
                                 description: '',
                                 type: 'HQ'
                             };
-                            location.reload();
+
+                            // ✅ CEK APAKAH PERLU SHOW ONBOARDING
+                            if (result.show_onboarding && result.workspace_name) {
+                                // Delay sedikit untuk smooth transition
+                                setTimeout(() => {
+                                    showOnboardingStep5Modal(result.workspace_name);
+                                }, 500);
+                            } else {
+                                // Normal flow tanpa onboarding
+                                location.reload();
+                            }
                         } else {
-                            // ✅ TAMPILKAN ERROR MESSAGE YANG DETAIL
+                            // ✅ HANDLE ERROR RESPONSE
                             if (response.status === 403) {
                                 alert('Akses Ditolak: ' + result.message);
                             } else {
@@ -871,15 +845,16 @@
                     try {
                         const csrfToken = this.getCsrfToken();
 
-                        const response = await fetch(`/workspace/${this.editWorkspaceData.id}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken,
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: JSON.stringify(this.editWorkspaceData)
-                        });
+                        const response = await fetch(
+                            `/workspace/${this.editWorkspaceData.id}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken,
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                body: JSON.stringify(this.editWorkspaceData)
+                            });
 
                         const result = await response.json();
 
@@ -896,46 +871,49 @@
                 },
 
                 async deleteWorkspace(workspaceId) {
-            try {
-                // ✅ CEK PERMISSION SEBELUM MENGHAPUS
-                if (!this.canEditDeleteWorkspace) {
-                    alert('Anda tidak memiliki izin untuk menghapus workspace. Hanya SuperAdmin, Admin, dan Manager yang dapat menghapus workspace.');
-                    this.showWorkspaceMenu = false;
-                    return;
-                }
+                    try {
+                        // ✅ CEK PERMISSION SEBELUM MENGHAPUS
+                        if (!this.canEditDeleteWorkspace) {
+                            alert(
+                                'Anda tidak memiliki izin untuk menghapus workspace. Hanya SuperAdmin, Admin, dan Manager yang dapat menghapus workspace.'
+                            );
+                            this.showWorkspaceMenu = false;
+                            return;
+                        }
 
-                if (!confirm('Apakah Anda yakin ingin menghapus workspace ini?')) {
-                    return;
-                }
+                        if (!confirm(
+                                'Apakah Anda yakin ingin menghapus workspace ini?')) {
+                            return;
+                        }
 
-                const csrfToken = this.getCsrfToken();
+                        const csrfToken = this.getCsrfToken();
 
-                const response = await fetch(`/workspace/${workspaceId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest'
+                        const response = await fetch(`/workspace/${workspaceId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            this.showWorkspaceMenu = false;
+                            location.reload();
+                        } else {
+                            // ✅ TAMPILKAN ERROR MESSAGE YANG DETAIL
+                            if (response.status === 403) {
+                                alert('Akses Ditolak: ' + result.message);
+                            } else {
+                                alert('Gagal menghapus workspace: ' + result.message);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('Terjadi kesalahan saat menghapus workspace');
                     }
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    this.showWorkspaceMenu = false;
-                    location.reload();
-                } else {
-                    // ✅ TAMPILKAN ERROR MESSAGE YANG DETAIL
-                    if (response.status === 403) {
-                        alert('Akses Ditolak: ' + result.message);
-                    } else {
-                        alert('Gagal menghapus workspace: ' + result.message);
-                    }
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Terjadi kesalahan saat menghapus workspace');
-            }
-        },
+                },
                 // Methods untuk members
                 async loadAvailableMembers() {
                     try {
@@ -947,7 +925,8 @@
 
                         if (response.ok) {
                             this.availableMembers = await response.json();
-                            console.log('Available members loaded:', this.availableMembers);
+                            console.log('Available members loaded:', this
+                                .availableMembers);
                         } else {
                             console.error('Failed to load available members');
                             this.availableMembers = [];
@@ -959,15 +938,19 @@
                 },
                 async loadWorkspaceMembers(workspaceId) {
                     try {
-                        console.log('Loading members for workspace:', workspaceId);
-                        const response = await fetch(`/workspace/${workspaceId}/members`);
+                        console.log('Loading members for workspace:',
+                            workspaceId);
+                        const response = await fetch(
+                            `/workspace/${workspaceId}/members`);
                         if (response.ok) {
                             const members = await response.json();
                             console.log('Workspace members loaded:', members);
 
                             // SET selectedMembers dengan ID user yang sudah terdaftar
-                            this.selectedMembers = members.map(member => member.id);
-                            console.log('Selected members set to:', this.selectedMembers);
+                            this.selectedMembers = members.map(member => member
+                                .id);
+                            console.log('Selected members set to:', this
+                                .selectedMembers);
 
                             this.currentWorkspaceMembers = members;
                         } else {
@@ -976,7 +959,8 @@
                             this.currentWorkspaceMembers = [];
                         }
                     } catch (error) {
-                        console.error('Error loading workspace members:', error);
+                        console.error('Error loading workspace members:',
+                            error);
                         this.selectedMembers = [];
                         this.currentWorkspaceMembers = [];
                     }
@@ -991,18 +975,20 @@
                             user_ids: this.selectedMembers,
                             role_id: this.getDefaultRoleId()
                         };
-                        console.log('Saving members payload:', payload, 'workspaceId:',
+                        console.log('Saving members payload:', payload,
+                            'workspaceId:',
                             workspaceId);
 
-                        const response = await fetch(`/workspace/${workspaceId}/members`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': csrfToken,
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: JSON.stringify(payload)
-                        });
+                        const response = await fetch(
+                            `/workspace/${workspaceId}/members`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken,
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                body: JSON.stringify(payload)
+                            });
 
                         const rawText = await response.text();
                         let result = null;
@@ -1012,7 +998,8 @@
                             console.warn('Response is not JSON:', rawText);
                         }
 
-                        console.log('Response status:', response.status, 'parsed:', result, 'raw:',
+                        console.log('Response status:', response.status,
+                            'parsed:', result, 'raw:',
                             rawText);
 
                         if (response.ok) {
@@ -1028,10 +1015,12 @@
                         } else {
                             // ambil pesan error yang paling bermakna
                             const serverMsg = result?.message ||
-                                (result?.errors ? JSON.stringify(result.errors) : null) ||
+                                (result?.errors ? JSON.stringify(result
+                                    .errors) : null) ||
                                 rawText ||
                                 response.statusText;
-                            console.error('Failed saving members:', response.status, serverMsg);
+                            console.error('Failed saving members:', response
+                                .status, serverMsg);
                             alert('Gagal menyimpan anggota: ' + serverMsg);
                             return {
                                 success: false,
@@ -1040,7 +1029,8 @@
                         }
                     } catch (error) {
                         console.error('saveMembers exception:', error);
-                        alert('Gagal menyimpan anggota: ' + (error.message || error));
+                        alert('Gagal menyimpan anggota: ' + (error
+                            .message || error));
                         return {
                             success: false,
                             message: error.message || String(error)
@@ -1052,39 +1042,45 @@
 
                 // Helper methods
                 async openEditWorkspace(workspace) {
-            try {
-                // ✅ CEK PERMISSION SEBELUM MEMBUKA MODAL EDIT
-                if (!this.canEditDeleteWorkspace) {
-                    alert('Anda tidak memiliki izin untuk mengedit workspace. Hanya SuperAdmin, Admin, dan Manager yang dapat mengedit workspace.');
-                    this.showWorkspaceMenu = false;
-                    return;
-                }
+                    try {
+                        // ✅ CEK PERMISSION SEBELUM MEMBUKA MODAL EDIT
+                        if (!this.canEditDeleteWorkspace) {
+                            alert(
+                                'Anda tidak memiliki izin untuk mengedit workspace. Hanya SuperAdmin, Admin, dan Manager yang dapat mengedit workspace.'
+                            );
+                            this.showWorkspaceMenu = false;
+                            return;
+                        }
 
-                this.editWorkspaceData = {
-                    id: workspace.id,
-                    name: workspace.name,
-                    description: workspace.description || '',
-                    type: workspace.type
-                };
-                this.showEditWorkspaceModal = true;
-                this.showWorkspaceMenu = false;
-            } catch (error) {
-                console.error('Error opening edit workspace:', error);
-                alert('Terjadi kesalahan saat membuka form edit');
-                this.showWorkspaceMenu = false;
-            }
-        },
+                        this.editWorkspaceData = {
+                            id: workspace.id,
+                            name: workspace.name,
+                            description: workspace.description ||
+                                '',
+                            type: workspace.type
+                        };
+                        this.showEditWorkspaceModal = true;
+                        this.showWorkspaceMenu = false;
+                    } catch (error) {
+                        console.error('Error opening edit workspace:',
+                            error);
+                        alert(
+                            'Terjadi kesalahan saat membuka form edit');
+                        this.showWorkspaceMenu = false;
+                    }
+                },
 
                 async openManageMembers(workspace) {
                     this.activeWorkspace = workspace;
 
                     try {
                         // ✅ CEK PERMISSION SEBELUM MEMBUKA MODAL
-                        const response = await fetch(`/workspace/${workspace.id}/members`, {
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        });
+                        const response = await fetch(
+                            `/workspace/${workspace.id}/members`, {
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
 
                         if (response.ok) {
                             this.showManageMembersModal = true;
@@ -1094,7 +1090,8 @@
 
                             // Load members workspace saat modal dibuka
                             setTimeout(() => {
-                                this.loadWorkspaceMembers(workspace.id);
+                                this.loadWorkspaceMembers(
+                                    workspace.id);
                             }, 100);
                         } else if (response.status === 403) {
                             const result = await response.json();
@@ -1105,67 +1102,80 @@
                             this.showWorkspaceMenu = false;
                         }
                     } catch (error) {
-                        console.error('Error checking permission:', error);
-                        alert('Terjadi kesalahan saat memeriksa akses');
+                        console.error('Error checking permission:',
+                            error);
+                        alert(
+                            'Terjadi kesalahan saat memeriksa akses');
                         this.showWorkspaceMenu = false;
                     }
                 },
 
                 async saveWorkspaceChanges() {
-            try {
-                const csrfToken = this.getCsrfToken();
+                    try {
+                        const csrfToken = this.getCsrfToken();
 
-                const response = await fetch(`/workspace/${this.editWorkspaceData.id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify(this.editWorkspaceData)
-                });
+                        const response = await fetch(
+                            `/workspace/${this.editWorkspaceData.id}`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken,
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                },
+                                body: JSON.stringify(this
+                                    .editWorkspaceData)
+                            });
 
-                const result = await response.json();
+                        const result = await response.json();
 
-                if (result.success) {
-                    this.showEditWorkspaceModal = false;
-                    location.reload();
-                } else {
-                    // ✅ TAMPILKAN ERROR MESSAGE YANG DETAIL
-                    if (response.status === 403) {
-                        alert('Akses Ditolak: ' + result.message);
-                    } else {
-                        alert('Gagal mengupdate workspace: ' + result.message);
+                        if (result.success) {
+                            this.showEditWorkspaceModal = false;
+                            location.reload();
+                        } else {
+                            // ✅ TAMPILKAN ERROR MESSAGE YANG DETAIL
+                            if (response.status === 403) {
+                                alert('Akses Ditolak: ' + result
+                                    .message);
+                            } else {
+                                alert('Gagal mengupdate workspace: ' +
+                                    result.message);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert(
+                            'Terjadi kesalahan saat mengupdate workspace');
                     }
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Terjadi kesalahan saat mengupdate workspace');
-            }
-        },
+                },
 
 
                 applyMembers() {
                     if (this.activeWorkspace) {
-                        this.saveMembers(this.activeWorkspace.id);
+                        this.saveMembers(this.activeWorkspace
+                            .id);
                     }
                 },
 
                 toggleMember(memberId) {
-                    console.log('Toggling member:', memberId, 'Current selected:', this
+                    console.log('Toggling member:', memberId,
+                        'Current selected:', this
                         .selectedMembers);
-                    const index = this.selectedMembers.indexOf(memberId);
+                    const index = this.selectedMembers.indexOf(
+                        memberId);
                     if (index === -1) {
                         this.selectedMembers.push(memberId);
                     } else {
                         this.selectedMembers.splice(index, 1);
                     }
-                    console.log('After toggle selected:', this.selectedMembers);
+                    console.log('After toggle selected:', this
+                        .selectedMembers);
                 },
 
                 isMemberSelected(memberId) {
-                    const isSelected = this.selectedMembers.includes(memberId);
-                    console.log(`Checking member ${memberId}:`, isSelected);
+                    const isSelected = this.selectedMembers
+                        .includes(memberId);
+                    console.log(`Checking member ${memberId}:`,
+                        isSelected);
                     return isSelected;
                 },
 
@@ -1173,25 +1183,33 @@
                     if (!this.searchMember) {
                         return this.availableMembers;
                     }
-                    const searchTerm = this.searchMember.toLowerCase();
-                    return this.availableMembers.filter(member =>
-                        member.name.toLowerCase().includes(searchTerm) ||
-                        member.email.toLowerCase().includes(searchTerm)
+                    const searchTerm = this.searchMember
+                        .toLowerCase();
+                    return this.availableMembers.filter(
+                        member =>
+                        member.name.toLowerCase().includes(
+                            searchTerm) ||
+                        member.email.toLowerCase().includes(
+                            searchTerm)
                     );
                 },
 
                 getCsrfToken() {
-                    const metaTag = document.querySelector('meta[name="csrf-token"]');
+                    const metaTag = document.querySelector(
+                        'meta[name="csrf-token"]');
                     if (metaTag) {
                         return metaTag.getAttribute('content');
                     }
 
-                    const inputTag = document.querySelector('input[name="_token"]');
+                    const inputTag = document.querySelector(
+                        'input[name="_token"]');
                     if (inputTag) {
                         return inputTag.value;
                     }
 
-                    return document.querySelector('script[data-csrf]')?.dataset.csrf || '';
+                    return document.querySelector(
+                            'script[data-csrf]')?.dataset
+                        .csrf || '';
                 },
 
                 getDefaultRoleId() {
@@ -1200,4 +1218,604 @@
             }));
         });
     </script>
+
+    @php
+        // ✅ DEFINISIKAN AVAILABLE ROLES UNTUK WORKSPACE (Manager & Member saja)
+        $workspaceRoles = \App\Models\Role::whereIn('id', [
+            'a688ef38-3030-45cb-9a4d-0407605bc322', // Manager
+            'ed81bd39-9041-43b8-a504-bf743b5c2919', // Member
+        ])->get(['id', 'name']);
+
+        // ✅ Fallback manual jika query gagal
+        if ($workspaceRoles->count() === 0) {
+            $workspaceRoles = collect([
+                (object) ['id' => 'a688ef38-3030-45cb-9a4d-0407605bc322', 'name' => 'Manager'],
+                (object) ['id' => 'ed81bd39-9041-43b8-a504-bf743b5c2919', 'name' => 'Member'],
+            ]);
+        }
+    @endphp
+
+    <script>
+        // ✅ SET GLOBAL VARIABLE UNTUK WORKSPACE ROLES
+        window.availableRolesForWorkspace = @json($workspaceRoles);
+
+        console.log('✅ Available roles for workspace:', window.availableRolesForWorkspace);
+        console.table(window.availableRolesForWorkspace);
+    </script>
+
+    {{-- 🎯 ONBOARDING STEP 4 --}}
+    <div id="onboarding-step3" class="hidden fixed inset-0 z-[9999]">
+        <div class="absolute inset-0 bg-black/50 transition-opacity duration-500"></div>
+        <div id="spotlight-step3" class="absolute rounded-full transition-all duration-500"></div>
+
+        <div id="tooltip-step3"
+            class="absolute bg-white rounded-3xl shadow-2xl p-8 w-[420px] max-w-[90vw] border-2 border-blue-500/30"
+            style="z-index: 10001; opacity: 0;">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0">
+                    <div
+                        class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg ring-4 ring-blue-100 relative">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        <div
+                            class="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white animate-pulse">
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">Langkah Terakhir! 🎉</h3>
+                    <p class="text-sm text-gray-600 leading-relaxed mb-4">
+                        Klik tombol <strong class="text-blue-600">+</strong> untuk membuat workspace pertama Anda!
+                    </p>
+
+                    <div class="flex items-center gap-2 mb-5">
+                        <div class="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"
+                                style="width: 100%"></div>
+                        </div>
+                        <span class="text-xs font-medium text-gray-500">4/4</span>
+                    </div>
+
+                    <button onclick="finishOnboarding()"
+                        class="w-full px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-bold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg flex items-center justify-center gap-2">
+                        Mengerti! <i class="fas fa-check"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Arrow -->
+            <div id="arrow-step3" class="absolute pointer-events-none"></div>
+        </div>
+    </div>
+
+    {{-- 🎯 STEP 5: ONBOARDING MODAL (Hidden by default) --}}
+    <div id="onboarding-step5-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-500"></div>
+
+        <!-- Modal Card -->
+        <div class="relative bg-white rounded-3xl shadow-2xl w-[600px] max-w-[90vw] mx-4 transform transition-all duration-500 scale-95 opacity-0"
+            id="modal-content-step5">
+
+            <!-- ✨ Celebration Effects -->
+            <div class="absolute -top-10 -left-10 w-24 h-24 bg-yellow-400 rounded-full blur-3xl opacity-50 animate-pulse">
+            </div>
+            <div
+                class="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-400 rounded-full blur-3xl opacity-50 animate-pulse">
+            </div>
+
+            <!-- Confetti Animation -->
+            <div class="absolute inset-0 pointer-events-none overflow-hidden rounded-3xl">
+                <div class="confetti"></div>
+                <div class="confetti"></div>
+                <div class="confetti"></div>
+                <div class="confetti"></div>
+                <div class="confetti"></div>
+            </div>
+
+            <!-- Content -->
+            <div class="relative p-8">
+                <!-- Icon Header -->
+                <div class="flex justify-center mb-6">
+                    <div class="relative">
+                        <div
+                            class="w-24 h-24 bg-gradient-to-br from-green-400 to-green-600 rounded-2xl flex items-center justify-center shadow-xl transform hover:scale-110 transition-transform duration-300">
+                            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <!-- Ping Effects -->
+                        <div class="absolute -top-2 -right-2 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
+                        <div class="absolute -bottom-2 -left-2 w-3 h-3 bg-blue-400 rounded-full animate-ping"
+                            style="animation-delay: 0.2s"></div>
+                    </div>
+                </div>
+
+                <!-- Title -->
+                <h2 class="text-3xl font-bold text-center text-gray-900 mb-3">
+                    🎉 Workspace Berhasil Dibuat!
+                </h2>
+
+                <!-- Subtitle dengan nama workspace -->
+                <p class="text-center text-gray-600 mb-8 text-lg">
+                    Workspace <strong class="text-blue-600" id="workspace-name-display"></strong> siap digunakan!
+                </p>
+
+                <!-- Features Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+                    <!-- Feature 1 -->
+                    <div
+                        class="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-900 text-sm mb-1">Kelola Tim</h3>
+                                <p class="text-xs text-gray-600">Tambah anggota & atur role</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+                        style="transition-delay: 0.1s">
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-900 text-sm mb-1">Kanban Board</h3>
+                                <p class="text-xs text-gray-600">Kelola tugas dengan mudah</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+                        style="transition-delay: 0.2s">
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-900 text-sm mb-1">Kolaborasi</h3>
+                                <p class="text-xs text-gray-600">Chat & berbagi file</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature 4 -->
+                    <div class="p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+                        style="transition-delay: 0.3s">
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-900 text-sm mb-1">Jadwal & Event</h3>
+                                <p class="text-xs text-gray-600">Atur meeting & deadline</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-gray-600">Tutorial Selesai</span>
+                        <span class="text-sm font-bold text-green-600">100%</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-green-400 via-green-500 to-green-600 rounded-full transition-all duration-[2s] ease-out"
+                            id="progress-bar-step5" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- CTA Button -->
+                <button onclick="completeOnboardingStep5()"
+                    class="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3.5 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 text-base">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Siap, Mari Mulai!
+                </button>
+
+                <!-- Help Text -->
+                <p class="text-center text-xs text-gray-500 mt-4">
+                    Klik workspace di sidebar untuk mulai bekerja 🚀
+                </p>
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const step = '{{ Auth::user()->onboarding_step ?? '' }}';
+                console.log('🎯 Kelola Workspace - Current step:', step);
+
+                if (step === 'kelola-workspace') {
+                    setTimeout(() => showStep4(), 800);
+                }
+            });
+
+            function showStep4() {
+                const overlay = document.getElementById('onboarding-step3');
+                const createBtnTim = document.querySelector(
+                    'button[\\@click*="showModal = true; workspaceData.type = \'Tim\'"]');
+                const spotlight = document.getElementById('spotlight-step3');
+                const tooltip = document.getElementById('tooltip-step3');
+                const arrow = document.getElementById('arrow-step3');
+
+                if (!createBtnTim) {
+                    console.error('❌ Tombol + Tim tidak ditemukan');
+                    return;
+                }
+
+                console.log('✅ Showing Step 4: Create workspace button');
+                overlay.classList.remove('hidden');
+
+                createBtnTim.style.position = 'relative';
+                createBtnTim.style.zIndex = '10000';
+
+                // ✅ Fungsi positioning yang bisa dipanggil ulang
+                function positionTooltipStep4() {
+                    const rect = createBtnTim.getBoundingClientRect();
+                    const padding = 15;
+
+                    // Spotlight positioning
+                    spotlight.style.left = (rect.left - padding) + 'px';
+                    spotlight.style.top = (rect.top - padding) + 'px';
+                    spotlight.style.width = (rect.width + padding * 2) + 'px';
+                    spotlight.style.height = (rect.height + padding * 2) + 'px';
+                    spotlight.style.boxShadow = `
+            0 0 0 9999px rgba(0, 0, 0, 0.5),
+            0 0 0 ${padding + 4}px rgba(59, 130, 246, 0.6),
+            0 0 80px 15px rgba(59, 130, 246, 0.5)
+        `;
+
+                    // ✅ Tooltip positioning - RESPONSIVE
+                    const tooltipWidth = window.innerWidth < 640 ? 340 : 420;
+                    const gap = window.innerWidth < 768 ? 15 : 30;
+
+                    let tooltipLeft, tooltipTop, arrowPos;
+
+                    if (window.innerWidth < 1024) {
+                        // Mobile & Tablet: taruh di atas button
+                        tooltipTop = rect.top - 320 - gap;
+                        tooltipLeft = Math.max(20, Math.min(window.innerWidth - tooltipWidth - 20,
+                            rect.left + (rect.width / 2) - (tooltipWidth / 2)));
+                        arrowPos = 'bottom';
+                    } else {
+                        // Desktop: taruh di kiri
+                        tooltipLeft = rect.left - tooltipWidth - gap;
+                        tooltipTop = rect.top - 50;
+                        arrowPos = 'right';
+                    }
+
+                    tooltip.style.left = tooltipLeft + 'px';
+                    tooltip.style.top = tooltipTop + 'px';
+                    tooltip.style.opacity = '1';
+                    tooltip.classList.add('onboarding-tooltip');
+
+                    // Arrow styling
+                    if (arrowPos === 'bottom') {
+                        arrow.style.bottom = '-12px';
+                        arrow.style.left = (rect.left + rect.width / 2 - tooltipLeft) + 'px';
+                        arrow.style.top = 'auto';
+                        arrow.style.right = 'auto';
+                        arrow.style.transform = 'translateX(-50%)';
+                        arrow.style.width = '0';
+                        arrow.style.height = '0';
+                        arrow.style.borderTop = '12px solid white';
+                        arrow.style.borderLeft = '12px solid transparent';
+                        arrow.style.borderRight = '12px solid transparent';
+                        arrow.style.borderBottom = 'none';
+                        arrow.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))';
+                    } else {
+                        arrow.style.right = '-12px';
+                        arrow.style.top = '35px'; // ⬅️ PERUBAHAN: dari '50%' jadi '35px'
+                        arrow.style.left = 'auto';
+                        arrow.style.bottom = 'auto';
+                        arrow.style.transform = 'none'; // ⬅️ PERUBAHAN: hapus translateY
+                        arrow.style.width = '0';
+                        arrow.style.height = '0';
+                        arrow.style.borderLeft = '12px solid white';
+                        arrow.style.borderTop = '12px solid transparent';
+                        arrow.style.borderBottom = '12px solid transparent';
+                        arrow.style.borderRight = 'none';
+                        arrow.style.filter = 'drop-shadow(2px 0 4px rgba(0,0,0,0.1))';
+                    }
+                }
+
+                // ✅ Panggil pertama kali
+                positionTooltipStep4();
+
+                // ✅ TAMBAHKAN SCROLL LISTENER - agar tooltip ikut scroll
+                const scrollContainer = document.querySelector('main') || document.querySelector('.overflow-y-auto');
+                if (scrollContainer) {
+                    scrollContainer.addEventListener('scroll', positionTooltipStep4);
+                }
+                // ✅ Simpan reference
+                window._onboardingStep4 = {
+                    overlay,
+                    spotlight,
+                    tooltip,
+                    arrow,
+                    button: createBtnTim,
+                    positionFunc: positionTooltipStep4
+                };
+
+                // ✅ TAMBAHKAN RESIZE LISTENER
+                window.addEventListener('resize', positionTooltipStep4);
+
+                const newButton = createBtnTim.cloneNode(true);
+                createBtnTim.parentNode.replaceChild(newButton, createBtnTim);
+
+                newButton.style.position = 'relative';
+                newButton.style.zIndex = '10000';
+
+                newButton.addEventListener('click', function(e) {
+                    console.log('✅ Tombol + diklik!');
+
+                    // ✅ HAPUS RESIZE DAN SCROLL LISTENER
+                    if (window._onboardingStep4?.positionFunc) {
+                        window.removeEventListener('resize', window._onboardingStep4.positionFunc);
+                        const scrollContainer = document.querySelector('main') || document.querySelector(
+                            '.overflow-y-auto');
+                        if (scrollContainer) {
+                            scrollContainer.removeEventListener('scroll', window._onboardingStep4.positionFunc);
+                        }
+                    }
+
+                    // ✅ JANGAN LANGSUNG MARK AS SEEN, TAPI UPDATE KE STEP BERIKUTNYA
+                    fetch('{{ route('update-onboarding-step') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({
+                                step: 'workspace-created' // ⬅️ STEP BARU
+                            })
+                        })
+                        .then(() => {
+                            console.log('✅ Moving to workspace creation...');
+                            overlay.classList.add('hidden');
+                            newButton.style.zIndex = '';
+                            newButton.style.position = '';
+
+                            const clickAttr = newButton.getAttribute('@click');
+                            if (clickAttr && window.Alpine) {
+                                try {
+                                    Alpine.evaluate(newButton, clickAttr);
+                                } catch (err) {
+                                    console.error('❌ Error:', err);
+                                    newButton.click();
+                                }
+                            }
+
+                            delete window._onboardingStep4;
+                        });
+                });
+            }
+
+            // ✅ UPDATE fungsi finishOnboarding juga
+            function finishOnboarding() {
+                console.log('✅ User clicked "Mengerti!"');
+
+                // ✅ HAPUS RESIZE DAN SCROLL LISTENER
+                if (window._onboardingStep4?.positionFunc) {
+                    window.removeEventListener('resize', window._onboardingStep4.positionFunc);
+                    const scrollContainer = document.querySelector('main') || document.querySelector('.overflow-y-auto');
+                    if (scrollContainer) {
+                        scrollContainer.removeEventListener('scroll', window._onboardingStep4.positionFunc);
+                    }
+                }
+
+                // ✅ UPDATE KE STEP BERIKUTNYA
+                fetch('{{ route('update-onboarding-step') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({
+                            step: 'workspace-created'
+                        })
+                    })
+                    .then(() => {
+                        document.getElementById('onboarding-step3')?.classList.add('hidden');
+
+                        const createBtn = document.querySelector('button[\\@click*="showModal = true"]');
+                        if (createBtn) {
+                            console.log('🚀 Opening modal...');
+                            createBtn.click();
+                        }
+
+                        delete window._onboardingStep4;
+                    });
+            }
+            const style = document.createElement('style');
+            style.textContent = `
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.02); opacity: 0.9; }
+    }
+`;
+            document.head.appendChild(style);
+            // ========================================
+            // 🎯 STEP 5: WORKSPACE CREATED MODAL
+            // ========================================
+            function showOnboardingStep5Modal(workspaceName) {
+                const modal = document.getElementById('onboarding-step5-modal');
+                const content = document.getElementById('modal-content-step5');
+                const nameDisplay = document.getElementById('workspace-name-display');
+                const progressBar = document.getElementById('progress-bar-step5');
+
+                if (!modal || !content) {
+                    console.error('❌ Modal Step 5 tidak ditemukan');
+                    return;
+                }
+
+                console.log('✅ Showing Step 5 modal for:', workspaceName);
+
+                // Set workspace name
+                if (nameDisplay) {
+                    nameDisplay.textContent = workspaceName;
+                }
+
+                // Show modal
+                modal.classList.remove('hidden');
+
+                // Animate entrance
+                setTimeout(() => {
+                    content.classList.remove('scale-95', 'opacity-0');
+                    content.classList.add('scale-100', 'opacity-100');
+                }, 100);
+
+                // Animate progress bar
+                setTimeout(() => {
+                    if (progressBar) {
+                        progressBar.style.width = '100%';
+                    }
+                }, 600);
+
+                // Auto-trigger confetti
+                triggerConfetti();
+            }
+
+            function completeOnboardingStep5() {
+                const modal = document.getElementById('onboarding-step5-modal');
+                const content = document.getElementById('modal-content-step5');
+
+                console.log('✅ Completing onboarding...');
+
+                // Hide with animation
+                if (content) {
+                    content.classList.add('scale-95', 'opacity-0');
+                    content.classList.remove('scale-100', 'opacity-100');
+                }
+
+                setTimeout(() => {
+                    if (modal) {
+                        modal.classList.add('hidden');
+                    }
+
+                    // Complete onboarding
+                    fetch('{{ route('complete-onboarding') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('✅ Onboarding completed:', data);
+
+                            // Show success toast if Swal is available
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    toast: true,
+                                    position: 'top-end',
+                                    icon: 'success',
+                                    title: 'Selamat! Anda siap mulai bekerja 🎉',
+                                    showConfirmButton: false,
+                                    timer: 3000
+                                });
+                            }
+
+                            // Reload page to refresh workspace list
+                            setTimeout(() => {
+                                location.reload();
+                            }, 2000);
+                        })
+                        .catch(err => {
+                            console.error('❌ Error completing onboarding:', err);
+                            location.reload(); // Reload anyway
+                        });
+                }, 300);
+            }
+
+            function triggerConfetti() {
+                const confettiElements = document.querySelectorAll('.confetti');
+                confettiElements.forEach((el, index) => {
+                    setTimeout(() => {
+                        el.style.animation = `confetti-fall 3s ease-out forwards`;
+                        el.style.animationDelay = `${index * 0.2}s`;
+                    }, 500);
+                });
+            }
+        </script>
+    @endpush
+    <style>
+        /* Confetti Animation */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: linear-gradient(45deg, #FF6B6B, #4ECDC4, #45B7D1, #FFA07A, #98D8C8);
+            top: -20px;
+            opacity: 0;
+        }
+
+        .confetti:nth-child(1) {
+            left: 10%;
+        }
+
+        .confetti:nth-child(2) {
+            left: 30%;
+        }
+
+        .confetti:nth-child(3) {
+            left: 50%;
+        }
+
+        .confetti:nth-child(4) {
+            left: 70%;
+        }
+
+        .confetti:nth-child(5) {
+            left: 90%;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                top: -20px;
+                opacity: 1;
+                transform: rotate(0deg);
+            }
+
+            100% {
+                top: 100%;
+                opacity: 0;
+                transform: rotate(720deg);
+            }
+        }
+
+        /* Smooth transitions */
+        #modal-content-step5 {
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+    </style>
 @endsection

@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Isi Pengumuman')
+@section('title', 'Detail Pengumuman')
 
 @section('content')
     @include('components.sweet-alert')
@@ -8,250 +8,315 @@
         \Carbon\Carbon::setLocale('id');
     @endphp
 
-    <!-- Font Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Inter & CKEditor -->
     <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/41.3.1/classic/styles.css">
-
-    <!-- Alpine.js & CKEditor -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
 
-    <div class="bg-[#e9effd] min-h-screen font-[Inter,sans-serif] text-black relative" x-data="commentSection">
-        @include('components.workspace-nav')
+    <div class="bg-[#f3f6fc] min-h-screen font-[Inter,sans-serif] text-black" x-data="commentSection">
+        <div class="max-w-5xl mx-auto px-4 py-6">
 
-        <div class="max-w-4xl mx-auto px-4 py-6">
-            <div class="bg-white rounded-xl shadow-md p-6">
+            <!-- Tombol Kembali -->
+            <div class="mb-6">
+                <button
+                    onclick="window.location.href='{{ route('pengumuman-perusahaan.index', ['company_id' => $company_id]) }}'"
+                    class="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors group bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-lg">
+                    <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span class="font-semibold">Kembali ke Pengumuman</span>
+                </button>
+            </div>
 
-                <!-- === CARD PENGUMUMAN === -->
-                <div class="max-w-5xl mx-auto mt-6">
-                    @php
-                        $creator = $pengumuman->creator ?? null;
+            <!-- Card Pengumuman -->
+            <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
+                @php
+                    $creator = $pengumuman->creator ?? null;
+                    $avatarPath = $creator && $creator->avatar ? 'storage/' . $creator->avatar : null;
+                    $hasAvatarFile = $avatarPath && file_exists(public_path($avatarPath));
+                    $avatarUrl = $hasAvatarFile
+                        ? asset($avatarPath)
+                        : ($creator && $creator->full_name
+                            ? 'https://ui-avatars.com/api/?name=' .
+                                urlencode($creator->full_name) .
+                                '&background=random&color=fff'
+                            : asset('images/dk.jpg'));
+                @endphp
 
-                        // Cek avatar file
-                        $avatarPath = $creator && $creator->avatar ? 'storage/' . $creator->avatar : null;
-                        $hasAvatarFile = $avatarPath && file_exists(public_path($avatarPath));
+                <!-- Header Pengumuman -->
+                <div class="p-6 border-b border-blue-100 bg-gradient-to-r from-blue-50 to-white">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start gap-4 flex-1">
+                            <img src="{{ $avatarUrl }}" alt="Avatar"
+                                class="rounded-full w-12 h-12 object-cover border-2 border-white shadow-sm flex-shrink-0">
 
-                        // Pilih URL avatar final
-                        $avatarUrl = $hasAvatarFile
-                            ? asset($avatarPath)
-                            : ($creator && $creator->full_name
-                                ? 'https://ui-avatars.com/api/?name=' .
-                                    urlencode($creator->full_name) .
-                                    '&background=random&color=fff'
-                                : asset('images/dk.jpg'));
-                    @endphp
+                            <div class="flex-1 min-w-0">
+                                <h1 class="text-2xl font-bold text-blue-900 mb-2">
+                                    {{ $pengumuman->title }}
+                                </h1>
 
-                    <div class="bg-[#e9effd] rounded-xl p-5 mb-6 shadow-md">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="flex items-start gap-3">
-                                <img src="{{ $avatarUrl }}" alt="Avatar"
-                                    class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
-                                <div>
-                                    <h1 class="text-xl font-semibold text-black mb-1">
-                                        {{ $pengumuman->title }}
-                                    </h1>
-                                    <div class="flex items-center gap-2">
-                                        <p class="text-sm text-black font-medium">
-                                            {{ $pengumuman->creator->full_name ?? 'Tidak diketahui' }}
-                                        </p>
-                                        <span class="text-sm text-gray-600">
-                                            •
-                                            {{ $pengumuman->display_created_at }}
-                                        </span>
-                                    </div>
+                                <div class="flex items-center gap-3 flex-wrap">
+                                    <span class="text-sm font-semibold text-blue-700">
+                                        {{ $pengumuman->creator->full_name ?? 'Tidak diketahui' }}
+                                    </span>
+                                    <span class="text-blue-400">•</span>
+                                    <span class="text-sm text-blue-600">
+                                        {{ $pengumuman->display_created_at }}
+                                    </span>
 
                                     @if ($pengumuman->due_date)
                                         <span
-                                            class="bg-[#102a63] text-white text-xs font-medium px-2 py-1 flex rounded-md items-center gap-1 w-[90px] h-[28px] mt-2">
-                                            <img src="{{ asset('images/icons/Clock.svg') }}" alt="Clock" class="w-5 h-5">
+                                            class="inline-flex items-center gap-1 bg-blue-600 text-white text-xs font-medium px-2.5 py-1 rounded-md">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
                                             {{ \Carbon\Carbon::parse($pengumuman->due_date)->translatedFormat('d M') }}
                                         </span>
                                     @endif
                                 </div>
                             </div>
-
-                            <!-- Tombol tiga titik -->
-                            <div x-data="{ open: false }" class="relative inline-block text-left">
-                                <button @click="open = !open" @click.away="open = false"
-                                    class="text-gray-600 hover:text-gray-800 focus:outline-none">
-                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                    </svg>
-                                </button>
-
-                                <div x-show="open" x-transition.scale.origin.top.right
-                                    class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-50">
-                                    <h3 class="text-center font-semibold text-gray-800 mb-2">Aksi</h3>
-
-                                    <button
-                                        onclick="
-                                        @if ($pengumuman->created_by == Auth::id()) openEditModal('{{ $pengumuman->id }}');
-                                        @else
-                                            alert('Anda tidak memiliki akses untuk ini!'); @endif
-                                    "
-                                        class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
-                                        <img src="{{ asset('images/icons/Pencil.svg') }}" alt="Edit" class="w-6 h-6">
-                                        <span class="text-gray-700 text-base">Edit</span>
-                                    </button>
-                                    <hr class="border-gray-300 my-2">
-                                    <button
-                                        onclick="
-                                        @if ($pengumuman->created_by == Auth::id()) deletePengumuman('{{ $pengumuman->id }}');
-                                        @else
-                                            alert('Anda tidak memiliki akses untuk ini!'); @endif
-                                    "
-                                        class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-100 rounded-lg transition">
-                                        <img src="{{ asset('images/icons/Trash.svg') }}" alt="Hapus" class="w-6 h-6">
-                                        <span class="text-gray-700 text-base">Hapus</span>
-                                    </button>
-                                </div>
-                            </div>
                         </div>
 
-                        <hr class="border-gray-300 my-4">
+                        <!-- Menu Aksi -->
+                        <div x-data="{ open: false }" class="relative">
+                            <button @click="open = !open" @click.away="open = false"
+                                class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path
+                                        d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                </svg>
+                            </button>
 
-                        <div class="ck-content text-black text-[15px] leading-relaxed deskripsi-pengumuman">
+                            <div x-show="open" x-transition.scale.origin.top.right
+                                class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50">
+                                <button
+                                    onclick="@if ($pengumuman->created_by == Auth::id()) openEditModal('{{ $pengumuman->id }}'); @else alert('Anda tidak memiliki akses!'); @endif"
+                                    class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-50 rounded-lg transition text-left">
+                                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    <span class="text-gray-700 font-medium">Edit</span>
+                                </button>
+
+                                <hr class="my-1 border-gray-200">
+
+                                <button
+                                    onclick="@if ($pengumuman->created_by == Auth::id()) deletePengumuman('{{ $pengumuman->id }}'); @else alert('Anda tidak memiliki akses!'); @endif"
+                                    class="flex items-center gap-3 w-full px-3 py-2 hover:bg-red-50 rounded-lg transition text-left">
+                                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    <span class="text-red-600 font-medium">Hapus</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Konten Deskripsi -->
+                <div class="p-6 border-b border-blue-100 bg-blue-50/30">
+                    <div class="prose max-w-none">
+                        <div class="ck-content text-gray-700 text-[15px] leading-relaxed deskripsi-pengumuman">
                             {!! $pengumuman->description !!}
                         </div>
                     </div>
+                </div>
 
-                    <!-- Section Komentar -->
-                    <div class="mt-6">
-                        <h3 class="text-base font-semibold text-black mb-4">Komentar</h3>
+                <!-- Section Komentar -->
+                <div class="p-6 bg-white">
+                    <h3 class="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                        </svg>
+                        Komentar
+                    </h3>
 
-                        <!-- Input Komentar Utama -->
-                        <div class="flex items-start gap-3 mb-6">
-                            <img src="{{ $avatarUrl }}" alt="Avatar"
-                                class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
+                    <!-- Input Komentar Utama -->
+                    <div class="flex items-start gap-3 mb-6">
+                        <img src="{{ $avatarUrl }}" alt="Avatar"
+                            class="rounded-full w-10 h-10 object-cover border border-gray-200 shadow-sm flex-shrink-0">
 
-                            <div class="flex-1" x-data="{ active: false }" x-cloak>
-                                <template x-if="!active">
-                                    <input type="text" placeholder="Tambahkan komentar baru..."
-                                        @focus="active = true; $nextTick(() => initMainEditor('main-editor'))"
-                                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-[#102a63] text-sm bg-white cursor-text">
-                                </template>
+                        <div class="flex-1" x-data="{ active: false }" x-cloak>
+                            <template x-if="!active">
+                                <input type="text" placeholder="Tambahkan komentar..."
+                                    @focus="active = true; $nextTick(() => initMainEditor('main-editor'))"
+                                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white hover:border-gray-300 transition cursor-text">
+                            </template>
 
-                                <template x-if="active">
-                                    <div class="bg-white border border-gray-300 rounded-lg p-4">
-                                        <div id="main-editor" class="min-h-[140px] bg-white"></div>
+                            <template x-if="active">
+                                <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                    <div id="main-editor" class="min-h-[120px] bg-white"></div>
 
-                                        <div class="flex justify-end gap-2 mt-4">
-                                            <button @click="active = false; destroyMainEditor('main-editor')"
-                                                class="px-3 py-1 text-sm text-gray-600 border border-gray-300 rounded-lg hover:text-gray-800 transition">
-                                                Batal
-                                            </button>
-                                            <button @click="submitMain(); active = false;"
-                                                class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                                                Kirim
-                                            </button>
-                                        </div>
+                                    <div class="flex justify-end gap-2 mt-4">
+                                        <button @click="active = false; destroyMainEditor('main-editor')"
+                                            class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                            Batal
+                                        </button>
+                                        <button @click="submitMain(); active = false;"
+                                            class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition shadow-sm">
+                                            Kirim
+                                        </button>
                                     </div>
-                                </template>
-                            </div>
-                        </div>
-
-                        <!-- Daftar Komentar -->
-                        <template x-if="comments.length > 0">
-                            <div class="space-y-4">
-                                <template x-for="comment in comments" :key="comment.id">
-                                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                        <div class="flex items-start gap-3">
-                                            <img x-bind:src="'{{ $avatarUrl }}'"
-                                                class="rounded-full w-10 h-10 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
-                                            <div class="flex-1">
-                                                <div class="flex justify-between items-center">
-                                                    <p class="text-sm font-semibold text-gray-800"
-                                                        x-text="comment.author.name"></p>
-                                                    <span class="text-xs text-gray-500"
-                                                        x-text="formatCommentDate(comment.createdAt)"></span>
-                                                </div>
-
-                                                <div class="text-sm text-gray-700 mt-1 comment-text"
-                                                    x-html="comment.content"></div>
-
-                                                <!-- Tombol Balas -->
-                                                <div class="flex items-center gap-4 mt-2">
-                                                    <button @click="toggleReply(comment)"
-                                                        class="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 transition">
-                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor"
-                                                            viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                                        </svg>
-                                                        <span>balas</span>
-                                                    </button>
-                                                </div>
-
-                                                <!-- FORM BALAS -->
-                                                <template
-                                                    x-if="replyView.active && replyView.parentComment?.id === comment.id">
-                                                    <div class="mt-4 pl-6 border-l-2 border-gray-200">
-                                                        <div class="bg-white rounded-lg p-4 border border-gray-200">
-                                                            <h4 class="text-sm font-semibold text-gray-800 mb-2">Membalas
-                                                                <span x-text="comment.author.name"></span>
-                                                            </h4>
-
-                                                            <div
-                                                                class="border border-gray-300 rounded-lg overflow-hidden mb-3">
-                                                                <div :id="'reply-editor-' + comment.id"
-                                                                    class="min-h-[120px] p-3 bg-white"></div>
-                                                            </div>
-
-                                                            <div class="flex justify-end gap-2">
-                                                                <button @click="closeReplyView()"
-                                                                    class="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition border border-gray-300 rounded-lg">Batal</button>
-                                                                <button @click="submitReplyFromEditor()"
-                                                                    class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">Kirim</button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </template>
-
-                                                <!-- Balasan -->
-                                                <template x-if="comment.replies && comment.replies.length > 0">
-                                                    <div class="mt-3 pl-6 border-l-2 border-gray-200 space-y-3">
-                                                        <template x-for="reply in comment.replies" :key="reply.id">
-                                                            <div class="bg-white rounded-lg p-3 border border-gray-200">
-                                                                <div class="flex items-start gap-2">
-                                                                    <img x-bind:src="'{{ $avatarUrl }}'"
-                                                                        class="rounded-full w-6 h-6 object-cover object-center border border-gray-200 shadow-sm bg-gray-100">
-                                                                    <div>
-                                                                        <div class="flex items-center gap-2">
-                                                                            <p class="text-sm font-semibold text-gray-800"
-                                                                                x-text="reply.author.name"></p>
-                                                                            <span class="text-xs text-gray-500"
-                                                                                x-text="formatCommentDate(reply.createdAt)"></span>
-                                                                        </div>
-                                                                        <div class="text-sm text-gray-700 mt-1 comment-text"
-                                                                            x-html="reply.content"></div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </template>
-                                                    </div>
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-
-                        <template x-if="comments.length === 0">
-                            <div class="text-center py-8 text-gray-500 text-sm">Belum ada komentar disini...</div>
-                        </template>
-
-                        <hr class="border-gray-200 my-6">
-                        <div class="flex items-center gap-2 text-sm text-gray-600">
-                            <!-- Additional content -->
+                                </div>
+                            </template>
                         </div>
                     </div>
+
+                    <!-- Daftar Komentar -->
+                    <template x-if="comments.length > 0">
+                        <div class="space-y-4">
+                            <template x-for="comment in comments" :key="comment.id">
+                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                    <div class="flex items-start gap-3">
+                                        <img x-bind:src="'{{ $avatarUrl }}'"
+                                            class="rounded-full w-10 h-10 object-cover border border-gray-200 shadow-sm flex-shrink-0">
+                                        <div class="flex-1">
+                                            <div class="flex justify-between items-center">
+                                                <p class="text-sm font-semibold text-gray-800"
+                                                    x-text="comment.author.name"></p>
+                                                <span class="text-xs text-gray-500"
+                                                    x-text="formatCommentDate(comment.createdAt)"></span>
+                                            </div>
+
+                                            <div class="text-sm text-gray-700 mt-1 comment-text" x-html="comment.content">
+                                            </div>
+
+                                            <!-- Tombol Balas -->
+                                            <div class="flex items-center gap-4 mt-2">
+                                                <button @click="toggleReply(comment)"
+                                                    class="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 transition">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                                    </svg>
+                                                    <span>balas</span>
+                                                </button>
+                                            </div>
+
+                                            <!-- FORM BALAS -->
+                                            <template
+                                                x-if="replyView.active && replyView.parentComment?.id === comment.id">
+                                                <div class="mt-4 pl-6 border-l-2 border-gray-200">
+                                                    <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                                        <h4 class="text-sm font-semibold text-gray-800 mb-2">Membalas
+                                                            <span x-text="comment.author.name"></span>
+                                                        </h4>
+
+                                                        <div
+                                                            class="border border-gray-300 rounded-lg overflow-hidden mb-3">
+                                                            <div :id="'reply-editor-' + comment.id"
+                                                                class="min-h-[120px] p-3 bg-white"></div>
+                                                        </div>
+
+                                                        <div class="flex justify-end gap-2">
+                                                            <button @click="closeReplyView()"
+                                                                class="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 transition border border-gray-300 rounded-lg">Batal</button>
+                                                            <button @click="submitReplyFromEditor()"
+                                                                class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">Kirim</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </template>
+
+                                            <!-- Balasan -->
+                                            <template x-if="comment.replies && comment.replies.length > 0">
+                                                <div class="mt-3 pl-6 border-l-2 border-gray-200 space-y-3">
+                                                    <template x-for="reply in comment.replies" :key="reply.id">
+                                                        <div class="bg-white rounded-lg p-3 border border-gray-200">
+                                                            <div class="flex items-start gap-2">
+                                                                <img x-bind:src="'{{ $avatarUrl }}'"
+                                                                    class="rounded-full w-6 h-6 object-cover border border-gray-200 shadow-sm">
+                                                                <div>
+                                                                    <div class="flex items-center gap-2">
+                                                                        <p class="text-sm font-semibold text-gray-800"
+                                                                            x-text="reply.author.name"></p>
+                                                                        <span class="text-xs text-gray-500"
+                                                                            x-text="formatCommentDate(reply.createdAt)"></span>
+                                                                    </div>
+                                                                    <div class="text-sm text-gray-700 mt-1 comment-text"
+                                                                        x-html="reply.content"></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <template x-if="comments.length === 0">
+                        <div class="text-center py-12">
+                            <svg class="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <p class="text-gray-500 font-medium">Belum ada komentar</p>
+                            <p class="text-sm text-gray-400 mt-1">Jadilah yang pertama berkomentar</p>
+                        </div>
+                    </template>
                 </div>
             </div>
         </div>
     </div>
+
+    <style>
+        .ck-content a {
+            color: #2563eb !important;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .ck-content a:hover {
+            color: #1d4ed8 !important;
+        }
+
+        .comment-text a {
+            color: #2563eb !important;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .comment-text a:hover {
+            color: #1d4ed8 !important;
+        }
+
+        .deskripsi-pengumuman a {
+            color: #2563eb;
+            text-decoration: underline;
+            font-weight: 500;
+        }
+
+        .deskripsi-pengumuman a:hover {
+            color: #1d4ed8;
+        }
+
+        /* Responsif */
+        @media (max-width: 640px) {
+            .bg-white .p-6 h1 {
+                font-size: 1.25rem;
+            }
+
+            .flex.items-start.gap-4 img {
+                width: 2.5rem;
+                height: 2.5rem;
+            }
+        }
+    </style>
 
     <script>
         const editors = {}; // key -> CKEditor instance
@@ -832,32 +897,38 @@
         }
     </style>
 
-    <!-- POPUP EDIT -->
-    <div id="openEditModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-50">
-        <div class="bg-white rounded-2xl shadow-lg p-6 w-full max-w-3xl">
-            <h2 class="text-xl font-bold mb-4 text-[#102a63] border-b pb-2">Edit Pengumuman</h2>
 
-            <form action="#" method="POST" class="space-y-5" id="pengumumanEditForm">
-                @csrf
-                @method('PUT')
-                <input type="hidden" name="pengumuman_id" id="editPengumumanId">
+    <!-- POPUP EDIT - FIXED SCROLLABLE VERSION -->
+    <div id="openEditModal"
+        class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden items-center justify-center z-50 p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-lg w-full max-w-3xl my-8 max-h-[90vh] flex flex-col">
+            <!-- Header - Fixed -->
+            <div class="p-6 border-b border-gray-200 flex-shrink-0">
+                <h2 class="text-xl font-bold text-[#102a63]">Edit Pengumuman</h2>
+            </div>
 
-                <!-- Judul -->
-                <div>
-                    <label class="block text-sm font-inter font-semibold text-black mb-1">
-                        Judul Pengumuman <span class="text-red-500">*</span>
-                    </label>
+            <!-- Content - Scrollable -->
+            <div class="overflow-y-auto flex-1 px-6">
+                <form action="#" method="POST" class="space-y-5 py-6" id="pengumumanEditForm">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="pengumuman_id" id="editPengumumanId">
+                    <input type="hidden" id="editWorkspaceId" name="workspace_id" value="">
 
-                    <input type="text" name="title" id="editTitle" placeholder="Masukkan judul pengumuman..."
-                        class="w-full border border-[#6B7280] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600 font-[Inter] text-[14px] placeholder:text-[#6B7280] pl-5" />
+                    <!-- Judul -->
+                    <div>
+                        <label class="block text-sm font-inter font-semibold text-black mb-1">
+                            Judul Pengumuman <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="title" id="editTitle" placeholder="Masukkan judul pengumuman..."
+                            class="w-full border border-[#6B7280] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600 font-[Inter] text-[14px] placeholder:text-[#6B7280] pl-5" />
+                    </div>
 
                     <!-- Deskripsi -->
-                    <div class="flex flex-col">
-                        <label class="block text-sm font-inter font-semibold text-black mb-1 mt-5">
+                    <div class="flex flex-col" x-data x-init="createEditorFor('edit-catatan-editor', { placeholder: 'Masukkan catatan anda disini...' })">
+                        <label class="block text-sm font-inter font-semibold text-black mb-1">
                             Deskripsi <span class="text-red-500">*</span>
                         </label>
-
-                        <!-- CKEditor Container -->
                         <div id="edit-catatan-editor"
                             class="border border-[#6B7280] rounded-lg bg-white min-h-[160px] p-2 font-[Inter] text-[14px] placeholder-[#6B7280]">
                         </div>
@@ -866,11 +937,11 @@
 
                     <!-- Tenggat -->
                     <div>
-                        <label class="block font-medium text-[14px] mb-2 mt-5 text-black font-[Inter]">
+                        <label class="block font-medium text-[14px] mb-2 text-black font-[Inter]">
                             Tenggat Pengumuman hingga selesai <span class="text-red-500">*</span>
                         </label>
 
-                        <div class="flex items-center gap-3 mb-3 mt-3 relative">
+                        <div class="flex items-center gap-3 mb-3 relative flex-wrap">
                             <!-- Select chip 1 -->
                             <div
                                 class="flex items-center rounded-lg border border-[#d0d7e2] overflow-hidden edit-chip-container-1">
@@ -911,207 +982,216 @@
                                 </div>
                             </div>
                         </div>
-                        <input type="hidden" name="auto_due" id="editAutoDue" value="1 hari dari sekarang">
+                        <input type="hidden" name="auto_due" id="editAutoDue" value="">
                     </div>
+                </form>
+            </div>
 
-                    <style>
-                        /* ini untuk tampilan link filenya di pengumuman */
-                        .ck-content a {
-                            color: #2563eb;
-                            /* biru Tailwind (blue-600) */
-                            text-decoration: underline;
-                            font-weight: 500;
-                        }
+            <style>
+                /* ini untuk tampilan link filenya di pengumuman */
+                .ck-content a {
+                    color: #2563eb;
+                    /* biru Tailwind (blue-600) */
+                    text-decoration: underline;
+                    font-weight: 500;
+                }
 
-                        .ck-content a:hover {
-                            color: #1d4ed8;
-                            /* sedikit lebih gelap pas hover */
-                        }
+                .ck-content a:hover {
+                    color: #1d4ed8;
+                    /* sedikit lebih gelap pas hover */
+                }
 
-                        /* ini untuk style link file upload awal biru */
-                        .ck-content a {
-                            color: #007bff !important;
-                            text-decoration: underline !important;
-                        }
+                /* ini untuk style link file upload awal biru */
+                .ck-content a {
+                    color: #007bff !important;
+                    text-decoration: underline !important;
+                }
 
-                        /* Styling untuk input date */
-                        #editCustomDeadline::-webkit-calendar-picker-indicator {
-                            opacity: 0;
-                            position: absolute;
-                            right: 0;
-                            width: 100%;
-                            height: 100%;
-                            cursor: pointer;
-                            z-index: 10;
-                        }
+                /* Styling untuk input date */
+                #editCustomDeadline::-webkit-calendar-picker-indicator {
+                    opacity: 0;
+                    position: absolute;
+                    right: 0;
+                    width: 100%;
+                    height: 100%;
+                    cursor: pointer;
+                    z-index: 10;
+                }
 
-                        /* Warna placeholder untuk browser yang support */
-                        #editCustomDeadline::-webkit-datetime-edit-text {
-                            color: white;
-                        }
+                /* Warna placeholder untuk browser yang support */
+                #editCustomDeadline::-webkit-datetime-edit-text {
+                    color: white;
+                }
 
-                        #editCustomDeadline::-webkit-datetime-edit-month-field,
-                        #editCustomDeadline::-webkit-datetime-edit-day-field,
-                        #editCustomDeadline::-webkit-datetime-edit-year-field {
-                            color: white;
-                        }
+                #editCustomDeadline::-webkit-datetime-edit-month-field,
+                #editCustomDeadline::-webkit-datetime-edit-day-field,
+                #editCustomDeadline::-webkit-datetime-edit-year-field {
+                    color: white;
+                }
 
-                        /* Fix display saat show */
-                        #editDateInputContainer:not(.hidden) {
-                            display: flex;
-                        }
-                    </style>
+                /* Fix display saat show */
+                #editDateInputContainer:not(.hidden) {
+                    display: flex;
+                }
+            </style>
 
-                    <script>
-                        document.addEventListener("DOMContentLoaded", () => {
-                            // Dropdown 1 untuk edit
-                            const dropdown1 = document.createElement("div");
-                            dropdown1.className =
-                                "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 edit-dropdown-menu-1";
-                            dropdown1.innerHTML = `
+            <script>
+                document.addEventListener("DOMContentLoaded", () => {
+                    // Dropdown 1 untuk edit
+                    const dropdown1 = document.createElement("div");
+                    dropdown1.className =
+                        "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 edit-dropdown-menu-1";
+                    dropdown1.innerHTML = `
                                 <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-t-lg text-black font-[Inter]" data-value="Selesai otomatis">Selesai otomatis</div>
                                 <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-b-lg text-black font-[Inter]" data-value="Atur tenggat waktu sendiri">Atur tenggat waktu sendiri</div>
                             `;
-                            // Dropdown 2 untuk edit
-                            const dropdown2 = document.createElement("div");
-                            dropdown2.className =
-                                "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 edit-dropdown-menu-2";
-                            dropdown2.innerHTML = `
+                    // Dropdown 2 untuk edit
+                    const dropdown2 = document.createElement("div");
+                    dropdown2.className =
+                        "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 edit-dropdown-menu-2";
+                    dropdown2.innerHTML = `
                                 <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-t-lg text-black font-[Inter]" data-value="1 hari dari sekarang">1 hari dari sekarang</div>
                                 <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer text-black font-[Inter]" data-value="3 hari dari sekarang">3 hari dari sekarang</div>
                                 <div class="px-4 py-2 hover:bg-[#f1f5ff] cursor-pointer rounded-b-lg text-black font-[Inter]" data-value="7 hari dari sekarang">7 hari dari sekarang</div>
                             `;
 
-                            document.body.appendChild(dropdown1);
-                            document.body.appendChild(dropdown2);
+                    document.body.appendChild(dropdown1);
+                    document.body.appendChild(dropdown2);
 
-                            // Get elements untuk edit
-                            const btn1 = document.querySelector(".edit-dropdown-btn-1");
-                            const btn2 = document.querySelector(".edit-dropdown-btn-2");
-                            const chipText1 = document.querySelector(".edit-chip-text-1");
-                            const chipText2 = document.querySelector(".edit-chip-text-2");
-                            const chipContainer1 = document.querySelector(".edit-chip-container-1");
-                            const chipContainer2 = document.querySelector(".edit-chip-container-2");
-                            const labelText = document.getElementById("editLabelText");
-                            const dropdownChip = document.getElementById("editDropdownChip");
-                            const dateInputContainer = document.getElementById("editDateInputContainer");
-                            const customDeadline = document.getElementById("editCustomDeadline");
-                            const calendarBtn = document.getElementById("editCalendarBtn");
+                    // Get elements untuk edit
+                    const btn1 = document.querySelector(".edit-dropdown-btn-1");
+                    const btn2 = document.querySelector(".edit-dropdown-btn-2");
+                    const chipText1 = document.querySelector(".edit-chip-text-1");
+                    const chipText2 = document.querySelector(".edit-chip-text-2");
+                    const chipContainer1 = document.querySelector(".edit-chip-container-1");
+                    const chipContainer2 = document.querySelector(".edit-chip-container-2");
+                    const labelText = document.getElementById("editLabelText");
+                    const dropdownChip = document.getElementById("editDropdownChip");
+                    const dateInputContainer = document.getElementById("editDateInputContainer");
+                    const customDeadline = document.getElementById("editCustomDeadline");
+                    const calendarBtn = document.getElementById("editCalendarBtn");
 
-                            // Function to position and toggle dropdown
-                            function toggleDropdown(dropdown, container) {
-                                const rect = container.getBoundingClientRect();
-                                dropdown.style.top = `${rect.bottom + window.scrollY + 5}px`;
-                                dropdown.style.left = `${rect.left + window.scrollX}px`;
-                                dropdown.classList.toggle("hidden");
+                    // Function to position and toggle dropdown
+                    function toggleDropdown(dropdown, container) {
+                        const rect = container.getBoundingClientRect();
+                        dropdown.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                        dropdown.style.left = `${rect.left + window.scrollX}px`;
+                        dropdown.classList.toggle("hidden");
+                    }
+
+                    // Click calendar button to trigger date picker
+                    if (calendarBtn) {
+                        calendarBtn.addEventListener("click", (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (customDeadline.showPicker) {
+                                customDeadline.showPicker();
+                            } else {
+                                customDeadline.click();
                             }
-
-                            // Click calendar button to trigger date picker
-                            if (calendarBtn) {
-                                calendarBtn.addEventListener("click", (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    if (customDeadline.showPicker) {
-                                        customDeadline.showPicker();
-                                    } else {
-                                        customDeadline.click();
-                                    }
-                                });
-                            }
-
-                            // Event listeners for buttons
-                            btn1.addEventListener("click", (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                dropdown2.classList.add("hidden");
-                                toggleDropdown(dropdown1, chipContainer1);
-                            });
-
-                            btn2.addEventListener("click", (e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                dropdown1.classList.add("hidden");
-                                toggleDropdown(dropdown2, chipContainer2);
-                            });
-
-                            // Event listeners for dropdown 1 options
-                            dropdown1.querySelectorAll("div[data-value]").forEach(opt => {
-                                opt.addEventListener("click", (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    const value = opt.getAttribute("data-value");
-                                    chipText1.textContent = value;
-                                    dropdown1.classList.add("hidden");
-
-                                    // Toggle between dropdown and date input
-                                    if (value === "Atur tenggat waktu sendiri") {
-                                        labelText.textContent = "Tenggat :";
-                                        dropdownChip.classList.add("hidden");
-                                        dateInputContainer.classList.remove("hidden");
-                                    } else {
-                                        labelText.textContent = "Selesai otomatis pada:";
-                                        dropdownChip.classList.remove("hidden");
-                                        dateInputContainer.classList.add("hidden");
-                                    }
-                                });
-                            });
-
-                            // Event listeners for dropdown 2 options
-                            dropdown2.querySelectorAll("div[data-value]").forEach(opt => {
-                                opt.addEventListener("click", (e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    const value = opt.getAttribute("data-value"); // ✅ ambil nilai dari option
-                                    chipText2.textContent = value;
-                                    document.getElementById("editAutoDue").value =
-                                        value; // ✅ simpan ke input hidden
-                                    dropdown2.classList.add("hidden");
-                                });
-                            });
-
-                            // Close dropdowns when clicking outside
-                            document.addEventListener("click", (e) => {
-                                const isClickInsideDropdown1 = dropdown1.contains(e.target) || chipContainer1.contains(e
-                                    .target);
-                                const isClickInsideDropdown2 = dropdown2.contains(e.target) || chipContainer2.contains(e
-                                    .target);
-
-                                if (!isClickInsideDropdown1) {
-                                    dropdown1.classList.add("hidden");
-                                }
-                                if (!isClickInsideDropdown2) {
-                                    dropdown2.classList.add("hidden");
-                                }
-                            });
-
-                            // Prevent dropdown from closing when moving mouse inside it
-                            dropdown1.addEventListener("click", (e) => {
-                                e.stopPropagation();
-                            });
-
-                            dropdown2.addEventListener("click", (e) => {
-                                e.stopPropagation();
-                            });
                         });
-                    </script>
-                </div>
+                    }
 
-                <!-- Tombol Lebih Besar -->
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" id="editBtnBatal"
-                        class="border border-blue-700 text-blue-600 bg-white px-8 py-2 text-[16px] rounded-lg hover:bg-red-50 transition">
-                        Batal
-                    </button>
-                    <button type="submit" id="editSubmitBtn"
-                        class="bg-blue-700 text-white px-8 py-2 text-[16px] rounded-lg hover:bg-blue-800 transition">
-                        Perbarui
-                    </button>
-                </div>
+                    // Event listeners for buttons
+                    btn1.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropdown2.classList.add("hidden");
+                        toggleDropdown(dropdown1, chipContainer1);
+                    });
+
+                    btn2.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        dropdown1.classList.add("hidden");
+                        toggleDropdown(dropdown2, chipContainer2);
+                    });
+
+                    // Event listeners for dropdown 1 options
+                    dropdown1.querySelectorAll("div[data-value]").forEach(opt => {
+                        opt.addEventListener("click", (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const value = opt.getAttribute("data-value");
+                            chipText1.textContent = value;
+                            dropdown1.classList.add("hidden");
+
+                            // Toggle between dropdown and date input
+                            if (value === "Atur tenggat waktu sendiri") {
+                                labelText.textContent = "Tenggat :";
+                                dropdownChip.classList.add("hidden");
+                                dateInputContainer.classList.remove("hidden");
+                            } else {
+                                labelText.textContent = "Selesai otomatis pada:";
+                                dropdownChip.classList.remove("hidden");
+                                dateInputContainer.classList.add("hidden");
+                            }
+                        });
+                    });
+
+                    // Event listeners for dropdown 2 options
+                    dropdown2.querySelectorAll("div[data-value]").forEach(opt => {
+                        opt.addEventListener("click", (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const value = opt.getAttribute("data-value"); // ✅ ambil nilai dari option
+                            chipText2.textContent = value;
+                            document.getElementById("editAutoDue").value =
+                                value; // ✅ simpan ke input hidden
+                            dropdown2.classList.add("hidden");
+                        });
+                    });
+
+                    // Close dropdowns when clicking outside
+                    document.addEventListener("click", (e) => {
+                        const isClickInsideDropdown1 = dropdown1.contains(e.target) || chipContainer1.contains(e
+                            .target);
+                        const isClickInsideDropdown2 = dropdown2.contains(e.target) || chipContainer2.contains(e
+                            .target);
+
+                        if (!isClickInsideDropdown1) {
+                            dropdown1.classList.add("hidden");
+                        }
+                        if (!isClickInsideDropdown2) {
+                            dropdown2.classList.add("hidden");
+                        }
+                    });
+
+                    // Prevent dropdown from closing when moving mouse inside it
+                    dropdown1.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                    });
+
+                    dropdown2.addEventListener("click", (e) => {
+                        e.stopPropagation();
+                    });
+                });
+            </script>
+
+            <!-- Tombol Lebih Besar -->
+            <div class="p-6 border-t border-gray-200 flex justify-end gap-2 flex-shrink-0">
+                <button type="button" id="editBtnBatal"
+                    class="border border-blue-700 text-blue-600 bg-white px-8 py-2 text-[16px] rounded-lg hover:bg-red-50 transition">
+                    Batal
+                </button>
+                <button type="submit" id="editSubmitBtn" form="pengumumanEditForm"
+                    class="bg-blue-700 text-white px-8 py-2 text-[16px] rounded-lg hover:bg-blue-800 transition">
+                    Perbarui
+                </button>
+            </div>
             </form>
         </div>
     </div>
 
     <script>
+        window.currentUser = @json(auth()->user());
+    </script>
+
+    <script>
+        // ============================================
+        // FIXED SCRIPT UNTUK POPUP EDIT
+        // ============================================
+
         // Variabel untuk mencegah multiple submit
         let isSubmittingEdit = false;
         let editEditorInstance = null;
@@ -1122,41 +1202,61 @@
 
             // Tampilkan modal
             const modal = document.getElementById('openEditModal');
+            if (!modal) {
+                console.error('Modal element not found!');
+                return;
+            }
+
             modal.classList.remove('hidden');
             modal.classList.add('flex');
 
             // Set pengumuman ID
-            document.getElementById('editPengumumanId').value = pengumumanId;
+            const idInput = document.getElementById('editPengumumanId');
+            if (!idInput) {
+                console.error('editPengumumanId input not found!');
+                return;
+            }
+            idInput.value = pengumumanId;
 
             // Reset form state terlebih dahulu
             resetEditForm();
 
-            // Load data pengumuman
-            fetch(`/companies/{{ $company_id }}/pengumuman-perusahaan/${pengumumanId}/edit`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                }
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Gagal mengambil data: ' + response.status);
-                return response.json();
-            })
-            .then(data => {
-                console.log('Data received:', data);
-                // Isi form dengan data yang diterima
-                populateEditForm(data);
-            })
-            .catch(error => {
-                console.error('Fetch error (edit-data):', error);
-                Swal.fire('Error', 'Gagal memuat data pengumuman', 'error');
-                closeEditModal();
-            });
+            // Build URL yang benar
+            const companyId = "{{ $company_id }}";
+            const url = `/companies/${companyId}/pengumuman-perusahaan/${pengumumanId}/edit-data`;
+
+            console.log('Fetching from URL:', url);
+
+            // Fetch data pengumuman
+            fetch(url, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Data received:', data);
+                    populateEditForm(data);
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    alert('Gagal mengambil data pengumuman: ' + error.message);
+                    closeEditModal();
+                });
         }
 
         // Fungsi reset form
         function resetEditForm() {
-            document.getElementById('editTitle').value = '';
+            // Reset title
+            const titleInput = document.getElementById('editTitle');
+            if (titleInput) titleInput.value = '';
 
             // Reset CKEditor
             if (editEditorInstance) {
@@ -1164,13 +1264,21 @@
             }
 
             // Reset due date settings ke default
-            document.querySelector('.edit-chip-text-1').textContent = 'Selesai otomatis';
-            document.getElementById('editLabelText').textContent = 'Selesai otomatis pada:';
-            document.getElementById('editDropdownChip').classList.remove('hidden');
-            document.getElementById('editDateInputContainer').classList.add('hidden');
-            document.querySelector('.edit-chip-text-2').textContent = '1 hari dari sekarang';
-            document.getElementById('editAutoDue').value = '1 hari dari sekarang';
-            document.getElementById('editCustomDeadline').value = '';
+            const chipText1 = document.querySelector('.edit-chip-text-1');
+            const chipText2 = document.querySelector('.edit-chip-text-2');
+            const labelText = document.getElementById('editLabelText');
+            const dropdownChip = document.getElementById('editDropdownChip');
+            const dateInputContainer = document.getElementById('editDateInputContainer');
+            const autoDueInput = document.getElementById('editAutoDue');
+            const customDeadlineInput = document.getElementById('editCustomDeadline');
+
+            if (chipText1) chipText1.textContent = 'Selesai otomatis';
+            if (labelText) labelText.textContent = 'Selesai otomatis pada:';
+            if (dropdownChip) dropdownChip.classList.remove('hidden');
+            if (dateInputContainer) dateInputContainer.classList.add('hidden');
+            if (chipText2) chipText2.textContent = '1 hari dari sekarang';
+            if (autoDueInput) autoDueInput.value = '1 hari dari sekarang';
+            if (customDeadlineInput) customDeadlineInput.value = '';
 
             // Reset submit state
             isSubmittingEdit = false;
@@ -1181,368 +1289,170 @@
             console.log('Populating form with data:', data);
 
             // Judul
-            document.getElementById('editTitle').value = data.title || '';
+            const titleInput = document.getElementById('editTitle');
+            if (titleInput) {
+                titleInput.value = data.title || '';
+            }
 
             // Deskripsi - set ke CKEditor
             if (editEditorInstance) {
                 editEditorInstance.setData(data.description || '');
             } else {
-                // Inisialisasi editor jika belum ada
-                initializeEditEditor().then(() => {
-                    if (editEditorInstance) {
-                        editEditorInstance.setData(data.description || '');
+                // Jika editor belum siap, tunggu sebentar
+                console.warn('Editor not ready, retrying in 500ms...');
+                setTimeout(() => {
+                    const editorRetry = window['edit-catatan-editor_editor'];
+                    if (editorRetry) {
+                        editorRetry.setData(data.description || '');
+                    } else {
+                        console.error('CKEditor still not found after retry');
                     }
-                });
+                }, 500);
             }
 
             // Due date settings
+            const chipText1 = document.querySelector('.edit-chip-text-1');
+            const chipText2 = document.querySelector('.edit-chip-text-2');
+            const labelText = document.getElementById('editLabelText');
+            const dropdownChip = document.getElementById('editDropdownChip');
+            const dateInputContainer = document.getElementById('editDateInputContainer');
+            const autoDueInput = document.getElementById('editAutoDue');
+            const customDeadlineInput = document.getElementById('editCustomDeadline');
+
             if (data.auto_due && data.auto_due !== '') {
                 // Mode auto due
-                document.querySelector('.edit-chip-text-1').textContent = 'Selesai otomatis';
-                document.getElementById('editLabelText').textContent = 'Selesai otomatis pada:';
-                document.getElementById('editDropdownChip').classList.remove('hidden');
-                document.getElementById('editDateInputContainer').classList.add('hidden');
-                document.querySelector('.edit-chip-text-2').textContent = data.auto_due;
-                document.getElementById('editAutoDue').value = data.auto_due;
+                if (chipText1) chipText1.textContent = 'Selesai otomatis';
+                if (labelText) labelText.textContent = 'Selesai otomatis pada:';
+                if (dropdownChip) dropdownChip.classList.remove('hidden');
+                if (dateInputContainer) dateInputContainer.classList.add('hidden');
+                if (chipText2) chipText2.textContent = data.auto_due;
+                if (autoDueInput) autoDueInput.value = data.auto_due;
             } else if (data.due_date) {
                 // Mode manual due date
-                document.querySelector('.edit-chip-text-1').textContent = 'Atur tenggat waktu sendiri';
-                document.getElementById('editLabelText').textContent = 'Tenggat :';
-                document.getElementById('editDropdownChip').classList.add('hidden');
-                document.getElementById('editDateInputContainer').classList.remove('hidden');
-
-                // Format date untuk input[type=date] (YYYY-MM-DD)
-                const dueDate = new Date(data.due_date);
-                const formattedDate = dueDate.toISOString().split('T')[0];
-                document.getElementById('editCustomDeadline').value = formattedDate;
-                document.getElementById('editAutoDue').value = '';
+                if (chipText1) chipText1.textContent = 'Atur tenggat waktu sendiri';
+                if (labelText) labelText.textContent = 'Tenggat :';
+                if (dropdownChip) dropdownChip.classList.add('hidden');
+                if (dateInputContainer) dateInputContainer.classList.remove('hidden');
+                if (customDeadlineInput) customDeadlineInput.value = data.due_date;
+                if (autoDueInput) autoDueInput.value = '';
             } else {
                 // Default mode
-                document.querySelector('.edit-chip-text-1').textContent = 'Selesai otomatis';
-                document.getElementById('editLabelText').textContent = 'Selesai otomatis pada:';
-                document.getElementById('editDropdownChip').classList.remove('hidden');
-                document.getElementById('editDateInputContainer').classList.add('hidden');
-                document.querySelector('.edit-chip-text-2').textContent = '1 hari dari sekarang';
-                document.getElementById('editAutoDue').value = '1 hari dari sekarang';
+                if (chipText1) chipText1.textContent = 'Selesai otomatis';
+                if (labelText) labelText.textContent = 'Selesai otomatis pada:';
+                if (dropdownChip) dropdownChip.classList.remove('hidden');
+                if (dateInputContainer) dateInputContainer.classList.add('hidden');
+                if (chipText2) chipText2.textContent = '1 hari dari sekarang';
+                if (autoDueInput) autoDueInput.value = '1 hari dari sekarang';
             }
         }
 
-        // Inisialisasi CKEditor untuk edit
-        async function initializeEditEditor() {
-            const editorElement = document.getElementById('edit-catatan-editor');
-            if (!editorElement || editEditorInstance) return;
-
-            try {
-                editEditorInstance = await ClassicEditor.create(editorElement, {
-                    toolbar: {
-                        items: [
-                            'undo', 'redo', '|',
-                            'heading', '|',
-                            'bold', 'italic', 'underline', 'strikethrough', '|',
-                            'link', 'blockQuote', '|',
-                            'bulletedList', 'numberedList', '|',
-                            'insertTable', '|',
-                        ],
-                        shouldNotGroupWhenFull: true
-                    },
-                    heading: {
-                        options: [
-                            {
-                                model: 'paragraph',
-                                title: 'Paragraf',
-                                class: 'ck-heading_paragraph'
-                            },
-                            {
-                                model: 'heading1',
-                                view: 'h1',
-                                title: 'Heading 1',
-                                class: 'ck-heading_heading1'
-                            },
-                            {
-                                model: 'heading2',
-                                view: 'h2',
-                                title: 'Heading 2',
-                                class: 'ck-heading_heading2'
-                            }
-                        ]
-                    },
-                    placeholder: 'Masukkan deskripsi pengumuman...'
-                });
-
-                // Tambahkan tombol upload
-                insertUploadFileButtonToEditToolbar(editEditorInstance);
-                insertUploadImageButtonToEditToolbar(editEditorInstance);
-
-            } catch (error) {
-                console.error('Error initializing edit editor:', error);
-            }
-        }
-
-        // Fungsi untuk tombol upload file di editor edit
-        function insertUploadFileButtonToEditToolbar(editor) {
-            try {
-                const toolbarEl = editor.ui.view.toolbar.element;
-                const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
-
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'ck ck-button';
-                btn.title = 'Upload File';
-                btn.innerHTML = `
-                    <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="20">
-                            <path fill="currentColor" d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8.83a2 2 0 0 0-.59-1.41l-3.83-3.83A2 2 0 0 0 10.17 3H6zm4 2 4 4H10V4z"/>
-                        </svg>
-                    </span>
-                `;
-                btn.style.marginLeft = '6px';
-                btn.style.cursor = 'pointer';
-
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-                btn.addEventListener('click', () => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = ".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.zip,.rar,.ppt,.pptx";
-                    input.click();
-
-                    input.addEventListener('change', async (e) => {
-                        const file = e.target.files[0];
-                        if (!file) return;
-
-                        const formData = new FormData();
-                        formData.append('upload', file);
-
-                        // Gunakan pengumuman ID yang sedang diedit
-                        const pengumumanId = document.getElementById('editPengumumanId')?.value;
-                        if (pengumumanId) {
-                            formData.append('attachable_id', pengumumanId);
-                            formData.append('attachable_type', 'App\\Models\\Pengumuman');
-                        }
-
-                        try {
-                            const res = await fetch('/upload', {
-                                method: 'POST',
-                                headers: {
-                                    'X-CSRF-TOKEN': csrfToken
-                                },
-                                body: formData
-                            });
-                            const data = await res.json();
-                            if (res.ok && data.url) {
-                                editor.model.change(writer => {
-                                    const insertPos = editor.model.document.selection.getFirstPosition();
-                                    const paragraph = writer.createElement('paragraph');
-                                    const textNode = writer.createText(file.name, {
-                                        linkHref: data.url
-                                    });
-                                    writer.append(textNode, paragraph);
-                                    editor.model.insertContent(paragraph, insertPos);
-                                });
-                            } else {
-                                alert('Upload file gagal.');
-                            }
-                        } catch (err) {
-                            console.error(err);
-                            alert('Terjadi kesalahan upload file.');
-                        }
-                    }, { once: true });
-                });
-
-                itemsContainer.appendChild(btn);
-            } catch (err) {
-                console.error('Insert upload button error:', err);
-            }
-        }
-
-        // Fungsi untuk tombol upload image di editor edit
-        function insertUploadImageButtonToEditToolbar(editor) {
-            try {
-                const toolbarEl = editor.ui.view.toolbar.element;
-                const itemsContainer = toolbarEl.querySelector('.ck-toolbar__items') || toolbarEl;
-
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'ck ck-button';
-                btn.title = 'Upload Image';
-                btn.innerHTML = `
-                    <span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                            <path d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2zM8.5 11a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM5 19l4.5-6 3.5 4.5 2.5-3L19 19H5z"/>
-                        </svg>
-                    </span>
-                `;
-                btn.style.marginLeft = '6px';
-                btn.style.cursor = 'pointer';
-
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-                btn.addEventListener('click', () => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*';
-                    input.click();
-
-                    input.addEventListener('change', async (e) => {
-                        const file = e.target.files[0];
-                        if (!file) return;
-
-                        const formData = new FormData();
-                        formData.append('upload', file);
-
-                        // Gunakan pengumuman ID yang sedang diedit
-                        const pengumumanId = document.getElementById('editPengumumanId')?.value;
-                        if (pengumumanId) {
-                            formData.append('attachable_id', pengumumanId);
-                            formData.append('attachable_type', 'App\\Models\\Pengumuman');
-                        }
-
-                        try {
-                            const res = await fetch('/upload-image', {
-                                method: 'POST',
-                                headers: {
-                                    'X-CSRF-TOKEN': csrfToken
-                                },
-                                body: formData
-                            });
-                            const data = await res.json();
-                            if (res.ok && data.url) {
-                                editor.model.change(writer => {
-                                    const insertPos = editor.model.document.selection.getFirstPosition();
-                                    const imageElement = writer.createElement('imageBlock', {
-                                        src: data.url
-                                    });
-                                    editor.model.insertContent(imageElement, insertPos);
-                                });
-                            } else {
-                                alert('Upload gambar gagal.');
-                            }
-                        } catch (err) {
-                            console.error(err);
-                            alert('Terjadi kesalahan upload gambar.');
-                        }
-                    }, { once: true });
-                });
-
-                itemsContainer.appendChild(btn);
-            } catch (err) {
-                console.error('Insert upload image button error:', err);
-            }
-        }
-
-        // Event listener untuk form submit - DIPERBAIKI
-        document.getElementById('pengumumanEditForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            // Cegah multiple submit
-            if (isSubmittingEdit) {
-                console.log('Submit already in progress, please wait...');
+        // Event listener untuk form submit
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('pengumumanEditForm');
+            if (!form) {
+                console.error('Form pengumumanEditForm not found!');
                 return;
             }
 
-            isSubmittingEdit = true;
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
 
-            const pengumumanId = document.getElementById('editPengumumanId').value;
-            const submitBtn = document.getElementById('editSubmitBtn');
-
-            // Simpan teks asli tombol
-            const originalText = submitBtn.textContent;
-            submitBtn.textContent = 'Memperbarui...';
-            submitBtn.disabled = true;
-
-            // Validasi form
-            const title = document.getElementById('editTitle').value.trim();
-            const editorData = editEditorInstance ? editEditorInstance.getData().trim() : '';
-
-            if (!title) {
-                Swal.fire("Kolom Belum Diisi", "Judul pengumuman wajib diisi.", "warning");
-                resetSubmitButton(submitBtn, originalText);
-                isSubmittingEdit = false;
-                return;
-            }
-
-            if (!editorData || editorData === "<p><br></p>") {
-                Swal.fire("Kolom Belum Diisi", "Deskripsi pengumuman wajib diisi.", "warning");
-                resetSubmitButton(submitBtn, originalText);
-                isSubmittingEdit = false;
-                return;
-            }
-
-            // Prepare data dengan FormData (lebih baik untuk file upload)
-            const formData = new FormData();
-            formData.append('_method', 'PUT'); // Laravel method spoofing
-            formData.append('title', title);
-            formData.append('description', editorData);
-            formData.append('auto_due', document.getElementById('editAutoDue').value);
-
-            // Handle due_date jika ada
-            const customDeadline = document.getElementById('editCustomDeadline').value;
-            if (customDeadline) {
-                formData.append('due_date', customDeadline);
-            }
-
-            formData.append('is_private', document.getElementById('editSwitchRahasia')?.checked ? '1' : '0');
-
-            console.log('Submitting form data:');
-            console.log('Title:', title);
-            console.log('Auto Due:', document.getElementById('editAutoDue').value);
-            console.log('Due Date:', customDeadline);
-            console.log('Is Private:', document.getElementById('editSwitchRahasia')?.checked);
-
-            // Kirim request update dengan FormData
-            fetch(`/companies/{{ $company_id }}/pengumuman-perusahaan/${pengumumanId}`, {
-                method: 'POST', // Gunakan POST untuk method spoofing
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Accept': 'application/json'
-                },
-                body: formData
-            })
-            .then(async response => {
-                const contentType = response.headers.get('content-type');
-
-                if (!response.ok) {
-                    // Coba baca response sebagai text dulu untuk debug
-                    const errorText = await response.text();
-                    console.error('Server error response:', errorText);
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                // Cegah multiple submit
+                if (isSubmittingEdit) {
+                    console.log('Submit already in progress, please wait...');
+                    return;
                 }
 
-                if (contentType && contentType.includes('application/json')) {
-                    return response.json();
-                } else {
-                    const text = await response.text();
-                    throw new Error("Server tidak mengembalikan JSON: " + text.slice(0, 120));
+                isSubmittingEdit = true;
+
+                const pengumumanId = document.getElementById('editPengumumanId').value;
+                const companyId = "{{ $company_id }}";
+
+                // Validasi form
+                const title = document.getElementById('editTitle').value.trim();
+                const editor = window['edit-catatan-editor_editor'];
+                const editorData = editor ? editor.getData().trim() : '';
+
+                if (!title) {
+                    Swal.fire("Kolom Belum Diisi", "Judul pengumuman wajib diisi.", "warning");
+                    isSubmittingEdit = false;
+                    return;
                 }
-            })
-            .then(data => {
-                console.log('Response data:', data);
-                if (data.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: data.message,
-                        timer: 2000,
-                        showConfirmButton: false
-                    }).then(() => {
-                        closeEditModal();
-                        if (data.redirect) {
-                            window.location.href = data.redirect;
+
+                if (!editorData || editorData === "<p><br></p>") {
+                    Swal.fire("Kolom Belum Diisi", "Deskripsi pengumuman wajib diisi.", "warning");
+                    isSubmittingEdit = false;
+                    return;
+                }
+
+                // Set deskripsi ke hidden input
+                document.getElementById('editCatatanInput').value = editorData;
+
+                console.log('Submitting form with data:', {
+                    title: title,
+                    description: editorData.substring(0, 100) + '...',
+                    attachable_id: pengumumanId
+                });
+
+                // Submit via fetch
+                fetch(`/companies/${companyId}/pengumuman-perusahaan/${pengumumanId}`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                .getAttribute('content'),
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            _method: 'PUT',
+                            title: title,
+                            description: editorData,
+                            auto_due: document.getElementById('editAutoDue').value,
+                            due_date: document.getElementById('editCustomDeadline').value,
+                            is_private: false, // Default value karena tidak ada switch
+                            attachable_id: pengumumanId
+                        })
+                    })
+                    .then(async response => {
+                        const text = await response.text();
+                        console.log('Response text:', text);
+                        try {
+                            return JSON.parse(text);
+                        } catch {
+                            throw new Error("Server tidak mengembalikan JSON: " + text.slice(0,
+                                120));
+                        }
+                    })
+                    .then(data => {
+                        console.log('Response data:', data);
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: data.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            }).then(() => {
+                                closeEditModal();
+                                if (data.redirect) {
+                                    window.location.href = data.redirect;
+                                } else {
+                                    location.reload();
+                                }
+                            });
                         } else {
-                            location.reload();
+                            Swal.fire("Error", data.message || "Terjadi kesalahan", "error");
                         }
+                    })
+                    .catch(error => {
+                        console.error('Submit error:', error);
+                        Swal.fire("Error", "Terjadi kesalahan saat memperbarui pengumuman: " + error
+                            .message, "error");
+                    })
+                    .finally(() => {
+                        isSubmittingEdit = false;
                     });
-                } else {
-                    throw new Error(data.message || "Terjadi kesalahan");
-                }
-            })
-            .catch(error => {
-                console.error('Submit error (update):', error);
-                Swal.fire("Error", error.message || "Terjadi kesalahan saat memperbarui pengumuman", "error");
-            })
-            .finally(() => {
-                resetSubmitButton(submitBtn, originalText);
-                isSubmittingEdit = false;
             });
         });
 
@@ -1555,19 +1465,19 @@
         // Fungsi untuk menutup modal edit
         function closeEditModal() {
             const modal = document.getElementById('openEditModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-
-            // Reset submit state
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
             isSubmittingEdit = false;
         }
 
         // Event listener untuk tombol batal
-        document.getElementById('editBtnBatal').addEventListener('click', closeEditModal);
-
-        // Inisialisasi editor ketika modal pertama kali dibuka
         document.addEventListener('DOMContentLoaded', function() {
-            initializeEditEditor();
+            const btnBatal = document.getElementById('editBtnBatal');
+            if (btnBatal) {
+                btnBatal.addEventListener('click', closeEditModal);
+            }
         });
     </script>
 
@@ -1586,32 +1496,32 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     fetch(`/companies/{{ $company_id }}/pengumuman-perusahaan/${id}`, {
-                        method: "DELETE",
-                        headers: {
-                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
-                            "Accept": "application/json"
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            Swal.fire({
-                                icon: "success",
-                                title: "Berhasil!",
-                                text: data.message,
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
-                                window.location.href = data.redirect_url;
-                            });
-                        } else {
-                            Swal.fire("Gagal", data.message, "error");
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Error:", error);
-                        Swal.fire("Error", "Terjadi kesalahan saat menghapus pengumuman", "error");
-                    });
+                            method: "DELETE",
+                            headers: {
+                                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                                "Accept": "application/json"
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire({
+                                    icon: "success",
+                                    title: "Berhasil!",
+                                    text: data.message,
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    window.location.href = data.redirect_url;
+                                });
+                            } else {
+                                Swal.fire("Gagal", data.message, "error");
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error:", error);
+                            Swal.fire("Error", "Terjadi kesalahan saat menghapus pengumuman", "error");
+                        });
                 }
             });
         }

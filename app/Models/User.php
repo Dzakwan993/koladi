@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Role;
 
 class User extends Authenticatable
 {
@@ -21,7 +22,11 @@ class User extends Authenticatable
         'password',
         'google_id',
         'status_active',
-        'avatar', // Tambahkan ini jika kolom avatar sudah ada
+        'avatar',
+        'onboarding_step',
+        'onboarding_type',
+        'has_seen_onboarding',
+        'system_role_id', // TAMBAHAN: untuk menyimpan role AdminSistem
     ];
 
     protected $hidden = [
@@ -35,29 +40,47 @@ class User extends Authenticatable
         'status_active' => 'boolean',
     ];
 
-    // Accessor untuk avatar - jika kolom avatar belum ada
+    // ===== RELASI UNTUK ADMIN SISTEM =====
+    /**
+     * Relasi ke role sistem (untuk AdminSistem)
+     * Ini BERBEDA dari role company/workspace
+     */
+    public function systemRole()
+    {
+        return $this->belongsTo(Role::class, 'system_role_id');
+    }
+
+    /**
+     * Cek apakah user adalah Admin Sistem
+     */
+    public function isSystemAdmin()
+    {
+        // Cek berdasarkan system_role_id
+        if ($this->system_role_id) {
+            $role = $this->systemRole;
+            return $role && $role->name === 'AdminSistem';
+        }
+        return false;
+    }
+
+    // Accessor untuk avatar
     public function getAvatarAttribute($value)
     {
-        // Jika ada value dari database, gunakan itu
         if ($value) {
             return $value;
         }
-
-        // Jika tidak ada, generate dari ui-avatars.com
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->full_name) . '&background=random&color=fff';
     }
 
-    // Atau bisa juga buat method terpisah
     public function getAvatarUrl()
     {
         if (!empty($this->attributes['avatar'])) {
             return $this->attributes['avatar'];
         }
-
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->full_name) . '&background=random&color=fff';
     }
 
-    // Relasi ke companies
+    // ===== RELASI COMPANY =====
     public function companies()
     {
         return $this->belongsToMany(Company::class, 'user_companies', 'user_id', 'company_id')
@@ -65,58 +88,65 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
-    public function getAvatarUrlAttribute()
-    {
-        return $this->avatar
-            ? asset('storage/' . $this->avatar) // path avatar di storage
-            : asset('images/dk.jpg');          // default jika tidak ada
-    }
-
-
     public function role()
     {
         return $this->belongsTo(Role::class, 'roles_id');
     }
 
-    // Relasi ke user_companies
     public function userCompanies()
     {
         return $this->hasMany(UserCompany::class, 'user_id');
     }
 
-    // relasi ke userWorkspaces
+    // ===== RELASI WORKSPACE =====
     public function userWorkspaces()
     {
         return $this->hasMany(UserWorkspace::class, 'user_id');
     }
 
+    public function workspaces()
+    {
+        return $this->belongsToMany(
+            Workspace::class,
+            'user_workspaces',
+            'user_id',
+            'workspace_id'
+        )
+            ->withPivot('roles_id', 'status_active', 'join_date')
+            ->wherePivot('status_active', true)
+            ->withTimestamps();
+    }
+
+    public function allWorkspaces()
+    {
+        return $this->belongsToMany(
+            Workspace::class,
+            'user_workspaces',
+            'user_id',
+            'workspace_id'
+        )
+            ->withPivot('roles_id', 'status_active', 'join_date')
+            ->withTimestamps();
+    }
+
+    public function ownedWorkspaces()
+    {
+        return $this->hasMany(Workspace::class, 'user_id');
+    }
+
+    // ===== HELPER METHODS COMPANY =====
     public function getRoleName($companyId)
     {
         $userCompany = $this->userCompanies->where('company_id', $companyId)->first();
         return $userCompany && $userCompany->role ? $userCompany->role->name : null;
     }
 
-    // /**
-    //  * Ambil role user dalam company (id)
-    //  */
-    // public function getRoleId($companyId)
-    // {
-    //     return $this->userCompanies()
-    //         ->where('company_id', $companyId)
-    //         ->value('roles_id');
-    // }
-
-
-    /**
-     * Cek apakah user punya role tertentu
-     */
     public function hasCompanyRole($companyId, $roles = [])
     {
         $roleName = $this->getRoleName($companyId);
         return in_array($roleName, (array) $roles);
     }
 
-    // App\Models\User.php
     public function hasRoleInCompany(array $roleNames, $companyId)
     {
         return $this->userCompanies()
@@ -127,14 +157,42 @@ class User extends Authenticatable
             ->exists();
     }
 
-    /**
-     * Cek apakah user boleh manage workspace roles
-     * -> hanya Super Admin & Admin
-     */
     public function canManageWorkspaceRoles($companyId)
     {
         $allowed = ['Super Admin', 'SuperAdmin', 'Admin'];
-
         return $this->hasCompanyRole($companyId, $allowed);
+    }
+
+    // ===== HELPER METHODS WORKSPACE =====
+    public function isMemberOf($workspaceId)
+    {
+        return $this->workspaces()->where('workspace_id', $workspaceId)->exists();
+    }
+
+    public function isCompanyAdmin($companyId)
+    {
+        $userCompany = $this->userCompanies()
+            ->where('company_id', $companyId)
+            ->with('role')
+            ->first();
+
+        $roleName = $userCompany?->role?->name;
+
+        return in_array($roleName, ['SuperAdmin', 'Administrator', 'Admin', 'Manager']);
+    }
+
+    public function getWorkspaceRole($workspaceId)
+    {
+        $userWorkspace = $this->userWorkspaces()
+            ->where('workspace_id', $workspaceId)
+            ->with('role')
+            ->first();
+
+        return $userWorkspace?->role;
+    }
+
+    public function getNameAttribute()
+    {
+        return $this->full_name;
     }
 }
