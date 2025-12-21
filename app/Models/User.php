@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\Role;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -195,4 +196,32 @@ class User extends Authenticatable
     {
         return $this->full_name;
     }
+
+
+
+    // Tambahkan relasi ini di class User
+
+/**
+ * Get notifications for this user
+ */
+public function notifications(): HasMany
+{
+    return $this->hasMany(Notification::class);
+}
+
+/**
+ * Get unread notifications
+ */
+public function unreadNotifications()
+{
+    return $this->notifications()->where('is_read', false);
+}
+
+/**
+ * Get unread notifications count
+ */
+public function unreadNotificationsCount()
+{
+    return $this->unreadNotifications()->count();
+}
 }

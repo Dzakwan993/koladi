@@ -44,3 +44,8 @@ Broadcast::channel('presence-company.{companyId}', function ($user, $companyId) 
         'role' => $userCompany->role->name ?? 'Member'
     ];
 });
+
+// ✅ TAMBAHKAN INI - Private channel untuk notifikasi user
+Broadcast::channel('user.{userId}', function ($user, $userId) {
+    return (string) $user->id === (string) $userId;
+});

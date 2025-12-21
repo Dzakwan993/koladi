@@ -176,10 +176,617 @@
             <img src="{{ asset('images/icons/dollar.svg') }}" alt="Dollar" class="w-5 h-5">
         </a>
 
-        <button class="p-2 hover:bg-gray-100 rounded-lg transition relative" title="Notifikasi">
-            <img src="{{ asset('images/icons/notifikasi.svg') }}" alt="Notifikasi" class="w-5 h-5">
-            <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-        </button>
+        <!-- Tombol Notifikasi -->
+        <div class="relative" x-data="{ showNotifications: false }">
+            <button @click="showNotifications = true" class="p-2 hover:bg-gray-100 rounded-lg transition relative"
+                title="Notifikasi">
+                <img src="{{ asset('images/icons/notifikasi.svg') }}" alt="Notifikasi" class="w-5 h-5">
+                <!-- Unread Badge -->
+                <span data-notification-badge
+                    class="hidden absolute top-1 right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1">
+                    0
+                </span>
+            </button>
+
+            <!-- Modal Notifikasi -->
+            <div x-show="showNotifications" @click.outside="showNotifications = false" x-transition
+                class="absolute right-0 mt-3 z-50">
+
+                <div class="bg-white rounded-xl shadow-xl w-[400px] max-h-[580px] border border-gray-200 flex flex-col"
+                    @click.stop x-data="notificationModal()" x-init="init()"
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="transform opacity-0 scale-95"
+                    x-transition:enter-end="transform opacity-100 scale-100"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="transform opacity-100 scale-100"
+                    x-transition:leave-end="transform opacity-0 scale-95">
+
+                    <!-- Header -->
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-xl font-bold text-gray-900">Notifikasi</h3>
+                                <span x-show="unreadCount > 0"
+                                    class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full"
+                                    x-text="unreadCount"></span>
+                            </div>
+                            <button @click="showNotifications = false"
+                                class="text-gray-400 hover:text-gray-600 transition">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Filter Tabs -->
+                        <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                            <template x-for="tab in tabs" :key="tab.id">
+                                <button @click="activeTab = tab.id"
+                                    class="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all"
+                                    :class="activeTab === tab.id ?
+                                        'bg-[#225ad6] text-white shadow-md' :
+                                        'bg-gray-100 text-gray-600 hover:bg-gray-200'">
+                                    <span x-text="tab.label"></span>
+                                    <span class="ml-1.5 px-2 py-0.5 rounded-full text-xs font-bold"
+                                        :class="activeTab === tab.id ? 'bg-white/20' : 'bg-gray-300'"
+                                        x-text="getFilteredCount(tab.id)">
+                                    </span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Notification List -->
+                    <div class="overflow-y-auto flex-1 max-h-[400px]">
+                        <!-- Loading State -->
+                        <template x-if="loading">
+                            <div class="flex items-center justify-center py-12">
+                                <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-[#225ad6]"></div>
+                            </div>
+                        </template>
+
+                        <!-- Notifications -->
+                        <template x-if="!loading">
+                            <div>
+                                <template x-for="notif in filteredNotifications" :key="notif.id">
+                                    <div class="border-b border-gray-100 hover:bg-gray-50 transition group"
+                                        :class="!notif.is_read ? 'bg-blue-50/30' : ''">
+                                        <div class="px-6 py-4 flex items-start gap-4">
+                                            <!-- Icon dengan badge type -->
+                                            <div class="relative flex-shrink-0">
+                                                <img :src="notif.avatar" :alt="notif.user_name"
+                                                    class="w-11 h-11 rounded-full object-cover border-2 border-white ring-2 ring-gray-200">
+                                                <!-- Type Badge -->
+                                                <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center border-2 border-white"
+                                                    :class="{
+                                                        'bg-blue-500': notif.type === 'chat',
+                                                        'bg-green-500': notif.type === 'task',
+                                                        'bg-purple-500': notif.type === 'schedule',
+                                                        'bg-orange-500': notif.type === 'announcement'
+                                                    }">
+                                                    <svg class="w-3 h-3 text-white" fill="currentColor"
+                                                        viewBox="0 0 20 20">
+                                                        <!-- Chat Icon -->
+                                                        <path x-show="notif.type === 'chat'"
+                                                            d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" />
+                                                        <!-- Task Icon -->
+                                                        <path x-show="notif.type === 'task'"
+                                                            d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9.707 5.707a1 1 0 00-1.414-1.414L9 12.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" />
+                                                        <!-- Schedule Icon -->
+                                                        <path x-show="notif.type === 'schedule'"
+                                                            d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" />
+                                                        <!-- Announcement Icon -->
+                                                        <path x-show="notif.type === 'announcement'"
+                                                            d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+
+                                            <!-- Content -->
+                                            <div class="flex-1 min-w-0" @click="handleNotificationClick(notif)">
+                                                <div class="flex items-start justify-between gap-3">
+                                                    <div class="flex-1 cursor-pointer">
+                                                        <p class="font-semibold text-gray-900 text-sm leading-tight"
+                                                            x-text="notif.title"></p>
+                                                        <p class="text-xs text-gray-600 mt-0.5 line-clamp-2"
+                                                            x-text="notif.message"></p>
+                                                        <p class="text-xs text-gray-400 mt-1" x-text="notif.context">
+                                                        </p>
+                                                        <p class="text-xs text-gray-400 mt-2" x-text="notif.time"></p>
+                                                    </div>
+
+                                                    <!-- Unread Indicator & Delete -->
+                                                    <div class="flex items-center gap-2">
+                                                        <template x-if="!notif.is_read">
+                                                            <span
+                                                                class="w-2.5 h-2.5 bg-[#225ad6] rounded-full flex-shrink-0"></span>
+                                                        </template>
+
+                                                        <!-- Delete Button (show on hover) -->
+                                                        <button @click.stop="deleteNotification(notif.id)"
+                                                            class="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
+                                                            title="Hapus notifikasi">
+                                                            <svg class="w-4 h-4 text-red-600" fill="none"
+                                                                stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round"
+                                                                    stroke-width="2"
+                                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Empty State -->
+                                <template x-if="filteredNotifications.length === 0">
+                                    <div class="text-center py-12 px-6">
+                                        <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                        </svg>
+                                        <p class="text-gray-500 font-medium"
+                                            x-text="activeTab === 'all' ? 'Belum ada notifikasi' : 'Belum ada notifikasi ' + tabs.find(t => t.id === activeTab)?.label.toLowerCase()">
+                                        </p>
+                                        <p class="text-sm text-gray-400 mt-1">Notifikasi baru akan muncul di sini</p>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="border-t border-gray-200 px-4 py-3 bg-gray-50 space-y-2">
+                        <button @click="markAllAsRead()"
+                            class="w-full py-2 text-sm font-semibold text-[#225ad6]
+                               hover:bg-blue-50 rounded-lg transition">
+                            Tandai Semua Sudah Dibaca
+                        </button>
+
+                        <button @click="clearReadNotifications()"
+                            class="w-full py-2 text-sm font-semibold text-red-600
+                               hover:bg-red-50 rounded-lg transition">
+                            Hapus Notifikasi yang Sudah Dibaca
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Add this to your layout head -->
+        <style>
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+
+            .line-clamp-2 {
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+        </style>
+
+        <script>
+            // ============================================
+            // Alpine.js Component untuk Notification Modal
+            // ============================================
+
+            function notificationModal() {
+                return {
+                    activeTab: 'all',
+                    loading: true,
+                    tabs: [{
+                            id: 'all',
+                            label: 'Semua'
+                        },
+                        {
+                            id: 'chat',
+                            label: 'Chat'
+                        },
+                        {
+                            id: 'task',
+                            label: 'Tugas'
+                        },
+                        {
+                            id: 'schedule',
+                            label: 'Jadwal'
+                        },
+                        {
+                            id: 'announcement',
+                            label: 'Pengumuman'
+                        }
+                    ],
+                    notifications: [],
+                    unreadCount: 0,
+                    userId: null,
+                    echoChannel: null,
+
+                    async init() {
+                        console.log('🔔 Initializing notification modal...');
+
+                        // Get user ID from Laravel
+                        this.userId = window.Laravel?.userId;
+
+                        if (!this.userId) {
+                            console.error('❌ User ID not found');
+                            this.loading = false;
+                            return;
+                        }
+
+                        console.log('✅ User ID:', this.userId);
+
+                        // Load notifications from server
+                        await this.loadNotifications();
+
+                        // Subscribe to real-time notifications
+                        this.subscribeToNotifications();
+
+                        // Update unread count
+                        this.updateUnreadCount();
+                    },
+
+                    async loadNotifications() {
+                        try {
+                            this.loading = true;
+                            console.log('📡 Loading notifications from server...');
+
+                            const response = await fetch('/notifications', {
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                }
+                            });
+
+                            const data = await response.json();
+
+                            console.log('📦 Response:', data);
+
+                            if (data.success) {
+                                // ✅ Pastikan setiap notification memiliki ID yang valid
+                                this.notifications = (data.notifications || []).filter(n => n && n.id);
+                                console.log('✅ Loaded notifications:', this.notifications.length);
+                            } else {
+                                console.warn('⚠️ Failed to load notifications:', data.message);
+                                this.notifications = [];
+                            }
+                        } catch (error) {
+                            console.error('❌ Error loading notifications:', error);
+                            this.notifications = [];
+                        } finally {
+                            this.loading = false;
+                        }
+                    },
+
+                    subscribeToNotifications() {
+                        if (!window.Echo) {
+                            console.error('❌ Laravel Echo not initialized');
+                            return;
+                        }
+
+                        if (!this.userId) {
+                            console.error('❌ Cannot subscribe: User ID not found');
+                            return;
+                        }
+
+                        try {
+                            console.log('🔔 Subscribing to notifications for user:', this.userId);
+
+                            // Subscribe ke private channel user
+                            this.echoChannel = window.Echo.private(`user.${this.userId}`)
+                                .listen('.notification.sent', (data) => {
+                                    console.log('📬 New notification received:', data);
+
+                                    // ✅ Validasi data notification
+                                    if (!data || !data.id) {
+                                        console.error('❌ Invalid notification data:', data);
+                                        return;
+                                    }
+
+                                    // ✅ Cek apakah notification sudah ada (prevent duplicate)
+                                    const exists = this.notifications.find(n => n.id === data.id);
+                                    if (exists) {
+                                        console.warn('⚠️ Notification already exists:', data.id);
+                                        return;
+                                    }
+
+                                    // Add notification ke list di awal
+                                    const newNotification = {
+                                        id: data.id,
+                                        type: data.type || 'chat',
+                                        title: data.title || 'Notifikasi Baru',
+                                        message: data.message || '',
+                                        context: data.context || '',
+                                        user_name: data.actor?.name || data.actor?.full_name || 'System',
+                                        avatar: data.actor?.avatar || this.getDefaultAvatar(data.actor?.name || data
+                                            .actor?.full_name),
+                                        is_read: false,
+                                        action_url: data.action_url || null,
+                                        time: 'Baru saja',
+                                        created_at: data.created_at || new Date().toISOString()
+                                    };
+
+                                    this.notifications.unshift(newNotification);
+
+                                    // Update unread count
+                                    this.updateUnreadCount();
+
+                                    // Show toast notification
+                                    this.showToast(newNotification.title, newNotification.message);
+
+                                    // Play sound (optional)
+                                    this.playNotificationSound();
+                                })
+                                .error((error) => {
+                                    console.error('❌ Error subscribing to notifications:', error);
+                                });
+
+                            console.log('✅ Successfully subscribed to notification channel');
+                        } catch (error) {
+                            console.error('❌ Failed to subscribe to notifications:', error);
+                        }
+                    },
+
+                    get filteredNotifications() {
+                        if (this.activeTab === 'all') {
+                            return this.notifications || [];
+                        }
+                        return (this.notifications || []).filter(n => n && n.type === this.activeTab);
+                    },
+
+                    getFilteredCount(tabId) {
+                        if (tabId === 'all') {
+                            return (this.notifications || []).length;
+                        }
+                        return (this.notifications || []).filter(n => n && n.type === tabId).length;
+                    },
+
+                    updateUnreadCount() {
+                        this.unreadCount = (this.notifications || []).filter(n => n && !n.is_read).length;
+
+                        // Update badge di navbar
+                        const badge = document.querySelector('[data-notification-badge]');
+                        if (badge) {
+                            if (this.unreadCount > 0) {
+                                badge.textContent = this.unreadCount > 99 ? '99+' : this.unreadCount;
+                                badge.classList.remove('hidden');
+                            } else {
+                                badge.classList.add('hidden');
+                            }
+                        }
+
+                        console.log('🔢 Unread count:', this.unreadCount);
+                    },
+
+                    async markAsRead(notificationId) {
+                        try {
+                            console.log('📖 Marking as read:', notificationId);
+
+                            const response = await fetch(`/notifications/${notificationId}/read`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                }
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                // Update local notification
+                                const notification = this.notifications.find(n => n.id === notificationId);
+                                if (notification) {
+                                    notification.is_read = true;
+                                }
+
+                                this.updateUnreadCount();
+                                console.log('✅ Notification marked as read');
+                            } else {
+                                console.error('❌ Failed to mark as read:', data.message);
+                            }
+                        } catch (error) {
+                            console.error('❌ Error marking notification as read:', error);
+                        }
+                    },
+
+                    async markAllAsRead() {
+                        try {
+                            console.log('📖 Marking all as read...');
+
+                            const response = await fetch('/notifications/read-all', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                }
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                // Update all notifications locally
+                                this.notifications = (this.notifications || []).map(n => ({
+                                    ...n,
+                                    is_read: true
+                                }));
+
+                                this.updateUnreadCount();
+                                console.log('✅ All notifications marked as read');
+                            } else {
+                                console.error('❌ Failed to mark all as read:', data.message);
+                            }
+                        } catch (error) {
+                            console.error('❌ Error marking all as read:', error);
+                        }
+                    },
+
+                    async deleteNotification(notificationId) {
+                        if (!confirm('Hapus notifikasi ini?')) {
+                            return;
+                        }
+
+                        try {
+                            console.log('🗑️ Deleting notification:', notificationId);
+
+                            const response = await fetch(`/notifications/${notificationId}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                }
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                // Remove from local list
+                                this.notifications = (this.notifications || []).filter(n => n.id !== notificationId);
+                                this.updateUnreadCount();
+                                console.log('✅ Notification deleted');
+                            } else {
+                                console.error('❌ Failed to delete notification:', data.message);
+                            }
+                        } catch (error) {
+                            console.error('❌ Error deleting notification:', error);
+                        }
+                    },
+
+                    async clearReadNotifications() {
+                        if (!confirm('Hapus semua notifikasi yang sudah dibaca?')) {
+                            return;
+                        }
+
+                        try {
+                            console.log('🗑️ Clearing read notifications...');
+
+                            const response = await fetch('/notifications/clear-read', {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                }
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                // Remove read notifications from local list
+                                this.notifications = (this.notifications || []).filter(n => !n.is_read);
+                                console.log('✅ Read notifications cleared');
+                            } else {
+                                console.error('❌ Failed to clear notifications:', data.message);
+                            }
+                        } catch (error) {
+                            console.error('❌ Error clearing notifications:', error);
+                        }
+                    },
+
+                    async handleNotificationClick(notification) {
+                        console.log('👆 Notification clicked:', notification);
+
+                        // Mark as read
+                        if (!notification.is_read) {
+                            await this.markAsRead(notification.id);
+                        }
+
+                        // Redirect to action URL
+                        if (notification.action_url) {
+                            window.location.href = notification.action_url;
+                        }
+                    },
+
+                    showToast(title, message) {
+                        // Check if we can show browser notification
+                        if ('Notification' in window && Notification.permission === 'granted') {
+                            new Notification(title, {
+                                body: message,
+                                icon: '/images/logo-pt.svg',
+                                badge: '/images/logo-pt.svg'
+                            });
+                        }
+
+                        console.log('🔔 Toast:', title, message);
+                    },
+
+                    playNotificationSound() {
+                        // Optional: Play notification sound
+                        try {
+                            const audio = new Audio('/sounds/notification.mp3');
+                            audio.volume = 0.3;
+                            audio.play().catch(err => {
+                                // Sound file not found or can't play, just ignore
+                                console.log('Could not play sound (this is okay)');
+                            });
+                        } catch (error) {
+                            // Sound file not found, ignore
+                        }
+                    },
+
+                    getDefaultAvatar(name) {
+                        const displayName = name || 'User';
+                        return `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=4F46E5&color=fff&bold=true`;
+                    },
+
+                    destroy() {
+                        // Cleanup when component is destroyed
+                        if (this.echoChannel && this.userId) {
+                            console.log('🔌 Leaving notification channel...');
+                            window.Echo.leave(`user.${this.userId}`);
+                            this.echoChannel = null;
+                        }
+                    }
+                }
+            }
+
+            // ============================================
+            // Request Browser Notification Permission
+            // ============================================
+
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('📱 Initializing notifications...');
+
+                // Request notification permission
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission().then(permission => {
+                        console.log('🔔 Notification permission:', permission);
+                    });
+                }
+
+                // Log Echo status
+                if (window.Echo) {
+                    console.log('✅ Laravel Echo is ready');
+                } else {
+                    console.error('❌ Laravel Echo is not initialized');
+                }
+
+                // Log user info
+                if (window.Laravel) {
+                    console.log('👤 User ID:', window.Laravel.userId);
+                } else {
+                    console.error('❌ Laravel object not found');
+                }
+            });
+        </script>
+
+
+
+
 
         @php
             // ✅ Check apakah user adalah Super Admin
@@ -465,103 +1072,103 @@
 
 @push('scripts')
     <script>
-       document.addEventListener('alpine:init', () => {
-    Alpine.data('activeUsersComponent', () => ({
-        users: [],
-        loading: true,
-        showAllUsers: false,
-        channel: null,
-        companyId: null,
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('activeUsersComponent', () => ({
+                users: [],
+                loading: true,
+                showAllUsers: false,
+                channel: null,
+                companyId: null,
 
-        init(companyId) {
-            this.companyId = companyId;
+                init(companyId) {
+                    this.companyId = companyId;
 
-            if (!companyId) {
-                console.warn('⚠️ No active company selected');
-                this.loading = false;
-                return;
-            }
-
-            console.log('🚀 Subscribing to company:', companyId);
-            this.subscribeToPresenceChannel(companyId);
-        },
-
-        // ✅ Helper function untuk memproses avatar URL
-        processAvatarUrl(user) {
-            if (!user.avatar) {
-                // Jika tidak ada avatar, gunakan UI Avatars
-                return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=4F46E5&color=fff&bold=true`;
-            }
-
-            // Jika sudah URL lengkap (http/https), return as is
-            if (user.avatar.startsWith('http://') || user.avatar.startsWith('https://')) {
-                return user.avatar;
-            }
-
-            // Jika path relatif, tambahkan base URL
-            // Pastikan tidak ada double slash
-            const cleanPath = user.avatar.startsWith('/') ? user.avatar : `/${user.avatar}`;
-
-            // Cek apakah path sudah mengandung 'storage/' atau tidak
-            if (user.avatar.includes('storage/')) {
-                return `${window.location.origin}${cleanPath}`;
-            } else {
-                return `${window.location.origin}/storage${cleanPath}`;
-            }
-        },
-
-        subscribeToPresenceChannel(companyId) {
-            try {
-                // Join presence channel
-                this.channel = window.Echo.join(`presence-company.${companyId}`)
-                    .here((users) => {
-                        // ✅ Process avatar untuk setiap user
-                        console.log('✅ Users currently online:', users);
-                        this.users = users.map(user => ({
-                            ...user,
-                            avatar: this.processAvatarUrl(user)
-                        }));
+                    if (!companyId) {
+                        console.warn('⚠️ No active company selected');
                         this.loading = false;
-                    })
-                    .joining((user) => {
-                        console.log('👋 User joined:', user);
+                        return;
+                    }
 
-                        // ✅ Process avatar sebelum push
-                        const processedUser = {
-                            ...user,
-                            avatar: this.processAvatarUrl(user)
-                        };
+                    console.log('🚀 Subscribing to company:', companyId);
+                    this.subscribeToPresenceChannel(companyId);
+                },
 
-                        // Cek apakah user sudah ada di list (prevent duplicate)
-                        const exists = this.users.find(u => u.id === processedUser.id);
-                        if (!exists) {
-                            this.users.push(processedUser);
-                        }
-                    })
-                    .leaving((user) => {
-                        console.log('👋 User left:', user);
-                        this.users = this.users.filter(u => u.id !== user.id);
-                    })
-                    .error((error) => {
-                        console.error('❌ Presence channel error:', error);
+                // ✅ Helper function untuk memproses avatar URL
+                processAvatarUrl(user) {
+                    if (!user.avatar) {
+                        // Jika tidak ada avatar, gunakan UI Avatars
+                        return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=4F46E5&color=fff&bold=true`;
+                    }
+
+                    // Jika sudah URL lengkap (http/https), return as is
+                    if (user.avatar.startsWith('http://') || user.avatar.startsWith('https://')) {
+                        return user.avatar;
+                    }
+
+                    // Jika path relatif, tambahkan base URL
+                    // Pastikan tidak ada double slash
+                    const cleanPath = user.avatar.startsWith('/') ? user.avatar : `/${user.avatar}`;
+
+                    // Cek apakah path sudah mengandung 'storage/' atau tidak
+                    if (user.avatar.includes('storage/')) {
+                        return `${window.location.origin}${cleanPath}`;
+                    } else {
+                        return `${window.location.origin}/storage${cleanPath}`;
+                    }
+                },
+
+                subscribeToPresenceChannel(companyId) {
+                    try {
+                        // Join presence channel
+                        this.channel = window.Echo.join(`presence-company.${companyId}`)
+                            .here((users) => {
+                                // ✅ Process avatar untuk setiap user
+                                console.log('✅ Users currently online:', users);
+                                this.users = users.map(user => ({
+                                    ...user,
+                                    avatar: this.processAvatarUrl(user)
+                                }));
+                                this.loading = false;
+                            })
+                            .joining((user) => {
+                                console.log('👋 User joined:', user);
+
+                                // ✅ Process avatar sebelum push
+                                const processedUser = {
+                                    ...user,
+                                    avatar: this.processAvatarUrl(user)
+                                };
+
+                                // Cek apakah user sudah ada di list (prevent duplicate)
+                                const exists = this.users.find(u => u.id === processedUser.id);
+                                if (!exists) {
+                                    this.users.push(processedUser);
+                                }
+                            })
+                            .leaving((user) => {
+                                console.log('👋 User left:', user);
+                                this.users = this.users.filter(u => u.id !== user.id);
+                            })
+                            .error((error) => {
+                                console.error('❌ Presence channel error:', error);
+                                this.loading = false;
+                            });
+
+                    } catch (error) {
+                        console.error('❌ Failed to subscribe:', error);
                         this.loading = false;
-                    });
+                    }
+                },
 
-            } catch (error) {
-                console.error('❌ Failed to subscribe:', error);
-                this.loading = false;
-            }
-        },
-
-        destroy() {
-            // Cleanup saat component di-destroy
-            if (this.channel && this.companyId) {
-                console.log('🔌 Leaving presence channel...');
-                window.Echo.leave(`presence-company.${this.companyId}`);
-                this.channel = null;
-            }
-        }
-    }));
-}); 
+                destroy() {
+                    // Cleanup saat component di-destroy
+                    if (this.channel && this.companyId) {
+                        console.log('🔌 Leaving presence channel...');
+                        window.Echo.leave(`presence-company.${this.companyId}`);
+                        this.channel = null;
+                    }
+                }
+            }));
+        });
     </script>
 @endpush

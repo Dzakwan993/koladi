@@ -31,6 +31,7 @@ use App\Http\Controllers\CompanyDocumentCommentController;
 use App\Http\Controllers\StatistikController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\NotificationController;
 
 // 🔥 Broadcasting Routes
 Broadcast::routes(['middleware' => ['web', 'auth']]);
@@ -553,4 +554,27 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/mindmap/nodes/{node}', [MindmapController::class, 'updateNode'])->name('mindmap.nodes.update');
         Route::delete('/mindmap/nodes/{node}', [MindmapController::class, 'deleteNode'])->name('mindmap.nodes.delete');
     });
+
+
+
+
+       Route::prefix('notifications')->group(function () {
+    // Get all notifications
+    Route::get('/', [NotificationController::class, 'index']);
+
+    // Get unread count
+    Route::get('/unread-count', [NotificationController::class, 'getUnreadCount']);
+
+    // Mark single notification as read
+    Route::post('/{id}/read', [NotificationController::class, 'markAsRead']);
+
+    // Mark all notifications as read
+    Route::post('/read-all', [NotificationController::class, 'markAllAsRead']);
+
+    // Delete notification
+    Route::delete('/{id}', [NotificationController::class, 'destroy']);
+
+    // Clear all read notifications
+    Route::post('/clear-read', [NotificationController::class, 'clearRead']);
+});
 });

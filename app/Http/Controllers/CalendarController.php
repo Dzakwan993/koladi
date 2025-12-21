@@ -15,9 +15,18 @@ use Illuminate\Support\Facades\DB;
 use App\Models\CalendarParticipant;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use App\Services\NotificationService;
 
 class CalendarController extends Controller
 {
+
+    // ✅ TAMBAH INI
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
 
     /**
      * ✅ Helper: Check if user is SuperAdmin/Admin in company
@@ -311,6 +320,9 @@ class CalendarController extends Controller
             }
 
             DB::commit();
+
+                        $this->notificationService->notifyEventCreated($event);
+
 
             return redirect()
                 ->route('jadwal-umum')
@@ -824,6 +836,9 @@ class CalendarController extends Controller
             }
 
             DB::commit();
+
+                        $this->notificationService->notifyEventCreated($event);
+
 
             return redirect()
                 ->route('jadwal', ['workspaceId' => $workspaceId])

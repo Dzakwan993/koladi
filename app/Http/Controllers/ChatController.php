@@ -15,9 +15,20 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ConversationParticipant;
 use Illuminate\Support\Facades\Storage;
+use App\Services\NotificationService;
 
 class ChatController extends Controller
 {
+
+
+    // ✅ TAMBAH INI
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     /**
      * 🔥 FIXED: Gunakan logika akses yang sama dengan WorkspaceController
      */
@@ -384,6 +395,8 @@ class ChatController extends Controller
             ]);
 
             DB::commit();
+
+$this->notificationService->notifyNewMessage($message);
 
             event(new NewMessageSent($message));
 

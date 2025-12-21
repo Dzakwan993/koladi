@@ -11,9 +11,20 @@ use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Services\NotificationService;
 
 class PengumumanController extends Controller
 {
+
+
+    // ✅ TAMBAH INI
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     /**
      * 🔹 Menampilkan daftar pengumuman berdasarkan user ID saja
      */
@@ -151,6 +162,9 @@ class PengumumanController extends Controller
                 ]);
 
             DB::commit();
+
+                        $this->notificationService->notifyAnnouncementCreated($pengumuman);
+
 
             // PERBAIKAN: Redirect dengan parameter yang benar
             return redirect()->route('pengumuman.show', [
