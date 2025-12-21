@@ -19,18 +19,23 @@
                         <h1 class="text-2xl font-bold text-gray-800 mb-1">📢 Pengumuman</h1>
                         <p class="text-sm text-gray-500">Lihat dan kelola pengumuman tim Anda</p>
                     </div>
+                    @php
+                        $roleInCompany = strtolower(auth()->user()->getRoleName($company_id) ?? 'member');
+                    @endphp
+
 
                     {{-- Tombol Buat Pengumuman - Redesign --}}
-                    <button id="btnPopup"
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-semibold transition-colors flex items-center gap-2 shadow-sm">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                        </svg>
-                        Buat Pengumuman
-                    </button>
+                    @if ($roleInCompany !== 'member')
+                        <button id="btnPopup"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-semibold transition-colors flex items-center gap-2 shadow-sm">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Buat Pengumuman
+                        </button>
+                    @endif
                 </div>
             </div>
-
             @php
                 \Carbon\Carbon::setLocale('id');
             @endphp
@@ -48,7 +53,9 @@
                             $avatarUrl = $hasAvatarFile
                                 ? asset($avatarPath)
                                 : ($creator->full_name
-                                    ? 'https://ui-avatars.com/api/?name=' . urlencode($creator->full_name) . '&background=random&color=fff'
+                                    ? 'https://ui-avatars.com/api/?name=' .
+                                        urlencode($creator->full_name) .
+                                        '&background=random&color=fff'
                                     : asset('images/dk.jpg'));
                         @endphp
 
@@ -73,11 +80,15 @@
                                             {{-- Title dengan icon lock --}}
                                             <div class="flex items-center gap-1.5 mt-1">
                                                 @if ($p->is_private)
-                                                    <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                                                    <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="currentColor"
+                                                        viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd"
+                                                            d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                                                            clip-rule="evenodd" />
                                                     </svg>
                                                 @endif
-                                                <h3 class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">
+                                                <h3
+                                                    class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-1">
                                                     {{ $p->title }}
                                                 </h3>
                                             </div>
@@ -88,10 +99,11 @@
                                             <span class="text-xs text-gray-500 whitespace-nowrap">
                                                 {{ \Carbon\Carbon::parse($p->created_at)->diffForHumans() }}
                                             </span>
-                                            @if($p->comments_count > 0)
-                                            <div class="flex items-center justify-center w-6 h-6 rounded-full bg-yellow-400 text-gray-800 font-bold text-xs">
-                                                {{ $p->comments_count }}
-                                            </div>
+                                            @if ($p->comments_count > 0)
+                                                <div
+                                                    class="flex items-center justify-center w-6 h-6 rounded-full bg-yellow-400 text-gray-800 font-bold text-xs">
+                                                    {{ $p->comments_count }}
+                                                </div>
                                             @endif
                                         </div>
                                     </div>
@@ -108,16 +120,20 @@
                                     {{-- Tags: Due Date & Auto Due --}}
                                     <div class="flex items-center gap-2 flex-wrap">
                                         @if ($p->due_date)
-                                            <span class="inline-flex items-center gap-1 bg-gray-600 text-white text-xs font-medium px-2.5 py-1 rounded-md">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            <span
+                                                class="inline-flex items-center gap-1 bg-gray-600 text-white text-xs font-medium px-2.5 py-1 rounded-md">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                 </svg>
                                                 {{ \Carbon\Carbon::parse($p->due_date)->translatedFormat('d M') }}
                                             </span>
                                         @endif
                                         @if ($p->auto_due)
                                             <span class="text-xs text-gray-500 font-medium">
-                                                Selesai: {{ \Carbon\Carbon::parse($p->auto_due)->translatedFormat('d M Y') }}
+                                                Selesai:
+                                                {{ \Carbon\Carbon::parse($p->auto_due)->translatedFormat('d M Y') }}
                                             </span>
                                         @endif
                                     </div>
@@ -127,8 +143,10 @@
                     @empty
                         {{-- Empty State --}}
                         <div class="text-center py-16">
-                            <svg class="w-20 h-20 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                            <svg class="w-20 h-20 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                             </svg>
                             <p class="text-gray-500 font-medium text-lg">Belum ada pengumuman</p>
                             <p class="text-sm text-gray-400 mt-1">Buat pengumuman pertama Anda</p>
@@ -146,12 +164,14 @@
                     <h2 class="text-xl font-bold text-gray-800">Buat Pengumuman</h2>
                     <button id="btnBatalHeader" type="button" class="text-gray-400 hover:text-gray-600 transition">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
 
-                <form action="{{ route('pengumuman-perusahaan.store', ['company_id' => $company_id]) }}" method="POST" class="space-y-5" id="pengumumanForm">
+                <form action="{{ route('pengumuman-perusahaan.store', ['company_id' => $company_id]) }}" method="POST"
+                    class="space-y-5" id="pengumumanForm">
                     @csrf
 
                     <!-- Judul -->
@@ -182,31 +202,66 @@
                             try {
                                 const editor = await ClassicEditor.create(el, {
                                     toolbar: {
-                                        items: ['undo', 'redo', '|', 'heading', '|', 'bold', 'italic', 'underline', 'strikethrough', '|',
-                                            'link', 'blockQuote', '|', 'bulletedList', 'numberedList', '|', 'insertTable', '|'],
+                                        items: ['undo', 'redo', '|', 'heading', '|', 'bold', 'italic', 'underline',
+                                            'strikethrough', '|',
+                                            'link', 'blockQuote', '|', 'bulletedList', 'numberedList', '|', 'insertTable',
+                                            '|'
+                                        ],
                                         shouldNotGroupWhenFull: true
                                     },
                                     heading: {
-                                        options: [
-                                            {model: 'paragraph', title: 'Paragraf', class: 'ck-heading_paragraph'},
-                                            {model: 'heading1', view: 'h1', title: 'Heading 1', class: 'ck-heading_heading1'},
-                                            {model: 'heading2', view: 'h2', title: 'Heading 2', class: 'ck-heading_heading2'}
+                                        options: [{
+                                                model: 'paragraph',
+                                                title: 'Paragraf',
+                                                class: 'ck-heading_paragraph'
+                                            },
+                                            {
+                                                model: 'heading1',
+                                                view: 'h1',
+                                                title: 'Heading 1',
+                                                class: 'ck-heading_heading1'
+                                            },
+                                            {
+                                                model: 'heading2',
+                                                view: 'h2',
+                                                title: 'Heading 2',
+                                                class: 'ck-heading_heading2'
+                                            }
                                         ]
                                     },
-                                    fontFamily: {options: ['Inter, sans-serif', 'Arial, Helvetica, sans-serif', 'Courier New, Courier, monospace']},
-                                    fontSize: {options: ['14px', '16px', '18px', '24px', '32px']},
+                                    fontFamily: {
+                                        options: ['Inter, sans-serif', 'Arial, Helvetica, sans-serif',
+                                            'Courier New, Courier, monospace'
+                                        ]
+                                    },
+                                    fontSize: {
+                                        options: ['14px', '16px', '18px', '24px', '32px']
+                                    },
                                     fontColor: {
                                         columns: 5,
-                                        colors: [
-                                            {color: '#000000', label: 'Black'},
-                                            {color: '#102a63', label: 'Dark Blue'},
-                                            {color: '#6B7280', label: 'Gray'},
-                                            {color: '#FFFFFF', label: 'White'}
+                                        colors: [{
+                                                color: '#000000',
+                                                label: 'Black'
+                                            },
+                                            {
+                                                color: '#102a63',
+                                                label: 'Dark Blue'
+                                            },
+                                            {
+                                                color: '#6B7280',
+                                                label: 'Gray'
+                                            },
+                                            {
+                                                color: '#FFFFFF',
+                                                label: 'White'
+                                            }
                                         ]
                                     },
                                     simpleUpload: {
                                         uploadUrl: '/upload',
-                                        headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}'}
+                                        headers: {
+                                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                        }
                                     },
                                     placeholder: options.placeholder || ''
                                 });
@@ -236,8 +291,10 @@
                                 btn.type = 'button';
                                 btn.className = 'ck ck-button';
                                 btn.title = 'Upload Image';
-                                btn.innerHTML = `<span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">${imageIconSVG()}</span>`;
-                                btn.style.cssText = 'margin-left:6px;padding:4px 8px;border-radius:6px;background:transparent;border:0;cursor:pointer';
+                                btn.innerHTML =
+                                    `<span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">${imageIconSVG()}</span>`;
+                                btn.style.cssText =
+                                    'margin-left:6px;padding:4px 8px;border-radius:6px;background:transparent;border:0;cursor:pointer';
 
                                 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
@@ -258,15 +315,20 @@
                                         try {
                                             const res = await fetch('/upload-image', {
                                                 method: 'POST',
-                                                headers: {'X-CSRF-TOKEN': csrfToken || '{{ csrf_token() }}'},
+                                                headers: {
+                                                    'X-CSRF-TOKEN': csrfToken || '{{ csrf_token() }}'
+                                                },
                                                 body: formData
                                             });
 
                                             const data = await res.json();
                                             if (res.ok && data.url) {
                                                 editor.model.change(writer => {
-                                                    const insertPos = editor.model.document.selection.getFirstPosition();
-                                                    const imageElement = writer.createElement('imageBlock', {src: data.url});
+                                                    const insertPos = editor.model.document.selection
+                                                        .getFirstPosition();
+                                                    const imageElement = writer.createElement('imageBlock', {
+                                                        src: data.url
+                                                    });
                                                     editor.model.insertContent(imageElement, insertPos);
                                                 });
                                             } else {
@@ -277,9 +339,12 @@
                                             console.error('Upload error:', err);
                                             alert('Terjadi kesalahan saat upload image.');
                                         } finally {
-                                            btn.innerHTML = `<span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">${imageIconSVG()}</span>`;
+                                            btn.innerHTML =
+                                                `<span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">${imageIconSVG()}</span>`;
                                         }
-                                    }, {once: true});
+                                    }, {
+                                        once: true
+                                    });
                                 });
 
                                 itemsContainer.appendChild(btn);
@@ -301,8 +366,10 @@
                                 btn.type = 'button';
                                 btn.className = 'ck ck-button';
                                 btn.title = 'Upload File';
-                                btn.innerHTML = `<span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">${fileIconSVG()}</span>`;
-                                btn.style.cssText = 'margin-left:6px;padding:4px 8px;border-radius:6px;background:transparent;border:0;cursor:pointer';
+                                btn.innerHTML =
+                                    `<span class="ck-button__label" aria-hidden="true" style="display:flex;align-items:center;gap:2px">${fileIconSVG()}</span>`;
+                                btn.style.cssText =
+                                    'margin-left:6px;padding:4px 8px;border-radius:6px;background:transparent;border:0;cursor:pointer';
 
                                 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
@@ -325,7 +392,9 @@
                                         try {
                                             const res = await fetch('/upload', {
                                                 method: 'POST',
-                                                headers: {'X-CSRF-TOKEN': csrfToken || '{{ csrf_token() }}'},
+                                                headers: {
+                                                    'X-CSRF-TOKEN': csrfToken || '{{ csrf_token() }}'
+                                                },
                                                 body: formData
                                             });
 
@@ -333,9 +402,12 @@
 
                                             if (res.ok && data.url) {
                                                 editor.model.change(writer => {
-                                                    const insertPos = editor.model.document.selection.getFirstPosition();
+                                                    const insertPos = editor.model.document.selection
+                                                        .getFirstPosition();
                                                     const linkElement = writer.createElement('paragraph');
-                                                    const textNode = writer.createText(file.name, {linkHref: data.url});
+                                                    const textNode = writer.createText(file.name, {
+                                                        linkHref: data.url
+                                                    });
                                                     writer.append(textNode, linkElement);
                                                     editor.model.insertContent(linkElement, insertPos);
                                                 });
@@ -349,10 +421,13 @@
                                         } finally {
                                             btn.innerHTML = originalHTML;
                                         }
-                                    }, {once: true});
+                                    }, {
+                                        once: true
+                                    });
                                 });
 
-                                const insertTableBtn = Array.from(itemsContainer.children).find(el => el.title?.toLowerCase().includes('table'));
+                                const insertTableBtn = Array.from(itemsContainer.children).find(el => el.title?.toLowerCase().includes(
+                                    'table'));
                                 if (insertTableBtn) {
                                     itemsContainer.insertBefore(btn, insertTableBtn);
                                 } else {
@@ -376,26 +451,34 @@
                         </label>
 
                         <div class="flex items-center gap-3 mb-3 mt-3 relative">
-                            <div class="flex items-center rounded-lg border border-gray-300 overflow-hidden chip-container-1">
-                                <div class="flex items-center bg-gray-600 text-white text-sm px-3 py-1.5 rounded-l-lg chip-text-1">
+                            <div
+                                class="flex items-center rounded-lg border border-gray-300 overflow-hidden chip-container-1">
+                                <div
+                                    class="flex items-center bg-gray-600 text-white text-sm px-3 py-1.5 rounded-l-lg chip-text-1">
                                     Selesai otomatis
                                 </div>
                                 <button type="button" class="px-2 text-gray-500 hover:text-gray-700 dropdown-btn-1">
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                        <path fill-rule="evenodd"
+                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                            clip-rule="evenodd" />
                                     </svg>
                                 </button>
                             </div>
 
                             <span class="text-sm text-gray-700" id="labelText">Selesai otomatis pada:</span>
 
-                            <div class="flex items-center rounded-lg border border-gray-300 overflow-hidden chip-container-2" id="dropdownChip">
-                                <div class="flex items-center bg-gray-600 text-white text-sm px-3 py-1.5 rounded-l-lg chip-text-2">
+                            <div class="flex items-center rounded-lg border border-gray-300 overflow-hidden chip-container-2"
+                                id="dropdownChip">
+                                <div
+                                    class="flex items-center bg-gray-600 text-white text-sm px-3 py-1.5 rounded-l-lg chip-text-2">
                                     1 hari dari sekarang
                                 </div>
                                 <button type="button" class="px-2 text-gray-500 hover:text-gray-700 dropdown-btn-2">
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                        <path fill-rule="evenodd"
+                                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                            clip-rule="evenodd" />
                                     </svg>
                                 </button>
                             </div>
@@ -404,9 +487,13 @@
                                 <div class="flex items-center rounded-lg border border-gray-300 overflow-hidden relative">
                                     <input type="date" name="due_date" id="customDeadline"
                                         class="bg-gray-600 text-white text-sm px-3 py-1.5 rounded-l-lg focus:outline-none border-0 pr-10">
-                                    <button type="button" class="px-2 bg-white absolute right-0 h-full flex items-center justify-center" id="calendarBtn" style="z-index:5;">
-                                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    <button type="button"
+                                        class="px-2 bg-white absolute right-0 h-full flex items-center justify-center"
+                                        id="calendarBtn" style="z-index:5;">
+                                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
                                     </button>
                                 </div>
@@ -420,14 +507,17 @@
                         .custom-scrollbar::-webkit-scrollbar {
                             width: 6px;
                         }
+
                         .custom-scrollbar::-webkit-scrollbar-track {
                             background: #f1f5f9;
                             border-radius: 10px;
                         }
+
                         .custom-scrollbar::-webkit-scrollbar-thumb {
                             background: #cbd5e1;
                             border-radius: 10px;
                         }
+
                         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
                             background: #94a3b8;
                         }
@@ -438,6 +528,7 @@
                             text-decoration: underline;
                             font-weight: 500;
                         }
+
                         .ck-content a:hover {
                             color: #1d4ed8;
                         }
@@ -452,12 +543,14 @@
                             cursor: pointer;
                             z-index: 10;
                         }
+
                         #customDeadline::-webkit-datetime-edit-text,
                         #customDeadline::-webkit-datetime-edit-month-field,
                         #customDeadline::-webkit-datetime-edit-day-field,
                         #customDeadline::-webkit-datetime-edit-year-field {
                             color: white;
                         }
+
                         #dateInputContainer:not(.hidden) {
                             display: flex;
                         }
@@ -466,14 +559,16 @@
                     <script>
                         document.addEventListener("DOMContentLoaded", () => {
                             const dropdown1 = document.createElement("div");
-                            dropdown1.className = "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 dropdown-menu-1";
+                            dropdown1.className =
+                                "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 dropdown-menu-1";
                             dropdown1.innerHTML = `
                                 <div class="px-4 py-2 hover:bg-gray-100 cursor-pointer rounded-t-lg text-black" data-value="Selesai otomatis">Selesai otomatis</div>
                                 <div class="px-4 py-2 hover:bg-gray-100 cursor-pointer rounded-b-lg text-black" data-value="Atur tenggat waktu sendiri">Atur tenggat waktu sendiri</div>
                             `;
 
                             const dropdown2 = document.createElement("div");
-                            dropdown2.className = "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 dropdown-menu-2";
+                            dropdown2.className =
+                                "absolute bg-white border border-gray-300 rounded-lg shadow-md mt-1 w-[200px] hidden z-50 dropdown-menu-2";
                             dropdown2.innerHTML = `
                                 <div class="px-4 py-2 hover:bg-gray-100 cursor-pointer rounded-t-lg text-black" data-value="1 hari dari sekarang">1 hari dari sekarang</div>
                                 <div class="px-4 py-2 hover:bg-gray-100 cursor-pointer text-black" data-value="3 hari dari sekarang">3 hari dari sekarang</div>
@@ -560,8 +655,10 @@
                             });
 
                             document.addEventListener("click", (e) => {
-                                const isClickInsideDropdown1 = dropdown1.contains(e.target) || chipContainer1.contains(e.target);
-                                const isClickInsideDropdown2 = dropdown2.contains(e.target) || chipContainer2.contains(e.target);
+                                const isClickInsideDropdown1 = dropdown1.contains(e.target) || chipContainer1.contains(e
+                                    .target);
+                                const isClickInsideDropdown2 = dropdown2.contains(e.target) || chipContainer2.contains(e
+                                    .target);
 
                                 if (!isClickInsideDropdown1) {
                                     dropdown1.classList.add("hidden");
@@ -603,20 +700,23 @@
         const btnBatal = document.getElementById('btnBatal');
         const btnBatalHeader = document.getElementById('btnBatalHeader');
 
-        btnPopup.addEventListener('click', () => {
-            popupForm.classList.remove('hidden');
-            popupForm.classList.add('flex');
-        });
+        if (btnPopup) {
+            btnPopup.addEventListener('click', () => {
+                popupForm.classList.remove('hidden');
+                popupForm.classList.add('flex');
+            });
+        }
 
-        btnBatal.addEventListener('click', () => {
+        btnBatal?.addEventListener('click', () => {
             popupForm.classList.add('hidden');
             popupForm.classList.remove('flex');
         });
 
-        btnBatalHeader.addEventListener('click', () => {
+        btnBatalHeader?.addEventListener('click', () => {
             popupForm.classList.add('hidden');
             popupForm.classList.remove('flex');
         });
+
 
         // Tangkap data dari CKEditor saat form dikirim
         document.getElementById('pengumumanForm').addEventListener('submit', function(e) {
