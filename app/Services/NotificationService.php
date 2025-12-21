@@ -133,7 +133,24 @@ class NotificationService
         Log::info("Conversation ID: {$conversation->id}");
         Log::info("Conversation Type: {$conversation->type}");
         Log::info("Conversation Scope: " . ($conversation->scope ?? 'workspace'));
+        Log::info("Conversation Company ID: " . ($conversation->company_id ?? 'NULL'));
+        Log::info("Conversation Workspace ID: " . ($conversation->workspace_id ?? 'NULL'));
         Log::info("Sender ID: {$sender->id}");
+
+        // 🔥 FIX: Dapatkan company_id dari workspace jika conversation tidak punya company_id
+        $companyId = $conversation->company_id;
+        if (!$companyId && $conversation->workspace_id) {
+            $workspace = \App\Models\Workspace::find($conversation->workspace_id);
+            if ($workspace) {
+                $companyId = $workspace->company_id;
+                Log::info("Company ID dari workspace: {$companyId}");
+            }
+        }
+
+        if (!$companyId) {
+            Log::error("Cannot determine company_id for conversation {$conversation->id}");
+            return [];
+        }
 
         // Determine recipients based on conversation type
         if ($conversation->type === 'private') {
@@ -182,7 +199,7 @@ class NotificationService
 
         // Prepare notification data
         $notificationData = [
-            'company_id' => $conversation->company_id,
+            'company_id' => $companyId,  // 🔥 FIX: Gunakan companyId yang sudah dicek
             'workspace_id' => $conversation->workspace_id,
             'type' => 'chat',
             'title' => 'Pesan baru dari ' . $sender->full_name,
@@ -194,6 +211,7 @@ class NotificationService
             'action_url' => $this->getChatActionUrl($conversation),
         ];
 
+        Log::info("Notification data prepared with company_id: {$companyId}");
         Log::info("Sending notifications to " . count($recipients) . " users");
 
         return $this->sendBulk($recipients, $notificationData);
