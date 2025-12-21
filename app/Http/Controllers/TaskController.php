@@ -2495,14 +2495,13 @@ class TaskController extends Controller
             $phaseGroups = [];
 
             foreach ($tasks as $task) {
-                if (!$task->phase) {
-                    // Jika phase kosong, gunakan default
-                    $task->phase = 'Uncategorized';
-                }
-
-                // Normalisasi untuk grouping: lowercase dan trim
-                $originalPhaseName = trim($task->phase);
-                $normalizedKey = strtolower($originalPhaseName);
+                if (!$task->phase || empty(trim($task->phase))) {
+                Log::info('Skipping task without phase:', ['task_id' => $task->id]);
+                continue; // Skip ke task berikutnya
+            }
+            
+            $originalPhaseName = trim($task->phase);
+            $normalizedKey = strtolower($originalPhaseName);
 
                 // Handle empty phase name
                 if (empty($normalizedKey)) {
