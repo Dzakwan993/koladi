@@ -213,7 +213,9 @@ class StatistikController extends Controller
                     'members' => $members->map(fn($m) => [
                         'id' => $m->id,
                         'name' => $m->name,
-                        'avatar' => $m->avatar ?? 'https://i.pravatar.cc/40?u=' . $m->id
+                        'avatar' => $m->avatar
+                            ? asset('storage/' . $m->avatar) // ✅ FIX
+                            : 'https://i.pravatar.cc/40?u=' . $m->id
                     ]),
                     'tasks' => $tasks,
                     'rekap_kinerja' => $rekapKinerja,
@@ -595,7 +597,9 @@ class StatistikController extends Controller
                     'assigned_users' => $task->assignedUsers->map(fn($u) => [
                         'id' => $u->id,
                         'name' => $u->name,
-                        'avatar' => $u->avatar ?? 'https://i.pravatar.cc/40?u=' . $u->id
+                        'avatar' => $u->avatar
+                            ? asset('storage/' . $u->avatar) // ✅ FIX
+                            : 'https://i.pravatar.cc/40?u=' . $u->id
                     ])->values() // ✅ TAMBAH values() untuk reset array key
                 ];
             })
@@ -643,7 +647,9 @@ class StatistikController extends Controller
             $distribution[] = [
                 'user_id' => $member->id,
                 'name' => $member->name,
-                'avatar' => $member->avatar ?? 'https://i.pravatar.cc/40?u=' . $member->id,
+                'avatar' => $member->avatar
+                    ? asset('storage/' . $member->avatar) // ✅ FIX: Tambah storage/
+                    : 'https://i.pravatar.cc/40?u=' . $member->id,
                 'total_tasks' => $total,
                 'completed_tasks' => $done,
                 'overdue_tasks' => $overdue,
@@ -985,7 +991,9 @@ class StatistikController extends Controller
                 'assigned_users' => $task->assignedUsers->map(fn($u) => [
                     'id' => $u->id,
                     'name' => $u->name,
-                    'avatar' => $u->avatar ?? 'https://i.pravatar.cc/40?u=' . $u->id
+                    'avatar' => $u->avatar
+                        ? asset('storage/' . $u->avatar) // ✅ FIX
+                        : 'https://i.pravatar.cc/40?u=' . $u->id
                 ])->values() // ✅ TAMBAH values() untuk reset array key
             ];
         });
@@ -1253,7 +1261,6 @@ class StatistikController extends Controller
     {
         $companyRole = $this->getUserRoleInCompany($user, $companyId);
 
-
         Log::info('getAccessibleMembers DEBUG:', [
             'workspace_id' => $workspace->id,
             'user_id' => $user->id,
@@ -1262,7 +1269,15 @@ class StatistikController extends Controller
 
         // ✅ SuperAdmin/Admin company → Lihat semua member
         if (in_array($companyRole, ['superadmin', 'admin'])) {
-            return $workspace->activeMembers;
+            return $workspace->activeMembers->map(function ($member) {
+                return (object) [
+                    'id' => $member->id,
+                    'name' => $member->name,
+                    'avatar' => $member->avatar
+                        ? asset('storage/' . $member->avatar)
+                        : 'https://i.pravatar.cc/40?u=' . $member->id
+                ];
+            });
         }
 
         // ✅ Check role di workspace
@@ -1272,12 +1287,28 @@ class StatistikController extends Controller
 
         // ✅ Creator atau Manager workspace → Lihat semua member
         if (in_array($workspaceRole, ['creator', 'manager'])) {
-            return $workspace->activeMembers;
+            return $workspace->activeMembers->map(function ($member) {
+                return (object) [
+                    'id' => $member->id,
+                    'name' => $member->name,
+                    'avatar' => $member->avatar
+                        ? asset('storage/' . $member->avatar)
+                        : 'https://i.pravatar.cc/40?u=' . $member->id
+                ];
+            });
         }
 
         Log::info('Return: Self only (member)');
         // ✅ Manager/Member company DAN bukan manager/creator workspace → Cuma lihat diri sendiri
-        return collect([$user]);
+        return collect([
+            (object) [
+                'id' => $user->id,
+                'name' => $user->name,
+                'avatar' => $user->avatar
+                    ? asset('storage/' . $user->avatar)
+                    : 'https://i.pravatar.cc/40?u=' . $user->id
+            ]
+        ]);
     }
 
     /**
@@ -1592,7 +1623,9 @@ class StatistikController extends Controller
                 'assigned_users' => $task->assignedUsers->map(fn($u) => [
                     'id' => $u->id,
                     'name' => $u->name,
-                    'avatar' => $u->avatar ?? 'https://i.pravatar.cc/40?u=' . $u->id
+                    'avatar' => $u->avatar
+                        ? asset('storage/' . $u->avatar) // ✅ FIX
+                        : 'https://i.pravatar.cc/40?u=' . $u->id
                 ])->values() // ✅ TAMBAH values() untuk reset array key
             ];
         });
