@@ -596,7 +596,7 @@ class StatistikController extends Controller
                         'id' => $u->id,
                         'name' => $u->name,
                         'avatar' => $u->avatar ?? 'https://i.pravatar.cc/40?u=' . $u->id
-                    ])
+                    ])->values() // ✅ TAMBAH values() untuk reset array key
                 ];
             })
             ->sortBy('days_until_due') // Sort by urgency
@@ -972,7 +972,7 @@ class StatistikController extends Controller
             return [
                 'id' => $task->id,
                 'title' => $task->title,
-                'description' => $task->description,
+                'description' => strip_tags($task->description ?? ''), // ✅ TAMBAH INI
                 'status' => $task->status,
                 'start_datetime' => $task->start_datetime?->toISOString(),
                 'due_datetime' => $task->due_datetime?->toISOString(),
@@ -986,7 +986,7 @@ class StatistikController extends Controller
                     'id' => $u->id,
                     'name' => $u->name,
                     'avatar' => $u->avatar ?? 'https://i.pravatar.cc/40?u=' . $u->id
-                ])
+                ])->values() // ✅ TAMBAH values() untuk reset array key
             ];
         });
     }
@@ -1579,7 +1579,7 @@ class StatistikController extends Controller
             return [
                 'id' => $task->id,
                 'title' => $task->title,
-                'description' => $task->description,
+                'description' => strip_tags($task->description ?? ''), // ✅ TAMBAH INI
                 'status' => $task->status,
                 'start_datetime' => $task->start_datetime?->toISOString(),
                 'due_datetime' => $task->due_datetime?->toISOString(),
@@ -1593,7 +1593,7 @@ class StatistikController extends Controller
                     'id' => $u->id,
                     'name' => $u->name,
                     'avatar' => $u->avatar ?? 'https://i.pravatar.cc/40?u=' . $u->id
-                ])
+                ])->values() // ✅ TAMBAH values() untuk reset array key
             ];
         });
     }

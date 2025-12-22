@@ -16,6 +16,8 @@
         members: {{ Js::from($members->map(fn($m) => ['id' => $m->id, 'name' => $m->name, 'avatar' => $m->avatar ?? 'https://i.pravatar.cc/40?u=' . $m->id])) }},
         searchWorkspace: '',
         searchMember: '',
+        showAssignedModal: false,
+        selectedTaskAssignees: [],
     
         // STATE LOADING (BARU)
         isLoadingProfile: false,
@@ -75,6 +77,35 @@
             return this.members.filter(m =>
                 m.name.toLowerCase().includes(this.searchMember.toLowerCase())
             );
+        },
+    
+        // ✅ Method untuk strip HTML tags dari description
+        stripHtmlTags(html) {
+            if (!html) return '';
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            return tmp.textContent || tmp.innerText || '';
+        },
+    
+        openAssignedModal(task) {
+            this.selectedTaskAssignees = task.assigned_users;
+            this.showAssignedModal = true;
+        },
+    
+        // ✅ Method untuk redirect ke kanban + auto open modal
+        redirectToTaskDetail(taskId, workspaceId) {
+            console.log('Redirecting to task:', taskId, 'in workspace:', workspaceId);
+    
+            // Simpan task ID ke localStorage untuk auto-open nanti
+            localStorage.setItem('autoOpenTaskId', taskId);
+    
+            // ✅ PERBAIKI: Gunakan URL yang benar sesuai route
+            const url = workspaceId ?
+                `/kanban-tugas/${workspaceId}` :
+                `/kanban-tugas/${this.selectedWorkspace}`;
+    
+            console.log('Redirect URL:', url);
+            window.location.href = url;
         },
     
     
@@ -1707,24 +1738,25 @@
                             <template x-for="task in tasks" :key="task.id">
                                 <div
                                     style="width: 90%; margin: 0 auto; background: white; border-radius: 10px; padding: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: 10px;">
-                                    <div style="flex: 1;">
+
+                                    <!-- ✅ Wrapper dengan cursor pointer untuk redirect -->
+                                    <div style="flex: 1; cursor: pointer;"
+                                        @click="redirectToTaskDetail(task.id, task.workspace_id)">
+
+                                        <!-- Deadline Badge -->
                                         <div
                                             :style="{
                                                 'font-weight': '600',
                                                 'color': 'white',
                                                 'font-size': '11px',
                                                 'background': task.is_completed_late ?
-                                                    'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' :
-                                                    // Kuning = Selesai Telat
-                                                    (task.is_overdue ?
+                                                    'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' : (task
+                                                        .is_overdue ?
                                                         'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)' :
-                                                        // Merah = Telat
-                                                        (task.days_until_due !== null && task.days_until_due <=
-                                                            3 ?
+                                                        (task.days_until_due !== null && task.days_until_due <= 3 ?
                                                             'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)' :
-                                                            // Kuning = Hampir deadline (≤3 hari)
                                                             'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                                                        ) // Hijau = Aman (>3 hari)
+                                                        )
                                                     ),
                                                 'padding': '4px 8px',
                                                 'border-radius': '4px',
@@ -1739,34 +1771,85 @@
                                                 <polyline points="12 6 12 12 16 14"></polyline>
                                             </svg>
                                             <span
-                                                x-text="new Date(task.due_datetime).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})"></span>
+                                                x-text="new Date(task.due_datetime).toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})">20
+                                                Des</span>
                                         </div>
 
-                                        <div style="font-size: 16px; font-weight: bold; color: #000000; margin-top: 3px; max-width: 240px; line-height: 1.3;"
-                                            x-text="task.title"></div>
+                                        <!-- Title -->
+                                        <div style="font-size: 18px; font-weight: bold; color: #000000; margin-top: 3px; max-width: 240px; line-height: 1.3;"
+                                            x-text="task.title">klj</div>
+
+                                        <!-- ✅ Description dengan strip HTML -->
+                                        <div style="font-size: 13px; color: #6b7280; margin-top: 6px; max-width: 240px; line-height: 1.4;"
+                                            x-html="stripHtmlTags(task.description)">
+                                            Menargetkan penjualan di atas 40%
+                                        </div>
+
+                                        <!-- ✅ Avatar Penerima Tugas - STOP PROPAGATION -->
+                                        <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px; cursor: pointer;"
+                                            @click.stop="openAssignedModal(task)">
+
+                                            <div style="display: flex;">
+                                                <!-- ✅ Show max 3 avatars -->
+                                                <template x-for="(user, idx) in (task.assigned_users || []).slice(0, 3)"
+                                                    :key="user.id">
+                                                    <img :src="user.avatar" :alt="user.name"
+                                                        :title="user.name"
+                                                        style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid white;"
+                                                        :style="{ marginLeft: idx === 0 ? '0' : '-8px' }" />
+                                                </template>
+
+                                                <!-- ✅ +X indicator -->
+                                                <div x-show="(task.assigned_users || []).length > 3"
+                                                    style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #374151; margin-left: -8px;">
+                                                    <span x-text="`+${(task.assigned_users || []).length - 3}`"></span>
+                                                </div>
+                                            </div>
+
+                                            <!-- ✅ Text: "Nama dan X lainnya" -->
+                                            <span style="font-size: 13px; color: #374151; font-weight: 500;">
+                                                <template x-if="(task.assigned_users || []).length > 0">
+                                                    <span>
+                                                        <span style="font-weight: 600;"
+                                                            x-text="task.assigned_users[0]?.name || 'Tidak ada'"></span>
+                                                        <template x-if="(task.assigned_users || []).length > 1">
+                                                            <span
+                                                                x-text="` dan ${(task.assigned_users || []).length - 1} lainnya`"></span>
+                                                        </template>
+                                                    </span>
+                                                </template>
+                                                <template
+                                                    x-if="!task.assigned_users || (task.assigned_users || []).length === 0">
+                                                    <span class="text-gray-400">Tidak ada anggota</span>
+                                                </template>
+                                            </span>
+                                        </div>
                                     </div>
 
-                                    <div style="text-align: center;">
+                                    <!-- ✅ Progress Circle - STOP PROPAGATION -->
+                                    <div style="text-align: center;" @click.stop>
                                         <div
-                                            style="position: relative; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                            style="position: relative; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;">
                                             <svg viewBox="0 0 36 36" style="position: absolute; top: 0; left: 0;">
                                                 <path
                                                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                                                    fill="none" stroke="#e6f0fb" stroke-width="3.5" />
+                                                    fill="none" stroke="#e6f0fb" stroke-width="3.5"></path>
                                                 <defs>
                                                     <linearGradient id="gradBlue" x1="0%" y1="0%"
                                                         x2="0%" y2="100%">
-                                                        <stop offset="0%" stop-color="#2563eb" />
-                                                        <stop offset="100%" stop-color="#102a63" />
+                                                        <stop offset="0%" stop-color="#2563eb"></stop>
+                                                        <stop offset="100%" stop-color="#102a63"></stop>
                                                     </linearGradient>
                                                 </defs>
                                                 <path
                                                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                                                     fill="none" stroke="url(#gradBlue)" stroke-width="3.5"
-                                                    stroke-linecap="round" :stroke-dasharray="task.progress + ',100'" />
+                                                    stroke-linecap="round"
+                                                    :stroke-dasharray="(task.progress || 0) + ',100'"
+                                                    stroke-dasharray="0,100"></path>
                                             </svg>
-                                            <span style="font-weight: 700; color: #111827; font-size: 12px;"
-                                                x-text="task.progress + '%'"></span>
+                                            <span style="font-weight: 700; color: #111827; font-size: 13px;"
+                                                x-text="(task.progress || 0) + '%'">0%</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1779,6 +1862,53 @@
                                 </div>
                             </template>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ✅ Assigned Users Modal -->
+        <div x-show="showAssignedModal" x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+            class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showAssignedModal = false"></div>
+
+            <!-- Modal Container -->
+            <div class="flex min-h-screen items-center justify-center p-4">
+                <div @click.stop class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6"
+                    x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95"
+                    x-transition:enter-end="opacity-100 scale-100">
+
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+                        <h3 class="text-lg font-bold text-gray-900">Anggota Ditugaskan</h3>
+                        <button @click="showAssignedModal = false"
+                            class="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- List Members -->
+                    <div class="space-y-2 max-h-96 overflow-y-auto">
+                        <template x-for="user in selectedTaskAssignees" :key="user.id">
+                            <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                                <img :src="user.avatar" :alt="user.name"
+                                    class="w-10 h-10 rounded-full object-cover border-2 border-gray-200" />
+                                <span class="text-sm font-medium text-gray-900" x-text="user.name"></span>
+                            </div>
+                        </template>
+
+                        <!-- Empty state -->
+                        <template x-if="selectedTaskAssignees.length === 0">
+                            <div class="text-center py-8 text-gray-500">
+                                <p class="text-sm">Tidak ada anggota ditugaskan</p>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </div>
