@@ -61,7 +61,29 @@ class TaskController extends Controller
         return !is_null($userWorkspace);
     }
 
+    /**
+     * Helper method untuk generate avatar URL dinamis
+     */
+    private function getAvatarUrl($user)
+    {
+        if (!$user) {
+            return 'https://ui-avatars.com/api/?name=User&background=4F46E5&color=fff&bold=true';
+        }
 
+        // Jika avatar adalah URL penuh (http/https)
+        if ($user->avatar && \Str::startsWith($user->avatar, ['http://', 'https://'])) {
+            return $user->avatar;
+        }
+
+        // Jika avatar adalah path file lokal
+        if ($user->avatar) {
+            return asset('storage/' . $user->avatar);
+        }
+
+        // Fallback ke UI Avatars dengan nama user
+        $name = $user->full_name ?? $user->name ?? 'User';
+        return 'https://ui-avatars.com/api/?name=' . urlencode($name) . '&background=4F46E5&color=fff&bold=true';
+    }
 
     // ============================================================
     // === GET BOARD COLUMNS (HANYA UNTUK WORKSPACE YANG DIMINTA)
@@ -312,18 +334,11 @@ class TaskController extends Controller
         ]);
     }
 
-
-
-
-
-
-    // ✅ NEW: Get anggota workspace untuk tugas
     public function getWorkspaceMembers($workspaceId)
     {
         try {
             $user = Auth::user();
 
-            // ✅ VALIDASI: Gunakan method helper untuk cek akses
             if (!$this->canAccessWorkspace($workspaceId)) {
                 return response()->json([
                     'success' => false,
@@ -331,17 +346,18 @@ class TaskController extends Controller
                 ], 403);
             }
 
-            // Get semua anggota aktif di workspace
             $members = UserWorkspace::with('user')
                 ->where('workspace_id', $workspaceId)
                 ->where('status_active', true)
                 ->get()
                 ->map(function ($userWorkspace) {
+                    $member = $userWorkspace->user;
+
                     return [
-                        'id' => $userWorkspace->user->id,
-                        'name' => $userWorkspace->user->full_name,
-                        'email' => $userWorkspace->user->email,
-                        'avatar' => 'https://i.pravatar.cc/32?img=' . (rand(1, 70)),
+                        'id' => $member->id,
+                        'name' => $member->full_name,
+                        'email' => $member->email,
+                        'avatar' => $this->getAvatarUrl($member), // ✅ Gunakan helper
                         'role' => $userWorkspace->role->name ?? 'Member'
                     ];
                 });
@@ -359,14 +375,13 @@ class TaskController extends Controller
         }
     }
 
-    // ✅ NEW: Get anggota yang sudah ditugaskan ke task
+    // ✅ UPDATE: Method getTaskAssignments dengan avatar dinamis
     public function getTaskAssignments($taskId)
     {
         try {
             $task = Task::findOrFail($taskId);
             $user = Auth::user();
 
-            // ✅ VALIDASI: Gunakan method helper untuk cek akses workspace task
             if (!$this->canAccessWorkspace($task->workspace_id)) {
                 return response()->json([
                     'success' => false,
@@ -374,16 +389,17 @@ class TaskController extends Controller
                 ], 403);
             }
 
-            // Get semua user yang ditugaskan ke task
             $assignedUsers = TaskAssignment::with('user')
                 ->where('task_id', $taskId)
                 ->get()
                 ->map(function ($assignment) {
+                    $member = $assignment->user;
+
                     return [
-                        'id' => $assignment->user->id,
-                        'name' => $assignment->user->full_name,
-                        'email' => $assignment->user->email,
-                        'avatar' => 'https://i.pravatar.cc/32?img=' . (rand(1, 70))
+                        'id' => $member->id,
+                        'name' => $member->full_name,
+                        'email' => $member->email,
+                        'avatar' => $this->getAvatarUrl($member) // ✅ Gunakan helper
                     ];
                 });
 
@@ -400,7 +416,7 @@ class TaskController extends Controller
         }
     }
 
-    // ✅ NEW: Manage anggota tugas (assign/unassign)
+    // ✅ UPDATE: Method manageTaskAssignments dengan avatar dinamis
     public function manageTaskAssignments(Request $request, $taskId)
     {
         $request->validate([
@@ -412,7 +428,6 @@ class TaskController extends Controller
             $task = Task::findOrFail($taskId);
             $user = Auth::user();
 
-            // ✅ VALIDASI: Gunakan method helper untuk cek akses workspace task
             if (!$this->canAccessWorkspace($task->workspace_id)) {
                 return response()->json([
                     'success' => false,
@@ -420,7 +435,6 @@ class TaskController extends Controller
                 ], 403);
             }
 
-            // Validasi bahwa semua user_ids adalah anggota workspace
             $workspaceMemberIds = UserWorkspace::where('workspace_id', $task->workspace_id)
                 ->where('status_active', true)
                 ->pluck('user_id')
@@ -434,12 +448,10 @@ class TaskController extends Controller
                 ], 400);
             }
 
-            // Hapus assignment yang tidak dipilih
             TaskAssignment::where('task_id', $taskId)
                 ->whereNotIn('user_id', $request->user_ids)
                 ->delete();
 
-            // Tambah assignment baru
             foreach ($request->user_ids as $userId) {
                 TaskAssignment::updateOrCreate(
                     [
@@ -460,7 +472,7 @@ class TaskController extends Controller
                         'id' => $assignment->user->id,
                         'name' => $assignment->user->full_name,
                         'email' => $assignment->user->email,
-                        'avatar' => 'https://i.pravatar.cc/32?img=' . (rand(1, 70))
+                        'avatar' => $this->getAvatarUrl($assignment->user) // ✅ Gunakan helper
                     ];
                 });
 
@@ -1544,13 +1556,11 @@ class TaskController extends Controller
     }
 
 
-    // ✅ NEW: Get tasks untuk kanban board dengan relasi lengkap
     public function getKanbanTasks($workspaceId)
     {
         try {
             $user = Auth::user();
 
-            // ✅ VALIDASI: Gunakan method helper untuk cek akses
             if (!$this->canAccessWorkspace($workspaceId)) {
                 return response()->json([
                     'success' => false,
@@ -1558,7 +1568,6 @@ class TaskController extends Controller
                 ], 403);
             }
 
-            // Ambil semua tugas di workspace dengan relasi lengkap
             $query = Task::with([
                 'assignments.user',
                 'labels.color',
@@ -1568,7 +1577,6 @@ class TaskController extends Controller
             ])
                 ->where('workspace_id', $workspaceId);
 
-            // Filter hak akses untuk tugas rahasia
             $userCompany = $user->userCompanies()
                 ->where('company_id', session('active_company_id'))
                 ->with('role')
@@ -1590,24 +1598,24 @@ class TaskController extends Controller
                 return [
                     'id' => $task->id,
                     'title' => $task->title,
-                    'description' => $task->description,
-                    'status' => $task->status,
-                    'board_column_id' => $task->board_column_id,
-                    'priority' => $task->priority,
-                    'is_secret' => $task->is_secret,
                     'phase' => $task->phase,
-                    'start_datetime' => $task->start_datetime?->toISOString(),
-                    'due_datetime' => $task->due_datetime?->toISOString(),
-                    'created_at' => $task->created_at->toISOString(),
-                    'updated_at' => $task->updated_at->toISOString(),
+                    'status' => $task->board_column_id,
+                    'board_column_id' => $task->board_column_id,
+                    'is_secret' => $task->is_secret,
+                    'description' => $task->description,
+                    'priority' => $task->priority,
+                    'start_datetime' => $task->start_datetime,
+                    'due_datetime' => $task->due_datetime,
+
                     'assignees' => $task->assignments->map(function ($assignment) {
                         return [
                             'id' => $assignment->user->id,
                             'name' => $assignment->user->full_name,
                             'email' => $assignment->user->email,
-                            'avatar' => $assignment->user->avatar ?: 'https://i.pravatar.cc/32?img=' . rand(1, 70)
+                            'avatar' => $this->getAvatarUrl($assignment->user) // ✅ Gunakan helper
                         ];
                     }),
+
                     'labels' => $task->labels->map(function ($label) {
                         return [
                             'id' => $label->id,
@@ -1615,6 +1623,7 @@ class TaskController extends Controller
                             'color' => $label->color->rgb
                         ];
                     }),
+
                     'checklists' => $task->checklists->map(function ($checklist) {
                         return [
                             'id' => $checklist->id,
@@ -1623,7 +1632,8 @@ class TaskController extends Controller
                             'position' => $checklist->position
                         ];
                     }),
-                    'progress_percentage' => $task->getProgressPercentage(),
+
+                    'progress_percentage' => $this->calculateTaskProgress($task),
                     'is_overdue' => $task->isOverdue()
                 ];
             });
@@ -1644,13 +1654,12 @@ class TaskController extends Controller
 
 
 
-    // ✅ NEW: Get task detail untuk modal
-    // ✅ NEW: Get task detail untuk modal dengan semua relasi lengkap
-    // ✅ PERBAIKI: Get task detail untuk modal
+
+
+    // ✅ UPDATE: Method getTaskDetail dengan avatar dinamis
     public function getTaskDetail($taskId)
     {
         try {
-            // Validasi UUID
             if (!Str::isUuid($taskId)) {
                 return response()->json([
                     'success' => false,
@@ -1658,7 +1667,6 @@ class TaskController extends Controller
                 ], 400);
             }
 
-            // Load task utama
             $task = Task::with([
                 'assignments.user',
                 'labels.color',
@@ -1667,7 +1675,13 @@ class TaskController extends Controller
                 },
                 'attachments',
                 'boardColumn',
-                'creator'
+                'creator',
+                'comments' => function ($query) {
+                    $query->whereNull('parent_comment_id')
+                        ->orderBy('created_at', 'desc');
+                },
+                'comments.user',
+                'comments.replies.user'
             ])->find($taskId);
 
             if (!$task) {
@@ -1677,7 +1691,6 @@ class TaskController extends Controller
                 ], 404);
             }
 
-            // Validasi akses workspace
             if (!$this->canAccessWorkspace($task->workspace_id)) {
                 return response()->json([
                     'success' => false,
@@ -1685,17 +1698,6 @@ class TaskController extends Controller
                 ], 403);
             }
 
-            // 🔥 Load comments + user + replies + user
-            $task->load([
-                'comments' => function ($query) {
-                    $query->whereNull('parent_comment_id')
-                        ->orderBy('created_at', 'desc');
-                },
-                'comments.user',
-                'comments.replies.user'
-            ]);
-
-            // Format response sesuai frontend
             $taskData = [
                 'id' => $task->id,
                 'title' => $task->title,
@@ -1725,7 +1727,7 @@ class TaskController extends Controller
                         'id' => $assignment->user->id,
                         'name' => $assignment->user->full_name,
                         'email' => $assignment->user->email,
-                        'avatar' => $assignment->user->avatar ?? 'https://i.pravatar.cc/32?img=' . rand(1, 70)
+                        'avatar' => $this->getAvatarUrl($assignment->user) // ✅ Gunakan helper
                     ];
                 })->toArray(),
 
@@ -1746,9 +1748,7 @@ class TaskController extends Controller
                     ];
                 })->toArray(),
 
-                // 🆕 Attachments mapping
                 'attachments' => $task->attachments->map(function ($attachment) {
-                    // ✅ PERBAIKAN: Ambil nama file dari attribute atau file_url
                     $fileName = $attachment->file_name ?? basename($attachment->file_url);
 
                     return [
@@ -1769,9 +1769,6 @@ class TaskController extends Controller
                 'progress_percentage' => $this->calculateTaskProgress($task),
                 'is_overdue' => $task->due_datetime && $task->due_datetime->lt(now()) && !in_array($task->status, ['done', 'cancel']),
 
-                // ============================
-                // 🔥 FORMAT KOMENTAR (AMAN)
-                // ============================
                 'comments' => $task->comments->map(function ($comment) {
                     return [
                         'id' => $comment->id,
@@ -1779,11 +1776,10 @@ class TaskController extends Controller
                         'author' => [
                             'id' => $comment->user->id ?? null,
                             'name' => $comment->user->full_name ?? $comment->user->name ?? 'Unknown',
-                            'avatar' => $comment->user->avatar ?? 'https://i.pravatar.cc/40?img=0'
+                            'avatar' => $this->getAvatarUrl($comment->user) // ✅ Gunakan helper
                         ],
                         'createdAt' => $comment->created_at->toIso8601String(),
 
-                        // 🔥 Balasan komentar
                         'replies' => $comment->replies->map(function ($reply) {
                             return [
                                 'id' => $reply->id,
@@ -1791,7 +1787,7 @@ class TaskController extends Controller
                                 'author' => [
                                     'id' => $reply->user->id ?? null,
                                     'name' => $reply->user->full_name ?? $reply->user->name ?? 'Unknown',
-                                    'avatar' => $reply->user->avatar ?? 'https://i.pravatar.cc/40?img=0'
+                                    'avatar' => $this->getAvatarUrl($reply->user) // ✅ Gunakan helper
                                 ],
                                 'createdAt' => $reply->created_at->toIso8601String(),
                             ];
@@ -2499,7 +2495,7 @@ class TaskController extends Controller
                 Log::info('Skipping task without phase:', ['task_id' => $task->id]);
                 continue; // Skip ke task berikutnya
             }
-            
+
             $originalPhaseName = trim($task->phase);
             $normalizedKey = strtolower($originalPhaseName);
 
