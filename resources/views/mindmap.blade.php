@@ -111,11 +111,11 @@
         <div class="flex items-center gap-3">
             <div class="font-bold text-slate-800 text-lg">Mind Map</div>
             <div class="hidden md:flex items-center gap-2 text-xs text-slate-500">
-                <span class="mm-pill">Space = Pan</span>
-                <span class="mm-pill">Wheel = Zoom</span>
-                <span class="mm-pill">Drag port = Connect</span>
-                <span class="mm-pill">Double click = Add</span>
-                <span class="mm-pill">H = Hide UI</span>
+                <span class="mm-pill">Spasi = Geser</span>
+                <span class="mm-pill">Wheel = Perbesar</span>
+                <span class="mm-pill">Drag port = Sambungkan</span>
+                <span class="mm-pill">Klik dua kali = Tambah</span>
+                <span class="mm-pill">H = Sembunyi UI</span>
             </div>
         </div>
 

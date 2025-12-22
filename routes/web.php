@@ -41,18 +41,6 @@ Route::get('/', [LandingPageController::class, 'index'])
 Route::post('/feedback', [FeedbackController::class, 'store'])
     ->name('feedback.store');
 
-// // ✅ Route Landing Page
-// Route::get('/', function () {
-//     if (Auth::check()) {
-//         // 🔥 CEK APAKAH USER ADALAH ADMIN SISTEM
-//         if (Auth::user()->isSystemAdmin()) {
-//             return redirect()->route('admin.dashboard');
-//         }
-//         return redirect()->route('dashboard');
-//     }
-//     return view('landingpage');
-// });
-
 // ✅ Authentication Routes
 Route::get('/daftar', [AuthController::class, 'showRegister'])->name('daftar');
 Route::post('/daftar', [AuthController::class, 'register'])->name('daftar.store');

@@ -9,7 +9,7 @@
         'detail-jadwal' => 'Detail Jadwal',
     ];
 
-    // ✅ TAMBAHAN: Sub-halaman untuk Pengumuman
+    // ✅ Sub-halaman untuk Pengumuman
     $pengumumanSubPages = [
         'buat-pengumuman' => 'Buat Pengumuman',
         'detail-pengumuman' => 'Detail Pengumuman',
@@ -47,7 +47,7 @@
                     <span class="text-gray-800 font-semibold">{{ $jadwalSubPages[$jadwalSubPage] }}</span>
                 @endif
 
-            {{-- ✅ TAMBAHAN: Cek apakah ini halaman Pengumuman dengan sub-menu --}}
+            {{-- ✅ Cek apakah ini halaman Pengumuman dengan sub-menu --}}
             @elseif ($active == 'pengumuman')
                 <a href="{{ route('workspace.pengumuman', ['workspace' => $currentWorkspaceId]) }}"
                     class="text-gray-800 font-semibold hover:text-blue-600">Pengumuman</a>
@@ -104,6 +104,14 @@
             <img src="{{ asset('images/icons/' . ($active == 'pengumuman' ? 'workspace_pengumuman1.svg' : 'workspace_pengumuman.svg')) }}"
                 alt="Pengumuman Icon" class="nav-icon w-4 h-4 sm:w-5 sm:h-5">
             <span class="nav-text">Pengumuman</span>
+        </a>
+
+        {{-- ✅ MINDMAP - Icon berubah saat active --}}
+        <a href="{{ $currentWorkspaceId ? route('workspace.mindmap', ['workspace' => $currentWorkspaceId]) : '#' }}"
+            class="flex items-center gap-2 {{ $active == 'mindmap' ? 'active text-blue-600 font-semibold border-b-2 border-blue-600 pb-1' : 'text-gray-600 hover:text-blue-600' }} {{ !$currentWorkspaceId ? 'opacity-50 cursor-not-allowed' : '' }}">
+            <img src="{{ asset('images/icons/' . ($active == 'mindmap' ? 'workspace_insight1.svg' : 'workspace_insight.svg')) }}"
+                alt="Mindmap Icon" class="nav-icon w-4 h-4 sm:w-5 sm:h-5">
+            <span class="nav-text">Mindmap</span>
         </a>
     </div>
 </div>

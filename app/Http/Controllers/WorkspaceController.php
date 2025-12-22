@@ -331,11 +331,20 @@ class WorkspaceController extends Controller
             })->get();
 
             $users = $companyUsers->map(function ($user) {
+                // ✅ LOGIC AVATAR YANG BENAR (sama seperti di getMembers)
+                if ($user->avatar && \Str::startsWith($user->avatar, ['http://', 'https://'])) {
+                    $avatarUrl = $user->avatar;
+                } elseif ($user->avatar) {
+                    $avatarUrl = asset('storage/' . $user->avatar);
+                } else {
+                    $avatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($user->full_name ?? 'User') . '&background=4F46E5&color=fff&bold=true';
+                }
+
                 return [
                     'id' => $user->id,
                     'name' => $user->full_name,
                     'email' => $user->email,
-                    'avatar' => 'https://i.pravatar.cc/32?img=' . (rand(1, 70))
+                    'avatar' => $avatarUrl // ✅ GUNAKAN AVATAR DARI DATABASE
                 ];
             });
 
