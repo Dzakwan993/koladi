@@ -342,8 +342,9 @@
     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
 
     {{-- 🔥 UPDATED: Form dengan JavaScript handler --}}
-    <form method="POST" :action="`/folders/${editingFolder.id}/update`" @submit.prevent="handleUpdateFolder($event)"
-        @click.outside="showEditFolderModal = false" class="bg-white rounded-lg w-full max-w-md">
+    <form method="POST" :action="editingFolder ? `/folders/${editingFolder.id}/update` : '#'"
+        @submit.prevent="editingFolder && handleUpdateFolder($event)" @click.outside="showEditFolderModal = false"
+        class="bg-white rounded-lg w-full max-w-md">
 
         @csrf
 
@@ -428,8 +429,8 @@
 <div x-show="showDeleteFolderModal" x-cloak
     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
 
-    <form x-ref="deleteFolderForm" :action="`/folders/${deletingFolder.id}/delete`" method="POST"
-        class="bg-white rounded-lg w-full max-w-md" @click.outside="showDeleteFolderModal = false">
+    <form x-ref="deleteFolderForm" :action="deletingFolder ? `/folders/${deletingFolder.id}/delete` : '#'"
+        method="POST" class="bg-white rounded-lg w-full max-w-md" @click.outside="showDeleteFolderModal = false">
 
         @csrf
         @method('DELETE')
@@ -491,7 +492,7 @@
 <div x-show="showDeleteFileModal" x-cloak
     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
 
-    <form x-ref="deleteFileForm" :action="`/files/${deletingFile.id}/delete`" method="POST"
+    <form x-ref="deleteFileForm" :action="deletingFile ? `/files/${deletingFile.id}/delete` : '#'" method="POST"
         class="bg-white rounded-lg w-full max-w-md" @click.outside="showDeleteFileModal = false">
 
         @csrf
@@ -640,8 +641,9 @@
     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
 
     {{-- 🔥 UPDATED: Form dengan JavaScript handler --}}
-    <form method="POST" :action="`/files/${editingFile.id}/update`" @submit.prevent="handleUpdateFile($event)"
-        class="bg-white rounded-lg w-full max-w-md" @click.outside="showEditFileModal = false">
+    <form method="POST" :action="editingFile ? `/files/${editingFile.id}/update` : '#'"
+        @submit.prevent="editingFile && handleUpdateFile($event)" class="bg-white rounded-lg w-full max-w-md"
+        @click.outside="showEditFileModal = false">
 
         @csrf
         @method('PUT')

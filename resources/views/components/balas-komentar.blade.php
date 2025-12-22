@@ -85,7 +85,7 @@
             <div class="flex items-center gap-2">
                 <span class="text-gray-400">›</span>
                 <button @click="closeReplyView()" class="text-gray-500 hover:text-gray-700 transition"
-                    x-text="replyView.currentFile.name"></button>
+                    x-text="replyView.currentFile?.name"></button>
             </div>
         </template>
 

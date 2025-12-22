@@ -6,11 +6,11 @@
 
         {{-- Preview berdasarkan tipe file --}}
         {{-- Jenis File PDF --}}
-        <template x-if="currentFile.type === 'PDF'">
+        <template x-if="currentFile && currentFile.type === 'PDF'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6 md:p-8 text-center">
                 <img src="{{ asset('images/icons/pdf.svg') }}" alt="PDF"
                     class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-3 sm:mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
                 <button @click="downloadFile(currentFile)"
                     class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
                     Download PDF
@@ -19,10 +19,10 @@
         </template>
 
         {{-- Jenis File Word --}}
-        <template x-if="currentFile.type === 'Word'">
+        <template x-if="currentFile && currentFile.type === 'Word'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                 <img src="{{ asset('images/icons/microsoft-word.svg') }}" alt="Word" class="w-16 h-16 mx-auto mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
                 <button @click="downloadFile(currentFile)"
                     class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
                     Download Document
@@ -31,10 +31,10 @@
         </template>
 
         {{-- Jenis File Excel --}}
-        <template x-if="currentFile.type === 'Excel'">
+        <template x-if="currentFile && currentFile.type === 'Excel'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                 <img src="{{ asset('images/icons/excel.svg') }}" alt="Excel" class="w-16 h-16 mx-auto mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
                 <button @click="downloadFile(currentFile)"
                     class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
                     Download Spreadsheet
@@ -43,10 +43,10 @@
         </template>
 
         {{-- Jenis File Powerpoint --}}
-        <template x-if="currentFile.type === 'PowerPoint'">
+        <template x-if="currentFile && currentFile.type === 'PowerPoint'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                 <img src="{{ asset('images/icons/powerpoint.svg') }}" alt="PowerPoint" class="w-16 h-16 mx-auto mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
 
                 <button @click="downloadFile(currentFile)"
                     class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
@@ -56,10 +56,10 @@
         </template>
 
         {{-- Jenis File Text --}}
-        <template x-if="currentFile.type === 'Text'">
+        <template x-if="currentFile && currentFile.type === 'Text'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                 <img src="{{ asset('images/icons/text-file.svg') }}" alt="Text" class="w-16 h-16 mx-auto mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
 
                 <button @click="downloadFile(currentFile)"
                     class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
@@ -69,13 +69,13 @@
         </template>
 
         {{-- Jenis File Gambar --}}
-        <template x-if="currentFile.type === 'Image'">
+        <template x-if="currentFile && currentFile.type === 'Image'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
 
                 <img :src="currentFile.file_url" alt="Image" class="mx-auto rounded-lg shadow mb-4"
                     style="max-width: 100%; max-height: 180px; object-fit: contain;">
 
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
 
                 <button @click="downloadFile(currentFile)"
                     class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
@@ -87,12 +87,12 @@
 
 
         {{-- Jenis File Video --}}
-        <template x-if="currentFile.type === 'Video'">
+        <template x-if="currentFile && currentFile.type === 'Video'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                 <video controls class="max-h-96 mx-auto rounded-lg shadow mb-4">
                     <source :src="currentFile.file_url">
                 </video>
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
 
                 <button @click="downloadFile(currentFile)"
                     class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
@@ -102,7 +102,7 @@
         </template>
 
         {{-- Jenis File Audio --}}
-        <template x-if="currentFile.type === 'Audio'">
+        <template x-if="currentFile && currentFile.type === 'Audio'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                 <img src="{{ asset('images/icons/audio.svg') }}" alt="Audio" class="w-16 h-16 mx-auto mb-4">
 
@@ -110,7 +110,7 @@
                     <source :src="currentFile.file_url">
                 </audio>
 
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
 
                 <button @click="downloadFile(currentFile)"
                     class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
@@ -120,10 +120,10 @@
         </template>
 
         {{-- Jenis File ZIP --}}
-        <template x-if="currentFile.type === 'Zip'">
+        <template x-if="currentFile && currentFile.type === 'Zip'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                 <img src="{{ asset('images/icons/zip.svg') }}" alt="Zip" class="w-16 h-16 mx-auto mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
 
                 <button @click="downloadFile(currentFile)"
                     class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
@@ -133,10 +133,10 @@
         </template>
 
         {{-- Jenis File code --}}
-        <template x-if="currentFile.type === 'Code'">
+        <template x-if="currentFile && currentFile.type === 'Code'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                 <img src="{{ asset('images/icons/code.svg') }}" alt="Code" class="w-16 h-16 mx-auto mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
 
                 <button @click="downloadFile(currentFile)"
                     class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
@@ -146,10 +146,10 @@
         </template>
 
         {{-- Unknown File Type --}}
-        <template x-if="currentFile.type === 'Unknown'">
+        <template x-if="currentFile && currentFile.type === 'Unknown'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                 <img src="{{ asset('images/icons/file-unknown.svg') }}" alt="Unknown" class="w-16 h-16 mx-auto mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile.name"></p>
+                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
 
                 <button @click="downloadFile(currentFile)"
                     class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
@@ -192,7 +192,7 @@
 
         {{-- Daftar Komentar --}}
         <div class="space-y-4">
-            <template x-for="comment in currentFile.comments" :key="comment.id">
+            <template x-for="comment in (currentFile?.comments || [])" :key="comment.id">
                 <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                     <div class="flex items-center justify-between mb-2">
                         <div class="flex items-center gap-2">
@@ -232,7 +232,8 @@
 
                                 <div class="border border-gray-300 rounded-lg overflow-hidden mb-3">
                                     <!-- container unik untuk reply editor -->
-                                    <div :id="'document-reply-editor-' + comment.id" class="min-h-[100px] p-3 bg-white">
+                                    <div :id="'document-reply-editor-' + comment.id"
+                                        class="min-h-[100px] p-3 bg-white">
                                     </div>
                                 </div>
 
@@ -271,9 +272,10 @@
             </template>
 
             {{-- Empty State Komentar --}}
-            <div x-show="!currentFile.comments || currentFile.comments.length === 0"
+            <div x-show="!currentFile?.comments?.length"
                 class="text-center py-8 text-gray-500">
-                <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
                         d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>

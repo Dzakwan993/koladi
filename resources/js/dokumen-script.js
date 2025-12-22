@@ -814,61 +814,69 @@ export default function documentSearch() {
 
         // 1️⃣ Handle Upload File
         // 1️⃣ Handle Upload File (MULTIPLE SUPPORT)
-// 1️⃣ Handle Upload File (MULTIPLE SUPPORT)
-async handleFileUpload(event) {
-    console.log("🚀 handleFileUpload called");
+        // 1️⃣ Handle Upload File (MULTIPLE SUPPORT)
+        async handleFileUpload(event) {
+            console.log("🚀 handleFileUpload called");
 
-    // ✅ FIX: Ambil fileInput dari form, bukan dari event.target
-    const form = event.target;
-    const fileInput = form.querySelector('input[type="file"]');
-    
-    if (!fileInput || !fileInput.files) {
-        console.error("❌ File input not found");
-        return;
-    }
+            // ✅ FIX: Ambil fileInput dari form, bukan dari event.target
+            const form = event.target;
+            const fileInput = form.querySelector('input[type="file"]');
 
-    const files = Array.from(fileInput.files);
+            if (!fileInput || !fileInput.files) {
+                console.error("❌ File input not found");
+                return;
+            }
 
-    if (files.length === 0) return;
+            const files = Array.from(fileInput.files);
 
-    // ✅ Validasi semua file dulu
-    const validFiles = [];
-    for (const file of files) {
-        const fileSizeMB = file.size / 1024 / 1024;
-        const isVideo = file.type.startsWith("video/");
+            if (files.length === 0) return;
 
-        if (isVideo && fileSizeMB > 100) {
-            showCustomSwal({
-                icon: "error",
-                title: "File Terlalu Besar!",
-                text: `Video "${file.name}" maksimal 100 MB (${fileSizeMB.toFixed(2)} MB).`,
-                showConfirmButton: true,
-            });
-            continue;
-        }
+            // ✅ Validasi semua file dulu
+            const validFiles = [];
+            for (const file of files) {
+                const fileSizeMB = file.size / 1024 / 1024;
+                const isVideo = file.type.startsWith("video/");
 
-        if (!isVideo && fileSizeMB > 20) {
-            showCustomSwal({
-                icon: "error",
-                title: "File Terlalu Besar!",
-                text: `"${file.name}" maksimal 20 MB (${fileSizeMB.toFixed(2)} MB).`,
-                showConfirmButton: true,
-            });
-            continue;
-        }
+                if (isVideo && fileSizeMB > 100) {
+                    showCustomSwal({
+                        icon: "error",
+                        title: "File Terlalu Besar!",
+                        text: `Video "${
+                            file.name
+                        }" maksimal 100 MB (${fileSizeMB.toFixed(2)} MB).`,
+                        showConfirmButton: true,
+                    });
+                    continue;
+                }
 
-        validFiles.push(file);
-    }
+                if (!isVideo && fileSizeMB > 20) {
+                    showCustomSwal({
+                        icon: "error",
+                        title: "File Terlalu Besar!",
+                        text: `"${
+                            file.name
+                        }" maksimal 20 MB (${fileSizeMB.toFixed(2)} MB).`,
+                        showConfirmButton: true,
+                    });
+                    continue;
+                }
 
-    if (validFiles.length === 0) {
-        fileInput.value = "";
-        return;
-    }
+                validFiles.push(file);
+            }
 
-    // ✅ Show modal dengan list semua file
-    const fileListHTML = validFiles.map((f, idx) => `
+            if (validFiles.length === 0) {
+                fileInput.value = "";
+                return;
+            }
+
+            // ✅ Show modal dengan list semua file
+            const fileListHTML = validFiles
+                .map(
+                    (f, idx) => `
         <div class="flex items-center justify-between py-2 border-b">
-            <span class="text-sm text-gray-700 truncate flex-1">${idx + 1}. ${f.name}</span>
+            <span class="text-sm text-gray-700 truncate flex-1">${idx + 1}. ${
+                        f.name
+                    }</span>
             <div class="flex items-center gap-2">
                 <span id="progress-${idx}" class="text-xs text-gray-500">0%</span>
                 <div class="w-16 bg-gray-200 rounded-full h-1.5">
@@ -876,11 +884,13 @@ async handleFileUpload(event) {
                 </div>
             </div>
         </div>
-    `).join('');
+    `
+                )
+                .join("");
 
-    Swal.fire({
-        title: "Mengunggah File...",
-        html: `
+            Swal.fire({
+                title: "Mengunggah File...",
+                html: `
             <div class="text-left max-h-64 overflow-y-auto">
                 ${fileListHTML}
             </div>
@@ -888,87 +898,98 @@ async handleFileUpload(event) {
                 <span id="currentFile">0</span> / ${validFiles.length} file selesai
             </div>
         `,
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-        background: "#f7faff",
-    });
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                background: "#f7faff",
+            });
 
-    // ✅ Upload satu per satu
-    for (let i = 0; i < validFiles.length; i++) {
-        await this.uploadSingleDocumentFile(validFiles[i], i, validFiles.length);
-    }
-
-    fileInput.value = "";
-
-    showCustomSwal({
-        icon: "success",
-        title: "Berhasil!",
-        text: `${validFiles.length} file berhasil diunggah`,
-        timer: 2000,
-        showConfirmButton: false,
-    });
-
-    setTimeout(() => {
-        window.location.reload();
-    }, 2000);
-},
-
-// 2️⃣ Upload single DOCUMENT file (NAMA BARU)
-async uploadSingleDocumentFile(file, index, totalFiles) {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    if (this.currentFolder) {
-        formData.append("folder_id", this.currentFolder.id);
-    }
-
-    if (this.currentContext === "workspace") {
-        formData.append("workspace_id", this.currentWorkspaceId);
-    } else if (this.currentContext === "company") {
-        formData.append("company_id", this.currentCompanyId);
-    }
-
-    const endpoint = this.currentContext === "company"
-        ? "/company-documents/file"
-        : "/file";
-
-    return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-
-        xhr.upload.addEventListener("progress", (e) => {
-            if (e.lengthComputable) {
-                const percent = Math.round((e.loaded / e.total) * 100);
-                const barEl = document.getElementById(`bar-${index}`);
-                const progressEl = document.getElementById(`progress-${index}`);
-                if (barEl) barEl.style.width = percent + "%";
-                if (progressEl) progressEl.textContent = percent + "%";
+            // ✅ Upload satu per satu
+            for (let i = 0; i < validFiles.length; i++) {
+                await this.uploadSingleDocumentFile(
+                    validFiles[i],
+                    i,
+                    validFiles.length
+                );
             }
-        });
 
-        xhr.onload = function () {
-            if (xhr.status === 200) {
-                const data = JSON.parse(xhr.responseText);
-                if (data.success) {
-                    const counterEl = document.getElementById("currentFile");
-                    if (counterEl) counterEl.textContent = index + 1;
-                    resolve(data);
-                } else {
-                    reject(new Error(data.message || "Upload failed"));
-                }
-            } else {
-                reject(new Error(`HTTP ${xhr.status}`));
+            fileInput.value = "";
+
+            showCustomSwal({
+                icon: "success",
+                title: "Berhasil!",
+                text: `${validFiles.length} file berhasil diunggah`,
+                timer: 2000,
+                showConfirmButton: false,
+            });
+
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        },
+
+        // 2️⃣ Upload single DOCUMENT file (NAMA BARU)
+        async uploadSingleDocumentFile(file, index, totalFiles) {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            if (this.currentFolder) {
+                formData.append("folder_id", this.currentFolder.id);
             }
-        };
 
-        xhr.onerror = () => reject(new Error("Network error"));
+            if (this.currentContext === "workspace") {
+                formData.append("workspace_id", this.currentWorkspaceId);
+            } else if (this.currentContext === "company") {
+                formData.append("company_id", this.currentCompanyId);
+            }
 
-        xhr.open("POST", endpoint);
-        xhr.setRequestHeader("X-CSRF-TOKEN", document.querySelector('meta[name="csrf-token"]').content);
-        xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
-        xhr.send(formData);
-    });
-},
+            const endpoint =
+                this.currentContext === "company"
+                    ? "/company-documents/file"
+                    : "/file";
+
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+
+                xhr.upload.addEventListener("progress", (e) => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        const barEl = document.getElementById(`bar-${index}`);
+                        const progressEl = document.getElementById(
+                            `progress-${index}`
+                        );
+                        if (barEl) barEl.style.width = percent + "%";
+                        if (progressEl) progressEl.textContent = percent + "%";
+                    }
+                });
+
+                xhr.onload = function () {
+                    if (xhr.status === 200) {
+                        const data = JSON.parse(xhr.responseText);
+                        if (data.success) {
+                            const counterEl =
+                                document.getElementById("currentFile");
+                            if (counterEl) counterEl.textContent = index + 1;
+                            resolve(data);
+                        } else {
+                            reject(new Error(data.message || "Upload failed"));
+                        }
+                    } else {
+                        reject(new Error(`HTTP ${xhr.status}`));
+                    }
+                };
+
+                xhr.onerror = () => reject(new Error("Network error"));
+
+                xhr.open("POST", endpoint);
+                xhr.setRequestHeader(
+                    "X-CSRF-TOKEN",
+                    document.querySelector('meta[name="csrf-token"]').content
+                );
+                xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+                xhr.send(formData);
+            });
+        },
 
         // Tambahkan method baru (sekitar baris 800-900, setelah method lainnya)
         async loadAvailableWorkspaces() {
@@ -1405,6 +1426,10 @@ async uploadSingleDocumentFile(file, index, totalFiles) {
 
         // 2️⃣ Handle Create Folder
         async handleCreateFolder(event) {
+            if (!this.editingFolder || !this.editingFolder.id) {
+                console.error("No folder to edit");
+                return;
+            }
             console.log("🚀 handleCreateFolder called");
 
             // ✅ PREVENT DOUBLE SUBMIT
@@ -1567,6 +1592,11 @@ async uploadSingleDocumentFile(file, index, totalFiles) {
 
         // 4️⃣ Handle Update File
         async handleUpdateFile(event) {
+            // ✅ TAMBAHKAN di awal
+            if (!this.editingFile || !this.editingFile.id) {
+                console.error("No file to edit");
+                return;
+            }
             console.log("🚀 handleUpdateFile called");
 
             const form = event.target;
@@ -2204,6 +2234,10 @@ async uploadSingleDocumentFile(file, index, totalFiles) {
         },
 
         openFile(file) {
+            if (!file || !file.id) {
+                console.error("Invalid file");
+                return;
+            }
             console.log("openFile dipanggil", file);
             console.log(
                 "📂 Current breadcrumbs before open:",
@@ -2246,10 +2280,11 @@ async uploadSingleDocumentFile(file, index, totalFiles) {
             const folderId =
                 (fileFolder && fileFolder.id) || file.folder_id || null;
 
+            // ✅ PERBAIKI bagian ini (sekitar baris 1400)
             this.currentFile = {
                 ...file,
                 folder: fileFolder,
-                folderPath: folderPath, // ✅ Gunakan folderPath dengan data lengkap
+                folderPath: folderPath,
                 creator: file.creator || this.getCurrentUser(),
                 createdAt: file.createdAt || new Date().toISOString(),
                 size:
@@ -2291,6 +2326,7 @@ async uploadSingleDocumentFile(file, index, totalFiles) {
         },
 
         showReplyForm(commentId) {
+            if (!this.currentFile?.comments) return;
             const comment = this.currentFile.comments.find(
                 (c) => c.id === commentId
             );
@@ -2300,7 +2336,7 @@ async uploadSingleDocumentFile(file, index, totalFiles) {
         },
 
         addReply(commentId, content) {
-            if (!content.trim()) return;
+            if (!content.trim() || !this.currentFile?.comments) return;
 
             const comment = this.currentFile.comments.find(
                 (c) => c.id === commentId
@@ -2333,6 +2369,13 @@ async uploadSingleDocumentFile(file, index, totalFiles) {
         },
 
         openEditFile(file) {
+            // ✅ TAMBAHKAN di awal
+            if (!file || !file.id) {
+                console.error("Invalid file");
+                return;
+            }
+            this.editingFile = file;
+
             this.editingFile = file;
             this.editFileIsSecret = file.isSecret || false;
             this.originalIsSecretFile = file.isSecret || false;
@@ -2357,6 +2400,13 @@ async uploadSingleDocumentFile(file, index, totalFiles) {
         },
 
         openDeleteFile(file) {
+            // ✅ TAMBAHKAN di awal
+            if (!file || !file.id) {
+                console.error("Invalid file");
+                return;
+            }
+            this.deletingFile = file;
+            this.showDeleteFileModal = true;
             this.deletingFile = file;
             this.showDeleteFileModal = true;
         },
@@ -2401,19 +2451,15 @@ async uploadSingleDocumentFile(file, index, totalFiles) {
         },
 
         openDeleteFolder(folder) {
+            // ✅ TAMBAHKAN pengecekan
+            if (!folder || !folder.id) {
+                console.error("Invalid folder to delete");
+                return;
+            }
+
             this.deletingFolder = folder;
             this.showDeleteFolderModal = true;
         },
-
-        // confirmDeleteFolder() {
-        // if (!this.deletingFolder) return;
-
-        // this.deleteFolder(this.deletingFolder);
-        // this.showSuccessMessage(`Folder "${this.deletingFolder.name}" berhasil dihapus`);
-
-        // this.showDeleteFolderModal = false;
-        // this.deletingFolder = null;
-        // },
 
         // Member Functions
         toggleSelectAll() {

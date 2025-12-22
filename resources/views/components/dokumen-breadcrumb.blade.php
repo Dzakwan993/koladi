@@ -23,7 +23,7 @@
                         {{-- Current folder (bukan bagian dari breadcrumb yang bisa diklik) --}} <template x-if="currentFolder">
                             <div class="flex items-center gap-2">
                                 <span class="text-gray-400">›</span>
-                                <span class="text-gray-700 font-medium" x-text="currentFolder.name"></span>
+                                <span class="text-gray-700 font-medium" x-text="currentFolder?.name"></span>
                             </div>
                             </template>
                     </div>
@@ -31,7 +31,7 @@
                     <div class="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
                         {{-- Judul Folder dan Actions --}}
                         <div class="flex items-center justify-between mb-2 sm:mb-3">
-                            <h2 class="text-lg font-semibold text-gray-800" x-text="currentFolder.name"></h2>
+                            <h2 class="text-lg font-semibold text-gray-800" x-text="currentFolder?.name"></h2>
                             <div x-show="memberListAllowed" class="flex items-center gap-1">
                                 <button @click="openEditFolder(currentFolder)"
                                     class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition">
@@ -54,12 +54,12 @@
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                             {{-- Info Pembuat --}}
                             <div class="flex items-center gap-2">
-                                <img :src="currentFolder.creatorAvatar || 'https://i.pravatar.cc/32?img=8'" alt="Profile"
+                                <img :src="currentFolder?.creatorAvatar || 'https://i.pravatar.cc/32?img=8'" alt="Profile"
                                     class="w-6 h-6 rounded-full">
                                 <div>
                                     <p class="text-xs font-medium text-gray-700"
-                                        x-text="currentFolder.creator.name || 'Admin'"></p>
-                                    <p class="text-xs text-gray-500" x-text="formatDate(currentFolder.createdAt)"></p>
+                                        x-text="currentFolder?.creator?.name || 'Admin'"></p>
+                                    <p class="text-xs text-gray-500" x-text="formatDate(currentFolder?.createdAt)"></p>
                                 </div>
                             </div>
 
@@ -70,7 +70,7 @@
                                 </div>
 
                                 {{-- Penerima --}}
-                                <template x-for="recipient in currentFolder.recipients" :key="recipient.id">
+                                <template x-for="recipient in currentFolder?.recipients" :key="recipient.id">
                                     <div class="relative group">
                                         <img :src="recipient.avatar" :alt="recipient.name" class="w-6 h-6 rounded-full">
                                         <div
