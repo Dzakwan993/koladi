@@ -1734,31 +1734,26 @@ export default function documentSearch() {
                 const data = await response.json();
                 console.log("✅ Add members response:", data);
 
+                // ✅ PERBAIKAN - Ganti setTimeout() dengan langsung replace
                 if (data.success && data.redirect_url) {
-                    // Reset modal state
                     this.openAddMemberModal = false;
                     this.searchMember = "";
                     this.selectAll = false;
 
-                    // Success alert
                     if (data.alert) {
                         showCustomSwal({
                             icon: data.alert.icon,
                             title: data.alert.title,
                             text: data.alert.text,
-                            timer: 2000,
+                            timer: 1500,
                             showConfirmButton: false,
                         });
                     }
 
-                    // Redirect
+                    // ✅ LANGSUNG REDIRECT TANPA RELOAD
                     setTimeout(() => {
-                        console.log(
-                            "📍 history.length BEFORE replace:",
-                            history.length
-                        );
-                        window.location.replace(data.redirect_url);
-                    }, 1500);
+                        window.location.href = data.redirect_url;
+                    }, 1000); // ⬅️ Kurangi delay jadi 1 detik
                 } else {
                     showCustomSwal({
                         icon: "error",
