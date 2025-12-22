@@ -248,10 +248,6 @@ class CalendarController extends Controller
             'members' => $members
         ]);
     }
-
-    /**
-     * ✅ BARU: Simpan Jadwal Umum
-     */
     public function companyStore(Request $request)
     {
         if (!$this->canCreateCompanySchedule()) {
@@ -265,17 +261,24 @@ class CalendarController extends Controller
             'end_datetime' => 'required|date|after:start_datetime',
             'recurrence' => 'nullable|string',
             'is_private' => 'nullable|boolean',
-            'meeting_mode' => 'required|in:online,offline', // ✅ TAMBAH VALIDASI
-            'meeting_link' => 'required_if:meeting_mode,online|nullable|url', // ✅ WAJIB JIKA ONLINE
-            'location' => 'required_if:meeting_mode,offline|nullable|string|max:255', // ✅ WAJIB JIKA OFFLINE
+            'meeting_mode' => 'required|in:online,offline',
+            'meeting_link' => 'required_if:meeting_mode,online|nullable|url',
+            'location' => 'required_if:meeting_mode,offline|nullable|string|max:255',
             'participants' => 'nullable|array',
             'participants.*' => 'uuid|exists:users,id',
         ]);
 
         DB::beginTransaction();
         try {
+            // ✅ FIXED: Dapatkan activeCompanyId di awal
+            $activeCompanyId = session('active_company_id');
+
+            if (!$activeCompanyId) {
+                return back()->with('error', 'Silakan pilih perusahaan terlebih dahulu.');
+            }
+
             $isPrivate = filter_var($validated['is_private'] ?? false, FILTER_VALIDATE_BOOLEAN);
-            $isOnlineMeeting = $validated['meeting_mode'] === 'online'; // ✅ DARI meeting_mode
+            $isOnlineMeeting = $validated['meeting_mode'] === 'online';
 
             $recurrence = $validated['recurrence'] ?? 'Jangan Ulangi';
             if ($recurrence === 'Jangan Ulangi') {
@@ -287,7 +290,7 @@ class CalendarController extends Controller
 
             $event = CalendarEvent::create([
                 'workspace_id' => null,
-                'company_id' => session('active_company_id'),
+                'company_id' => $activeCompanyId, // ✅ Gunakan variabel yang sudah didefinisikan
                 'created_by' => Auth::id(),
                 'title' => $validated['title'],
                 'description' => $validated['description'] ?? null,
@@ -296,33 +299,51 @@ class CalendarController extends Controller
                 'recurrence' => $recurrence,
                 'is_private' => $isPrivate,
                 'is_online_meeting' => $isOnlineMeeting,
-                'meeting_link' => $isOnlineMeeting ? ($validated['meeting_link'] ?? null) : null, // ✅ HANYA JIKA ONLINE
-                'location' => !$isOnlineMeeting ? ($validated['location'] ?? null) : null, // ✅ HANYA JIKA OFFLINE
+                'meeting_link' => $isOnlineMeeting ? ($validated['meeting_link'] ?? null) : null,
+                'location' => !$isOnlineMeeting ? ($validated['location'] ?? null) : null,
             ]);
 
-            // Creator langsung accepted
-            CalendarParticipant::create([
-                'event_id' => $event->id,
-                'user_id' => Auth::id(),
-                'status' => 'accepted',
-            ]);
+            // ✅ FIXED: Jika tidak rahasia, tambahkan semua anggota company
+            if (!$isPrivate) {
+                // Ambil semua user di company
+                $allCompanyUsers = User::whereHas('userCompanies', function ($query) use ($activeCompanyId) {
+                    $query->where('company_id', $activeCompanyId)
+                        ->whereNull('deleted_at');
+                })->pluck('id');
 
-            if (!empty($validated['participants'])) {
-                foreach ($validated['participants'] as $userId) {
-                    if ($userId !== Auth::id()) {
-                        CalendarParticipant::create([
-                            'event_id' => $event->id,
-                            'user_id' => $userId,
-                            'status' => 'accepted',
-                        ]);
+                // Tambahkan semua user sebagai participant
+                foreach ($allCompanyUsers as $userId) {
+                    CalendarParticipant::create([
+                        'event_id' => $event->id,
+                        'user_id' => $userId,
+                        'status' => 'accepted',
+                    ]);
+                }
+            } else {
+                // ✅ Jika rahasia, hanya creator dan yang dipilih
+                // Creator langsung accepted
+                CalendarParticipant::create([
+                    'event_id' => $event->id,
+                    'user_id' => Auth::id(),
+                    'status' => 'accepted',
+                ]);
+
+                if (!empty($validated['participants'])) {
+                    foreach ($validated['participants'] as $userId) {
+                        if ($userId !== Auth::id()) {
+                            CalendarParticipant::create([
+                                'event_id' => $event->id,
+                                'user_id' => $userId,
+                                'status' => 'accepted',
+                            ]);
+                        }
                     }
                 }
             }
 
             DB::commit();
 
-                        $this->notificationService->notifyEventCreated($event);
-
+            $this->notificationService->notifyEventCreated($event);
 
             return redirect()
                 ->route('jadwal-umum')
@@ -591,19 +612,47 @@ class CalendarController extends Controller
                 'location' => !$isOnlineMeeting ? ($validated['location'] ?? null) : null,
             ]);
 
-            if (isset($validated['participants'])) {
+            // ✅ FIXED: Handle participants berdasarkan privasi
+            if (!$isPrivate) {
+                // Jika tidak rahasia, hapus semua dan tambahkan ulang semua anggota
+                CalendarParticipant::where('event_id', $event->id)->delete();
+
+                $allCompanyUsers = User::whereHas('userCompanies', function ($query) use ($activeCompanyId) {
+                    $query->where('company_id', $activeCompanyId)
+                        ->whereNull('deleted_at');
+                })->pluck('id');
+
+                foreach ($allCompanyUsers as $userId) {
+                    CalendarParticipant::create([
+                        'event_id' => $event->id,
+                        'user_id' => $userId,
+                        'status' => 'accepted',
+                    ]);
+                }
+            } else {
+                // Jika rahasia, update sesuai pilihan
                 CalendarParticipant::where('event_id', $event->id)
                     ->where('user_id', '!=', $event->created_by)
                     ->delete();
 
-                foreach ($validated['participants'] as $userId) {
-                    if ($userId !== $event->created_by) {
-                        CalendarParticipant::firstOrCreate([
-                            'event_id' => $event->id,
-                            'user_id' => $userId,
-                        ], [
-                            'status' => 'accepted',
-                        ]);
+                // Pastikan creator tetap ada
+                CalendarParticipant::firstOrCreate([
+                    'event_id' => $event->id,
+                    'user_id' => $event->created_by,
+                ], [
+                    'status' => 'accepted',
+                ]);
+
+                if (isset($validated['participants'])) {
+                    foreach ($validated['participants'] as $userId) {
+                        if ($userId !== $event->created_by) {
+                            CalendarParticipant::firstOrCreate([
+                                'event_id' => $event->id,
+                                'user_id' => $userId,
+                            ], [
+                                'status' => 'accepted',
+                            ]);
+                        }
                     }
                 }
             }
@@ -816,28 +865,46 @@ class CalendarController extends Controller
                 'location' => !$isOnlineMeeting ? ($validated['location'] ?? null) : null,
             ]);
 
-            // Creator langsung accepted
-            CalendarParticipant::create([
-                'event_id' => $event->id,
-                'user_id' => Auth::id(),
-                'status' => 'accepted',
-            ]);
+            // ✅ FIXED: Jika tidak rahasia, tambahkan semua anggota workspace
+            if (!$isPrivate) {
+                // Ambil semua user di workspace
+                $allWorkspaceUsers = UserWorkspace::where('workspace_id', $workspaceId)
+                    ->where('status_active', true)
+                    ->pluck('user_id');
 
-            if (!empty($validated['participants'])) {
-                foreach ($validated['participants'] as $userId) {
-                    if ($userId !== Auth::id()) {
-                        CalendarParticipant::create([
-                            'event_id' => $event->id,
-                            'user_id' => $userId,
-                            'status' => 'accepted',
-                        ]);
+                // Tambahkan semua user sebagai participant
+                foreach ($allWorkspaceUsers as $userId) {
+                    CalendarParticipant::create([
+                        'event_id' => $event->id,
+                        'user_id' => $userId,
+                        'status' => 'accepted',
+                    ]);
+                }
+            } else {
+                // ✅ Jika rahasia, hanya creator dan yang dipilih
+                // Creator langsung accepted
+                CalendarParticipant::create([
+                    'event_id' => $event->id,
+                    'user_id' => Auth::id(),
+                    'status' => 'accepted',
+                ]);
+
+                if (!empty($validated['participants'])) {
+                    foreach ($validated['participants'] as $userId) {
+                        if ($userId !== Auth::id()) {
+                            CalendarParticipant::create([
+                                'event_id' => $event->id,
+                                'user_id' => $userId,
+                                'status' => 'accepted',
+                            ]);
+                        }
                     }
                 }
             }
 
             DB::commit();
 
-                        $this->notificationService->notifyEventCreated($event);
+            $this->notificationService->notifyEventCreated($event);
 
 
             return redirect()
@@ -1122,19 +1189,46 @@ class CalendarController extends Controller
                 'location' => !$isOnlineMeeting ? ($validated['location'] ?? null) : null,
             ]);
 
-            if (isset($validated['participants'])) {
+            // ✅ FIXED: Handle participants berdasarkan privasi
+            if (!$isPrivate) {
+                // Jika tidak rahasia, hapus semua dan tambahkan ulang semua anggota workspace
+                CalendarParticipant::where('event_id', $event->id)->delete();
+
+                $allWorkspaceUsers = UserWorkspace::where('workspace_id', $workspaceId)
+                    ->where('status_active', true)
+                    ->pluck('user_id');
+
+                foreach ($allWorkspaceUsers as $userId) {
+                    CalendarParticipant::create([
+                        'event_id' => $event->id,
+                        'user_id' => $userId,
+                        'status' => 'accepted',
+                    ]);
+                }
+            } else {
+                // Jika rahasia, update sesuai pilihan
                 CalendarParticipant::where('event_id', $event->id)
                     ->where('user_id', '!=', $event->created_by)
                     ->delete();
 
-                foreach ($validated['participants'] as $userId) {
-                    if ($userId !== $event->created_by) {
-                        CalendarParticipant::firstOrCreate([
-                            'event_id' => $event->id,
-                            'user_id' => $userId,
-                        ], [
-                            'status' => 'accepted',
-                        ]);
+                // Pastikan creator tetap ada
+                CalendarParticipant::firstOrCreate([
+                    'event_id' => $event->id,
+                    'user_id' => $event->created_by,
+                ], [
+                    'status' => 'accepted',
+                ]);
+
+                if (isset($validated['participants'])) {
+                    foreach ($validated['participants'] as $userId) {
+                        if ($userId !== $event->created_by) {
+                            CalendarParticipant::firstOrCreate([
+                                'event_id' => $event->id,
+                                'user_id' => $userId,
+                            ], [
+                                'status' => 'accepted',
+                            ]);
+                        }
                     }
                 }
             }
