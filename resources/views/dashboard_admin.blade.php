@@ -68,7 +68,7 @@
     </aside>
 
     <!-- MAIN CONTENT WRAPPER -->
-    <div class="flex-1 ml-64">
+    <div class="flex-1 ml-64 flex flex-col min-h-screen">
         <!-- TOPBAR -->
         <header class="bg-white shadow-md py-4 px-6 flex justify-between items-center border-b sticky top-0 z-10">
             <div class="flex items-center gap-4">
@@ -105,7 +105,7 @@
         </header>
 
         <!-- MAIN CONTENT AREA -->
-        <main class="p-4 md:p-8">
+        <main class="p-4 md:p-8 flex-1">
             <!-- Dashboard Content (Default) -->
             <div id="dashboard-content" class="content-section active">
                 <!-- SUMMARY CARDS -->
@@ -961,162 +961,137 @@
 
             <!-- Feedback Content -->
             <div id="feedback-content" class="content-section hidden">
-                <div class="space-y-6">
-                    {{-- Header --}}
-                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-md border border-green-100">
-                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                            <div>
-                                <h2 class="text-xl font-bold text-green-700 flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20"
-                                        fill="currentColor">
-                                        <path fill-rule="evenodd"
-                                            d="M18 13V5a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2h3l3 3 3-3h3a2 2 0 002-2zM5 7a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm1 3a1 1 0 100 2h3a1 1 0 100-2H6z"
-                                            clip-rule="evenodd" />
-                                    </svg>
-                                    Feedback & Masukan Pengguna
-                                </h2>
-                                <p class="text-sm text-gray-500 mt-1">Kelola semua feedback dari pengguna sistem</p>
+                {{-- Header --}}
+                <div class="bg-white p-4 md:p-6 rounded-xl shadow-md border mb-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-green-700 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600"
+                                    viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M18 13V5a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2h3l3 3 3-3h3a2 2 0 002-2zM5 7a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm1 3a1 1 0 100 2h3a1 1 0 100-2H6z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                Feedback & Masukan Pengguna
+                            </h2>
+                            <p class="text-sm text-gray-500 mt-1">Kelola semua feedback dari pengguna sistem</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs bg-green-100 px-3 py-1.5 rounded-full font-medium text-green-700">
+                                Total: {{ $feedbacks->total() }} feedback
+                            </span>
+                            <button onclick="window.location.reload()"
+                                class="text-green-600 hover:text-green-800 text-sm font-medium flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20"
+                                    fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Feedback List --}}
+                <div class="bg-white rounded-xl shadow-md border mb-8">
+                    @forelse($feedbacks as $feedback)
+                        <div class="p-4 md:p-6 border-b last:border-b-0 hover:bg-gray-50 transition">
+                            {{-- Header: Nama, Email, Waktu --}}
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-600"
+                                            viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd"
+                                                d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                                clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-gray-900">
+                                            {{ $feedback->name ?: 'Anonim' }}</h3>
+                                        @if ($feedback->email)
+                                            <a href="mailto:{{ $feedback->email }}"
+                                                class="text-sm text-blue-600 hover:underline">
+                                                {{ $feedback->email }}
+                                            </a>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="text-right text-xs text-gray-500 flex-shrink-0">
+                                    <div class="font-medium">{{ $feedback->created_at->format('d M Y, H:i') }}</div>
+                                    <div class="text-gray-400">{{ $feedback->created_at->diffForHumans() }}</div>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-3">
-                                <span class="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full font-medium">
-                                    Total: {{ $feedbacks->total() }} feedback
-                                </span>
-                                <button onclick="window.location.reload()"
-                                    class="text-green-600 hover:text-green-800 text-sm font-medium flex items-center gap-1">
+
+                            {{-- Pesan --}}
+                            <div class="bg-gray-50 rounded-lg p-4 mb-3 text-sm text-gray-700 leading-relaxed">
+                                {{ $feedback->message }}
+                            </div>
+
+                            {{-- Action Buttons --}}
+                            <div class="flex gap-2">
+                                @if ($feedback->email)
+                                    <a href="mailto:{{ $feedback->email }}"
+                                        class="text-xs bg-blue-50 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-100 transition font-medium inline-flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20"
+                                            fill="currentColor">
+                                            <path
+                                                d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                        </svg>
+                                        Balas Email
+                                    </a>
+                                @endif
+                                <button onclick="deleteFeedback({{ $feedback->id }})"
+                                    class="text-xs bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition font-medium inline-flex items-center gap-2">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20"
                                         fill="currentColor">
                                         <path fill-rule="evenodd"
-                                            d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
                                             clip-rule="evenodd" />
                                     </svg>
-                                    Refresh
+                                    Hapus
                                 </button>
                             </div>
                         </div>
-                    </div>
-
-                    {{-- Feedback List --}}
-                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-md border">
-                        @forelse($feedbacks as $feedback)
+                    @empty
+                        <div class="text-center py-16">
                             <div
-                                class="border-b border-gray-200 last:border-b-0 py-4 hover:bg-gray-50 transition rounded-lg px-4">
-                                <div class="flex flex-col md:flex-row justify-between gap-4">
-                                    {{-- Info Pengirim --}}
-                                    <div class="flex items-start gap-4 flex-1">
-                                        <div class="bg-green-100 p-3 rounded-full flex-shrink-0">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600"
-                                                viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd"
-                                                    d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                                                    clip-rule="evenodd" />
-                                            </svg>
-                                        </div>
-                                        <div class="flex-1 min-w-0">
-                                            <div class="flex flex-col md:flex-row md:items-center gap-2 mb-2">
-                                                <h3 class="font-bold text-gray-900">
-                                                    {{ $feedback->name ?: 'Anonim' }}
-                                                </h3>
-                                                @if ($feedback->email)
-                                                    <a href="mailto:{{ $feedback->email }}"
-                                                        class="text-sm text-blue-600 hover:underline flex items-center gap-1">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
-                                                            viewBox="0 0 20 20" fill="currentColor">
-                                                            <path
-                                                                d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                                                            <path
-                                                                d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                                                        </svg>
-                                                        {{ $feedback->email }}
-                                                    </a>
-                                                @endif
-                                            </div>
-
-                                            {{-- Pesan --}}
-                                            <div class="bg-gray-50 rounded-lg p-4 border-l-4 border-green-500">
-                                                <p class="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
-                                                    {{ $feedback->message }}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {{-- Waktu & Actions --}}
-                                    <div class="flex flex-col items-end gap-2 flex-shrink-0">
-                                        <div class="text-right">
-                                            <p class="text-xs text-gray-400">
-                                                {{ $feedback->created_at->format('d M Y') }}
-                                            </p>
-                                            <p class="text-xs text-gray-500 font-medium">
-                                                {{ $feedback->created_at->format('H:i') }}
-                                            </p>
-                                            <p class="text-xs text-gray-400 italic">
-                                                {{ $feedback->created_at->diffForHumans() }}
-                                            </p>
-                                        </div>
-
-                                        {{-- Action Buttons --}}
-                                        <div class="flex gap-2">
-                                            @if ($feedback->email)
-                                                <a href="mailto:{{ $feedback->email }}"
-                                                    class="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition font-medium inline-flex items-center gap-1">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3"
-                                                        viewBox="0 0 20 20" fill="currentColor">
-                                                        <path
-                                                            d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                                                        <path
-                                                            d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                                                    </svg>
-                                                    Balas
-                                                </a>
-                                            @endif
-                                            <button onclick="deleteFeedback({{ $feedback->id }})"
-                                                class="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 transition font-medium inline-flex items-center gap-1">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3"
-                                                    viewBox="0 0 20 20" fill="currentColor">
-                                                    <path fill-rule="evenodd"
-                                                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                                                        clip-rule="evenodd" />
-                                                </svg>
-                                                Hapus
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400"
+                                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                </svg>
                             </div>
-                        @empty
-                            <div class="text-center py-12">
-                                <div
-                                    class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400"
-                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                                    </svg>
-                                </div>
-                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Belum Ada Feedback</h3>
-                                <p class="text-gray-500">Feedback dari pengguna akan muncul di sini.</p>
-                            </div>
-                        @endforelse
+                            <h3 class="text-xl font-bold text-gray-700 mb-2">Belum Ada Feedback</h3>
+                            <p class="text-gray-500">Feedback dari pengguna akan muncul di sini.</p>
+                        </div>
+                    @endforelse
 
-                        {{-- Pagination --}}
-                        @if ($feedbacks->hasPages())
-                            <div
-                                class="mt-6 flex flex-col sm:flex-row justify-between items-center gap-3 pt-4 border-t">
-                                <div class="text-sm text-gray-600">
-                                    Menampilkan {{ $feedbacks->firstItem() }} - {{ $feedbacks->lastItem() }}
-                                    dari {{ $feedbacks->total() }} feedback
-                                </div>
-                                <div class="flex gap-2">
-                                    {{ $feedbacks->links('pagination::tailwind') }}
-                                </div>
+                    {{-- Pagination --}}
+                    @if ($feedbacks->hasPages())
+                        <div
+                            class="p-4 md:p-6 bg-gray-50 border-t flex flex-col sm:flex-row justify-between items-center gap-3">
+                            <div class="text-sm text-gray-600">
+                                Menampilkan {{ $feedbacks->firstItem() }} - {{ $feedbacks->lastItem() }} dari
+                                {{ $feedbacks->total() }} feedback
                             </div>
-                        @endif
-                    </div>
+                            <div class="flex gap-2">
+                                {{ $feedbacks->links('pagination::tailwind') }}
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </main>
 
         <!-- FOOTER -->
-        <footer class="bg-white border-t py-4 px-6">
+        <footer class="bg-white py-4 px-6 mt-auto border-t">
             <div class="flex flex-col md:flex-row justify-between items-center text-sm text-gray-500 gap-4">
                 <div>
                     &copy; {{ date('Y') }} Koladi. All rights reserved.
@@ -1263,9 +1238,9 @@
     </div>
 
     <style>
+        /* Tambahkan atau update CSS ini */
         .sidebar-menu.active>div {
             background-color: #1e40af;
-            /* bg-blue-700 */
         }
 
         .content-section {
@@ -1276,6 +1251,14 @@
             display: block;
         }
 
+        /* Pastikan body dan html menggunakan flexbox */
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        /* Untuk mobile responsive */
         @media (max-width: 768px) {
             aside {
                 transform: translateX(-100%);
@@ -1697,8 +1680,10 @@
             }
         });
 
-        // Fungsi untuk delete feedback
+        // Fungsi untuk delete feedback dengan SweetAlert2 + DEBUG
         async function deleteFeedback(id) {
+            console.log('🔍 Attempting to delete feedback ID:', id);
+
             const result = await Swal.fire({
                 title: 'Hapus Feedback?',
                 text: 'Feedback ini akan dihapus permanen!',
@@ -1720,7 +1705,11 @@
                 });
 
                 try {
-                    const response = await fetch(`/admin/feedbacks/${id}`, {
+                    // ✅ URL yang BENAR karena sudah ada prefix 'admin'
+                    const url = `/admin/feedbacks/${id}`;
+                    console.log('📡 Fetching URL:', url);
+
+                    const response = await fetch(url, {
                         method: 'DELETE',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1729,16 +1718,28 @@
                         }
                     });
 
+                    console.log('📥 Response status:', response.status);
+                    console.log('📥 Response ok:', response.ok);
+
+                    // Cek apakah response OK
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('❌ Response not OK:', errorText);
+                        throw new Error(`HTTP ${response.status}: ${errorText}`);
+                    }
+
                     const data = await response.json();
+                    console.log('✅ Response data:', data);
 
                     if (data.success) {
                         await Swal.fire('Berhasil!', data.message, 'success');
                         window.location.reload();
                     } else {
-                        Swal.fire('Gagal!', data.message, 'error');
+                        Swal.fire('Gagal!', data.message || 'Terjadi kesalahan', 'error');
                     }
                 } catch (error) {
-                    Swal.fire('Error!', 'Terjadi kesalahan sistem.', 'error');
+                    console.error('❌ Error:', error);
+                    Swal.fire('Error!', error.message || 'Terjadi kesalahan sistem.', 'error');
                 }
             }
         }
