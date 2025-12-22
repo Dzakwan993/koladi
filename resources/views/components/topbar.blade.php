@@ -220,7 +220,7 @@
                         </div>
 
                         <!-- Filter Tabs -->
-                        <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                        <div class="flex gap-2 overflow-x-auto pb-3 tabs-scrollbar">
                             <template x-for="tab in tabs" :key="tab.id">
                                 <button @click="activeTab = tab.id"
                                     class="px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all"
@@ -360,6 +360,30 @@
 
         <!-- Add this to your layout head -->
         <style>
+            /* Custom Scrollbar untuk Filter Tabs */
+            .tabs-scrollbar {
+                scrollbar-width: thin;
+                scrollbar-color: #225ad6 #e5e7eb;
+            }
+
+            .tabs-scrollbar::-webkit-scrollbar {
+                height: 6px;
+            }
+
+            .tabs-scrollbar::-webkit-scrollbar-track {
+                background: #e5e7eb;
+                border-radius: 10px;
+            }
+
+            .tabs-scrollbar::-webkit-scrollbar-thumb {
+                background: #225ad6;
+                border-radius: 10px;
+            }
+
+            .tabs-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: #1d4cc1;
+            }
+
             .scrollbar-hide::-webkit-scrollbar {
                 display: none;
             }
