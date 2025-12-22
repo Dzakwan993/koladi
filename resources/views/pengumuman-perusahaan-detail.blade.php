@@ -80,43 +80,51 @@
                             </div>
                         </div>
 
+                        {{-- menu aki --}}
+                        @php
+                            $roleInCompany = strtolower(auth()->user()->getRoleName($company_id) ?? 'member');
+                        @endphp
+
+
                         <!-- Menu Aksi -->
-                        <div x-data="{ open: false }" class="relative">
-                            <button @click="open = !open" @click.away="open = false"
-                                class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path
-                                        d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                                </svg>
-                            </button>
-
-                            <div x-show="open" x-transition.scale.origin.top.right
-                                class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50">
-                                <button
-                                    onclick="@if ($pengumuman->created_by == Auth::id()) openEditModal('{{ $pengumuman->id }}'); @else alert('Anda tidak memiliki akses!'); @endif"
-                                    class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-50 rounded-lg transition text-left">
-                                    <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        @if ($roleInCompany !== 'member')
+                            <div x-data="{ open: false }" class="relative">
+                                <button @click="open = !open" @click.away="open = false"
+                                    class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path
+                                            d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                                     </svg>
-                                    <span class="text-gray-700 font-medium">Edit</span>
                                 </button>
 
-                                <hr class="my-1 border-gray-200">
+                                <div x-show="open" x-transition.scale.origin.top.right
+                                    class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-xl shadow-lg p-2 z-50">
+                                    <button
+                                        onclick="@if ($pengumuman->created_by == Auth::id()) openEditModal('{{ $pengumuman->id }}'); @else alert('Anda tidak memiliki akses!'); @endif"
+                                        class="flex items-center gap-3 w-full px-3 py-2 hover:bg-gray-50 rounded-lg transition text-left">
+                                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                        <span class="text-gray-700 font-medium">Edit</span>
+                                    </button>
 
-                                <button
-                                    onclick="@if ($pengumuman->created_by == Auth::id()) deletePengumuman('{{ $pengumuman->id }}'); @else alert('Anda tidak memiliki akses!'); @endif"
-                                    class="flex items-center gap-3 w-full px-3 py-2 hover:bg-red-50 rounded-lg transition text-left">
-                                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                    <span class="text-red-600 font-medium">Hapus</span>
-                                </button>
+                                    <hr class="my-1 border-gray-200">
+
+                                    <button
+                                        onclick="@if ($pengumuman->created_by == Auth::id()) deletePengumuman('{{ $pengumuman->id }}'); @else alert('Anda tidak memiliki akses!'); @endif"
+                                        class="flex items-center gap-3 w-full px-3 py-2 hover:bg-red-50 rounded-lg transition text-left">
+                                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        <span class="text-red-600 font-medium">Hapus</span>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                        @endif
                     </div>
                 </div>
 
@@ -1824,4 +1832,46 @@
             });
         }
     </script>
+    <style>
+    /* Biar konten CKEditor ga overflow */
+    .ck-content,
+    .deskripsi-pengumuman,
+    .comment-text {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    /* FIX: gambar/video/iframe di dalam konten jadi responsif */
+    .ck-content img,
+    .deskripsi-pengumuman img,
+    .comment-text img {
+        max-width: 100% !important;
+        height: auto !important;
+        display: block;
+    }
+
+    /* CKEditor sering bungkus image pakai figure */
+    .ck-content figure.image,
+    .deskripsi-pengumuman figure.image,
+    .comment-text figure.image {
+        max-width: 100% !important;
+        margin: 0.75rem auto;
+    }
+
+    /* kalau gambar ada style width dari CKEditor, paksa tetap aman */
+    .ck-content figure.image img,
+    .deskripsi-pengumuman figure.image img,
+    .comment-text figure.image img {
+        width: 100% !important;
+        height: auto !important;
+    }
+
+    /* opsional: biar gak “keluar” dari card */
+    .prose,
+    .deskripsi-pengumuman,
+    .comment-text {
+        overflow: hidden;
+    }
+</style>
+
 @endsection

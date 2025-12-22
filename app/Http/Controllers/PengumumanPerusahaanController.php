@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Attachment;
 use App\Models\Company;
 use App\Models\Pengumuman;
+use App\Models\Role;
 use App\Models\Workspace;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -23,8 +24,8 @@ class PengumumanPerusahaanController extends Controller
         if (Auth::check()) {
             $user = Auth::user();
             $userTimezone = $user->timezone ??
-                           request()->cookie('user_timezone') ??
-                           config('app.timezone');
+                request()->cookie('user_timezone') ??
+                config('app.timezone');
 
             // Set timezone
             config(['app.timezone' => $userTimezone]);
@@ -35,6 +36,43 @@ class PengumumanPerusahaanController extends Controller
 
         return config('app.timezone');
     }
+
+    /**
+     * Ambil role user di company tertentu (role ada di pivot company_user.role)
+     */
+    private function getRoleInCompany($user, $company_id): string
+    {
+        // Ambil roles_id dari pivot user_companies
+        $rolesId = $user->companies()
+            ->where('companies.id', $company_id)
+            ->first()
+            ?->pivot
+            ?->roles_id;
+
+        // Kalau gak ketemu, paling aman anggap member
+        if (!$rolesId) return 'member';
+
+        // Ambil nama role dari tabel roles
+        $roleName = Role::where('id', $rolesId)->value('name');
+
+        return strtolower($roleName ?? 'member');
+    }
+
+
+
+    /**
+     * Cegah member melakukan aksi kelola pengumuman
+     */
+    private function ensureNotMember($user, $company_id): void
+    {
+        $roleName = $this->getRoleInCompany($user, $company_id);
+
+        if ($roleName === 'member') {
+            abort(403, 'Member tidak diizinkan membuat / mengubah / menghapus pengumuman');
+        }
+    }
+
+
 
     /**
      * Menampilkan semua pengumuman dalam satu perusahaan
@@ -89,6 +127,8 @@ class PengumumanPerusahaanController extends Controller
         if (!$user->companies->contains($company_id)) {
             abort(403, 'Unauthorized access to this company');
         }
+
+        $this->ensureNotMember($user, $company_id);
 
         $request->validate([
             'title' => 'required|string',
@@ -237,6 +277,8 @@ class PengumumanPerusahaanController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        $this->ensureNotMember($user, $company_id);
+
         $pengumuman = Pengumuman::findOrFail($id);
 
         // Validasi pengumuman belong to company
@@ -298,6 +340,7 @@ class PengumumanPerusahaanController extends Controller
         if (!$user->companies->contains($company_id)) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
+        $this->ensureNotMember($user, $company_id);
 
         $request->validate([
             'title' => 'required|string',
@@ -380,116 +423,118 @@ class PengumumanPerusahaanController extends Controller
      * Hapus pengumuman perusahaan
      */
     public function destroy($company_id, $id)
-{
-    $user = Auth::user();
+    {
+        $user = Auth::user();
 
-    if (!$user->companies->contains($company_id)) {
-        return response()->json(['error' => 'Unauthorized'], 403);
-    }
-
-    $pengumuman = Pengumuman::findOrFail($id);
-
-    if ($pengumuman->company_id != $company_id) {
-        return response()->json(['error' => 'Pengumuman tidak ditemukan'], 404);
-    }
-
-    if (!$pengumuman->isVisibleTo($user)) {
-        return response()->json(['error' => 'Unauthorized access to this announcement'], 403);
-    }
-
-    if ($pengumuman->created_by !== $user->id) {
-        return response()->json(['error' => 'Unauthorized'], 403);
-    }
-
-    DB::beginTransaction();
-
-    try {
-        $pengumuman->recipients()->detach();
-
-        // 1. Kumpulkan SEMUA URL file yang akan dihapus
-        $filesToDelete = [];
-
-        // A. Dari tabel attachments
-        $attachments = Attachment::where('attachable_type', 'App\\Models\\Pengumuman')
-            ->where('attachable_id', $pengumuman->id)
-            ->get();
-
-        foreach ($attachments as $attachment) {
-            $filesToDelete[] = $attachment->file_url;
+        if (!$user->companies->contains($company_id)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // B. Dari description (CKEditor content)
-        if (!empty($pengumuman->description)) {
-            preg_match_all('/(\/storage\/uploads\/(files|images)\/[^\s"\'<>]+)/i', $pengumuman->description, $matches);
+        $this->ensureNotMember($user, $company_id);
 
-            if (!empty($matches[1])) {
-                foreach ($matches[1] as $fileUrl) {
-                    $fullUrl = Str::startsWith($fileUrl, 'http') ? $fileUrl : url($fileUrl);
-                    $filesToDelete[] = $fullUrl;
+        $pengumuman = Pengumuman::findOrFail($id);
+
+        if ($pengumuman->company_id != $company_id) {
+            return response()->json(['error' => 'Pengumuman tidak ditemukan'], 404);
+        }
+
+        if (!$pengumuman->isVisibleTo($user)) {
+            return response()->json(['error' => 'Unauthorized access to this announcement'], 403);
+        }
+
+        if ($pengumuman->created_by !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $pengumuman->recipients()->detach();
+
+            // 1. Kumpulkan SEMUA URL file yang akan dihapus
+            $filesToDelete = [];
+
+            // A. Dari tabel attachments
+            $attachments = Attachment::where('attachable_type', 'App\\Models\\Pengumuman')
+                ->where('attachable_id', $pengumuman->id)
+                ->get();
+
+            foreach ($attachments as $attachment) {
+                $filesToDelete[] = $attachment->file_url;
+            }
+
+            // B. Dari description (CKEditor content)
+            if (!empty($pengumuman->description)) {
+                preg_match_all('/(\/storage\/uploads\/(files|images)\/[^\s"\'<>]+)/i', $pengumuman->description, $matches);
+
+                if (!empty($matches[1])) {
+                    foreach ($matches[1] as $fileUrl) {
+                        $fullUrl = Str::startsWith($fileUrl, 'http') ? $fileUrl : url($fileUrl);
+                        $filesToDelete[] = $fullUrl;
+                    }
                 }
             }
+
+            // 2. Hapus file HANYA jika tidak digunakan oleh pengumuman lain
+            $filesToDelete = array_unique($filesToDelete);
+
+            foreach ($filesToDelete as $fileUrl) {
+                $fileName = basename($fileUrl);
+
+                // CEK 1: Apakah file ini ada di attachments pengumuman lain?
+                $usedInAttachments = Attachment::where('attachable_type', 'App\\Models\\Pengumuman')
+                    ->where('attachable_id', '!=', $pengumuman->id)
+                    ->where('file_url', 'like', '%' . $fileName)
+                    ->exists();
+
+                // CEK 2: Apakah file ini ada di description pengumuman lain?
+                $usedInDescription = Pengumuman::where('id', '!=', $pengumuman->id)
+                    ->where('description', 'like', '%' . $fileName . '%')
+                    ->exists();
+
+                // Jika file masih digunakan di pengumuman lain (baik di attachments ATAU description)
+                if ($usedInAttachments || $usedInDescription) {
+                    // SKIP - jangan hapus file
+                    continue;
+                }
+
+                // File tidak digunakan lagi, aman untuk dihapus
+                $relativePath = null;
+                if (Str::contains($fileUrl, '/storage/uploads/files/')) {
+                    $relativePath = 'uploads/files/' . $fileName;
+                } elseif (Str::contains($fileUrl, '/storage/uploads/images/')) {
+                    $relativePath = 'uploads/images/' . $fileName;
+                }
+
+                if ($relativePath && Storage::disk('public')->exists($relativePath)) {
+                    Storage::disk('public')->delete($relativePath);
+                }
+            }
+
+            // 3. Hapus record attachments dari database
+            Attachment::where('attachable_type', 'App\\Models\\Pengumuman')
+                ->where('attachable_id', $pengumuman->id)
+                ->delete();
+
+            // 4. Hapus comments
+            $pengumuman->comments()->delete();
+
+            // 5. Soft delete pengumuman
+            $pengumuman->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pengumuman perusahaan berhasil dihapus.',
+                'redirect_url' => route('pengumuman-perusahaan.index', $company_id)
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $th->getMessage()
+            ], 500);
         }
-
-        // 2. Hapus file HANYA jika tidak digunakan oleh pengumuman lain
-        $filesToDelete = array_unique($filesToDelete);
-
-        foreach ($filesToDelete as $fileUrl) {
-            $fileName = basename($fileUrl);
-
-            // CEK 1: Apakah file ini ada di attachments pengumuman lain?
-            $usedInAttachments = Attachment::where('attachable_type', 'App\\Models\\Pengumuman')
-                ->where('attachable_id', '!=', $pengumuman->id)
-                ->where('file_url', 'like', '%' . $fileName)
-                ->exists();
-
-            // CEK 2: Apakah file ini ada di description pengumuman lain?
-            $usedInDescription = Pengumuman::where('id', '!=', $pengumuman->id)
-                ->where('description', 'like', '%' . $fileName . '%')
-                ->exists();
-
-            // Jika file masih digunakan di pengumuman lain (baik di attachments ATAU description)
-            if ($usedInAttachments || $usedInDescription) {
-                // SKIP - jangan hapus file
-                continue;
-            }
-
-            // File tidak digunakan lagi, aman untuk dihapus
-            $relativePath = null;
-            if (Str::contains($fileUrl, '/storage/uploads/files/')) {
-                $relativePath = 'uploads/files/' . $fileName;
-            } elseif (Str::contains($fileUrl, '/storage/uploads/images/')) {
-                $relativePath = 'uploads/images/' . $fileName;
-            }
-
-            if ($relativePath && Storage::disk('public')->exists($relativePath)) {
-                Storage::disk('public')->delete($relativePath);
-            }
-        }
-
-        // 3. Hapus record attachments dari database
-        Attachment::where('attachable_type', 'App\\Models\\Pengumuman')
-            ->where('attachable_id', $pengumuman->id)
-            ->delete();
-
-        // 4. Hapus comments
-        $pengumuman->comments()->delete();
-
-        // 5. Soft delete pengumuman
-        $pengumuman->delete();
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Pengumuman perusahaan berhasil dihapus.',
-            'redirect_url' => route('pengumuman-perusahaan.index', $company_id)
-        ]);
-    } catch (\Throwable $th) {
-        DB::rollBack();
-        return response()->json([
-            'success' => false,
-            'message' => 'Terjadi kesalahan: ' . $th->getMessage()
-        ], 500);
     }
-}
 }
