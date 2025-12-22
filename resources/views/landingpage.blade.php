@@ -368,6 +368,266 @@
         </div>
     </section>
 
+    <!-- AI Decision Support (Creative / Premium) -->
+    <section class="py-20 bg-white relative overflow-hidden">
+        <!-- premium background -->
+        <div class="absolute inset-0 pointer-events-none">
+            <div
+                class="absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-gradient-to-tr from-blue-500/15 via-purple-500/10 to-red-500/10 rounded-full blur-3xl">
+            </div>
+
+            <!-- subtle grid -->
+            <div
+                class="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] [background-size:48px_48px]">
+            </div>
+
+            <!-- floating accents -->
+            <div class="absolute top-24 left-10 w-24 h-24 rounded-3xl bg-blue-500/10 blur-xl"></div>
+            <div class="absolute bottom-24 right-10 w-28 h-28 rounded-3xl bg-red-500/10 blur-xl"></div>
+        </div>
+
+        <div class="container mx-auto px-4 lg:px-8 relative z-10">
+            <div class="max-w-6xl mx-auto">
+                <!-- header -->
+                <div class="text-center mb-10">
+                    <div
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-blue-200 bg-white/70 backdrop-blur-xl shadow-sm">
+                        <span class="text-base">✨</span>
+                        <span class="text-sm font-extrabold text-slate-900">Koladi AI </span>
+                        <span class="px-2 py-0.5 rounded-full text-[12px] font-black bg-blue-600 text-white">DSS</span>
+                    </div>
+
+                    <h3 class="mt-4 text-3xl md:text-5xl font-extrabold text-slate-900 leading-tight">
+                        Tapi...Ada Masalah Yang <span class="text-red-600">Lebih Berbahaya!!</span> <br>
+
+                        <span class="relative inline-block mt-4">
+                            <!-- Teks -->
+                            <span class="relative z-10 text-white drop-shadow-[0_0_20px_rgba(220,38,38,0.6)]">
+                                "Tim Berkerja Tanpa Arah"
+                            </span>
+
+                            <!-- Highlight penuh: merah solid, cerah -->
+                            <span class="absolute inset-0 z-0 bg-red-600"></span>
+
+                            <!-- Glow luar -->
+                            <span class="absolute -inset-1 z-0 bg-red-600 blur-md opacity-50"></span>
+                        </span>
+                    </h3>
+
+                    <p class="mt-4 text-base md:text-lg text-slate-700 max-w-3xl mx-auto leading-relaxed">
+                        Risiko terbesar bukan teknis, tapi
+                        <span
+                            class="text-slate-900 font-semibold px-2 bg-red-600/15 drop-shadow-[0_0_14px_rgba(220,38,38,0.35)]">tim
+                            tanpa arah</span>
+                        dan
+                        <span
+                            class="text-slate-900 font-semibold px-2 bg-red-600/15 drop-shadow-[0_0_14px_rgba(220,38,38,0.35)]">keputusan
+                            tanpa data</span>.
+                    </p>
+                </div>
+
+                <!-- Koladi · AI Decision Support Card (padat, 3 card sejajar) -->
+                <div
+                    class="relative overflow-hidden rounded-[28px] border border-slate-200 bg-white/70 backdrop-blur-2xl shadow-[0_20px_70px_rgba(15,23,42,0.12)]">
+                    <!-- top accent -->
+                    <div class="absolute inset-x-0 top-0 h-1 bg-blue-600"></div>
+
+                    <div class="p-6 md:p-10">
+                        <div class="grid lg:grid-cols-12 gap-8 items-start">
+                            <!-- Left: message + 3 feature cards sejajar -->
+                            <div class="lg:col-span-7">
+                                <!-- label -->
+                                <div class="flex items-center gap-3">
+                                    <span
+                                        class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md">
+                                        🤖
+                                    </span>
+                                    <div class="leading-tight">
+                                        <p class="text-sm font-extrabold text-slate-900">Koladi • AI Decision Support
+                                        </p>
+                                        <p class="text-xs font-medium text-slate-500">
+                                            Aktivitas tim → insight → keputusan
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- headline -->
+                                <h4 class="mt-5 text-2xl md:text-3xl font-extrabold text-slate-900 leading-tight">
+                                    Koladi mengubah aktivitas kerja menjadi <span class="text-blue-700">insight</span>
+                                    yang siap dipakai.
+                                </h4>
+
+                                <p class="mt-3 text-slate-700 leading-relaxed">
+                                    Lihat risiko lebih cepat—sebelum deadline molor dan performa turun.
+                                </p>
+
+                                <!-- proof line -->
+                                <div class="mt-5 rounded-2xl border border-blue-200/80 bg-blue-50 p-4">
+                                    <p class="text-slate-900 font-extrabold">
+                                        Keputusan bukan perasaan —
+                                        <span class="text-blue-700">berdasarkan data kerja nyata.</span>
+                                    </p>
+                                    <p class="mt-1 text-sm text-slate-600 font-medium">
+                                        Ringkas, jelas, dan langsung bisa ditindaklanjuti.
+                                    </p>
+                                </div>
+
+                                <!-- 3 feature cards sejajar -->
+                                <div class="mt-6 grid sm:grid-cols-3 gap-4">
+                                    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                        <div class="flex items-center gap-2">
+                                            <span
+                                                class="h-9 w-9 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-sm">
+                                                ✴️
+                                            </span>
+                                            <div class="leading-tight">
+                                                <p class="text-sm font-extrabold text-slate-900">Pola Kerja</p>
+                                                <p class="text-[11px] font-semibold text-slate-500">Ritme & kebiasaan
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <p class="mt-3 text-[13px] text-slate-700 leading-relaxed">
+                                            Baca pola yang tidak terlihat dari aktivitas harian.
+                                        </p>
+                                    </div>
+
+                                    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                        <div class="flex items-center gap-2">
+                                            <span
+                                                class="h-9 w-9 rounded-2xl bg-slate-800 text-white flex items-center justify-center text-sm">
+                                                ⚖️
+                                            </span>
+                                            <div class="leading-tight">
+                                                <p class="text-sm font-extrabold text-slate-900">Beban Kerja</p>
+                                                <p class="text-[11px] font-semibold text-slate-500">Adil & terukur</p>
+                                            </div>
+                                        </div>
+                                        <p class="mt-3 text-[13px] text-slate-700 leading-relaxed">
+                                            Ukur kapasitas dan distribusi tugas biar tidak timpang.
+                                        </p>
+                                    </div>
+
+                                    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                                        <div class="flex items-center gap-2">
+                                            <span
+                                                class="h-9 w-9 rounded-2xl bg-red-600 text-white flex items-center justify-center text-sm">
+                                                🚨
+                                            </span>
+                                            <div class="leading-tight">
+                                                <p class="text-sm font-extrabold text-slate-900">Risiko Dini</p>
+                                                <p class="text-[11px] font-semibold text-slate-500">Early warning</p>
+                                            </div>
+                                        </div>
+                                        <p class="mt-3 text-[13px] text-slate-700 leading-relaxed">
+                                            Deteksi bottleneck dan potensi telat sebelum membesar.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right: risk box -->
+                            <div class="lg:col-span-5">
+                                <div
+                                    class="relative overflow-hidden rounded-3xl border border-red-200/70 bg-white shadow-sm p-6">
+                                    <!-- subtle background glow -->
+                                    <div
+                                        class="absolute -top-24 -right-24 h-56 w-56 rounded-full bg-red-600/10 blur-2xl">
+                                    </div>
+
+                                    <div class="relative flex items-center justify-between gap-4">
+                                        <div>
+                                            <p class="text-xs font-black text-red-700 tracking-wider uppercase">Risk
+                                            </p>
+                                            <p class="mt-1 text-base font-extrabold text-slate-900 leading-tight">
+                                                Yang sering terlambat disadari
+                                            </p>
+                                        </div>
+
+                                        <span
+                                            class="inline-flex items-center gap-2 rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white">
+                                            <span class="h-2 w-2 rounded-full bg-white/90"></span>
+                                            RISK
+                                        </span>
+                                    </div>
+
+                                    <div class="relative mt-5 space-y-3">
+                                        <div
+                                            class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+                                            <span
+                                                class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-red-600 text-white shadow-sm">
+                                                ⚠️
+                                            </span>
+                                            <div class="min-w-0">
+                                                <p class="font-extrabold text-slate-900 leading-snug">Overload
+                                                    tersembunyi</p>
+                                                <p class="mt-0.5 text-sm text-slate-600 font-medium leading-snug">
+                                                    Kelihatan aman, padahal beban sudah berlebih.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div
+                                            class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+                                            <span
+                                                class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm">
+                                                ⏳
+                                            </span>
+                                            <div class="min-w-0">
+                                                <p class="font-extrabold text-slate-900 leading-snug">Deadline rawan
+                                                    molor</p>
+                                                <p class="mt-0.5 text-sm text-slate-600 font-medium leading-snug">
+                                                    Progres tampak normal, tapi risiko menumpuk diam-diam.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div
+                                            class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+                                            <span
+                                                class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
+                                                📉
+                                            </span>
+                                            <div class="min-w-0">
+                                                <p class="font-extrabold text-slate-900 leading-snug">Performa turun
+                                                    diam-diam</p>
+                                                <p class="mt-0.5 text-sm text-slate-600 font-medium leading-snug">
+                                                    Output menurun tanpa alarm yang jelas.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="relative mt-5 border-t border-slate-200 pt-4">
+                                        <p class="text-sm text-slate-600 font-semibold">
+                                            Koladi memberi <span class="text-slate-900 font-extrabold">early
+                                                warning</span> + rekomendasi action.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CTA row (dirapikan, sekarang ada spasi yang enak dibaca) -->
+                        <div class="mt-10 flex justify-center">
+                            <p class="text-lg md:text-xl text-slate-700 font-semibold text-center">
+                                Semua solusi ini <span class="font-extrabold text-slate-900">terintegrasi dalam
+                                    Koladi</span>
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- trust note -->
+                <p class="mt-6 text-center text-sm text-slate-500 font-semibold">
+                    {{-- Koladi = manajemen kerja + AI insight untuk keputusan yang lebih cepat dan terukur. --}}
+                </p>
+            </div>
+        </div>
+    </section>
+
+
+
     <!-- Features Section -->
     <section id="fitur"
         class="py-20 bg-gradient-to-br from-slate-900 via-blue-400 to-slate-900 text-white relative overflow-hidden">
