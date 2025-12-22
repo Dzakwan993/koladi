@@ -104,9 +104,16 @@ class GoogleController extends Controller
                 'company_id_from_db' => $userCompany->company_id,
             ]);
 
-            // ✅ Redirect ke dashboard
-            return redirect('/dashboard')
-                ->with('success', 'Berhasil login dengan Google!');
+            // 🎯 CEK APAKAH INI FIRST LOGIN (untuk trigger onboarding)
+            $isFirstLogin = !session()->has('has_logged_in_before');
+            if ($isFirstLogin) {
+                session(['has_logged_in_before' => true]);
+                session()->flash('first_login', true);
+            }
+
+            // ✅ Redirect ke dashboard dengan intended (biar bisa handle redirect sebelumnya)
+            return redirect()->intended('/dashboard')
+                ->with('success', 'Berhasil masuk dengan Google!');
         } catch (\Exception $e) {
             // ❌ Error handling
             Log::error('Google Login Error:', [

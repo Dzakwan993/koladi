@@ -196,37 +196,59 @@
                         </div>
                     </div>
 
-                    <!-- Kata Sandi Lama -->
-                    <div>
-                        <label class="label-custom block mb-2">Kata Sandi Lama <span
-                                class="text-gray-400 font-normal text-xs">(opsional)</span></label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
+                    @if (!Auth::user()->google_id)
+                        <!-- Kata Sandi Lama -->
+                        <div>
+                            <label class="label-custom block mb-2">Kata Sandi Lama <span
+                                    class="text-gray-400 font-normal text-xs">(opsional)</span></label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                    </svg>
+                                </div>
+                                <input type="password" name="current_password"
+                                    placeholder="Kosongkan jika tidak ingin mengubah"
+                                    class="input-custom w-full border-2 border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             </div>
-                            <input type="password" name="current_password" placeholder="Kosongkan jika tidak ingin mengubah"
-                                class="input-custom w-full border-2 border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
-                    </div>
 
-                    <!-- Kata Sandi Baru -->
-                    <div>
-                        <label class="label-custom block mb-2">Kata Sandi Baru <span
-                                class="text-gray-400 font-normal text-xs">(opsional)</span></label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                                </svg>
+                        <!-- Kata Sandi Baru -->
+                        <div>
+                            <label class="label-custom block mb-2">Kata Sandi Baru <span
+                                    class="text-gray-400 font-normal text-xs">(opsional)</span></label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                    </svg>
+                                </div>
+                                <input type="password" name="new_password" placeholder="Minimal 6 karakter"
+                                    class="input-custom w-full border-2 border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             </div>
-                            <input type="password" name="new_password" placeholder="Minimal 6 karakter"
-                                class="input-custom w-full border-2 border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
-                    </div>
+                    @else
+                        <!-- ✅ Info untuk user Google -->
+                        <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+                            <div class="flex items-start gap-3">
+                                <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor"
+                                    viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                <div>
+                                    <p class="text-sm font-semibold text-blue-900 mb-1">Login dengan Google</p>
+                                    <p class="text-xs text-blue-700">Anda login menggunakan akun Google. Kata sandi dikelola
+                                        oleh Google dan tidak dapat diubah di sini.</p>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
 
                     <!-- Buttons -->
                     <div class="flex flex-col-reverse sm:flex-row justify-center sm:justify-end gap-3 pt-4 sm:pt-6">

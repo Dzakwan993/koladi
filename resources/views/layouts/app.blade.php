@@ -33,6 +33,7 @@
     @endunless
 
     <title>Koladi - @yield('title')</title>
+    <link rel="icon" type="image/png" href="/images/LogoAtas.svg">
 
     <!-- Google Fonts - Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -138,7 +139,6 @@
             userId: '{{ Auth::id() }}',
             csrfToken: '{{ csrf_token() }}'
         };
-        
     </script>
 
     @include('components.sweet-alert')

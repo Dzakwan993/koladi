@@ -26,22 +26,24 @@ class ProfileController extends Controller
             'full_name' => 'required|string|max:255',
             'current_password' => 'nullable|string',
             'new_password' => 'nullable|string|min:6',
-            'avatar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Tambah validasi avatar
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         // Update nama
         $user->full_name = $request->full_name;
 
-        // Update password (jika diisi)
-        if ($request->filled('current_password') && $request->filled('new_password')) {
-            if (!Hash::check($request->current_password, $user->password)) {
-                return back()->withErrors(['current_password' => 'Kata sandi lama salah.'])->withInput();
-            }
+        // ✅ CEK: Jika user login via Google, SKIP update password
+        if (!$user->google_id) {
+            // Update password (jika diisi)
+            if ($request->filled('current_password') && $request->filled('new_password')) {
+                if (!Hash::check($request->current_password, $user->password)) {
+                    return back()->withErrors(['current_password' => 'Kata sandi lama salah.'])->withInput();
+                }
 
-            $user->password = Hash::make($request->new_password);
-        } elseif ($request->filled('current_password') || $request->filled('new_password')) {
-            // Jika salah satu diisi tapi tidak lengkap
-            return back()->withErrors(['password' => 'Harap isi kata sandi lama dan baru jika ingin mengubah password.'])->withInput();
+                $user->password = Hash::make($request->new_password);
+            } elseif ($request->filled('current_password') || $request->filled('new_password')) {
+                return back()->withErrors(['password' => 'Harap isi kata sandi lama dan baru jika ingin mengubah password.'])->withInput();
+            }
         }
 
         // Update avatar (jika ada file baru)
