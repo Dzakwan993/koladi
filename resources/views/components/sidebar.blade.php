@@ -1,4 +1,8 @@
 <style>
+    [x-cloak] {
+        display: none !important;
+    }
+
     .filter-blue {
         filter: brightness(0) saturate(100%) invert(30%) sepia(91%) saturate(1539%) hue-rotate(213deg) brightness(90%) contrast(96%);
     }
@@ -39,8 +43,57 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
             <img src="{{ asset('images/logo-koladi.svg') }}" class="h-9 object-cover object-center" alt="Logo Koladi">
         </div>
 
+        {{-- ✅ DEFINISI PHP VARIABLES DULU --}}
+        @php
+            $user = Auth::user();
+            $activeCompanyId = session('active_company_id');
+
+            // Ambil workspace berdasarkan role user
+            if ($activeCompanyId) {
+                $userCompany = $user->userCompanies()->where('company_id', $activeCompanyId)->with('role')->first();
+                $userRole = $userCompany?->role?->name ?? 'Member';
+
+                // Jika SuperAdmin/Admin/Manager, tampilkan semua workspace
+                if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
+                    $timWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
+                        ->where('type', 'Tim')
+                        ->orderBy('name')
+                        ->get();
+
+                    $proyekWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
+                        ->where('type', 'Proyek')
+                        ->orderBy('name')
+                        ->get();
+                } else {
+                    // Jika Member, hanya tampilkan workspace yang diikuti
+                    $timWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
+                        ->where('type', 'Tim')
+                        ->whereHas('userWorkspaces', function ($query) use ($user) {
+                            $query->where('user_id', $user->id)->where('status_active', true);
+                        })
+                        ->orderBy('name')
+                        ->get();
+
+                    $proyekWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
+                        ->where('type', 'Proyek')
+                        ->whereHas('userWorkspaces', function ($query) use ($user) {
+                            $query->where('user_id', $user->id)->where('status_active', true);
+                        })
+                        ->orderBy('name')
+                        ->get();
+                }
+            } else {
+                $timWorkspaces = collect();
+                $proyekWorkspaces = collect();
+            }
+
+            // Warna dot untuk workspace
+            $colors = ['blue-600', 'green-500', 'purple-500', 'yellow-500', 'red-500', 'pink-500', 'indigo-500'];
+        @endphp
+
         {{-- Navigation --}}
-        <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto" x-data="{ openTim: true, openProyek: true }">
+        {{-- SESUDAH (BENAR) --}}
+        <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto" x-data="workspaceFilter()" x-init="init(@js($timWorkspaces->toArray()), @js($proyekWorkspaces->toArray()))">
 
             {{-- Dashboard --}}
             <a href="{{ url('/dashboard') }}"
@@ -77,7 +130,6 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
             {{-- Chat Perusahaan --}}
             @auth
                 @php
-                    $activeCompanyId = session('active_company_id');
                     $activeCompany = $activeCompanyId ? \App\Models\Company::find($activeCompanyId) : null;
                 @endphp
 
@@ -107,14 +159,13 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 <span class="text-sm">Jadwal</span>
             </a>
 
-          
             {{-- Dokumen --}}
             <a href="{{ route('company-documents.index') }}"
-            class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
             {{ Request::is('company-documents*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-            <img src="{{ asset('images/icons/workspace_dokumen&file.svg') }}" alt="Dokumen"
-            class="w-5 h-5 {{ Request::is('company-documents*') ? 'filter-blue' : '' }}">
-            <span class="text-sm">Dokumen</span>
+                <img src="{{ asset('images/icons/workspace_dokumen&file.svg') }}" alt="Dokumen"
+                    class="w-5 h-5 {{ Request::is('company-documents*') ? 'filter-blue' : '' }}">
+                <span class="text-sm">Dokumen</span>
             </a>
 
             {{-- Laporan Kinerja --}}
@@ -128,85 +179,64 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
 
             {{-- Search & Actions --}}
             <div class="pt-3 mt-3 border-t border-gray-200">
-                <div class="flex items-center gap-1.5">
+                <div class="flex items-center gap-1.5 relative">
                     {{-- Search Bar --}}
                     <div
-                        class="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-gray-50 text-gray-400 text-xs flex-1 hover:bg-gray-100 transition">
+                        class="flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-gray-50 text-gray-400 text-xs flex-1 hover:bg-gray-100 transition">
                         <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
-                        <input type="text" placeholder="Cari ruang..."
-                            class="flex-1 bg-transparent outline-none border-none focus:ring-0 text-gray-700 text-[11px]">
+                        <input type="text" x-model="searchQuery" placeholder="Cari Ruang Kerja"
+                            class="flex-1 bg-transparent outline-none border-none focus:ring-0 text-gray-700 text-[11px] p-0">
                     </div>
 
                     {{-- Filter Button --}}
-                    <button
-                        class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
-                        title="Filter">
-                        <img src="{{ asset('images/icons/sidebar_filter.svg') }}" alt="Filter" class="w-3.5 h-3.5">
-                    </button>
+                    <div class="relative flex-shrink-0">
+                        <button @click="showFilterMenu = !showFilterMenu"
+                            class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
+                            title="Filter">
+                            <img src="{{ asset('images/icons/sidebar_filter.svg') }}" alt="Filter"
+                                class="w-3.5 h-3.5">
+                        </button>
+
+                        {{-- Filter Dropdown --}}
+                        <div x-show="showFilterMenu" x-cloak @click.away="showFilterMenu = false" x-transition
+                            class="absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                            <button @click="sortOrder = 'asc'; showFilterMenu = false"
+                                class="w-full px-3 py-2 text-left text-xs hover:bg-gray-50 transition flex items-center justify-between"
+                                :class="{ 'bg-blue-50 text-blue-600 font-medium': sortOrder === 'asc' }">
+                                <span>A → Z</span>
+                                <svg x-show="sortOrder === 'asc'" class="w-3 h-3" fill="currentColor"
+                                    viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button @click="sortOrder = 'desc'; showFilterMenu = false"
+                                class="w-full px-3 py-2 text-left text-xs hover:bg-gray-50 transition flex items-center justify-between"
+                                :class="{ 'bg-blue-50 text-blue-600 font-medium': sortOrder === 'desc' }">
+                                <span>Z → A</span>
+                                <svg x-show="sortOrder === 'desc'" class="w-3 h-3" fill="currentColor"
+                                    viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
 
                     {{-- Add Button --}}
                     <a href="{{ url('/kelola-workspace') }}"
-                        class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
+                        class="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
                         title="Tambah Workspace">
-                        <img src="{{ asset('images/icons/sidebar_tambah.svg') }}" alt="Tambah" class="w-3.5 h-3.5">
+                        <img src="{{ asset('images/icons/sidebar_tambah.svg') }}" alt="Tambah"
+                            class="w-3.5 h-3.5 pointer-events-none">
                     </a>
                 </div>
             </div>
-
-            {{-- ✅ WORKSPACE LIST DINAMIS --}}
-            @php
-                $user = Auth::user();
-                $activeCompanyId = session('active_company_id');
-
-                // Ambil workspace berdasarkan role user
-                if ($activeCompanyId) {
-                    $userCompany = $user->userCompanies()
-                        ->where('company_id', $activeCompanyId)
-                        ->with('role')
-                        ->first();
-
-                    $userRole = $userCompany?->role?->name ?? 'Member';
-
-                    // Jika SuperAdmin/Admin/Manager, tampilkan semua workspace
-                    if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
-                        $timWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
-                            ->where('type', 'Tim')
-                            ->orderBy('name')
-                            ->get();
-
-                        $proyekWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
-                            ->where('type', 'Proyek')
-                            ->orderBy('name')
-                            ->get();
-                    } else {
-                        // Jika Member, hanya tampilkan workspace yang diikuti
-                        $timWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
-                            ->where('type', 'Tim')
-                            ->whereHas('userWorkspaces', function ($query) use ($user) {
-                                $query->where('user_id', $user->id)->where('status_active', true);
-                            })
-                            ->orderBy('name')
-                            ->get();
-
-                        $proyekWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
-                            ->where('type', 'Proyek')
-                            ->whereHas('userWorkspaces', function ($query) use ($user) {
-                                $query->where('user_id', $user->id)->where('status_active', true);
-                            })
-                            ->orderBy('name')
-                            ->get();
-                    }
-                } else {
-                    $timWorkspaces = collect();
-                    $proyekWorkspaces = collect();
-                }
-
-                // Warna dot untuk workspace
-                $colors = ['blue-600', 'green-500', 'purple-500', 'yellow-500', 'red-500', 'pink-500', 'indigo-500'];
-            @endphp
 
             <div class="mt-3 space-y-1">
                 {{-- TIM --}}
@@ -225,21 +255,24 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                     </button>
 
                     <div x-show="openTim" x-transition class="mt-1 space-y-0.5">
-                        @if ($timWorkspaces->count() > 0)
-                            @foreach ($timWorkspaces as $index => $workspace)
-                                <a href="{{ route('workspace.detail', $workspace->id) }}"
-                                    class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition
-                                    {{ Request::is('workspace/' . $workspace->id . '*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                                    <span
-                                        class="w-1.5 h-1.5 bg-{{ $colors[$index % count($colors)] }} rounded-full"></span>
-                                    <span class="truncate">{{ $workspace->name }}</span>
-                                </a>
-                            @endforeach
-                        @else
-                            <div class="px-6 py-2">
-                                <p class="text-xs text-gray-400 text-center">Belum ada workspace Tim</p>
+                        <template x-if="filteredTimWorkspaces.length > 0">
+                            <div>
+                                <template x-for="(workspace, index) in filteredTimWorkspaces" :key="workspace.id">
+                                    <a :href="`{{ url('workspace') }}/${workspace.id}`"
+                                        class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition text-gray-600 hover:bg-gray-50">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                        <span class="truncate" x-text="workspace.name"></span>
+                                    </a>
+                                </template>
                             </div>
-                        @endif
+                        </template>
+                        <template x-if="filteredTimWorkspaces.length === 0">
+                            <div class="px-6 py-2">
+                                <p class="text-xs text-gray-400 text-center"
+                                    x-text="searchQuery.length >= 2 ? 'Tidak ada hasil' : 'Belum ada workspace Tim'">
+                                </p>
+                            </div>
+                        </template>
                     </div>
                 </div>
 
@@ -260,21 +293,25 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                     </button>
 
                     <div x-show="openProyek" x-transition class="mt-1 space-y-0.5">
-                        @if ($proyekWorkspaces->count() > 0)
-                            @foreach ($proyekWorkspaces as $index => $workspace)
-                                <a href="{{ route('workspace.detail', $workspace->id) }}"
-                                    class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition
-                                    {{ Request::is('workspace/' . $workspace->id . '*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                                    <span
-                                        class="w-1.5 h-1.5 bg-{{ $colors[$index % count($colors)] }} rounded-full"></span>
-                                    <span class="truncate">{{ $workspace->name }}</span>
-                                </a>
-                            @endforeach
-                        @else
-                            <div class="px-6 py-2">
-                                <p class="text-xs text-gray-400 text-center">Belum ada workspace Proyek</p>
+                        <template x-if="filteredProyekWorkspaces.length > 0">
+                            <div>
+                                <template x-for="(workspace, index) in filteredProyekWorkspaces"
+                                    :key="workspace.id">
+                                    <a :href="`{{ url('workspace') }}/${workspace.id}`"
+                                        class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition text-gray-600 hover:bg-gray-50">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
+                                        <span class="truncate" x-text="workspace.name"></span>
+                                    </a>
+                                </template>
                             </div>
-                        @endif
+                        </template>
+                        <template x-if="filteredProyekWorkspaces.length === 0">
+                            <div class="px-6 py-2">
+                                <p class="text-xs text-gray-400 text-center"
+                                    x-text="searchQuery.length >= 2 ? 'Tidak ada hasil' : 'Belum ada workspace Proyek'">
+                                </p>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </div>
@@ -286,3 +323,55 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
         class="fixed inset-0 bg-black bg-opacity-30 z-10 md:hidden">
     </div>
 </div>
+
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('workspaceFilter', () => ({
+            openTim: true,
+            openProyek: true,
+            searchQuery: '',
+            sortOrder: 'asc',
+            showFilterMenu: false,
+            timWorkspaces: [],
+            proyekWorkspaces: [],
+
+            init(tim, proyek) {
+                this.timWorkspaces = tim || [];
+                this.proyekWorkspaces = proyek || [];
+            },
+
+            get filteredTimWorkspaces() {
+                let workspaces = [...this.timWorkspaces];
+
+                if (this.searchQuery.length > 0) {
+                    workspaces = workspaces.filter(w =>
+                        w.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+                    );
+                }
+
+                return workspaces.sort((a, b) => {
+                    return this.sortOrder === 'asc' 
+                        ? a.name.localeCompare(b.name)
+                        : b.name.localeCompare(a.name);
+                });
+            },
+
+            get filteredProyekWorkspaces() {
+                let workspaces = [...this.proyekWorkspaces];
+
+                if (this.searchQuery.length > 0) {
+                    workspaces = workspaces.filter(w =>
+                        w.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+                    );
+                }
+
+                return workspaces.sort((a, b) => {
+                    return this.sortOrder === 'asc' 
+                        ? a.name.localeCompare(b.name)
+                        : b.name.localeCompare(a.name);
+                });
+            }
+        }));
+    });
+</script>

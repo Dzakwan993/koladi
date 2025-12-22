@@ -361,7 +361,7 @@
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 12v.01M12 12v.01M19 12v.01
-                                                                                                                                                        M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                                                                                                                                                                                    M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                                     </svg>
                                 </button>
                             </div>
@@ -476,7 +476,7 @@
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M5 12v.01M12 12v.01M19 12v.01
-                                                                                                                                                        M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                                                                                                                                                                                                    M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
                                     </svg>
                                 </button>
                             </div>
@@ -823,24 +823,58 @@
                                     showOnboardingStep5Modal(result.workspace_name);
                                 }, 500);
                             } else {
-                                // Normal flow tanpa onboarding
-                                location.reload();
+                                // ✅ UBAH INI - Normal flow tanpa onboarding
+                                this.showAlert('success', 'Berhasil!', result.message);
+
                             }
                         } else {
-                            // ✅ HANDLE ERROR RESPONSE
+                            // ✅ UBAH INI - HANDLE ERROR RESPONSE
                             if (response.status === 403) {
-                                alert('Akses Ditolak: ' + result.message);
+                                this.showAlert('error', 'Akses Ditolak!', result.message);
                             } else {
-                                alert('Gagal membuat workspace: ' + result.message);
+                                this.showAlert('error', 'Gagal!', result.message);
                             }
                         }
+
                     } catch (error) {
                         console.error('Error:', error);
-                        alert('Terjadi kesalahan saat membuat workspace');
+                        this.showAlert('error', 'Error!',
+                            'Terjadi kesalahan saat membuat workspace');
                     } finally {
                         this.isSubmitting = false;
                     }
                 },
+
+                // Tambahkan method baru untuk konfirmasi
+                async confirmAction(title, text, callback) {
+                    const result = await Swal.fire({
+                        title: title,
+                        text: text,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ya, lanjutkan',
+                        cancelButtonText: 'Batal',
+                        confirmButtonColor: '#2563EB',
+                        cancelButtonColor: '#6B7280'
+                    });
+
+                    if (result.isConfirmed && callback) {
+                        await callback();
+                    }
+                },
+
+                showAlert(icon, title, text) {
+                    Swal.fire({
+                        icon: icon,
+                        title: title,
+                        text: text,
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#2563EB'
+                    }).then(() => {
+                        location.reload(); // Langsung reload setelah klik OK
+                    });
+                },
+
                 async updateWorkspace() {
                     try {
                         const csrfToken = this.getCsrfToken();
@@ -871,49 +905,45 @@
                 },
 
                 async deleteWorkspace(workspaceId) {
-                    try {
-                        // ✅ CEK PERMISSION SEBELUM MENGHAPUS
-                        if (!this.canEditDeleteWorkspace) {
-                            alert(
-                                'Anda tidak memiliki izin untuk menghapus workspace. Hanya SuperAdmin, Admin, dan Manager yang dapat menghapus workspace.'
-                            );
-                            this.showWorkspaceMenu = false;
-                            return;
-                        }
-
-                        if (!confirm(
-                                'Apakah Anda yakin ingin menghapus workspace ini?')) {
-                            return;
-                        }
-
-                        const csrfToken = this.getCsrfToken();
-
-                        const response = await fetch(`/workspace/${workspaceId}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'X-CSRF-TOKEN': csrfToken,
-                                'X-Requested-With': 'XMLHttpRequest'
-                            }
-                        });
-
-                        const result = await response.json();
-
-                        if (result.success) {
-                            this.showWorkspaceMenu = false;
-                            location.reload();
-                        } else {
-                            // ✅ TAMPILKAN ERROR MESSAGE YANG DETAIL
-                            if (response.status === 403) {
-                                alert('Akses Ditolak: ' + result.message);
-                            } else {
-                                alert('Gagal menghapus workspace: ' + result.message);
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        alert('Terjadi kesalahan saat menghapus workspace');
+                    if (!this.canEditDeleteWorkspace) {
+                        this.showAlert('error', 'Akses Ditolak!',
+                            'Anda tidak memiliki izin untuk menghapus workspace.');
+                        this.showWorkspaceMenu = false;
+                        return;
                     }
+
+                    await this.confirmAction(
+                        'Hapus Workspace?',
+                        'Workspace ini akan dihapus permanen.',
+                        async () => {
+                            try {
+                                const response = await fetch(
+                                    `/workspace/${workspaceId}`, {
+                                        method: 'DELETE',
+                                        headers: {
+                                            'X-CSRF-TOKEN': this.getCsrfToken(),
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                        }
+                                    });
+
+                                const result = await response.json();
+
+                                if (result.success) {
+                                    this.showWorkspaceMenu = false;
+                                    this.showAlert('success', 'Berhasil!', result
+                                        .message);
+
+                                } else {
+                                    this.showAlert('error', 'Gagal!', result.message);
+                                }
+                            } catch (error) {
+                                this.showAlert('error', 'Error!',
+                                    'Terjadi kesalahan saat menghapus workspace');
+                            }
+                        }
+                    );
                 },
+
                 // Methods untuk members
                 async loadAvailableMembers() {
                     try {
@@ -1003,11 +1033,7 @@
                             rawText);
 
                         if (response.ok) {
-                            // sukses
-                            this.showManageMembersModal = false;
-                            this.selectedMembers = [];
-                            this.searchMember = '';
-                            location.reload();
+                            // ✅ GANTI JADI INI
                             return {
                                 success: true,
                                 message: result?.message || 'Berhasil'
@@ -1111,50 +1137,88 @@
                 },
 
                 async saveWorkspaceChanges() {
-                    try {
-                        const csrfToken = this.getCsrfToken();
+                    await this.confirmAction(
+                        'Simpan Perubahan?',
+                        'Perubahan workspace akan disimpan.',
+                        async () => {
+                            try {
+                                const response = await fetch(
+                                    `/workspace/${this.editWorkspaceData.id}`, {
+                                        method: 'PUT',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': this
+                                                .getCsrfToken(),
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                        },
+                                        body: JSON.stringify(this
+                                            .editWorkspaceData)
+                                    });
 
-                        const response = await fetch(
-                            `/workspace/${this.editWorkspaceData.id}`, {
-                                method: 'PUT',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': csrfToken,
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                },
-                                body: JSON.stringify(this
-                                    .editWorkspaceData)
-                            });
+                                const result = await response.json();
 
-                        const result = await response.json();
-
-                        if (result.success) {
-                            this.showEditWorkspaceModal = false;
-                            location.reload();
-                        } else {
-                            // ✅ TAMPILKAN ERROR MESSAGE YANG DETAIL
-                            if (response.status === 403) {
-                                alert('Akses Ditolak: ' + result
-                                    .message);
-                            } else {
-                                alert('Gagal mengupdate workspace: ' +
-                                    result.message);
+                                if (result.success) {
+                                    this.showEditWorkspaceModal = false;
+                                    this.showAlert('success', 'Berhasil!',
+                                        result.message);
+                                    setTimeout(() => location.reload(),
+                                        2000);
+                                } else {
+                                    this.showAlert('error', 'Gagal!', result
+                                        .message);
+                                }
+                            } catch (error) {
+                                this.showAlert('error', 'Error!',
+                                    'Terjadi kesalahan saat mengupdate workspace'
+                                );
                             }
                         }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        alert(
-                            'Terjadi kesalahan saat mengupdate workspace');
-                    }
+                    );
                 },
 
 
-                applyMembers() {
-                    if (this.activeWorkspace) {
-                        this.saveMembers(this.activeWorkspace
-                            .id);
-                    }
-                },
+                async applyMembers() {
+    if (!this.activeWorkspace) return;
+
+    // ✅ TAMBAHKAN CEK INI
+    if (this.selectedMembers.length === 0) {
+        await this.confirmAction(
+            'Hapus Semua Anggota?',
+            'Workspace ini akan kosong tanpa anggota.',
+            async () => {
+                const result = await this.saveMembers(this.activeWorkspace.id);
+                
+                if (result.success) {
+                    this.showManageMembersModal = false;
+                    this.selectedMembers = [];
+                    this.searchMember = '';
+                    this.showAlert('success', 'Berhasil!', result.message);
+                } else {
+                    this.showAlert('error', 'Gagal!', result.message);
+                }
+            }
+        );
+        return;
+    }
+
+    // Normal flow untuk ada member
+    await this.confirmAction(
+        'Simpan Perubahan Anggota?',
+        'Daftar anggota workspace akan diperbarui.',
+        async () => {
+            const result = await this.saveMembers(this.activeWorkspace.id);
+
+            if (result.success) {
+                this.showManageMembersModal = false;
+                this.selectedMembers = [];
+                this.searchMember = '';
+                this.showAlert('success', 'Berhasil!', result.message);
+            } else {
+                this.showAlert('error', 'Gagal!', result.message);
+            }
+        }
+    );
+},
 
                 toggleMember(memberId) {
                     console.log('Toggling member:', memberId,

@@ -124,6 +124,48 @@ class CompanyDokumenController extends Controller
         return view('company-dokumen-dan-file', compact('company', 'folders', 'rootFiles'));
     }
 
+    public function deleteMultiple(Request $request)
+    {
+        $validated = $request->validate([
+            'documents' => 'required|array',
+            'documents.*.id' => 'required',
+            'documents.*.type' => 'required|in:file,folder'
+        ]);
+
+        $deletedCount = 0;
+
+        foreach ($validated['documents'] as $doc) {
+            if ($doc['type'] === 'folder') {
+                $folder = Folder::find($doc['id']);
+                if ($folder) {
+                    $folder->delete();
+                    $deletedCount++;
+                }
+            } else {
+                $file = File::find($doc['id']);
+                if ($file) {
+                    // ✅ CEK: Apakah ada file lain yang pakai path yang sama?
+                    $otherFilesCount = File::where('file_path', $file->file_path)
+                        ->where('id', '!=', $file->id)
+                        ->count();
+
+                    // ✅ Hanya hapus file fisik jika TIDAK ada file lain yang pakai
+                    if ($otherFilesCount === 0 && Storage::disk('public')->exists($file->file_path)) {
+                        Storage::disk('public')->delete($file->file_path);
+                    }
+
+                    $file->delete();
+                    $deletedCount++;
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "$deletedCount berkas berhasil dihapus"
+        ]);
+    }
+
     public function storeFolder(StoreCompanyFolderRequest $request)
     {
         \Log::info('📝 storeFolder request data:', $request->all());

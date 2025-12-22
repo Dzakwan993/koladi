@@ -425,6 +425,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/files/{id}/update', [DokumenController::class, 'updateFile'])->name('files.update');
         Route::delete('/files/{id}/delete', [DokumenController::class, 'destroy'])->name('files.destroy');
         Route::delete('/folders/{folder}/delete', [DokumenController::class, 'destroyFolder'])->name('folders.destroy');
+        Route::post('/documents/delete-multiple', [DokumenController::class, 'deleteMultiple'])->name('documents.deleteMultiple');
         Route::get('/workspaces/{workspace}/members', [DokumenController::class, 'getWorkspaceMembers'])->name('workspace.members');
         Route::post('/documents/recipients', [DokumenController::class, 'recipientsStore'])->name('document.recipients.store');
         Route::get('/documents/{document}/recipients', [DokumenController::class, 'getRecipients']);
@@ -445,6 +446,8 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/folders/{id}/update', [CompanyDokumenController::class, 'updateFolder'])->name('folder.update');
             Route::put('/files/{id}/update', [CompanyDokumenController::class, 'updateFile'])->name('files.update');
             Route::delete('/files/{id}/delete', [CompanyDokumenController::class, 'destroyFile'])->name('files.destroy');
+            // ✅ BENAR - tanpa /company-documents lagi
+            Route::post('/delete-multiple', [CompanyDokumenController::class, 'deleteMultiple'])->name('deleteMultiple');
             Route::delete('/folders/{folder}/delete', [CompanyDokumenController::class, 'destroyFolder'])->name('folders.destroy');
             Route::get('/members', [CompanyDokumenController::class, 'getCompanyMembers'])->name('members');
             Route::post('/recipients', [CompanyDokumenController::class, 'recipientsStore'])->name('recipients.store');

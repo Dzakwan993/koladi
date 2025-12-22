@@ -317,7 +317,7 @@
 }
 
 /* Firefox specific fix */
-@supports (-moz-appearance: none) {
+@@supports (-moz-appearance: none) {
     .sortable-drag,
     .sortable-chosen {
         filter: none !important;

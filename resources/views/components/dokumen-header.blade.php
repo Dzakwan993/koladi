@@ -24,7 +24,7 @@
             <input type="hidden" name="folder_id" x-bind:value="currentFolder ? currentFolder.id : ''">
 
             {{-- Input file hidden --}}
-            <input type="file" name="file" id="fileInput" class="hidden"
+            <input type="file" name="file" id="fileInput" class="hidden"  multiple
                 @change="$el.closest('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))">
 
             {{-- ✅ TOMBOL UNGGAH FILE (SUDAH SAMA UKURAN) --}}

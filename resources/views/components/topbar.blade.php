@@ -7,7 +7,7 @@
         </span>
     </div>
 
-    <!-- Center Section: Search Bar -->
+    {{-- <!-- Center Section: Search Bar -->
     <div class="flex-1 max-w-md mx-6">
         <div class="relative">
             <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none"
@@ -18,7 +18,7 @@
             <input type="text" placeholder="Cari ruang kerja, tugas..."
                 class="w-full pl-10 pr-4 py-2 bg-[#E9EFFD] border-0 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white transition">
         </div>
-    </div>
+    </div> --}}
 
     <!-- Right Section: Active Users & Action Buttons -->
     <div class="flex items-center gap-3">
