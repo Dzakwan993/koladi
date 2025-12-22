@@ -95,6 +95,8 @@ export default function documentSearch() {
         editingFolder: null,
         deletingFolder: null,
         showDeleteFileModal: false,
+        showRecipientsModal: false,
+        selectedRecipients: [],
         deletingFile: null,
         showEditFileModal: false,
         editingFile: null,
@@ -350,6 +352,25 @@ export default function documentSearch() {
             }
         },
 
+        openRecipientsModal(folderOrFile) {
+            console.log("🔥 openRecipientsModal called", folderOrFile);
+            console.log(
+                "📦 folderOrFile.recipients:",
+                folderOrFile?.recipients
+            );
+
+            if (!folderOrFile || !folderOrFile.recipients) {
+                console.log("❌ No recipients found");
+                return;
+            }
+
+            this.selectedRecipients = folderOrFile.recipients;
+            this.showRecipientsModal = true;
+
+            console.log("✅ Modal should open now");
+            console.log("📋 selectedRecipients:", this.selectedRecipients);
+        },
+
         // Function untuk inisialisasi data
         initData(foldersData, rootFilesData, context) {
             console.log("🚀 ========== initData START ==========");
@@ -371,6 +392,12 @@ export default function documentSearch() {
                 this.currentCompanyId = context.id;
             }
 
+            // ⬇️ TAMBAHKAN INI
+            console.log("📦 Sample folder data:", foldersData[0]);
+            console.log(
+                "👥 Sample document_recipients:",
+                foldersData[0]?.document_recipients
+            );
             // Convert data Laravel Collection ke format Alpine
             this.processBackendData();
 
@@ -517,7 +544,7 @@ export default function documentSearch() {
         },
 
         processBackendData() {
-            // Process folders
+            // Cek sekitar baris 350-380
             this.folders = this.backendFolders.map((folder) => ({
                 id: folder.id,
                 parent_id: folder.parent_id,
@@ -527,17 +554,26 @@ export default function documentSearch() {
                 isSecret: folder.is_private || false,
                 creator: {
                     id: folder.creator?.id || folder.creator_id || null,
-                    name: folder.creator?.full_name || "kiki",
-                    avatar:
-                        folder.creator?.avatar ||
-                        "https://i.pravatar.cc/32?img=8",
+                    name: folder.creator?.full_name || "Unknown",
+                    avatar: this.getAvatarUrl(folder.creator?.avatar),
                 },
+                creatorAvatar: this.getAvatarUrl(folder.creator?.avatar),
                 createdAt: folder.created_at,
-                recipients: [],
+                // ⬇️ PASTIKAN BAGIAN INI ADA DAN BENAR
+                recipients: (folder.document_recipients || []).map((dr) => ({
+                    id: dr.user?.id,
+                    name: dr.user?.full_name,
+                    email: dr.user?.email,
+                    avatar: this.getAvatarUrl(dr.user?.avatar),
+                })),
                 subFolders: [],
                 files: folder.files ? this.processFiles(folder.files) : [],
                 filesCount: folder.files_count || 0,
             }));
+
+            // Tambahkan setelah mapping folders (sekitar baris 395)
+            console.log("📂 Processed folders sample:", this.folders[0]);
+            console.log("👥 Sample recipients:", this.folders[0]?.recipients);
 
             // Step 2: sambungkan folder-child
             this.folders.forEach((folder) => {
@@ -580,51 +616,42 @@ export default function documentSearch() {
 
         processFiles(files) {
             return (files || []).map((file) => {
-                // Ambil nama dari properti yang ada, atau ekstrak dari URL
-                console.log("Isi file URL kamu adlah:", file.file_url);
-                console.log("👤 Raw uploaded_by:", file.uploaded_by);
-                console.log("👤 Raw uploader:", file.uploader);
-
                 const originalName = file.name || file.file_name || null;
                 const extractedName = file.file_url
                     ? file.file_url.split("/").pop()
                     : null;
-                // Prioritaskan originalName bila ada, kalau gak ada pakai extractedName
                 const displayName =
                     originalName || extractedName || "Unknown File";
-
-                // Dapatkan type dari displayName (getFileType harus mampu menerima nama)
                 const type = this.getFileType(displayName);
-
                 const uploaderId =
                     file.uploaded_by || file.uploader?.id || null;
 
                 return {
                     id: file.id,
-                    folder_id: file.folder_id ?? null, // ⬅⬅ TAMBAHKAN INI
-                    // gunakan displayName agar di Blade x-text="file.name" muncul
+                    folder_id: file.folder_id ?? null,
                     name: displayName,
                     type: type,
                     icon: this.getFileIcon(type),
                     size: this.formatFileSize(file.file_size || 0),
-                    file_url: file.file_url, // ⬅⬅ WAJIB
-
-                    // 🔥 Tambahkan ID uploader
+                    file_url: file.file_url,
                     uploaded_by: uploaderId,
                     creator: {
-                        // perhatikan properti uploader: kamu pakai full_name di data
                         name:
                             file.uploader?.full_name ||
                             file.uploader?.name ||
                             "Unknown",
-                        avatar:
-                            file.uploader?.avatar ||
-                            "https://i.pravatar.cc/32?img=8",
+                        avatar: this.getAvatarUrl(file.uploader?.avatar), // ⬅️ GUNAKAN HELPER
                     },
+                    creatorAvatar: this.getAvatarUrl(file.uploader?.avatar), // ⬅️ GUNAKAN HELPER
                     createdAt: file.created_at || file.uploaded_at,
                     isSecret: file.is_private || false,
                     comments: file.comments || [],
-                    recipients: [],
+                    recipients: (file.document_recipients || []).map((dr) => ({
+                        id: dr.user?.id,
+                        name: dr.user?.full_name,
+                        email: dr.user?.email, // ⬅️ TAMBAHKAN INI
+                        avatar: this.getAvatarUrl(dr.user?.avatar), // ⬅️ GUNAKAN HELPER
+                    })),
                 };
             });
         },
@@ -1426,10 +1453,6 @@ export default function documentSearch() {
 
         // 2️⃣ Handle Create Folder
         async handleCreateFolder(event) {
-            if (!this.editingFolder || !this.editingFolder.id) {
-                console.error("No folder to edit");
-                return;
-            }
             console.log("🚀 handleCreateFolder called");
 
             // ✅ PREVENT DOUBLE SUBMIT
@@ -1808,7 +1831,8 @@ export default function documentSearch() {
         // Folder Navigation
         openFolder(folder) {
             console.log("✅ openFolder START, folder:", folder.name);
-            console.log("📍 history.length BEFORE openFolder:", history.length);
+            console.log("👥 folder.recipients:", folder.recipients); // ⬅️ TAMBAHKAN INI
+            console.log("📦 Full folder data:", folder); // ⬅️ TAMBAHKAN INI
 
             this.currentFile = null;
             this.currentFolderCreatedBy = null;
@@ -2558,6 +2582,21 @@ export default function documentSearch() {
             return [];
         },
 
+        // Tambahkan method ini di sekitar baris 2100 (sebelum getFileType)
+        getAvatarUrl(avatar) {
+            if (!avatar) {
+                return "https://i.pravatar.cc/32?img=8";
+            }
+
+            // ✅ Jika sudah full URL (https://...), langsung return
+            if (avatar.startsWith("http://") || avatar.startsWith("https://")) {
+                return avatar;
+            }
+
+            // ✅ Jika path storage lokal (avatars/...), tambahkan prefix
+            return window.assetPath + "storage/" + avatar;
+        },
+
         getFileType(filename) {
             const name = filename.toLowerCase();
             if (name.endsWith(".pdf")) return "PDF";
@@ -2729,7 +2768,6 @@ export default function documentSearch() {
                 file_uploaded_by: this.currentFileUploadedBy ?? "",
             });
 
-            // ✅ Tentukan endpoint berdasarkan context
             let endpoint;
             if (this.currentContext === "workspace") {
                 endpoint = `/workspaces/${this.currentWorkspaceId}/members?${params}`;
@@ -2747,6 +2785,7 @@ export default function documentSearch() {
                 .then(async (res) => {
                     console.log("✅ Response status:", res.status);
                     this.memberListAllowed = res.status === 200;
+
                     if (!this.memberListAllowed) {
                         console.warn("⚠️ memberListAllowed = false");
                         this.members = [];
@@ -2755,25 +2794,57 @@ export default function documentSearch() {
                     return await res.json();
                 })
                 .then(async (data) => {
-                    if (!data?.members) return;
+                    if (!data?.members) {
+                        console.warn("⚠️ No members data in response");
+                        return;
+                    }
+
+                    console.log("👥 Members received:", data.members.length); // ⬅️ TAMBAHKAN
+
+                    // ⬇️ PERBAIKAN: Fetch recipients HANYA jika ada currentFolder atau currentFile
+                    if (!this.currentFolder && !this.currentFile) {
+                        console.warn(
+                            "⚠️ No currentFolder or currentFile, skipping recipients fetch"
+                        );
+                        this.members = data.members.map((m) => ({
+                            ...m,
+                            avatar: this.getAvatarUrl(m.avatar),
+                            email: m.email,
+                            selected: false, // ⬅️ Default false jika tidak ada recipients
+                        }));
+                        this.selectAll = false;
+                        return;
+                    }
 
                     // Fetch recipients
                     const docId =
                         this.currentFolder?.id || this.currentFile?.id;
+                    console.log("📄 Fetching recipients for docId:", docId); // ⬅️ TAMBAHKAN
+
                     const recipientsRes = await fetch(
                         `/documents/${docId}/recipients`
                     );
                     const recipientsData = await recipientsRes.json();
+
+                    console.log("👥 Recipients response:", recipientsData); // ⬅️ TAMBAHKAN
+
                     const selectedUserIds = recipientsData?.recipients || [];
+
+                    console.log("✅ Selected user IDs:", selectedUserIds); // ⬅️ TAMBAHKAN
 
                     this.members = data.members.map((m) => ({
                         ...m,
+                        avatar: this.getAvatarUrl(m.avatar),
+                        email: m.email,
                         selected: selectedUserIds.includes(m.id),
                     }));
 
                     this.selectAll =
                         this.members.length > 0 &&
                         this.members.every((m) => m.selected);
+
+                    console.log("✅ Members processed:", this.members.length); // ⬅️ TAMBAHKAN
+                    console.log("✅ selectAll:", this.selectAll); // ⬅️ TAMBAHKAN
                 })
                 .catch((error) => {
                     console.error("❌ Error loading members:", error);
@@ -2782,6 +2853,7 @@ export default function documentSearch() {
                 })
                 .finally(() => {
                     this.isLoadingPermission = false;
+                    console.log("✅ isLoadingPermission set to false"); // ⬅️ TAMBAHKAN
                 });
         },
 
@@ -3407,7 +3479,27 @@ window.documentCommentSection = function () {
                 const data = await response.json();
 
                 if (data.comments) {
-                    this.currentFile.comments = data.comments;
+                    // ⬅️ PROSES avatar di comments
+                    this.currentFile.comments = data.comments.map(
+                        (comment) => ({
+                            ...comment,
+                            author: {
+                                ...comment.author,
+                                avatar: this.getAvatarUrl(
+                                    comment.author?.avatar
+                                ),
+                            },
+                            replies: (comment.replies || []).map((reply) => ({
+                                ...reply,
+                                author: {
+                                    ...reply.author,
+                                    avatar: this.getAvatarUrl(
+                                        reply.author?.avatar
+                                    ),
+                                },
+                            })),
+                        })
+                    );
                 }
             } catch (error) {
                 console.error("Error loading comments:", error);

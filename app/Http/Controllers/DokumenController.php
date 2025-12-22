@@ -89,13 +89,13 @@ class DokumenController extends Controller
         $folders = Folder::where('workspace_id', $workspace->id)
             ->where($folderAccess)
             ->with([
-                'creator',
-                'documentRecipients',
+                'creator:id,full_name,avatar', // ⬅️ Tambahkan avatar
+                'documentRecipients.user:id,full_name,avatar', // ⬅️ Tambahkan avatar di recipients
                 'files' => function ($query) use ($fileAccess) {
                     $query->where($fileAccess)
                         ->with(
-                            'uploader',
-                            'documentRecipients'
+                            'uploader:id,full_name,avatar', // ⬅️ Tambahkan avatar
+                            'documentRecipients.user:id,full_name,avatar' // ⬅️ Tambahkan avatar
                         );
                 }
             ])
@@ -112,7 +112,13 @@ class DokumenController extends Controller
         // ================================
         $rootFiles = File::where('workspace_id', $workspace->id)
             ->where($fileAccess)
-            ->with(['uploader', 'documentRecipients'])
+            ->with([
+                'uploader:id,full_name,avatar', // ⬅️ Tambahkan avatar
+                'documentRecipients' => function ($query) {
+                    $query->where('status', true);
+                },
+                'documentRecipients.user:id,full_name,avatar'
+            ])
             ->orderBy('uploaded_at', 'desc')
             ->get();
 
@@ -614,11 +620,36 @@ class DokumenController extends Controller
             // Kalau kosong → tidak diubah
         }
 
-        return redirect()->back()->with('alert', [
-            'icon' => 'success',
-            'title' => 'Berhasil!',
-            'text' => 'Penerima berkas berhasil diperbarui.',
-        ])->with('alert_once', true);
+        // ✅ Tentukan redirect URL berdasarkan context
+        $redirectUrl = null;
+
+        // ❌ SEBELUM (di recipientsStore)
+        if ($file = File::find($request->document_id)) {
+            $workspaceId = $file->workspace_id;
+            $folderId = $file->folder_id;
+
+            $redirectUrl = route('dokumen-dan-file', ['workspace' => $workspaceId]);
+
+            if ($folderId) {
+                $redirectUrl .= '?folder=' . $folderId;
+            }
+        } elseif ($folder = Folder::find($request->document_id)) {
+            $workspaceId = $folder->workspace_id;
+
+            $redirectUrl = route('dokumen-dan-file', ['workspace' => $workspaceId]);
+            $redirectUrl .= '?folder=' . $folder->id;
+        }
+
+        // ✅ Return JSON response
+        return response()->json([
+            'success' => true,
+            'redirect_url' => $redirectUrl,
+            'alert' => [
+                'icon' => 'success',
+                'title' => 'Berhasil!',
+                'text' => 'Penerima berkas berhasil diperbarui.',
+            ]
+        ]);
     }
 
 
