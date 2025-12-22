@@ -72,7 +72,7 @@
             </svg>
         </div>
         <input type="text" x-model="searchQuery" @input="filterDocuments()"
-            :placeholder="currentFolder ? 'Cari dalam ' + currentFolder.name : 'Cari dokumen atau folder...'"
+            :placeholder="currentFolder ? 'Cari dalam ' + currentFolder?.name : 'Cari dokumen atau folder...'"
             class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
     </div>
 

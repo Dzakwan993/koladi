@@ -64,8 +64,8 @@
 <div x-show="showEditFolderModal" x-cloak
     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     {{-- ✅ COMPANY ROUTE --}}
-    <form method="POST" :action="`/company-documents/folders/${editingFolder.id}/update`"
-        @submit.prevent="handleUpdateFolder($event)" @click.outside="showEditFolderModal = false"
+    <form method="POST" :action="editingFolder ? `/company-documents/folders/${editingFolder.id}/update` : '#'"
+        @submit.prevent="editingFolder && handleUpdateFolder($event)" @click.outside="showEditFolderModal = false"
         class="bg-white rounded-lg w-full max-w-md">
         @csrf
         <div class="px-6 py-4 border-b border-gray-200">
@@ -113,7 +113,8 @@
 <div x-show="showDeleteFolderModal" x-cloak
     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     {{-- ✅ COMPANY ROUTE --}}
-    <form x-ref="deleteFolderForm" :action="`/company-documents/folders/${deletingFolder.id}/delete`" method="POST"
+    <form x-ref="deleteFolderForm"
+        :action="deletingFolder ? `/company-documents/folders/${deletingFolder.id}/delete` : '#'" method="POST"
         class="bg-white rounded-lg w-full max-w-md" @click.outside="showDeleteFolderModal = false">
         @csrf
         @method('DELETE')
@@ -346,8 +347,8 @@
 <div x-show="showEditFileModal" x-cloak
     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     {{-- ✅ COMPANY ROUTE --}}
-    <form method="POST" :action="`/company-documents/files/${editingFile.id}/update`"
-        @submit.prevent="handleUpdateFile($event)" class="bg-white rounded-lg w-full max-w-md"
+    <form method="POST" :action="editingFile ? `/company-documents/files/${editingFile.id}/update` : '#'"
+        @submit.prevent="editingFile && handleUpdateFile($event)" class="bg-white rounded-lg w-full max-w-md"
         @click.outside="showEditFileModal = false">
         @csrf
         @method('PUT')
@@ -409,8 +410,8 @@
 <div x-show="showDeleteFileModal" x-cloak
     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     {{-- ✅ COMPANY ROUTE --}}
-    <form x-ref="deleteFileForm" :action="`/company-documents/files/${deletingFile.id}/delete`" method="POST"
-        class="bg-white rounded-lg w-full max-w-md" @click.outside="showDeleteFileModal = false">
+    <form x-ref="deleteFileForm" :action="deletingFile ? `/company-documents/files/${deletingFile.id}/delete` : '#'"
+        method="POST" class="bg-white rounded-lg w-full max-w-md" @click.outside="showDeleteFileModal = false">
         @csrf
         @method('DELETE')
         {{-- Same content as workspace modal --}}
