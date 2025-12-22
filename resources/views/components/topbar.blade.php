@@ -635,7 +635,33 @@
                     },
 
                     async deleteNotification(notificationId) {
-                        if (!confirm('Hapus notifikasi ini?')) {
+                        // ✅ Gunakan SweetAlert untuk konfirmasi
+                        const result = await Swal.fire({
+                            icon: 'warning',
+                            title: 'Hapus Notifikasi?',
+                            text: 'Notifikasi ini akan dihapus secara permanen.',
+                            showCancelButton: true,
+                            confirmButtonText: 'Ya, Hapus',
+                            cancelButtonText: 'Batal',
+                            confirmButtonColor: '#DC2626',
+                            cancelButtonColor: '#6B7280',
+                            reverseButtons: true,
+                            customClass: {
+                                popup: 'swal-custom-popup',
+                                title: 'swal-custom-title',
+                                htmlContainer: 'swal-custom-text'
+                            },
+                            didOpen: (popup) => {
+                                popup.classList.add('swal-fade-in');
+                            },
+                            willClose: (popup) => {
+                                popup.classList.remove('swal-fade-in');
+                                popup.classList.add('swal-fade-out');
+                            }
+                        });
+
+                        // Jika user membatalkan
+                        if (!result.isConfirmed) {
                             return;
                         }
 
@@ -657,17 +683,100 @@
                                 // Remove from local list
                                 this.notifications = (this.notifications || []).filter(n => n.id !== notificationId);
                                 this.updateUnreadCount();
+
                                 console.log('✅ Notification deleted');
+
+                                // // ✅ Tampilkan notifikasi sukses
+                                // Swal.fire({
+                                //     icon: 'success',
+                                //     title: 'Berhasil!',
+                                //     text: 'Notifikasi berhasil dihapus.',
+                                //     timer: 2000,
+                                //     showConfirmButton: false,
+                                //     timerProgressBar: true,
+                                //     position: 'center',
+                                //     customClass: {
+                                //         popup: 'swal-custom-popup',
+                                //         title: 'swal-custom-title',
+                                //         htmlContainer: 'swal-custom-text'
+                                //     },
+                                //     didOpen: (popup) => {
+                                //         popup.classList.add('swal-fade-in');
+                                //     },
+                                //     willClose: (popup) => {
+                                //         popup.classList.remove('swal-fade-in');
+                                //         popup.classList.add('swal-fade-out');
+                                //     }
+                                // });
+
                             } else {
                                 console.error('❌ Failed to delete notification:', data.message);
+
+                                // ✅ Tampilkan error
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Gagal!',
+                                    text: data.message || 'Gagal menghapus notifikasi.',
+                                    confirmButtonText: 'OK',
+                                    confirmButtonColor: '#DC2626',
+                                    customClass: {
+                                        popup: 'swal-custom-popup',
+                                        title: 'swal-custom-title',
+                                        htmlContainer: 'swal-custom-text'
+                                    }
+                                });
                             }
                         } catch (error) {
                             console.error('❌ Error deleting notification:', error);
+
+                            // ✅ Tampilkan error
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: 'Terjadi kesalahan saat menghapus notifikasi.',
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#DC2626',
+                                customClass: {
+                                    popup: 'swal-custom-popup',
+                                    title: 'swal-custom-title',
+                                    htmlContainer: 'swal-custom-text'
+                                }
+                            });
                         }
                     },
 
+                    // ============================================
+                    // Update fungsi clearReadNotifications()
+                    // ============================================
+
                     async clearReadNotifications() {
-                        if (!confirm('Hapus semua notifikasi yang sudah dibaca?')) {
+                        // ✅ Gunakan SweetAlert untuk konfirmasi
+                        const result = await Swal.fire({
+                            icon: 'warning',
+                            title: 'Hapus Semua?',
+                            text: 'Semua notifikasi yang sudah dibaca akan dihapus secara permanen.',
+                            showCancelButton: true,
+                            confirmButtonText: 'Ya, Hapus Semua',
+                            cancelButtonText: 'Batal',
+                            confirmButtonColor: '#DC2626',
+                            cancelButtonColor: '#6B7280',
+                            reverseButtons: true,
+                            customClass: {
+                                popup: 'swal-custom-popup',
+                                title: 'swal-custom-title',
+                                htmlContainer: 'swal-custom-text'
+                            },
+                            didOpen: (popup) => {
+                                popup.classList.add('swal-fade-in');
+                            },
+                            willClose: (popup) => {
+                                popup.classList.remove('swal-fade-in');
+                                popup.classList.add('swal-fade-out');
+                            }
+                        });
+
+                        // Jika user membatalkan
+                        if (!result.isConfirmed) {
                             return;
                         }
 
@@ -688,12 +797,195 @@
                             if (data.success) {
                                 // Remove read notifications from local list
                                 this.notifications = (this.notifications || []).filter(n => !n.is_read);
+
                                 console.log('✅ Read notifications cleared');
+
+                                // ✅ Tampilkan notifikasi sukses
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil!',
+                                    text: 'Semua notifikasi yang sudah dibaca telah dihapus.',
+                                    timer: 2000,
+                                    showConfirmButton: false,
+                                    timerProgressBar: true,
+                                    position: 'center',
+                                    customClass: {
+                                        popup: 'swal-custom-popup',
+                                        title: 'swal-custom-title',
+                                        htmlContainer: 'swal-custom-text'
+                                    },
+                                    didOpen: (popup) => {
+                                        popup.classList.add('swal-fade-in');
+                                    },
+                                    willClose: (popup) => {
+                                        popup.classList.remove('swal-fade-in');
+                                        popup.classList.add('swal-fade-out');
+                                    }
+                                });
+
                             } else {
                                 console.error('❌ Failed to clear notifications:', data.message);
+
+                                // ✅ Tampilkan error
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Gagal!',
+                                    text: data.message || 'Gagal menghapus notifikasi.',
+                                    confirmButtonText: 'OK',
+                                    confirmButtonColor: '#DC2626',
+                                    customClass: {
+                                        popup: 'swal-custom-popup',
+                                        title: 'swal-custom-title',
+                                        htmlContainer: 'swal-custom-text'
+                                    }
+                                });
                             }
                         } catch (error) {
                             console.error('❌ Error clearing notifications:', error);
+
+                            // ✅ Tampilkan error
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: 'Terjadi kesalahan saat menghapus notifikasi.',
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#DC2626',
+                                customClass: {
+                                    popup: 'swal-custom-popup',
+                                    title: 'swal-custom-title',
+                                    htmlContainer: 'swal-custom-text'
+                                }
+                            });
+                        }
+                    },
+
+                    async clearReadNotifications() {
+                        // ✅ Hitung jumlah notifikasi yang sudah dibaca
+                        const readCount = (this.notifications || []).filter(n => n.is_read).length;
+
+                        // Jika tidak ada notifikasi yang sudah dibaca
+                        if (readCount === 0) {
+                            Swal.fire({
+                                icon: 'info',
+                                title: 'Tidak Ada Notifikasi',
+                                text: 'Tidak ada notifikasi yang sudah dibaca untuk dihapus.',
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#225AD6',
+                                customClass: {
+                                    popup: 'swal-custom-popup',
+                                    title: 'swal-custom-title',
+                                    htmlContainer: 'swal-custom-text'
+                                }
+                            });
+                            return;
+                        }
+
+                        // ✅ Gunakan SweetAlert untuk konfirmasi
+                        const result = await Swal.fire({
+                            icon: 'warning',
+                            title: 'Hapus Semua?',
+                            html: `<p style="margin: 0;">Akan menghapus <strong>${readCount} notifikasi</strong> yang sudah dibaca secara permanen.</p>`,
+                            showCancelButton: true,
+                            confirmButtonText: 'Ya, Hapus Semua',
+                            cancelButtonText: 'Batal',
+                            confirmButtonColor: '#DC2626',
+                            cancelButtonColor: '#6B7280',
+                            reverseButtons: true,
+                            customClass: {
+                                popup: 'swal-custom-popup',
+                                title: 'swal-custom-title',
+                                htmlContainer: 'swal-custom-text'
+                            },
+                            didOpen: (popup) => {
+                                popup.classList.add('swal-fade-in');
+                            },
+                            willClose: (popup) => {
+                                popup.classList.remove('swal-fade-in');
+                                popup.classList.add('swal-fade-out');
+                            }
+                        });
+
+                        // Jika user membatalkan
+                        if (!result.isConfirmed) {
+                            return;
+                        }
+
+                        try {
+                            console.log('🗑️ Clearing read notifications...');
+
+                            const response = await fetch('/notifications/clear-read', {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                }
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                // Remove read notifications from local list
+                                this.notifications = (this.notifications || []).filter(n => !n.is_read);
+
+                                console.log('✅ Read notifications cleared');
+
+                                // ✅ Tampilkan notifikasi sukses
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil!',
+                                    text: 'Semua notifikasi yang sudah dibaca telah dihapus.',
+                                    timer: 2000,
+                                    showConfirmButton: false,
+                                    timerProgressBar: true,
+                                    position: 'center',
+                                    customClass: {
+                                        popup: 'swal-custom-popup',
+                                        title: 'swal-custom-title',
+                                        htmlContainer: 'swal-custom-text'
+                                    },
+                                    didOpen: (popup) => {
+                                        popup.classList.add('swal-fade-in');
+                                    },
+                                    willClose: (popup) => {
+                                        popup.classList.remove('swal-fade-in');
+                                        popup.classList.add('swal-fade-out');
+                                    }
+                                });
+
+                            } else {
+                                console.error('❌ Failed to clear notifications:', data.message);
+
+                                // ✅ Tampilkan error
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Gagal!',
+                                    text: data.message || 'Gagal menghapus notifikasi.',
+                                    confirmButtonText: 'OK',
+                                    confirmButtonColor: '#DC2626',
+                                    customClass: {
+                                        popup: 'swal-custom-popup',
+                                        title: 'swal-custom-title',
+                                        htmlContainer: 'swal-custom-text'
+                                    }
+                                });
+                            }
+                        } catch (error) {
+                            console.error('❌ Error clearing notifications:', error);
+
+                            // ✅ Tampilkan error
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: 'Terjadi kesalahan saat menghapus notifikasi.',
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#DC2626',
+                                customClass: {
+                                    popup: 'swal-custom-popup',
+                                    title: 'swal-custom-title',
+                                    htmlContainer: 'swal-custom-text'
+                                }
+                            });
                         }
                     },
 
