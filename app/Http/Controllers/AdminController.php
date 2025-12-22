@@ -90,8 +90,10 @@ class AdminController extends Controller
             })->values(); // values() supaya index 0,1,2
             $addons = Addon::where('is_active', true)->get();
 
+            $feedbacks = \App\Models\Feedback::latest()->paginate(10);
+
             return view('dashboard_admin', [
-                'allCompanies' => $companies, // gunakan nama baru
+                'allCompanies' => $companies,
                 'totalCompanies' => $totalCompanies,
                 'totalMembers' => $totalMembers,
                 'activeCompanies' => $activeCompanies,
@@ -99,7 +101,8 @@ class AdminController extends Controller
                 'plans' => $plans,
                 'addons' => $addons,
                 'pendingInvoices' => $pendingInvoices,
-                'historyInvoices' => $historyInvoices // Kirim ke view
+                'historyInvoices' => $historyInvoices,
+                'feedbacks' => $feedbacks // Tambahkan ini
             ]);
         } catch (\Exception $e) {
             Log::error('Admin Dashboard Error: ' . $e->getMessage());
@@ -111,10 +114,11 @@ class AdminController extends Controller
                 'totalMembers' => 0,
                 'activeCompanies' => 0,
                 'trialCompanies' => 0,
-                'pendingInvoices' => $pendingInvoices,
-                'historyInvoices' => $historyInvoices, // Kirim ke view
+                'pendingInvoices' => collect([]),
+                'historyInvoices' => collect([]),
                 'plans' => collect([]),
-                'addons' => collect([])
+                'addons' => collect([]),
+                'feedbacks' => collect([]) // Tambahkan ini
             ])->with('error', 'Terjadi kesalahan saat memuat data');
         }
     }
@@ -278,6 +282,24 @@ class AdminController extends Controller
             Log::error('Stack trace: ' . $e->getTraceAsString());
 
             return back()->with('error', 'Gagal export data perusahaan');
+        }
+    }
+
+    public function deleteFeedback($id)
+    {
+        try {
+            $feedback = \App\Models\Feedback::findOrFail($id);
+            $feedback->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Feedback berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus feedback: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

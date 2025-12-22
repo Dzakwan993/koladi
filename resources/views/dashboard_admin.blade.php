@@ -395,6 +395,7 @@
                 </div>
 
                 <!-- FILTER & SEARCH -->
+                <!-- ✅ BAGIAN FILTER & SEARCH YANG BENAR (GANTI BARIS 336-373) -->
                 <div class="mb-6 bg-white p-4 md:p-6 rounded-xl shadow-md">
                     <div class="flex flex-col md:flex-row justify-between gap-4">
                         <div class="flex flex-col md:flex-row gap-3 w-full md:w-auto">
@@ -410,21 +411,8 @@
                                 <option value="expired">Expired</option>
                                 <option value="canceled">Canceled</option>
                             </select>
-                            <button id="filterBtn">
-                            </button>
                         </div>
 
-        <a href="{{ route('admin.companies.export') }}"
-            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd"
-                    d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                    clip-rule="evenodd" />
-            </svg>
-            Export Excel
-        </a>
-    </div>
-</div>
                         <a href="{{ route('admin.companies.export') }}"
                             class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition flex items-center justify-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20"
@@ -971,23 +959,157 @@
                 </div>
             </div>
 
-            <!-- Feedback Content (Kosong) -->
+            <!-- Feedback Content -->
             <div id="feedback-content" class="content-section hidden">
-                <div class="bg-white p-8 rounded-xl shadow-md">
-                    <div class="text-center py-12">
-                        <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-green-600" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                            </svg>
+                <div class="space-y-6">
+                    {{-- Header --}}
+                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-md border border-green-100">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                            <div>
+                                <h2 class="text-xl font-bold text-green-700 flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 20 20"
+                                        fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M18 13V5a2 2 0 00-2-2H4a2 2 0 00-2 2v8a2 2 0 002 2h3l3 3 3-3h3a2 2 0 002-2zM5 7a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm1 3a1 1 0 100 2h3a1 1 0 100-2H6z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    Feedback & Masukan Pengguna
+                                </h2>
+                                <p class="text-sm text-gray-500 mt-1">Kelola semua feedback dari pengguna sistem</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full font-medium">
+                                    Total: {{ $feedbacks->total() }} feedback
+                                </span>
+                                <button onclick="window.location.reload()"
+                                    class="text-green-600 hover:text-green-800 text-sm font-medium flex items-center gap-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20"
+                                        fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                    Refresh
+                                </button>
+                            </div>
                         </div>
-                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Halaman Feedback</h2>
-                        <p class="text-gray-600 mb-6">Halaman ini akan menampilkan feedback dan masukan dari pengguna.
-                        </p>
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-8">
-                            <p class="text-gray-500">Konten feedback akan ditampilkan di sini.</p>
-                        </div>
+                    </div>
+
+                    {{-- Feedback List --}}
+                    <div class="bg-white p-4 md:p-6 rounded-xl shadow-md border">
+                        @forelse($feedbacks as $feedback)
+                            <div
+                                class="border-b border-gray-200 last:border-b-0 py-4 hover:bg-gray-50 transition rounded-lg px-4">
+                                <div class="flex flex-col md:flex-row justify-between gap-4">
+                                    {{-- Info Pengirim --}}
+                                    <div class="flex items-start gap-4 flex-1">
+                                        <div class="bg-green-100 p-3 rounded-full flex-shrink-0">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600"
+                                                viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd"
+                                                    d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                                    clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex flex-col md:flex-row md:items-center gap-2 mb-2">
+                                                <h3 class="font-bold text-gray-900">
+                                                    {{ $feedback->name ?: 'Anonim' }}
+                                                </h3>
+                                                @if ($feedback->email)
+                                                    <a href="mailto:{{ $feedback->email }}"
+                                                        class="text-sm text-blue-600 hover:underline flex items-center gap-1">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4"
+                                                            viewBox="0 0 20 20" fill="currentColor">
+                                                            <path
+                                                                d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                                            <path
+                                                                d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                                        </svg>
+                                                        {{ $feedback->email }}
+                                                    </a>
+                                                @endif
+                                            </div>
+
+                                            {{-- Pesan --}}
+                                            <div class="bg-gray-50 rounded-lg p-4 border-l-4 border-green-500">
+                                                <p class="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                                                    {{ $feedback->message }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {{-- Waktu & Actions --}}
+                                    <div class="flex flex-col items-end gap-2 flex-shrink-0">
+                                        <div class="text-right">
+                                            <p class="text-xs text-gray-400">
+                                                {{ $feedback->created_at->format('d M Y') }}
+                                            </p>
+                                            <p class="text-xs text-gray-500 font-medium">
+                                                {{ $feedback->created_at->format('H:i') }}
+                                            </p>
+                                            <p class="text-xs text-gray-400 italic">
+                                                {{ $feedback->created_at->diffForHumans() }}
+                                            </p>
+                                        </div>
+
+                                        {{-- Action Buttons --}}
+                                        <div class="flex gap-2">
+                                            @if ($feedback->email)
+                                                <a href="mailto:{{ $feedback->email }}"
+                                                    class="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition font-medium inline-flex items-center gap-1">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3"
+                                                        viewBox="0 0 20 20" fill="currentColor">
+                                                        <path
+                                                            d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                                        <path
+                                                            d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                                    </svg>
+                                                    Balas
+                                                </a>
+                                            @endif
+                                            <button onclick="deleteFeedback({{ $feedback->id }})"
+                                                class="text-xs bg-red-50 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-100 transition font-medium inline-flex items-center gap-1">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3"
+                                                    viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd"
+                                                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                                                        clip-rule="evenodd" />
+                                                </svg>
+                                                Hapus
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-12">
+                                <div
+                                    class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400"
+                                        fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                                    </svg>
+                                </div>
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">Belum Ada Feedback</h3>
+                                <p class="text-gray-500">Feedback dari pengguna akan muncul di sini.</p>
+                            </div>
+                        @endforelse
+
+                        {{-- Pagination --}}
+                        @if ($feedbacks->hasPages())
+                            <div
+                                class="mt-6 flex flex-col sm:flex-row justify-between items-center gap-3 pt-4 border-t">
+                                <div class="text-sm text-gray-600">
+                                    Menampilkan {{ $feedbacks->firstItem() }} - {{ $feedbacks->lastItem() }}
+                                    dari {{ $feedbacks->total() }} feedback
+                                </div>
+                                <div class="flex gap-2">
+                                    {{ $feedbacks->links('pagination::tailwind') }}
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -1197,7 +1319,6 @@
             });
 
             if (result.isConfirmed) {
-                // Tampilkan loading spinner
                 Swal.fire({
                     title: 'Memproses...',
                     didOpen: () => {
@@ -1224,7 +1345,7 @@
 
                     if (data.success) {
                         await Swal.fire('Berhasil!', data.message, 'success');
-                        window.location.reload(); // Reload agar data berpindah dari pending ke history
+                        window.location.reload();
                     } else {
                         Swal.fire('Gagal!', data.message, 'error');
                     }
@@ -1234,7 +1355,6 @@
             }
         }
 
-        // Fungsi tambahan untuk zoom gambar bukti transfer
         function viewImage(url) {
             Swal.fire({
                 imageUrl: url,
@@ -1244,7 +1364,6 @@
             });
         }
 
-        // Fungsi untuk melihat alasan penolakan pembayaran
         function showRejectReason(reason) {
             Swal.fire({
                 title: 'Alasan Penolakan',
@@ -1254,6 +1373,7 @@
                 confirmButtonColor: '#1e40af'
             });
         }
+
         document.addEventListener('DOMContentLoaded', function() {
             // Sidebar toggle for mobile
             const sidebarToggle = document.getElementById('sidebarToggle');
@@ -1361,14 +1481,12 @@
                     const packageCard = this.closest('.package-card');
                     const planId = packageCard.getAttribute('data-plan-id');
 
-                    // Get current values
                     const currentName = packageCard.querySelector('h3').textContent.trim();
                     const currentPrice = packageCard.querySelector('.package-price').textContent
                         .replace(/[^0-9]/g, '');
                     const currentUserLimit = packageCard.querySelector('.package-user-limit')
                         .textContent.trim();
 
-                    // Set modal values
                     modalPackageTitle.textContent = `Edit ${currentName}`;
                     planIdInput.value = planId;
                     packageNameInput.value = currentName;
@@ -1388,12 +1506,10 @@
                     const addonCard = this.closest('.addon-card');
                     const addonId = addonCard.getAttribute('data-addon-id');
 
-                    // Get current values
                     const currentName = addonCard.querySelector('h3').textContent.trim();
                     const currentPrice = addonCard.querySelector('.addon-price').textContent
                         .replace(/[^0-9]/g, '');
 
-                    // Set modal values
                     modalAddonTitle.textContent = `Edit ${currentName}`;
                     addonIdInput.value = addonId;
                     addonPriceInput.value = currentPrice;
@@ -1427,7 +1543,6 @@
                 const btnText = submitBtn.querySelector('.btn-text');
                 const btnLoading = submitBtn.querySelector('.btn-loading');
 
-                // Disable button and show loading
                 submitBtn.disabled = true;
                 btnText.classList.add('hidden');
                 btnLoading.classList.remove('hidden');
@@ -1448,7 +1563,6 @@
                     const result = await response.json();
 
                     if (result.success) {
-                        // Update UI
                         const packageCard = document.querySelector(
                             `.package-card[data-plan-id="${planId}"]`);
                         packageCard.querySelector('h3').textContent = formData.get('plan_name');
@@ -1466,7 +1580,6 @@
                     console.error('Error:', error);
                     showToast('Terjadi kesalahan saat memperbarui paket', 'error');
                 } finally {
-                    // Re-enable button
                     submitBtn.disabled = false;
                     btnText.classList.remove('hidden');
                     btnLoading.classList.add('hidden');
@@ -1481,7 +1594,6 @@
                 const btnText = submitBtn.querySelector('.btn-text');
                 const btnLoading = submitBtn.querySelector('.btn-loading');
 
-                // Disable button and show loading
                 submitBtn.disabled = true;
                 btnText.classList.add('hidden');
                 btnLoading.classList.remove('hidden');
@@ -1502,7 +1614,6 @@
                     const result = await response.json();
 
                     if (result.success) {
-                        // Update UI
                         const addonCard = document.querySelector(
                             `.addon-card[data-addon-id="${addonId}"]`);
                         addonCard.querySelector('.addon-price').innerHTML =
@@ -1517,14 +1628,13 @@
                     console.error('Error:', error);
                     showToast('Terjadi kesalahan saat memperbarui add-ons', 'error');
                 } finally {
-                    // Re-enable button
                     submitBtn.disabled = false;
                     btnText.classList.remove('hidden');
                     btnLoading.classList.add('hidden');
                 }
             });
 
-            // Existing refresh and filter code...
+            // Refresh button
             const refreshBtn = document.querySelector('.refresh-btn');
             if (refreshBtn) {
                 refreshBtn.addEventListener('click', function() {
@@ -1532,18 +1642,10 @@
                 });
             }
 
-
+            // Export button
             const exportBtn = document.querySelector('a[href*="export"]');
-
-        if (exportBtn) {
-            exportBtn.addEventListener('click', function(e) {
-                // Ganti isi button
-                const originalHTML = this.innerHTML;
-                this.innerHTML = `
-
             if (exportBtn) {
                 exportBtn.addEventListener('click', function(e) {
-                    // Ganti isi button
                     const originalHTML = this.innerHTML;
                     this.innerHTML = `
                     <svg class="animate-spin h-5 w-5 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -1552,19 +1654,8 @@
                     </svg>
                     Mengexport...
                 `;
-                this.classList.add('pointer-events-none', 'opacity-75');
-
-                // Kembalikan setelah 3 detik
-                setTimeout(() => {
-                    this.innerHTML = originalHTML;
-                    this.classList.remove('pointer-events-none', 'opacity-75');
-                }, 3000);
-            });
-        }
-
                     this.classList.add('pointer-events-none', 'opacity-75');
 
-                    // Kembalikan setelah 3 detik
                     setTimeout(() => {
                         this.innerHTML = originalHTML;
                         this.classList.remove('pointer-events-none', 'opacity-75');
@@ -1572,12 +1663,9 @@
                 });
             }
 
-        });
-
-        document.addEventListener('DOMContentLoaded', function() {
+            // Search and filter
             const searchInput = document.getElementById('searchInput');
             const statusFilter = document.getElementById('statusFilter');
-            const filterBtn = document.getElementById('filterBtn');
             const rows = document.querySelectorAll('.company-row');
 
             function applyFilter() {
@@ -1589,11 +1677,8 @@
                     const email = row.dataset.email;
                     const rowStatus = row.dataset.status;
 
-                    const matchKeyword =
-                        name.includes(keyword) || email.includes(keyword);
-
-                    const matchStatus =
-                        status === '' || rowStatus === status;
+                    const matchKeyword = name.includes(keyword) || email.includes(keyword);
+                    const matchStatus = status === '' || rowStatus === status;
 
                     if (matchKeyword && matchStatus) {
                         row.style.display = '';
@@ -1603,15 +1688,60 @@
                 });
             }
 
-            // Klik tombol filter
-            filterBtn.addEventListener('click', applyFilter);
+            if (searchInput) {
+                searchInput.addEventListener('input', applyFilter);
+            }
 
-            // Live search (ketik langsung)
-            searchInput.addEventListener('input', applyFilter);
-
-            // Ganti status langsung filter
-            statusFilter.addEventListener('change', applyFilter);
+            if (statusFilter) {
+                statusFilter.addEventListener('change', applyFilter);
+            }
         });
+
+        // Fungsi untuk delete feedback
+        async function deleteFeedback(id) {
+            const result = await Swal.fire({
+                title: 'Hapus Feedback?',
+                text: 'Feedback ini akan dihapus permanen!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            });
+
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Menghapus...',
+                    didOpen: () => {
+                        Swal.showLoading()
+                    },
+                    allowOutsideClick: false
+                });
+
+                try {
+                    const response = await fetch(`/admin/feedbacks/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        await Swal.fire('Berhasil!', data.message, 'success');
+                        window.location.reload();
+                    } else {
+                        Swal.fire('Gagal!', data.message, 'error');
+                    }
+                } catch (error) {
+                    Swal.fire('Error!', 'Terjadi kesalahan sistem.', 'error');
+                }
+            }
+        }
     </script>
 </body>
 
