@@ -1,5 +1,5 @@
 {{-- 🔍 Search & Filter Section --}}
-<div class="sticky top-0 z-50 bg-white/80 backdrop-blur border-b px-3 xs:px-4 sm:px-5 md:px-6 py-2 xs:py-3 sm:py-4 shadow-sm">
+<div class="sticky top-0 z-40 bg-white/80 backdrop-blur border-b px-3 xs:px-4 sm:px-5 md:px-6 py-2 xs:py-3 sm:py-4 shadow-sm">
     <div class="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 xs:gap-3 sm:gap-4">
         {{-- 🔎 Search & Filters --}}
         <div class="flex w-full flex-col gap-2 xs:gap-3 sm:flex-row sm:items-center">

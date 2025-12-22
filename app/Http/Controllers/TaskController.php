@@ -20,9 +20,20 @@ use App\Models\Checklist;
 use App\Models\Attachment;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Services\NotificationService;
 
 class TaskController extends Controller
 {
+
+
+    // ✅ TAMBAH INI
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     private function canAccessWorkspace($workspaceId)
     {
         $user = Auth::user();
@@ -547,26 +558,33 @@ class TaskController extends Controller
     /**
      * Create task dengan sync status otomatis
      */
+    // Di TaskController.php - Method storeWithAssignments
+    // Ganti bagian validasi dengan yang baru ini:
+
     public function storeWithAssignments(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'workspace_id' => 'required|exists:workspaces,id',
             'board_column_id' => 'required|exists:board_columns,id',
+
+            // ✅ FIELD WAJIB
             'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'phase' => 'required|string|max:255',
-            'user_ids' => 'array',
+            'description' => 'required|string',
+            'start_datetime' => 'required|date_format:Y-m-d H:i:s',
+            'due_datetime' => 'required|date_format:Y-m-d H:i:s|after:start_datetime',
+
+            // ✅ FIELD OPSIONAL
+            'phase' => 'nullable|string|max:255', // Ubah dari required menjadi nullable
+            'user_ids' => 'nullable|array', // Anggota opsional
             'user_ids.*' => 'exists:users,id',
-            'label_ids' => 'array',
+            'label_ids' => 'nullable|array', // Label opsional
             'label_ids.*' => 'exists:labels,id',
-            'checklists' => 'array',
+            'checklists' => 'nullable|array', // Checklist opsional
             'checklists.*.title' => 'required|string|max:255',
             'checklists.*.is_done' => 'boolean',
             'is_secret' => 'boolean',
-            'attachment_ids' => 'array',
+            'attachment_ids' => 'nullable|array', // Attachment opsional
             'attachment_ids.*' => 'exists:attachments,id',
-            'start_datetime' => 'nullable|date_format:Y-m-d H:i:s',
-            'due_datetime' => 'nullable|date_format:Y-m-d H:i:s|after:start_datetime'
         ]);
 
         if ($validator->fails()) {
@@ -601,7 +619,7 @@ class TaskController extends Controller
 
             DB::beginTransaction();
 
-            // Tentukan status berdasarkan kolom (mengikuti nama kolom untuk custom)
+            // Tentukan status berdasarkan kolom
             $status = $this->mapColumnToStatus($boardColumn->name);
 
             // Buat task
@@ -612,23 +630,17 @@ class TaskController extends Controller
                 'created_by' => $user->id,
                 'title' => $request->title,
                 'description' => $request->description,
-                'phase' => $request->phase,
+                'phase' => $request->phase ?: null, // ✅ Set null jika tidak ada
                 'status' => $status,
                 'priority' => $request->priority ?? 'medium',
-                'is_secret' => $request->is_secret ?? false
+                'is_secret' => $request->is_secret ?? false,
+                'start_datetime' => $request->start_datetime,
+                'due_datetime' => $request->due_datetime
             ];
-
-            // Tambahkan datetime jika ada
-            if ($request->start_datetime) {
-                $taskData['start_datetime'] = $request->start_datetime;
-            }
-            if ($request->due_datetime) {
-                $taskData['due_datetime'] = $request->due_datetime;
-            }
 
             $task = Task::create($taskData);
 
-            // Assign anggota
+            // Assign anggota (jika ada)
             if (!empty($request->user_ids)) {
                 foreach ($request->user_ids as $userId) {
                     TaskAssignment::create([
@@ -640,10 +652,12 @@ class TaskController extends Controller
                 }
             }
 
+            // Attach labels (jika ada)
             if (!empty($request->label_ids)) {
                 $task->labels()->attach($request->label_ids);
             }
 
+            // Create checklists (jika ada)
             if (!empty($request->checklists)) {
                 foreach ($request->checklists as $index => $checklistData) {
                     Checklist::create([
@@ -656,34 +670,36 @@ class TaskController extends Controller
                 }
             }
 
+            // Update attachments (jika ada)
             if (!empty($request->attachment_ids)) {
-    // ✅ PERBAIKAN: Update attachments tanpa mass assignment
-    foreach ($request->attachment_ids as $attachmentId) {
-        $attachment = Attachment::find($attachmentId);
-        if ($attachment) {
-            $attachment->attachable_id = $task->id;
-            $attachment->save();
-        }
-    }
-}
+                foreach ($request->attachment_ids as $attachmentId) {
+                    $attachment = Attachment::find($attachmentId);
+                    if ($attachment) {
+                        $attachment->attachable_id = $task->id;
+                        $attachment->save();
+                    }
+                }
+            }
 
             DB::commit();
 
-            // ✅ PERBAIKI: Load data dengan format yang diharapkan frontend
+            $this->notificationService->notifyTaskCreated($task);
+
+            // Load data dengan format yang diharapkan frontend
             $task->load([
-                'assignments.user', // Tetap load assignments
+                'assignments.user',
                 'labels.color',
                 'checklists',
                 'attachments',
                 'boardColumn',
-                'creator' // Load creator jika ada relasi
+                'creator'
             ]);
 
-            // ✅ PERBAIKI: Format response untuk frontend
+            // Format response untuk frontend
             $formattedTask = [
                 'id' => $task->id,
                 'title' => $task->title,
-                'phase' => $task->phase,
+                'phase' => $task->phase, // Bisa null
                 'status' => $task->status,
                 'board_column_id' => $task->board_column_id,
                 'description' => $task->description,
@@ -696,7 +712,6 @@ class TaskController extends Controller
                 'created_at' => $task->created_at,
                 'updated_at' => $task->updated_at,
 
-                // ✅ FORMAT assignees yang diharapkan frontend
                 'assignees' => $task->assignments->map(function ($assignment) {
                     return [
                         'id' => $assignment->user->id,
@@ -706,16 +721,14 @@ class TaskController extends Controller
                     ];
                 }),
 
-                // ✅ FORMAT labels yang diharapkan frontend
                 'labels' => $task->labels->map(function ($label) {
                     return [
                         'id' => $label->id,
                         'name' => $label->name,
-                        'color' => $label->color->rgb // Pastikan ada field rgb
+                        'color' => $label->color->rgb
                     ];
                 }),
 
-                // ✅ FORMAT checklists yang diharapkan frontend
                 'checklists' => $task->checklists->map(function ($checklist) {
                     return [
                         'id' => $checklist->id,
@@ -725,7 +738,6 @@ class TaskController extends Controller
                     ];
                 }),
 
-                // ✅ FORMAT attachments yang diharapkan frontend
                 'attachments' => $task->attachments->map(function ($attachment) {
                     return [
                         'id' => $attachment->id,
@@ -746,7 +758,7 @@ class TaskController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Tugas berhasil dibuat',
-                'task' => $formattedTask, // ✅ Gunakan formatted task
+                'task' => $formattedTask,
                 'new_column_name' => $boardColumn->name
             ]);
         } catch (\Exception $e) {
@@ -1138,75 +1150,75 @@ class TaskController extends Controller
 
     // ✅ NEW: Update checklist item
     // Di TaskController.php - PERBAIKI method updateChecklist
-public function updateChecklist(Request $request, $checklistId)
-{
-    $request->validate([
-        'title' => 'sometimes|string|max:255',
-        'is_done' => 'sometimes|boolean'
-    ]);
+    public function updateChecklist(Request $request, $checklistId)
+    {
+        $request->validate([
+            'title' => 'sometimes|string|max:255',
+            'is_done' => 'sometimes|boolean'
+        ]);
 
-    try {
-        $checklist = Checklist::findOrFail($checklistId);
-        $task = Task::findOrFail($checklist->task_id);
-        $user = Auth::user();
+        try {
+            $checklist = Checklist::findOrFail($checklistId);
+            $task = Task::findOrFail($checklist->task_id);
+            $user = Auth::user();
 
-        // ✅ PERBAIKI: Gunakan method helper untuk cek akses
-        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            // ✅ PERBAIKI: Gunakan method helper untuk cek akses
+            if (!$this->canAccessWorkspace($task->workspace_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            // ✅ UPDATE CHECKLIST
+            $checklist->update($request->only(['title', 'is_done']));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Checklist berhasil diupdate',
+                'checklist' => $checklist
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error updating checklist: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki akses ke task ini'
-            ], 403);
+                'message' => 'Gagal mengupdate checklist: ' . $e->getMessage()
+            ], 500);
         }
-
-        // ✅ UPDATE CHECKLIST
-        $checklist->update($request->only(['title', 'is_done']));
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Checklist berhasil diupdate',
-            'checklist' => $checklist
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Error updating checklist: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengupdate checklist: ' . $e->getMessage()
-        ], 500);
     }
-}
 
     // ✅ NEW: Delete checklist item
     // Di TaskController.php - PERBAIKI method deleteChecklist
-public function deleteChecklist($checklistId)
-{
-    try {
-        $checklist = Checklist::findOrFail($checklistId);
-        $task = Task::findOrFail($checklist->task_id);
-        $user = Auth::user();
+    public function deleteChecklist($checklistId)
+    {
+        try {
+            $checklist = Checklist::findOrFail($checklistId);
+            $task = Task::findOrFail($checklist->task_id);
+            $user = Auth::user();
 
-        // ✅ PERBAIKI: Gunakan method helper untuk cek akses
-        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            // ✅ PERBAIKI: Gunakan method helper untuk cek akses
+            if (!$this->canAccessWorkspace($task->workspace_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            // ✅ DELETE CHECKLIST
+            $checklist->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Checklist berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error deleting checklist: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki akses ke task ini'
-            ], 403);
+                'message' => 'Gagal menghapus checklist: ' . $e->getMessage()
+            ], 500);
         }
-
-        // ✅ DELETE CHECKLIST
-        $checklist->delete();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Checklist berhasil dihapus'
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Error deleting checklist: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal menghapus checklist: ' . $e->getMessage()
-        ], 500);
     }
-}
 
     // ✅ NEW: Update checklist positions
     public function updateChecklistPositions(Request $request)
@@ -1321,95 +1333,95 @@ public function deleteChecklist($checklistId)
     /**
      * Upload attachment untuk task
      */
-   public function uploadAttachment(Request $request)
-{
-    $request->validate([
-        'file' => 'required|file|max:10240',
-        'attachable_type' => 'required|string',
-    ]);
-
-    try {
-        $user = Auth::user();
-        $file = $request->file('file');
-
-        // Validasi tipe file
-        $allowedMimeTypes = [
-            'image/jpeg',
-            'image/jpg',
-            'image/png',
-            'image/gif',
-            'image/webp',
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/vnd.ms-powerpoint',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'text/plain',
-            'application/zip',
-            'application/x-rar-compressed'
-        ];
-
-        if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tipe file tidak didukung.'
-            ], 400);
-        }
-
-        // Generate unique filename
-        $originalName = $file->getClientOriginalName();
-        $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
-
-        // Simpan file
-        $path = $file->storeAs('attachments', $fileName, 'public');
-
-        // ✅ PERBAIKAN: Buat attachment TANPA field file_type (karena ada accessor di model)
-        $attachment = new Attachment();
-        $attachment->id = Str::uuid()->toString();
-        $attachment->attachable_type = $request->attachable_type;
-        $attachment->attachable_id = $request->attachable_id ?? null;
-        $attachment->file_url = $path;
-        $attachment->file_name = $originalName;
-        $attachment->file_size = $file->getSize();
-        $attachment->uploaded_by = $user->id;
-        $attachment->uploaded_at = now();
-
-        // ✅ Save tanpa mass assignment untuk avoid error
-        $attachment->save();
-
-        Log::info('File uploaded successfully:', [
-            'id' => $attachment->id,
-            'file_name' => $originalName,
-            'file_size' => $file->getSize(),
-            'path' => $path
+    public function uploadAttachment(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|max:10240',
+            'attachable_type' => 'required|string',
         ]);
 
-        // ✅ Return data lengkap untuk frontend
-        return response()->json([
-            'success' => true,
-            'attachment' => [
+        try {
+            $user = Auth::user();
+            $file = $request->file('file');
+
+            // Validasi tipe file
+            $allowedMimeTypes = [
+                'image/jpeg',
+                'image/jpg',
+                'image/png',
+                'image/gif',
+                'image/webp',
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'text/plain',
+                'application/zip',
+                'application/x-rar-compressed'
+            ];
+
+            if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tipe file tidak didukung.'
+                ], 400);
+            }
+
+            // Generate unique filename
+            $originalName = $file->getClientOriginalName();
+            $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+
+            // Simpan file
+            $path = $file->storeAs('attachments', $fileName, 'public');
+
+            // ✅ PERBAIKAN: Buat attachment TANPA field file_type (karena ada accessor di model)
+            $attachment = new Attachment();
+            $attachment->id = Str::uuid()->toString();
+            $attachment->attachable_type = $request->attachable_type;
+            $attachment->attachable_id = $request->attachable_id ?? null;
+            $attachment->file_url = $path;
+            $attachment->file_name = $originalName;
+            $attachment->file_size = $file->getSize();
+            $attachment->uploaded_by = $user->id;
+            $attachment->uploaded_at = now();
+
+            // ✅ Save tanpa mass assignment untuk avoid error
+            $attachment->save();
+
+            Log::info('File uploaded successfully:', [
                 'id' => $attachment->id,
-                'file_url' => $path,
                 'file_name' => $originalName,
                 'file_size' => $file->getSize(),
-                'mime_type' => $file->getMimeType(),
-                'uploaded_at' => $attachment->uploaded_at->toISOString(),
-                'uploaded_by' => $attachment->uploaded_by
-            ],
-            'message' => 'File berhasil diupload'
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Error uploading attachment: ' . $e->getMessage());
-        Log::error('Stack trace: ' . $e->getTraceAsString());
+                'path' => $path
+            ]);
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal upload file: ' . $e->getMessage()
-        ], 500);
+            // ✅ Return data lengkap untuk frontend
+            return response()->json([
+                'success' => true,
+                'attachment' => [
+                    'id' => $attachment->id,
+                    'file_url' => $path,
+                    'file_name' => $originalName,
+                    'file_size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType(),
+                    'uploaded_at' => $attachment->uploaded_at->toISOString(),
+                    'uploaded_by' => $attachment->uploaded_by
+                ],
+                'message' => 'File berhasil diupload'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error uploading attachment: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal upload file: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
 
     /**
      * Get attachments untuk task
@@ -1736,23 +1748,23 @@ public function deleteChecklist($checklistId)
 
                 // 🆕 Attachments mapping
                 'attachments' => $task->attachments->map(function ($attachment) {
-    // ✅ PERBAIKAN: Ambil nama file dari attribute atau file_url
-    $fileName = $attachment->file_name ?? basename($attachment->file_url);
+                    // ✅ PERBAIKAN: Ambil nama file dari attribute atau file_url
+                    $fileName = $attachment->file_name ?? basename($attachment->file_url);
 
-    return [
-        'id' => $attachment->id,
-        'name' => $fileName,
-        'url' => (Storage::disk('public')->exists($attachment->file_url)
-            ? Storage::disk('public')->url($attachment->file_url)
-            : $attachment->file_url),
-        'type' => pathinfo($fileName, PATHINFO_EXTENSION),
-        'size' => $attachment->file_size ?? 0,
-        'uploaded_by' => $attachment->uploader ? [
-            'name' => $attachment->uploader->full_name
-        ] : null,
-        'uploaded_at' => $attachment->uploaded_at?->toIso8601String()
-    ];
-})->toArray(),
+                    return [
+                        'id' => $attachment->id,
+                        'name' => $fileName,
+                        'url' => (Storage::disk('public')->exists($attachment->file_url)
+                            ? Storage::disk('public')->url($attachment->file_url)
+                            : $attachment->file_url),
+                        'type' => pathinfo($fileName, PATHINFO_EXTENSION),
+                        'size' => $attachment->file_size ?? 0,
+                        'uploaded_by' => $attachment->uploader ? [
+                            'name' => $attachment->uploader->full_name
+                        ] : null,
+                        'uploaded_at' => $attachment->uploaded_at?->toIso8601String()
+                    ];
+                })->toArray(),
 
                 'progress_percentage' => $this->calculateTaskProgress($task),
                 'is_overdue' => $task->due_datetime && $task->due_datetime->lt(now()) && !in_array($task->status, ['done', 'cancel']),
@@ -1836,140 +1848,143 @@ public function deleteChecklist($checklistId)
 
 
     // ✅ NEW: Update task detail dengan semua field
-   public function updateTaskDetail(Request $request, $taskId)
-{
-    try {
-        $task = Task::findOrFail($taskId);
-        $user = Auth::user();
+    public function updateTaskDetail(Request $request, $taskId)
+    {
+        try {
+            $task = Task::findOrFail($taskId);
+            $user = Auth::user();
 
-        // Validasi akses
-        if (!$this->canAccessWorkspace($task->workspace_id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses ke task ini'
-            ], 403);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'title' => 'sometimes|string|max:255',
-            'phase' => 'sometimes|string|max:255',
-            'description' => 'nullable|string',
-            'is_secret' => 'boolean',
-            'start_datetime' => 'nullable|date',
-            'due_datetime' => 'nullable|date|after:start_datetime',
-            'board_column_id' => 'sometimes|exists:board_columns,id',
-            'user_ids' => 'array',
-            'user_ids.*' => 'exists:users,id',
-            'label_ids' => 'array',
-            'label_ids.*' => 'exists:labels,id'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        DB::beginTransaction();
-
-        // Update task data
-        $taskData = $request->only([
-            'title',
-            'phase',
-            'description',
-            'is_secret'
-        ]);
-
-        // Handle datetime fields
-        if ($request->has('start_datetime')) {
-            $taskData['start_datetime'] = $request->start_datetime;
-        }
-
-        if ($request->has('due_datetime')) {
-            $taskData['due_datetime'] = $request->due_datetime;
-        }
-
-        // Update board column jika ada
-        if ($request->has('board_column_id')) {
-            $taskData['board_column_id'] = $request->board_column_id;
-        }
-
-        $task->update($taskData);
-
-        // Update assignments jika ada
-        if ($request->has('user_ids')) {
-            $task->assignments()->delete();
-            foreach ($request->user_ids as $userId) {
-                TaskAssignment::create([
-                    'id' => Str::uuid()->toString(),
-                    'task_id' => $task->id,
-                    'user_id' => $userId,
-                    'assigned_at' => now()
-                ]);
+            // Validasi akses
+            if (!$this->canAccessWorkspace($task->workspace_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
             }
+
+            $validator = Validator::make($request->all(), [
+                'title' => 'sometimes|string|max:255',
+                'phase' => 'sometimes|string|max:255',
+                'description' => 'nullable|string',
+                'is_secret' => 'boolean',
+                'start_datetime' => 'nullable|date',
+                'due_datetime' => 'nullable|date|after:start_datetime',
+                'board_column_id' => 'sometimes|exists:board_columns,id',
+                'user_ids' => 'array',
+                'user_ids.*' => 'exists:users,id',
+                'label_ids' => 'array',
+                'label_ids.*' => 'exists:labels,id'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            // Update task data
+            $taskData = $request->only([
+                'title',
+                'phase',
+                'description',
+                'is_secret'
+            ]);
+
+            // Handle datetime fields
+            if ($request->has('start_datetime')) {
+                $taskData['start_datetime'] = $request->start_datetime;
+            }
+
+            if ($request->has('due_datetime')) {
+                $taskData['due_datetime'] = $request->due_datetime;
+            }
+
+            // Update board column jika ada
+            if ($request->has('board_column_id')) {
+                $taskData['board_column_id'] = $request->board_column_id;
+            }
+
+            $task->update($taskData);
+
+            // Update assignments jika ada
+            if ($request->has('user_ids')) {
+                $task->assignments()->delete();
+                foreach ($request->user_ids as $userId) {
+                    TaskAssignment::create([
+                        'id' => Str::uuid()->toString(),
+                        'task_id' => $task->id,
+                        'user_id' => $userId,
+                        'assigned_at' => now()
+                    ]);
+                }
+            }
+
+            // Update labels jika ada
+            if ($request->has('label_ids')) {
+                $task->labels()->sync($request->label_ids);
+            }
+
+            DB::commit();
+
+            $this->notificationService->notifyTaskUpdated($task, $user);
+
+
+            // ✅ PERBAIKAN: Reload task dengan relasi lengkap
+            $task->load([
+                'assignments.user',
+                'labels.color',
+                'checklists',
+                'attachments',
+                'boardColumn',
+                'creator'
+            ]);
+
+            // ✅ PERBAIKAN: Return response yang jelas
+            return response()->json([
+                'success' => true,
+                'message' => 'Tugas berhasil diperbarui',
+                'task' => [
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'phase' => $task->phase,
+                    'description' => $task->description,
+                    'is_secret' => $task->is_secret,
+                    'status' => $task->status,
+                    'priority' => $task->priority,
+                    'start_datetime' => $task->start_datetime,
+                    'due_datetime' => $task->due_datetime,
+                    'board_column' => $task->boardColumn,
+                    'labels' => $task->labels,
+                    'assigned_members' => $task->assignments->map(fn($a) => [
+                        'id' => $a->user->id,
+                        'name' => $a->user->full_name,
+                        'email' => $a->user->email,
+                        'avatar' => $a->user->avatar
+                    ]),
+                    'checklists' => $task->checklists,
+                    'attachments' => $task->attachments
+                ]
+            ], 200); // ✅ Explicit 200 status
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('Error updating task detail:', [
+                'task_id' => $taskId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui tugas: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Update labels jika ada
-        if ($request->has('label_ids')) {
-            $task->labels()->sync($request->label_ids);
-        }
-
-        DB::commit();
-
-        // ✅ PERBAIKAN: Reload task dengan relasi lengkap
-        $task->load([
-            'assignments.user',
-            'labels.color',
-            'checklists',
-            'attachments',
-            'boardColumn',
-            'creator'
-        ]);
-
-        // ✅ PERBAIKAN: Return response yang jelas
-        return response()->json([
-            'success' => true,
-            'message' => 'Tugas berhasil diperbarui',
-            'task' => [
-                'id' => $task->id,
-                'title' => $task->title,
-                'phase' => $task->phase,
-                'description' => $task->description,
-                'is_secret' => $task->is_secret,
-                'status' => $task->status,
-                'priority' => $task->priority,
-                'start_datetime' => $task->start_datetime,
-                'due_datetime' => $task->due_datetime,
-                'board_column' => $task->boardColumn,
-                'labels' => $task->labels,
-                'assigned_members' => $task->assignments->map(fn($a) => [
-                    'id' => $a->user->id,
-                    'name' => $a->user->full_name,
-                    'email' => $a->user->email,
-                    'avatar' => $a->user->avatar
-                ]),
-                'checklists' => $task->checklists,
-                'attachments' => $task->attachments
-            ]
-        ], 200); // ✅ Explicit 200 status
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-
-        Log::error('Error updating task detail:', [
-            'task_id' => $taskId,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal memperbarui tugas: ' . $e->getMessage()
-        ], 500);
     }
-}
 
     // ✅ NEW: Update checklist item
     public function updateChecklistItem(Request $request, $checklistId)
@@ -2017,59 +2032,59 @@ public function deleteChecklist($checklistId)
     }
 
     // ✅ NEW: Create checklist item untuk task
-   // Di TaskController.php - method createChecklistForTask
-public function createChecklistForTask(Request $request, $taskId)
-{
-    try {
-        $task = Task::findOrFail($taskId);
-        $user = Auth::user();
+    // Di TaskController.php - method createChecklistForTask
+    public function createChecklistForTask(Request $request, $taskId)
+    {
+        try {
+            $task = Task::findOrFail($taskId);
+            $user = Auth::user();
 
-        // Validasi akses
-        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            // Validasi akses
+            if (!$this->canAccessWorkspace($task->workspace_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'title' => 'required|string|max:255',
+                'is_done' => 'boolean' // ✅ TAMBAHKAN validasi untuk is_done
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Hitung posisi terakhir (handle null)
+            $lastPosition = Checklist::where('task_id', $taskId)->max('position');
+            $newPosition = ($lastPosition !== null) ? $lastPosition + 1 : 0;
+
+            $checklist = Checklist::create([
+                'id' => Str::uuid()->toString(),
+                'task_id' => $taskId,
+                'title' => $request->title,
+                'is_done' => $request->is_done ?? false, // ✅ TERIMA is_done dari request
+                'position' => $newPosition
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Checklist berhasil ditambahkan',
+                'checklist' => $checklist
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error creating checklist for task: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki akses ke task ini'
-            ], 403);
+                'message' => 'Gagal menambahkan checklist: ' . $e->getMessage()
+            ], 500);
         }
-
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'is_done' => 'boolean' // ✅ TAMBAHKAN validasi untuk is_done
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        // Hitung posisi terakhir (handle null)
-        $lastPosition = Checklist::where('task_id', $taskId)->max('position');
-        $newPosition = ($lastPosition !== null) ? $lastPosition + 1 : 0;
-
-        $checklist = Checklist::create([
-            'id' => Str::uuid()->toString(),
-            'task_id' => $taskId,
-            'title' => $request->title,
-            'is_done' => $request->is_done ?? false, // ✅ TERIMA is_done dari request
-            'position' => $newPosition
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Checklist berhasil ditambahkan',
-            'checklist' => $checklist
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Error creating checklist for task: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal menambahkan checklist: ' . $e->getMessage()
-        ], 500);
     }
-}
 
 
     // Di TaskController - tambahkan method untuk update attachments
@@ -2160,96 +2175,96 @@ public function createChecklistForTask(Request $request, $taskId)
     }
 
     // ✅ NEW: Add attachment to task
-   public function addAttachmentToTask(Request $request, $taskId)
-{
-    $request->validate([
-        'file' => 'required|file|max:10240',
-    ]);
-
-    try {
-        $task = Task::findOrFail($taskId);
-        $user = Auth::user();
-
-        // Validasi akses
-        if (!$this->canAccessWorkspace($task->workspace_id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses ke task ini'
-            ], 403);
-        }
-
-        $file = $request->file('file');
-
-        // Validasi tipe file
-        $allowedMimeTypes = [
-            'image/jpeg',
-            'image/jpg',
-            'image/png',
-            'image/gif',
-            'image/webp',
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'application/vnd.ms-excel',
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'application/vnd.ms-powerpoint',
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-            'text/plain',
-            'application/zip',
-            'application/x-rar-compressed'
-        ];
-
-        if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tipe file tidak didukung.'
-            ], 400);
-        }
-
-        // Generate unique filename
-        $originalName = $file->getClientOriginalName();
-        $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
-
-        // Simpan file
-        $path = $file->storeAs('attachments', $fileName, 'public');
-
-        // ✅ PERBAIKAN: Buat attachment tanpa file_type
-        $attachment = new Attachment();
-        $attachment->id = Str::uuid()->toString();
-        $attachment->attachable_type = 'App\\Models\\Task';
-        $attachment->attachable_id = $taskId;
-        $attachment->file_url = $path;
-        $attachment->file_name = $originalName;
-        $attachment->file_size = $file->getSize();
-        $attachment->uploaded_by = $user->id;
-        $attachment->uploaded_at = now();
-
-        $attachment->save();
-
-        $attachment->load('uploader');
-
-        return response()->json([
-            'success' => true,
-            'attachment' => [
-                'id' => $attachment->id,
-                'file_url' => $path,
-                'file_name' => $originalName,
-                'file_size' => $file->getSize(),
-                'mime_type' => $file->getMimeType(),
-                'uploaded_at' => $attachment->uploaded_at->toISOString()
-            ],
-            'message' => 'File berhasil diupload'
+    public function addAttachmentToTask(Request $request, $taskId)
+    {
+        $request->validate([
+            'file' => 'required|file|max:10240',
         ]);
-    } catch (\Exception $e) {
-        Log::error('Error adding attachment to task: ' . $e->getMessage());
-        Log::error('Stack trace: ' . $e->getTraceAsString());
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal upload file: ' . $e->getMessage()
-        ], 500);
+        try {
+            $task = Task::findOrFail($taskId);
+            $user = Auth::user();
+
+            // Validasi akses
+            if (!$this->canAccessWorkspace($task->workspace_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            $file = $request->file('file');
+
+            // Validasi tipe file
+            $allowedMimeTypes = [
+                'image/jpeg',
+                'image/jpg',
+                'image/png',
+                'image/gif',
+                'image/webp',
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'text/plain',
+                'application/zip',
+                'application/x-rar-compressed'
+            ];
+
+            if (!in_array($file->getMimeType(), $allowedMimeTypes)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tipe file tidak didukung.'
+                ], 400);
+            }
+
+            // Generate unique filename
+            $originalName = $file->getClientOriginalName();
+            $fileName = time() . '_' . Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+
+            // Simpan file
+            $path = $file->storeAs('attachments', $fileName, 'public');
+
+            // ✅ PERBAIKAN: Buat attachment tanpa file_type
+            $attachment = new Attachment();
+            $attachment->id = Str::uuid()->toString();
+            $attachment->attachable_type = 'App\\Models\\Task';
+            $attachment->attachable_id = $taskId;
+            $attachment->file_url = $path;
+            $attachment->file_name = $originalName;
+            $attachment->file_size = $file->getSize();
+            $attachment->uploaded_by = $user->id;
+            $attachment->uploaded_at = now();
+
+            $attachment->save();
+
+            $attachment->load('uploader');
+
+            return response()->json([
+                'success' => true,
+                'attachment' => [
+                    'id' => $attachment->id,
+                    'file_url' => $path,
+                    'file_name' => $originalName,
+                    'file_size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType(),
+                    'uploaded_at' => $attachment->uploaded_at->toISOString()
+                ],
+                'message' => 'File berhasil diupload'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error adding attachment to task: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal upload file: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
 
     // ✅ NEW: Update task labels dengan modal label yang sama seperti tambah tugas
     // Di TaskController - pastikan method ini sudah ada
@@ -2426,863 +2441,854 @@ public function createChecklistForTask(Request $request, $taskId)
      * Get phase date range and duration
      */
     /**
- * ✅ FIXED: Get timeline data dengan case-insensitive grouping
- * Phase yang sama secara case-insensitive dikelompokkan sebagai satu phase
- * Perbedaan 1 huruf = phase berbeda
- */
-/**
- * ✅ FIXED: Get timeline data dengan handling phase kosong
- */
-public function getTimelineData($workspaceId)
-{
-    try {
-        $user = Auth::user();
+     * ✅ FIXED: Get timeline data dengan case-insensitive grouping
+     * Phase yang sama secara case-insensitive dikelompokkan sebagai satu phase
+     * Perbedaan 1 huruf = phase berbeda
+     */
+    /**
+     * ✅ FIXED: Get timeline data dengan handling phase kosong
+     */
+    public function getTimelineData($workspaceId)
+    {
+        try {
+            $user = Auth::user();
 
-        // Validasi akses workspace
-        if (!$this->canAccessWorkspace($workspaceId)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses ke workspace ini'
-            ], 403);
-        }
-
-        // Ambil semua tasks dari workspace
-        $tasks = Task::where('workspace_id', $workspaceId)
-            ->with(['assignments.user', 'boardColumn'])
-            ->get();
-
-        // ✅ DEBUG: Log semua phase yang ada di database
-        Log::info('=== TIMELINE DEBUG START ===');
-        Log::info('Total tasks: ' . $tasks->count());
-        Log::info('All tasks with phases:', $tasks->map(function($task) {
-            return [
-                'id' => $task->id,
-                'title' => $task->title,
-                'phase_original' => $task->phase,
-                'phase_normalized' => strtolower(trim($task->phase ?? '')),
-                'status' => $task->status
-            ];
-        })->toArray());
-
-        // Jika tidak ada tasks
-        if ($tasks->isEmpty()) {
-            return response()->json([
-                'success' => true,
-                'timeline_data' => [],
-                'total_phases' => 0,
-                'total_tasks' => 0,
-                'completed_tasks' => 0,
-                'message' => 'Tidak ada tugas di workspace ini'
-            ]);
-        }
-
-        // ✅ PERBAIKAN UTAMA: Group tasks dengan lebih hati-hati
-        $phaseGroups = [];
-
-        foreach ($tasks as $task) {
-            if (!$task->phase) {
-                // Jika phase kosong, gunakan default
-                $task->phase = 'Uncategorized';
+            // Validasi akses workspace
+            if (!$this->canAccessWorkspace($workspaceId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke workspace ini'
+                ], 403);
             }
 
-            // Normalisasi untuk grouping: lowercase dan trim
-            $originalPhaseName = trim($task->phase);
-            $normalizedKey = strtolower($originalPhaseName);
+            // Ambil semua tasks dari workspace
+            $tasks = Task::where('workspace_id', $workspaceId)
+                ->with(['assignments.user', 'boardColumn'])
+                ->get();
 
-            // Handle empty phase name
-            if (empty($normalizedKey)) {
-                $originalPhaseName = 'Uncategorized';
-                $normalizedKey = 'uncategorized';
-            }
-
-            // Jika phase belum ada di groups, buat entry baru
-            if (!isset($phaseGroups[$normalizedKey])) {
-                // Gunakan display name yang konsisten
-                $displayName = $this->getDisplayPhaseName($originalPhaseName);
-
-                $phaseGroups[$normalizedKey] = [
-                    'original_name' => $displayName,
-                    'normalized_key' => $normalizedKey,
-                    'tasks' => [],
-                    'total_tasks' => 0,
-                    'completed_tasks' => 0,
-                    'progress_percentage' => 0,
-                    'start_date' => null,
-                    'end_date' => null,
-                    'duration' => 0
-                ];
-            }
-
-            // Tambahkan task ke group
-            $phaseGroups[$normalizedKey]['tasks'][] = $task;
-            $phaseGroups[$normalizedKey]['total_tasks']++;
-
-            // Hitung tugas yang selesai
-            if ($task->status === 'done') {
-                $phaseGroups[$normalizedKey]['completed_tasks']++;
-            }
-        }
-
-        // ✅ DEBUG: Log hasil grouping
-        Log::info('Phase groups after processing:', array_map(function($group) {
-            return [
-                'key' => $group['normalized_key'],
-                'name' => $group['original_name'],
-                'task_count' => $group['total_tasks'],
-                'tasks' => array_map(function($task) {
-                    return $task->id . ': ' . $task->title;
-                }, $group['tasks'])
-            ];
-        }, $phaseGroups));
-
-        // ✅ PERBAIKAN: Hitung progress dan date range untuk setiap phase
-        $durations = [];
-
-        foreach ($phaseGroups as $normalizedKey => &$phase) {
-            // Progress percentage
-            $phase['progress_percentage'] = $phase['total_tasks'] > 0
-                ? round(($phase['completed_tasks'] / $phase['total_tasks']) * 100)
-                : 0;
-
-            // Date range calculation
-            $dateRange = $this->calculatePhaseDateRange($phase['tasks']);
-
-            $phase['start_date'] = $dateRange['start_date'];
-            $phase['end_date'] = $dateRange['end_date'];
-            $phase['duration'] = $dateRange['duration'];
-
-            if ($dateRange['duration'] > 0) {
-                $durations[] = $dateRange['duration'];
-            }
-        }
-
-        unset($phase); // Unset reference untuk menghindari bug
-
-        // Hitung durasi maksimum untuk scaling
-        $maxDuration = !empty($durations) ? max($durations) : 1;
-
-        // ✅ PERBAIKAN CRITICAL: Format timeline data dengan cara yang benar
-        $timelineData = [];
-
-        foreach ($phaseGroups as $normalizedKey => $phase) {
-            // Skip phase tanpa tasks (safety check)
-            if ($phase['total_tasks'] === 0) {
-                Log::warning("Skipping phase '{$phase['original_name']}' with 0 tasks");
-                continue;
-            }
-
-            // Hitung width percentage
-            $duration_percentage = $phase['duration'] > 0
-                ? min(($phase['duration'] / $maxDuration) * 100, 100)
-                : 5;
-
-            // Minimal 10% untuk phase yang memiliki durasi
-            if ($phase['duration'] > 0 && $duration_percentage < 10) {
-                $duration_percentage = 10;
-            }
-
-            $timelineData[] = [
-                'id' => null, // Akan di-set setelah sorting
-                'name' => $phase['original_name'],
-                'normalized_key' => $normalizedKey,
-                'total_tasks' => $phase['total_tasks'],
-                'completed_tasks' => $phase['completed_tasks'],
-                'progress_percentage' => $phase['progress_percentage'],
-                'start_date' => $phase['start_date'],
-                'end_date' => $phase['end_date'],
-                'duration' => $phase['duration'],
-                'duration_percentage' => $duration_percentage,
-                'tasks' => $phase['tasks'] // Simpan dulu object tasks
-            ];
-        }
-
-        // ✅ PERBAIKAN: Sort phases by start date (yang paling awal dulu)
-        usort($timelineData, function($a, $b) {
-            // Handle null dates
-            if (!$a['start_date'] && !$b['start_date']) return 0;
-            if (!$a['start_date']) return 1; // Yang null di akhir
-            if (!$b['start_date']) return -1; // Yang null di akhir
-
-            // Convert to timestamp for comparison
-            $timeA = strtotime($a['start_date']);
-            $timeB = strtotime($b['start_date']);
-
-            // Ascending order (earliest first)
-            return $timeA - $timeB;
-        });
-
-        // ✅ PERBAIKAN: Set IDs dan format tasks array setelah sorting
-        foreach ($timelineData as $index => &$phaseItem) {
-            $phaseItem['id'] = $index + 1;
-
-            // Format tasks array
-            $phaseItem['tasks'] = array_map(function ($task) {
-                return [
-                    'id' => $task->id,
-                    'title' => $task->title,
-                    'status' => $task->status,
-                    'is_done' => $task->status === 'done',
-                    'start_datetime' => $task->start_datetime,
-                    'due_datetime' => $task->due_datetime,
-                    'assignees' => $task->assignments->map(function ($assignment) {
-                        return [
-                            'name' => $assignment->user->full_name,
-                            'avatar' => $assignment->user->avatar ?: 'https://i.pravatar.cc/32?img=' . rand(1, 70)
-                        ];
-                    })->toArray()
-                ];
-            }, $phaseItem['tasks']);
-        }
-
-        unset($phaseItem); // Unset reference
-
-        // ✅ DEBUG: Check for duplicates
-        $uniqueCheck = [];
-        $duplicates = [];
-        foreach ($timelineData as $phase) {
-            $key = $phase['normalized_key'];
-            if (isset($uniqueCheck[$key])) {
-                $duplicates[] = $phase['name'];
-            }
-            $uniqueCheck[$key] = true;
-        }
-
-        if (!empty($duplicates)) {
-            Log::warning('Duplicate phases found in timeline data:', $duplicates);
-        }
-
-        // ✅ DEBUG: Log final timeline data
-        Log::info('Final timeline data count: ' . count($timelineData));
-        Log::info('Final timeline phases:', array_map(function($phase) {
-            return [
-                'id' => $phase['id'],
-                'name' => $phase['name'],
-                'normalized_key' => $phase['normalized_key'],
-                'total_tasks' => $phase['total_tasks'],
-                'start_date' => $phase['start_date'],
-                'end_date' => $phase['end_date']
-            ];
-        }, $timelineData));
-
-        Log::info('=== TIMELINE DEBUG END ===');
-
-        return response()->json([
-            'success' => true,
-            'timeline_data' => $timelineData,
-            'total_phases' => count($timelineData),
-            'total_tasks' => $tasks->count(),
-            'completed_tasks' => $tasks->where('status', 'done')->count(),
-            'max_duration' => $maxDuration,
-            'debug_info' => [
-                'phase_count' => count($timelineData),
-                'duplicates_found' => $duplicates
-            ]
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error getting timeline data: ' . $e->getMessage());
-        Log::error('Stack trace: ' . $e->getTraceAsString());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil data timeline: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-/**
- * ✅ PERBAIKAN: Method untuk membersihkan data phase di database
- * Jalankan sekali untuk fix data
- */
-public function cleanupPhases($workspaceId)
-{
-    try {
-        $tasks = Task::where('workspace_id', $workspaceId)
-            ->where(function($query) {
-                $query->whereNull('phase')
-                    ->orWhere('phase', '')
-                    ->orWhereRaw("TRIM(phase) = ''");
-            })
-            ->get();
-
-        $updates = [];
-
-        foreach ($tasks as $task) {
-            $oldPhase = $task->phase;
-            $newPhase = 'Uncategorized';
-
-            $updates[] = [
-                'task_id' => $task->id,
-                'title' => $task->title,
-                'old_phase' => $oldPhase ?? '(NULL)',
-                'new_phase' => $newPhase
-            ];
-
-            $task->phase = $newPhase;
-            $task->save();
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Phase cleanup completed',
-            'updated_count' => count($updates),
-            'updates' => $updates
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error cleaning up phases: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal membersihkan phase: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-
-
-
-private function getDisplayPhaseName($originalPhaseName)
-{
-    if (empty(trim($originalPhaseName))) {
-        return 'Uncategorized';
-    }
-
-    // Gunakan ucwords dengan delimiter spasi dan strip_tags untuk safety
-    $displayName = ucwords(strtolower(trim(strip_tags($originalPhaseName))));
-
-    return $displayName;
-}
-
-/**
- * ✅ PERBAIKAN: Method untuk menghitung date range
- */
-private function calculatePhaseDateRange($tasks)
-{
-    if (empty($tasks)) {
-        return [
-            'start_date' => null,
-            'end_date' => null,
-            'duration' => 0
-        ];
-    }
-
-    $startDates = [];
-    $endDates = [];
-
-    foreach ($tasks as $task) {
-        if ($task->start_datetime) {
-            try {
-                $startDates[] = \Carbon\Carbon::parse($task->start_datetime);
-            } catch (\Exception $e) {
-                Log::warning("Invalid start_datetime for task {$task->id}: {$task->start_datetime}");
-            }
-        }
-
-        if ($task->due_datetime) {
-            try {
-                $endDates[] = \Carbon\Carbon::parse($task->due_datetime);
-            } catch (\Exception $e) {
-                Log::warning("Invalid due_datetime for task {$task->id}: {$task->due_datetime}");
-            }
-        }
-    }
-
-    // Jika tidak ada tanggal valid
-    if (empty($startDates) && empty($endDates)) {
-        return [
-            'start_date' => null,
-            'end_date' => null,
-            'duration' => 0
-        ];
-    }
-
-    // Tentukan earliest start dan latest end
-    $earliestStart = !empty($startDates) ? min($startDates) : null;
-    $latestEnd = !empty($endDates) ? max($endDates) : null;
-
-    // Fallback logic
-    if ($earliestStart && !$latestEnd) {
-        $latestEnd = $earliestStart;
-    }
-    if (!$earliestStart && $latestEnd) {
-        $earliestStart = $latestEnd;
-    }
-
-    // Calculate duration
-    $duration = 0;
-    if ($earliestStart && $latestEnd) {
-        $duration = $earliestStart->diffInDays($latestEnd) + 1;
-    }
-
-    return [
-        'start_date' => $earliestStart ? $earliestStart->toDateTimeString() : null,
-        'end_date' => $latestEnd ? $latestEnd->toDateTimeString() : null,
-        'duration' => max(0, $duration)
-    ];
-}
-
-
-// TaskController.php - method untuk debug
-public function debugPhases($workspaceId)
-{
-    $tasks = Task::where('workspace_id', $workspaceId)
-        ->select('id', 'title', 'phase', 'status')
-        ->get();
-
-    $phases = $tasks->groupBy(function($task) {
-        return strtolower(trim($task->phase ?? ''));
-    })->map(function($group) {
-        return [
-            'display_name' => ucwords(strtolower(trim($group->first()->phase ?? ''))),
-            'task_count' => $group->count(),
-            'tasks' => $group->map(function($task) {
+            // ✅ DEBUG: Log semua phase yang ada di database
+            Log::info('=== TIMELINE DEBUG START ===');
+            Log::info('Total tasks: ' . $tasks->count());
+            Log::info('All tasks with phases:', $tasks->map(function ($task) {
                 return [
                     'id' => $task->id,
                     'title' => $task->title,
                     'phase_original' => $task->phase,
+                    'phase_normalized' => strtolower(trim($task->phase ?? '')),
                     'status' => $task->status
                 ];
-            })->values()
-        ];
-    });
+            })->toArray());
 
-    return response()->json([
-        'success' => true,
-        'phases' => $phases,
-        'total_phases' => $phases->count(),
-        'total_tasks' => $tasks->count()
-    ]);
-}
-
-/**
- * ✅ NEW: Helper method untuk standardize phase name
- * Mengubah variasi nama phase menjadi format standar
- */
-// private function getStandardizedPhaseName($phaseName)
-// {
-//     // Mapping nama phase yang umum ke format standar
-//     $standardNames = [
-//         'design' => 'Design',
-//         'desain' => 'Design',
-//         'development' => 'Development',
-//         'develop' => 'Development',
-//         'testing' => 'Testing',
-//         'test' => 'Testing',
-//         'deployment' => 'Deployment',
-//         'deploy' => 'Deployment',
-//         'planning' => 'Planning',
-//         'perencanaan' => 'Planning',
-//         'analysis' => 'Analysis',
-//         'analisis' => 'Analysis',
-//         'analisa' => 'Analysis'
-//     ];
-
-//     // Normalize input
-//     $normalized = strtolower(
-//         trim(
-//             preg_replace('/\s+/', ' ',
-//                 preg_replace('/[^a-zA-Z0-9\s]/', '', $phaseName)
-//             )
-//         )
-//     );
-
-//     // Cek apakah ada di mapping
-//     if (isset($standardNames[$normalized])) {
-//         return $standardNames[$normalized];
-//     }
-
-//     // Jika tidak ada, gunakan Title Case dari input asli
-//     return ucwords(strtolower(trim($phaseName)));
-// }
-
-
-
-// Di App\Http\Controllers\TaskController
-
-/**
- * Delete task (hanya untuk yang punya akses)
- */
-public function deleteTask($taskId)
-{
-    try {
-        $task = Task::findOrFail($taskId);
-        $user = Auth::user();
-
-        // ✅ VALIDASI: Gunakan method helper untuk cek akses
-        if (!$this->canAccessWorkspace($task->workspace_id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses ke task ini'
-            ], 403);
-        }
-
-        // Cek apakah user memiliki izin untuk menghapus
-        // SuperAdmin/Administrator/Admin/Manager bisa hapus
-        // Creator juga bisa hapus tugasnya sendiri
-        $userCompany = $user->userCompanies()
-            ->where('company_id', session('active_company_id'))
-            ->with('role')
-            ->first();
-
-        $userRole = $userCompany?->role?->name ?? 'Member';
-        $isCreator = $task->created_by === $user->id;
-
-        if (!in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager']) && !$isCreator) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki izin untuk menghapus tugas ini'
-            ], 403);
-        }
-
-        DB::beginTransaction();
-
-        // Log sebelum menghapus untuk audit trail
-        Log::info('Deleting task', [
-            'task_id' => $task->id,
-            'title' => $task->title,
-            'deleted_by' => $user->id,
-            'deleted_at' => now()
-        ]);
-
-        // Hapus task (akan trigger soft delete karena ada SoftDeletes trait)
-        $task->delete();
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Tugas berhasil dihapus'
-        ]);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error deleting task: ' . $e->getMessage());
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal menghapus tugas: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-/**
- * Permanently delete task (hanya untuk SuperAdmin/Administrator)
- */
-public function forceDeleteTask($taskId)
-{
-    try {
-        $task = Task::withTrashed()->findOrFail($taskId);
-        $user = Auth::user();
-
-        // Hanya SuperAdmin/Administrator yang bisa permanent delete
-        $userCompany = $user->userCompanies()
-            ->where('company_id', session('active_company_id'))
-            ->with('role')
-            ->first();
-
-        $userRole = $userCompany?->role?->name ?? 'Member';
-
-        if (!in_array($userRole, ['SuperAdmin', 'Administrator'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Hanya SuperAdmin/Administrator yang dapat menghapus permanen'
-            ], 403);
-        }
-
-        DB::beginTransaction();
-
-        // Delete all related data
-        $task->assignments()->delete();
-        $task->checklists()->delete();
-        $task->labels()->detach();
-
-        // Delete attachments files
-        foreach ($task->attachments as $attachment) {
-            if (Storage::disk('public')->exists($attachment->file_url)) {
-                Storage::disk('public')->delete($attachment->file_url);
+            // Jika tidak ada tasks
+            if ($tasks->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'timeline_data' => [],
+                    'total_phases' => 0,
+                    'total_tasks' => 0,
+                    'completed_tasks' => 0,
+                    'message' => 'Tidak ada tugas di workspace ini'
+                ]);
             }
-            $attachment->delete();
+
+            // ✅ PERBAIKAN UTAMA: Group tasks dengan lebih hati-hati
+            $phaseGroups = [];
+
+            foreach ($tasks as $task) {
+                if (!$task->phase || empty(trim($task->phase))) {
+                Log::info('Skipping task without phase:', ['task_id' => $task->id]);
+                continue; // Skip ke task berikutnya
+            }
+            
+            $originalPhaseName = trim($task->phase);
+            $normalizedKey = strtolower($originalPhaseName);
+
+                // Handle empty phase name
+                if (empty($normalizedKey)) {
+                    $originalPhaseName = 'Uncategorized';
+                    $normalizedKey = 'uncategorized';
+                }
+
+                // Jika phase belum ada di groups, buat entry baru
+                if (!isset($phaseGroups[$normalizedKey])) {
+                    // Gunakan display name yang konsisten
+                    $displayName = $this->getDisplayPhaseName($originalPhaseName);
+
+                    $phaseGroups[$normalizedKey] = [
+                        'original_name' => $displayName,
+                        'normalized_key' => $normalizedKey,
+                        'tasks' => [],
+                        'total_tasks' => 0,
+                        'completed_tasks' => 0,
+                        'progress_percentage' => 0,
+                        'start_date' => null,
+                        'end_date' => null,
+                        'duration' => 0
+                    ];
+                }
+
+                // Tambahkan task ke group
+                $phaseGroups[$normalizedKey]['tasks'][] = $task;
+                $phaseGroups[$normalizedKey]['total_tasks']++;
+
+                // Hitung tugas yang selesai
+                if ($task->status === 'done') {
+                    $phaseGroups[$normalizedKey]['completed_tasks']++;
+                }
+            }
+
+            // ✅ DEBUG: Log hasil grouping
+            Log::info('Phase groups after processing:', array_map(function ($group) {
+                return [
+                    'key' => $group['normalized_key'],
+                    'name' => $group['original_name'],
+                    'task_count' => $group['total_tasks'],
+                    'tasks' => array_map(function ($task) {
+                        return $task->id . ': ' . $task->title;
+                    }, $group['tasks'])
+                ];
+            }, $phaseGroups));
+
+            // ✅ PERBAIKAN: Hitung progress dan date range untuk setiap phase
+            $durations = [];
+
+            foreach ($phaseGroups as $normalizedKey => &$phase) {
+                // Progress percentage
+                $phase['progress_percentage'] = $phase['total_tasks'] > 0
+                    ? round(($phase['completed_tasks'] / $phase['total_tasks']) * 100)
+                    : 0;
+
+                // Date range calculation
+                $dateRange = $this->calculatePhaseDateRange($phase['tasks']);
+
+                $phase['start_date'] = $dateRange['start_date'];
+                $phase['end_date'] = $dateRange['end_date'];
+                $phase['duration'] = $dateRange['duration'];
+
+                if ($dateRange['duration'] > 0) {
+                    $durations[] = $dateRange['duration'];
+                }
+            }
+
+            unset($phase); // Unset reference untuk menghindari bug
+
+            // Hitung durasi maksimum untuk scaling
+            $maxDuration = !empty($durations) ? max($durations) : 1;
+
+            // ✅ PERBAIKAN CRITICAL: Format timeline data dengan cara yang benar
+            $timelineData = [];
+
+            foreach ($phaseGroups as $normalizedKey => $phase) {
+                // Skip phase tanpa tasks (safety check)
+                if ($phase['total_tasks'] === 0) {
+                    Log::warning("Skipping phase '{$phase['original_name']}' with 0 tasks");
+                    continue;
+                }
+
+                // Hitung width percentage
+                $duration_percentage = $phase['duration'] > 0
+                    ? min(($phase['duration'] / $maxDuration) * 100, 100)
+                    : 5;
+
+                // Minimal 10% untuk phase yang memiliki durasi
+                if ($phase['duration'] > 0 && $duration_percentage < 10) {
+                    $duration_percentage = 10;
+                }
+
+                $timelineData[] = [
+                    'id' => null, // Akan di-set setelah sorting
+                    'name' => $phase['original_name'],
+                    'normalized_key' => $normalizedKey,
+                    'total_tasks' => $phase['total_tasks'],
+                    'completed_tasks' => $phase['completed_tasks'],
+                    'progress_percentage' => $phase['progress_percentage'],
+                    'start_date' => $phase['start_date'],
+                    'end_date' => $phase['end_date'],
+                    'duration' => $phase['duration'],
+                    'duration_percentage' => $duration_percentage,
+                    'tasks' => $phase['tasks'] // Simpan dulu object tasks
+                ];
+            }
+
+            // ✅ PERBAIKAN: Sort phases by start date (yang paling awal dulu)
+            usort($timelineData, function ($a, $b) {
+                // Handle null dates
+                if (!$a['start_date'] && !$b['start_date']) return 0;
+                if (!$a['start_date']) return 1; // Yang null di akhir
+                if (!$b['start_date']) return -1; // Yang null di akhir
+
+                // Convert to timestamp for comparison
+                $timeA = strtotime($a['start_date']);
+                $timeB = strtotime($b['start_date']);
+
+                // Ascending order (earliest first)
+                return $timeA - $timeB;
+            });
+
+            // ✅ PERBAIKAN: Set IDs dan format tasks array setelah sorting
+            foreach ($timelineData as $index => &$phaseItem) {
+                $phaseItem['id'] = $index + 1;
+
+                // Format tasks array
+                $phaseItem['tasks'] = array_map(function ($task) {
+                    return [
+                        'id' => $task->id,
+                        'title' => $task->title,
+                        'status' => $task->status,
+                        'is_done' => $task->status === 'done',
+                        'start_datetime' => $task->start_datetime,
+                        'due_datetime' => $task->due_datetime,
+                        'assignees' => $task->assignments->map(function ($assignment) {
+                            return [
+                                'name' => $assignment->user->full_name,
+                                'avatar' => $assignment->user->avatar ?: 'https://i.pravatar.cc/32?img=' . rand(1, 70)
+                            ];
+                        })->toArray()
+                    ];
+                }, $phaseItem['tasks']);
+            }
+
+            unset($phaseItem); // Unset reference
+
+            // ✅ DEBUG: Check for duplicates
+            $uniqueCheck = [];
+            $duplicates = [];
+            foreach ($timelineData as $phase) {
+                $key = $phase['normalized_key'];
+                if (isset($uniqueCheck[$key])) {
+                    $duplicates[] = $phase['name'];
+                }
+                $uniqueCheck[$key] = true;
+            }
+
+            if (!empty($duplicates)) {
+                Log::warning('Duplicate phases found in timeline data:', $duplicates);
+            }
+
+            // ✅ DEBUG: Log final timeline data
+            Log::info('Final timeline data count: ' . count($timelineData));
+            Log::info('Final timeline phases:', array_map(function ($phase) {
+                return [
+                    'id' => $phase['id'],
+                    'name' => $phase['name'],
+                    'normalized_key' => $phase['normalized_key'],
+                    'total_tasks' => $phase['total_tasks'],
+                    'start_date' => $phase['start_date'],
+                    'end_date' => $phase['end_date']
+                ];
+            }, $timelineData));
+
+            Log::info('=== TIMELINE DEBUG END ===');
+
+            return response()->json([
+                'success' => true,
+                'timeline_data' => $timelineData,
+                'total_phases' => count($timelineData),
+                'total_tasks' => $tasks->count(),
+                'completed_tasks' => $tasks->where('status', 'done')->count(),
+                'max_duration' => $maxDuration,
+                'debug_info' => [
+                    'phase_count' => count($timelineData),
+                    'duplicates_found' => $duplicates
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting timeline data: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data timeline: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Delete comments
-        $task->comments()->delete();
-
-        // Force delete task
-        $task->forceDelete();
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Tugas berhasil dihapus permanen'
-        ]);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error force deleting task: ' . $e->getMessage());
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal menghapus permanen: ' . $e->getMessage()
-        ], 500);
     }
-}
 
-/**
- * Restore deleted task (hanya untuk SuperAdmin/Administrator/Admin)
- */
-public function restoreTask($taskId)
-{
-    try {
-        $task = Task::withTrashed()->findOrFail($taskId);
-        $user = Auth::user();
+    /**
+     * ✅ PERBAIKAN: Method untuk membersihkan data phase di database
+     * Jalankan sekali untuk fix data
+     */
+    public function cleanupPhases($workspaceId)
+    {
+        try {
+            $tasks = Task::where('workspace_id', $workspaceId)
+                ->where(function ($query) {
+                    $query->whereNull('phase')
+                        ->orWhere('phase', '')
+                        ->orWhereRaw("TRIM(phase) = ''");
+                })
+                ->get();
 
-        // Validasi akses workspace
-        if (!$this->canAccessWorkspace($task->workspace_id)) {
+            $updates = [];
+
+            foreach ($tasks as $task) {
+                $oldPhase = $task->phase;
+                $newPhase = 'Uncategorized';
+
+                $updates[] = [
+                    'task_id' => $task->id,
+                    'title' => $task->title,
+                    'old_phase' => $oldPhase ?? '(NULL)',
+                    'new_phase' => $newPhase
+                ];
+
+                $task->phase = $newPhase;
+                $task->save();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Phase cleanup completed',
+                'updated_count' => count($updates),
+                'updates' => $updates
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error cleaning up phases: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki akses ke task ini'
-            ], 403);
+                'message' => 'Gagal membersihkan phase: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Hanya admin yang bisa restore
-        $userCompany = $user->userCompanies()
-            ->where('company_id', session('active_company_id'))
-            ->with('role')
-            ->first();
-
-        $userRole = $userCompany?->role?->name ?? 'Member';
-
-        if (!in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Hanya admin yang dapat mengembalikan tugas'
-            ], 403);
-        }
-
-        $task->restore();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Tugas berhasil dikembalikan'
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Error restoring task: ' . $e->getMessage());
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengembalikan tugas: ' . $e->getMessage()
-        ], 500);
     }
-}
 
 
 
-/**
- * ✅ Hapus kolom kanban custom
- */
-public function deleteCustomColumn($columnId)
-{
-    try {
-        $user = Auth::user();
-        $column = BoardColumn::with('workspace')->findOrFail($columnId);
 
-        // ✅ VALIDASI: Gunakan method helper untuk cek akses workspace
-        if (!$this->canAccessWorkspace($column->workspace_id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses ke workspace ini'
-            ], 403);
+    private function getDisplayPhaseName($originalPhaseName)
+    {
+        if (empty(trim($originalPhaseName))) {
+            return 'Uncategorized';
         }
 
-        // ✅ Cegah penghapusan kolom default
-        $defaultColumns = ['To Do List', 'Dikerjakan', 'Selesai', 'Batal'];
+        // Gunakan ucwords dengan delimiter spasi dan strip_tags untuk safety
+        $displayName = ucwords(strtolower(trim(strip_tags($originalPhaseName))));
 
-        if (in_array($column->name, $defaultColumns)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kolom default tidak dapat dihapus'
-            ], 400);
-        }
-
-        // ✅ Pastikan tidak ada tugas di kolom ini sebelum dihapus
-        $taskCount = Task::where('board_column_id', $columnId)->count();
-
-        if ($taskCount > 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Tidak dapat menghapus kolom yang masih berisi tugas. Pindahkan semua tugas terlebih dahulu.'
-            ], 400);
-        }
-
-        DB::beginTransaction();
-
-        // Log sebelum menghapus
-        Log::info('Deleting custom column', [
-            'column_id' => $column->id,
-            'column_name' => $column->name,
-            'workspace_id' => $column->workspace_id,
-            'deleted_by' => $user->id
-        ]);
-
-        // Hapus kolom
-        $column->delete();
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Kolom custom berhasil dihapus'
-        ]);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error deleting custom column: ' . $e->getMessage());
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal menghapus kolom: ' . $e->getMessage()
-        ], 500);
+        return $displayName;
     }
-}
 
-
-// Method alternatif di TaskController
-public function deleteColumnWithTasksTransfer(Request $request, $columnId)
-{
-    $request->validate([
-        'target_column_id' => 'required|exists:board_columns,id'
-    ]);
-
-    try {
-        $user = Auth::user();
-        $column = BoardColumn::with('workspace')->findOrFail($columnId);
-        $targetColumn = BoardColumn::findOrFail($request->target_column_id);
-
-        // Validasi akses
-        if (!$this->canAccessWorkspace($column->workspace_id) ||
-            !$this->canAccessWorkspace($targetColumn->workspace_id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Akses ditolak'
-            ], 403);
+    /**
+     * ✅ PERBAIKAN: Method untuk menghitung date range
+     */
+    private function calculatePhaseDateRange($tasks)
+    {
+        if (empty($tasks)) {
+            return [
+                'start_date' => null,
+                'end_date' => null,
+                'duration' => 0
+            ];
         }
 
-        // Pastikan kedua kolom dalam workspace yang sama
-        if ($column->workspace_id !== $targetColumn->workspace_id) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kolom target harus dalam workspace yang sama'
-            ], 400);
+        $startDates = [];
+        $endDates = [];
+
+        foreach ($tasks as $task) {
+            if ($task->start_datetime) {
+                try {
+                    $startDates[] = \Carbon\Carbon::parse($task->start_datetime);
+                } catch (\Exception $e) {
+                    Log::warning("Invalid start_datetime for task {$task->id}: {$task->start_datetime}");
+                }
+            }
+
+            if ($task->due_datetime) {
+                try {
+                    $endDates[] = \Carbon\Carbon::parse($task->due_datetime);
+                } catch (\Exception $e) {
+                    Log::warning("Invalid due_datetime for task {$task->id}: {$task->due_datetime}");
+                }
+            }
         }
 
-        DB::beginTransaction();
+        // Jika tidak ada tanggal valid
+        if (empty($startDates) && empty($endDates)) {
+            return [
+                'start_date' => null,
+                'end_date' => null,
+                'duration' => 0
+            ];
+        }
 
-        // Pindahkan semua tugas ke kolom target
-        Task::where('board_column_id', $columnId)
-            ->update(['board_column_id' => $request->target_column_id]);
+        // Tentukan earliest start dan latest end
+        $earliestStart = !empty($startDates) ? min($startDates) : null;
+        $latestEnd = !empty($endDates) ? max($endDates) : null;
 
-        // Hapus kolom
-        $column->delete();
+        // Fallback logic
+        if ($earliestStart && !$latestEnd) {
+            $latestEnd = $earliestStart;
+        }
+        if (!$earliestStart && $latestEnd) {
+            $earliestStart = $latestEnd;
+        }
 
-        DB::commit();
+        // Calculate duration
+        $duration = 0;
+        if ($earliestStart && $latestEnd) {
+            $duration = $earliestStart->diffInDays($latestEnd) + 1;
+        }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Kolom berhasil dihapus dan tugas dipindahkan'
-        ]);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error deleting column with transfer: ' . $e->getMessage());
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal menghapus kolom: ' . $e->getMessage()
-        ], 500);
+        return [
+            'start_date' => $earliestStart ? $earliestStart->toDateTimeString() : null,
+            'end_date' => $latestEnd ? $latestEnd->toDateTimeString() : null,
+            'duration' => max(0, $duration)
+        ];
     }
-}
 
 
-
-// ✅ NEW: Create checklist untuk task yang sudah ada
-public function createChecklistForExistingTask(Request $request, $taskId)
-{
-    $request->validate([
-        'title' => 'required|string|max:255',
-        'is_done' => 'boolean'
-    ]);
-
-    try {
-        $task = Task::findOrFail($taskId);
-        $user = Auth::user();
-
-        // ✅ VALIDASI: Gunakan method helper untuk cek akses
-        if (!$this->canAccessWorkspace($task->workspace_id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses ke task ini'
-            ], 403);
-        }
-
-        // Hitung posisi terakhir
-        $lastPosition = Checklist::where('task_id', $taskId)->max('position');
-
-        $checklist = Checklist::create([
-            'id' => Str::uuid()->toString(),
-            'task_id' => $taskId,
-            'title' => $request->title,
-            'is_done' => $request->is_done ?? false,
-            'position' => ($lastPosition ? $lastPosition + 1 : 0)
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Checklist berhasil ditambahkan',
-            'checklist' => $checklist
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Error creating checklist for existing task: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal menambahkan checklist: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-
-
-// ✅ NEW: Get all checklists for task
-public function getAllChecklists($taskId)
-{
-    try {
-        $task = Task::findOrFail($taskId);
-        $user = Auth::user();
-
-        if (!$this->canAccessWorkspace($task->workspace_id)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki akses ke task ini'
-            ], 403);
-        }
-
-        $checklists = Checklist::where('task_id', $taskId)
-            ->orderBy('position')
+    // TaskController.php - method untuk debug
+    public function debugPhases($workspaceId)
+    {
+        $tasks = Task::where('workspace_id', $workspaceId)
+            ->select('id', 'title', 'phase', 'status')
             ->get();
 
+        $phases = $tasks->groupBy(function ($task) {
+            return strtolower(trim($task->phase ?? ''));
+        })->map(function ($group) {
+            return [
+                'display_name' => ucwords(strtolower(trim($group->first()->phase ?? ''))),
+                'task_count' => $group->count(),
+                'tasks' => $group->map(function ($task) {
+                    return [
+                        'id' => $task->id,
+                        'title' => $task->title,
+                        'phase_original' => $task->phase,
+                        'status' => $task->status
+                    ];
+                })->values()
+            ];
+        });
+
         return response()->json([
             'success' => true,
-            'checklists' => $checklists
+            'phases' => $phases,
+            'total_phases' => $phases->count(),
+            'total_tasks' => $tasks->count()
         ]);
-    } catch (\Exception $e) {
-        Log::error('Error getting all checklists: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil data checklist'
-        ], 500);
     }
-}
+
+    /**
+     * ✅ NEW: Helper method untuk standardize phase name
+     * Mengubah variasi nama phase menjadi format standar
+     */
+    // private function getStandardizedPhaseName($phaseName)
+    // {
+    //     // Mapping nama phase yang umum ke format standar
+    //     $standardNames = [
+    //         'design' => 'Design',
+    //         'desain' => 'Design',
+    //         'development' => 'Development',
+    //         'develop' => 'Development',
+    //         'testing' => 'Testing',
+    //         'test' => 'Testing',
+    //         'deployment' => 'Deployment',
+    //         'deploy' => 'Deployment',
+    //         'planning' => 'Planning',
+    //         'perencanaan' => 'Planning',
+    //         'analysis' => 'Analysis',
+    //         'analisis' => 'Analysis',
+    //         'analisa' => 'Analysis'
+    //     ];
+
+    //     // Normalize input
+    //     $normalized = strtolower(
+    //         trim(
+    //             preg_replace('/\s+/', ' ',
+    //                 preg_replace('/[^a-zA-Z0-9\s]/', '', $phaseName)
+    //             )
+    //         )
+    //     );
+
+    //     // Cek apakah ada di mapping
+    //     if (isset($standardNames[$normalized])) {
+    //         return $standardNames[$normalized];
+    //     }
+
+    //     // Jika tidak ada, gunakan Title Case dari input asli
+    //     return ucwords(strtolower(trim($phaseName)));
+    // }
 
 
 
+    // Di App\Http\Controllers\TaskController
+
+    /**
+     * Delete task (hanya untuk yang punya akses)
+     */
+    public function deleteTask($taskId)
+    {
+        try {
+            $task = Task::findOrFail($taskId);
+            $user = Auth::user();
+
+            // ✅ VALIDASI: Gunakan method helper untuk cek akses
+            if (!$this->canAccessWorkspace($task->workspace_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            // Cek apakah user memiliki izin untuk menghapus
+            // SuperAdmin/Administrator/Admin/Manager bisa hapus
+            // Creator juga bisa hapus tugasnya sendiri
+            $userCompany = $user->userCompanies()
+                ->where('company_id', session('active_company_id'))
+                ->with('role')
+                ->first();
+
+            $userRole = $userCompany?->role?->name ?? 'Member';
+            $isCreator = $task->created_by === $user->id;
+
+            if (!in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager']) && !$isCreator) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki izin untuk menghapus tugas ini'
+                ], 403);
+            }
+
+            DB::beginTransaction();
+
+            // Log sebelum menghapus untuk audit trail
+            Log::info('Deleting task', [
+                'task_id' => $task->id,
+                'title' => $task->title,
+                'deleted_by' => $user->id,
+                'deleted_at' => now()
+            ]);
+
+            // Hapus task (akan trigger soft delete karena ada SoftDeletes trait)
+            $task->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tugas berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deleting task: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus tugas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Permanently delete task (hanya untuk SuperAdmin/Administrator)
+     */
+    public function forceDeleteTask($taskId)
+    {
+        try {
+            $task = Task::withTrashed()->findOrFail($taskId);
+            $user = Auth::user();
+
+            // Hanya SuperAdmin/Administrator yang bisa permanent delete
+            $userCompany = $user->userCompanies()
+                ->where('company_id', session('active_company_id'))
+                ->with('role')
+                ->first();
+
+            $userRole = $userCompany?->role?->name ?? 'Member';
+
+            if (!in_array($userRole, ['SuperAdmin', 'Administrator'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Hanya SuperAdmin/Administrator yang dapat menghapus permanen'
+                ], 403);
+            }
+
+            DB::beginTransaction();
+
+            // Delete all related data
+            $task->assignments()->delete();
+            $task->checklists()->delete();
+            $task->labels()->detach();
+
+            // Delete attachments files
+            foreach ($task->attachments as $attachment) {
+                if (Storage::disk('public')->exists($attachment->file_url)) {
+                    Storage::disk('public')->delete($attachment->file_url);
+                }
+                $attachment->delete();
+            }
+
+            // Delete comments
+            $task->comments()->delete();
+
+            // Force delete task
+            $task->forceDelete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tugas berhasil dihapus permanen'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error force deleting task: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus permanen: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Restore deleted task (hanya untuk SuperAdmin/Administrator/Admin)
+     */
+    public function restoreTask($taskId)
+    {
+        try {
+            $task = Task::withTrashed()->findOrFail($taskId);
+            $user = Auth::user();
+
+            // Validasi akses workspace
+            if (!$this->canAccessWorkspace($task->workspace_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            // Hanya admin yang bisa restore
+            $userCompany = $user->userCompanies()
+                ->where('company_id', session('active_company_id'))
+                ->with('role')
+                ->first();
+
+            $userRole = $userCompany?->role?->name ?? 'Member';
+
+            if (!in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Hanya admin yang dapat mengembalikan tugas'
+                ], 403);
+            }
+
+            $task->restore();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tugas berhasil dikembalikan'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error restoring task: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengembalikan tugas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
+    /**
+     * ✅ Hapus kolom kanban custom
+     */
+    public function deleteCustomColumn($columnId)
+    {
+        try {
+            $user = Auth::user();
+            $column = BoardColumn::with('workspace')->findOrFail($columnId);
+
+            // ✅ VALIDASI: Gunakan method helper untuk cek akses workspace
+            if (!$this->canAccessWorkspace($column->workspace_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke workspace ini'
+                ], 403);
+            }
+
+            // ✅ Cegah penghapusan kolom default
+            $defaultColumns = ['To Do List', 'Dikerjakan', 'Selesai', 'Batal'];
+
+            if (in_array($column->name, $defaultColumns)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kolom default tidak dapat dihapus'
+                ], 400);
+            }
+
+            // ✅ Pastikan tidak ada tugas di kolom ini sebelum dihapus
+            $taskCount = Task::where('board_column_id', $columnId)->count();
+
+            if ($taskCount > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak dapat menghapus kolom yang masih berisi tugas. Pindahkan semua tugas terlebih dahulu.'
+                ], 400);
+            }
+
+            DB::beginTransaction();
+
+            // Log sebelum menghapus
+            Log::info('Deleting custom column', [
+                'column_id' => $column->id,
+                'column_name' => $column->name,
+                'workspace_id' => $column->workspace_id,
+                'deleted_by' => $user->id
+            ]);
+
+            // Hapus kolom
+            $column->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Kolom custom berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deleting custom column: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus kolom: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    // Method alternatif di TaskController
+    public function deleteColumnWithTasksTransfer(Request $request, $columnId)
+    {
+        $request->validate([
+            'target_column_id' => 'required|exists:board_columns,id'
+        ]);
+
+        try {
+            $user = Auth::user();
+            $column = BoardColumn::with('workspace')->findOrFail($columnId);
+            $targetColumn = BoardColumn::findOrFail($request->target_column_id);
+
+            // Validasi akses
+            if (
+                !$this->canAccessWorkspace($column->workspace_id) ||
+                !$this->canAccessWorkspace($targetColumn->workspace_id)
+            ) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akses ditolak'
+                ], 403);
+            }
+
+            // Pastikan kedua kolom dalam workspace yang sama
+            if ($column->workspace_id !== $targetColumn->workspace_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kolom target harus dalam workspace yang sama'
+                ], 400);
+            }
+
+            DB::beginTransaction();
+
+            // Pindahkan semua tugas ke kolom target
+            Task::where('board_column_id', $columnId)
+                ->update(['board_column_id' => $request->target_column_id]);
+
+            // Hapus kolom
+            $column->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Kolom berhasil dihapus dan tugas dipindahkan'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error deleting column with transfer: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus kolom: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
+    // ✅ NEW: Create checklist untuk task yang sudah ada
+    public function createChecklistForExistingTask(Request $request, $taskId)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'is_done' => 'boolean'
+        ]);
+
+        try {
+            $task = Task::findOrFail($taskId);
+            $user = Auth::user();
+
+            // ✅ VALIDASI: Gunakan method helper untuk cek akses
+            if (!$this->canAccessWorkspace($task->workspace_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            // Hitung posisi terakhir
+            $lastPosition = Checklist::where('task_id', $taskId)->max('position');
+
+            $checklist = Checklist::create([
+                'id' => Str::uuid()->toString(),
+                'task_id' => $taskId,
+                'title' => $request->title,
+                'is_done' => $request->is_done ?? false,
+                'position' => ($lastPosition ? $lastPosition + 1 : 0)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Checklist berhasil ditambahkan',
+                'checklist' => $checklist
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error creating checklist for existing task: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambahkan checklist: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
+    // ✅ NEW: Get all checklists for task
+    public function getAllChecklists($taskId)
+    {
+        try {
+            $task = Task::findOrFail($taskId);
+            $user = Auth::user();
+
+            if (!$this->canAccessWorkspace($task->workspace_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke task ini'
+                ], 403);
+            }
+
+            $checklists = Checklist::where('task_id', $taskId)
+                ->orderBy('position')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'checklists' => $checklists
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting all checklists: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data checklist'
+            ], 500);
+        }
+    }
 }

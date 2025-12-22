@@ -13,9 +13,20 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\Services\NotificationService;
 
 class PengumumanPerusahaanController extends Controller
 {
+
+
+    // ✅ TAMBAH INI
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     /**
      * Helper untuk set timezone user
      */
@@ -180,6 +191,9 @@ class PengumumanPerusahaanController extends Controller
             $pengumuman->save();
 
             DB::commit();
+
+                        $this->notificationService->notifyAnnouncementCreated($pengumuman);
+
 
             return redirect()->route('pengumuman-perusahaan.show', ['company_id' => $company_id, 'id' => $pengumuman->id])->with('alert', [
                 'icon' => 'success',

@@ -133,6 +133,12 @@
                 workspaceId: ctx?.workspaceId || null,
             };
         };
+
+        window.Laravel = {
+            userId: '{{ Auth::id() }}',
+            csrfToken: '{{ csrf_token() }}'
+        };
+        
     </script>
 
     @include('components.sweet-alert')

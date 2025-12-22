@@ -15,9 +15,20 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ConversationParticipant;
 use Illuminate\Support\Facades\Storage;
+use App\Services\NotificationService;
 
 class CompanyChatController extends Controller
 {
+
+
+    // ✅ TAMBAH INI
+    protected $notificationService;
+
+    public function __construct(NotificationService $notificationService)
+    {
+        $this->notificationService = $notificationService;
+    }
+
     public function index(string $companyId)
     {
         $userId = Auth::id();
@@ -279,6 +290,8 @@ class CompanyChatController extends Controller
             ]);
 
             DB::commit();
+
+$this->notificationService->notifyNewMessage($message);
 
             // Broadcast event
             event(new NewMessageSent($message));

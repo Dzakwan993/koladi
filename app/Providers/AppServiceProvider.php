@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use App\Http\View\Composers\UserRoleComposer;
 use App\Models\Role;
+use App\Services\NotificationService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,7 +18,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+
+        // ✅ TAMBAHKAN INI - Register NotificationService sebagai singleton
+        $this->app->singleton(NotificationService::class, function ($app) {
+            return new NotificationService();
+        });
     }
 
     /**
