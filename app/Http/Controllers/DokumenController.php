@@ -576,12 +576,12 @@ class DokumenController extends Controller
 
         $selectedMembers = json_decode($request->selected_members, true) ?? [];
 
-        // Tandai semua yang ada di database tapi tidak dipilih => status false
+        // Set status false untuk yang tidak dipilih
         DocumentRecipient::where('document_id', $request->document_id)
             ->whereNotIn('user_id', $selectedMembers)
             ->update(['status' => false]);
 
-        // Tambahkan atau update recipients
+        // Update/create yang dipilih
         foreach ($selectedMembers as $userId) {
             DocumentRecipient::updateOrCreate(
                 [
@@ -595,54 +595,52 @@ class DokumenController extends Controller
             );
         }
 
-        // Cek apakah ada minimal 1 recipient aktif
+        // Update is_private jika ada recipient aktif
         $hasActiveRecipients = DocumentRecipient::where('document_id', $request->document_id)
             ->where('status', true)
             ->exists();
 
-        // Update kolom is_private di files atau folders
         if ($file = File::find($request->document_id)) {
-
-            // Kalau ada recipient aktif → pastikan private
             if ($hasActiveRecipients) {
                 $file->update(['is_private' => true]);
             }
-
-            // Kalau tidak ada recipient aktif → JANGAN sentuh is_private
-            // biarkan tetap seperti sebelumnya (true or false sesuai riwayat)
-
         } elseif ($folder = Folder::find($request->document_id)) {
-
             if ($hasActiveRecipients) {
                 $folder->update(['is_private' => true]);
             }
-
-            // Kalau kosong → tidak diubah
         }
 
-        // ✅ Tentukan redirect URL berdasarkan context
+        // ✅ PERBAIKAN: Return full_recipients yang sudah difilter
+        $fullRecipients = DocumentRecipient::where('document_id', $request->document_id)
+            ->where('status', true)
+            ->with('user:id,full_name,email,avatar')
+            ->get()
+            ->map(function ($dr) {
+                return [
+                    'id' => $dr->user->id,
+                    'name' => $dr->user->full_name,
+                    'email' => $dr->user->email,
+                    'avatar' => $dr->user->avatar,
+                ];
+            });
+
+        // Build redirect URL
         $redirectUrl = null;
-
-        // ❌ SEBELUM (di recipientsStore)
         if ($file = File::find($request->document_id)) {
-            $workspaceId = $file->workspace_id;
-            $folderId = $file->folder_id;
-
-            $redirectUrl = route('dokumen-dan-file', ['workspace' => $workspaceId]);
-
-            if ($folderId) {
-                $redirectUrl .= '?folder=' . $folderId;
+            $redirectUrl = route('dokumen-dan-file', ['workspace' => $file->workspace_id]);
+            if ($file->folder_id) {
+                $redirectUrl .= '?folder=' . $file->folder_id;
             }
         } elseif ($folder = Folder::find($request->document_id)) {
-            $workspaceId = $folder->workspace_id;
-
-            $redirectUrl = route('dokumen-dan-file', ['workspace' => $workspaceId]);
+            $redirectUrl = route('dokumen-dan-file', ['workspace' => $folder->workspace_id]);
             $redirectUrl .= '?folder=' . $folder->id;
         }
 
-        // ✅ Return JSON response
         return response()->json([
             'success' => true,
+            'document_id' => $request->document_id,
+            'full_recipients' => $fullRecipients, // ⬅️ TAMBAHKAN INI
+            'recipients' => $fullRecipients->pluck('id')->toArray(),
             'redirect_url' => $redirectUrl,
             'alert' => [
                 'icon' => 'success',
@@ -656,14 +654,37 @@ class DokumenController extends Controller
 
     public function getRecipients($documentId)
     {
-        // Ambil hanya user_id yang status = true
-        $recipients = DocumentRecipient::where('document_id', $documentId)
-            ->where('status', true)
-            ->pluck('user_id'); // ambil array user_id
+        try {
+            // ✅ PERBAIKAN: Return 2 jenis data
+            // 1. recipients (array ID) - untuk checkbox
+            // 2. full_recipients (array lengkap) - untuk avatar display
 
-        return response()->json(['recipients' => $recipients]);
+            $fullRecipients = DocumentRecipient::where('document_id', $documentId)
+                ->where('status', true) // ⬅️ FILTER is_allowed = true
+                ->with('user:id,full_name,email,avatar')
+                ->get()
+                ->map(function ($dr) {
+                    return [
+                        'id' => $dr->user->id,
+                        'name' => $dr->user->full_name,
+                        'email' => $dr->user->email,
+                        'avatar' => $dr->user->avatar,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'recipients' => $fullRecipients->pluck('id')->toArray(), // untuk checkbox
+                'full_recipients' => $fullRecipients, // untuk display avatar
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
-
     /**
      * Get workspaces yang bisa diakses user
      */
