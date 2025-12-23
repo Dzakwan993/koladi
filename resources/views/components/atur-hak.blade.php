@@ -4,7 +4,7 @@
     $availableRoles = $availableRoles ?? collect([]);
     $currentUserRole = $currentUserRole ?? 'Member';
 
-    $canManageRoles = in_array($currentUserRole, ['SuperAdmin', 'Administrator', 'AdminSistem', 'Manager']);
+    $canManageRoles = in_array($currentUserRole, ['SuperAdmin', 'Administrator', 'AdminSistem']);
 
     // ✅ WARNA MERAH UNTUK ADMINISTRATOR
     $colorMapping = [
@@ -217,7 +217,8 @@
                     <div class="text-center max-w-md mx-auto">
                         <h3 class="text-base sm:text-lg md:text-xl font-semibold text-red-800 mb-1 sm:mb-2">Akses
                             Ditolak</h3>
-                        <p class="text-xs sm:text-sm md:text-base text-red-600 font-medium">Hanya User yang memiliki izin
+                        <p class="text-xs sm:text-sm md:text-base text-red-600 font-medium">Hanya User yang memiliki
+                            izin
                             yang dapat mengakses fitur ini.</p>
                     </div>
                 </div>
