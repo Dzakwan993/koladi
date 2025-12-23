@@ -2814,254 +2814,255 @@
                             // Di dalam kanbanApp() - perbaiki method createTask
                             // Letakkan di kanban-tugas.blade.php, ganti method createTask() yang lama
 
-async createTask() {
-    try {
-        // ✅ GET CKEDITOR CONTENT
-        const catatanContent = this.getCKEditorContent('editor-catatan');
-        this.taskForm.description = catatanContent;
+                            async createTask() {
+                                try {
+                                    // ✅ GET CKEDITOR CONTENT
+                                    const catatanContent = this.getCKEditorContent('editor-catatan');
+                                    this.taskForm.description = catatanContent;
 
-        console.log('🔄 Validating task form...', {
-            title: this.taskForm.title,
-            description: catatanContent?.length,
-            startDate: this.taskForm.startDate,
-            startTime: this.taskForm.startTime,
-            dueDate: this.taskForm.dueDate,
-            dueTime: this.taskForm.dueTime
-        });
+                                    console.log('🔄 Validating task form...', {
+                                        title: this.taskForm.title,
+                                        description: catatanContent?.length,
+                                        startDate: this.taskForm.startDate,
+                                        startTime: this.taskForm.startTime,
+                                        dueDate: this.taskForm.dueDate,
+                                        dueTime: this.taskForm.dueTime
+                                    });
 
-        // ✅ VALIDASI FIELD WAJIB
-        const validationErrors = [];
+                                    // ✅ VALIDASI FIELD WAJIB
+                                    const validationErrors = [];
 
-        // Validasi Nama Tugas
-        if (!this.taskForm.title || !this.taskForm.title.trim()) {
-            validationErrors.push('• Nama tugas harus diisi');
-        }
+                                    // Validasi Nama Tugas
+                                    if (!this.taskForm.title || !this.taskForm.title.trim()) {
+                                        validationErrors.push('• Nama tugas harus diisi');
+                                    }
 
-        // Validasi Catatan
-        if (!catatanContent || !catatanContent.trim() || catatanContent.trim() === '<p>&nbsp;</p>' || catatanContent.trim() === '<p></p>') {
-            validationErrors.push('• Catatan harus diisi');
-        }
+                                    // Validasi Catatan
+                                    if (!catatanContent || !catatanContent.trim() || catatanContent.trim() === '<p>&nbsp;</p>' ||
+                                        catatanContent.trim() === '<p></p>') {
+                                        validationErrors.push('• Catatan harus diisi');
+                                    }
 
-        // Validasi Tanggal Mulai
-        if (!this.taskForm.startDate) {
-            validationErrors.push('• Tanggal mulai harus diisi');
-        }
+                                    // Validasi Tanggal Mulai
+                                    if (!this.taskForm.startDate) {
+                                        validationErrors.push('• Tanggal mulai harus diisi');
+                                    }
 
-        // Validasi Jam Mulai
-        if (!this.taskForm.startTime) {
-            validationErrors.push('• Jam mulai harus diisi');
-        }
+                                    // Validasi Jam Mulai
+                                    if (!this.taskForm.startTime) {
+                                        validationErrors.push('• Jam mulai harus diisi');
+                                    }
 
-        // Validasi Tenggat
-        if (!this.taskForm.dueDate) {
-            validationErrors.push('• Tenggat harus diisi');
-        }
+                                    // Validasi Tenggat
+                                    if (!this.taskForm.dueDate) {
+                                        validationErrors.push('• Tenggat harus diisi');
+                                    }
 
-        // Validasi Jam Tenggat
-        if (!this.taskForm.dueTime) {
-            validationErrors.push('• Jam tenggat harus diisi');
-        }
+                                    // Validasi Jam Tenggat
+                                    if (!this.taskForm.dueTime) {
+                                        validationErrors.push('• Jam tenggat harus diisi');
+                                    }
 
-        // ✅ VALIDASI LOGIKA TANGGAL (hanya jika semua field tanggal terisi)
-        if (this.taskForm.startDate && this.taskForm.startTime && 
-            this.taskForm.dueDate && this.taskForm.dueTime) {
-            
-            const startDateTime = new Date(`${this.taskForm.startDate}T${this.taskForm.startTime}:00`);
-            const dueDateTime = new Date(`${this.taskForm.dueDate}T${this.taskForm.dueTime}:00`);
+                                    // ✅ VALIDASI LOGIKA TANGGAL (hanya jika semua field tanggal terisi)
+                                    if (this.taskForm.startDate && this.taskForm.startTime &&
+                                        this.taskForm.dueDate && this.taskForm.dueTime) {
 
-            console.log('📅 Date validation:', {
-                start: startDateTime,
-                due: dueDateTime,
-                isValid: dueDateTime > startDateTime
-            });
+                                        const startDateTime = new Date(`${this.taskForm.startDate}T${this.taskForm.startTime}:00`);
+                                        const dueDateTime = new Date(`${this.taskForm.dueDate}T${this.taskForm.dueTime}:00`);
 
-            if (dueDateTime <= startDateTime) {
-                validationErrors.push('• Tenggat harus setelah waktu mulai');
-            }
-        }
+                                        console.log('📅 Date validation:', {
+                                            start: startDateTime,
+                                            due: dueDateTime,
+                                            isValid: dueDateTime > startDateTime
+                                        });
 
-        // ✅ TAMPILKAN ERROR JIKA ADA
-        if (validationErrors.length > 0) {
-            console.error('❌ Validation failed:', validationErrors);
-            
-            const errorMessage = validationErrors.length === 1 
-                ? validationErrors[0].replace('• ', '')
-                : 'Harap lengkapi field berikut:\n\n' + validationErrors.join('\n');
+                                        if (dueDateTime <= startDateTime) {
+                                            validationErrors.push('• Tenggat harus setelah waktu mulai');
+                                        }
+                                    }
 
-            await Swal.fire({
-                icon: 'warning',
-                title: 'Data Tidak Lengkap',
-                html: errorMessage.replace(/\n/g, '<br>'),
-                confirmButtonText: 'OK, Saya Mengerti',
-                confirmButtonColor: '#3b82f6',
-                background: '#f7faff',
-                customClass: {
-                    popup: 'swal-custom-popup',
-                    title: 'swal-custom-title',
-                    htmlContainer: 'swal-custom-text'
-                }
-            });
-            return;
-        }
+                                    // ✅ TAMPILKAN ERROR JIKA ADA
+                                    if (validationErrors.length > 0) {
+                                        console.error('❌ Validation failed:', validationErrors);
 
-        // ✅ VALIDASI KOLOM
-        if (!this.currentColumnId) {
-            this.showNotification('Kolom tujuan tidak ditemukan', 'error');
-            return;
-        }
+                                        const errorMessage = validationErrors.length === 1 ?
+                                            validationErrors[0].replace('• ', '') :
+                                            'Harap lengkapi field berikut:\n\n' + validationErrors.join('\n');
 
-        // ✅ VALIDASI WORKSPACE
-        const workspaceId = this.getCurrentWorkspaceId();
-        if (!workspaceId) {
-            this.showNotification('Workspace tidak valid', 'error');
-            return;
-        }
+                                        await Swal.fire({
+                                            icon: 'warning',
+                                            title: 'Data Tidak Lengkap',
+                                            html: errorMessage.replace(/\n/g, '<br>'),
+                                            confirmButtonText: 'OK, Saya Mengerti',
+                                            confirmButtonColor: '#3b82f6',
+                                            background: '#f7faff',
+                                            customClass: {
+                                                popup: 'swal-custom-popup',
+                                                title: 'swal-custom-title',
+                                                htmlContainer: 'swal-custom-text'
+                                            }
+                                        });
+                                        return;
+                                    }
 
-        console.log('✅ All validations passed, creating task...');
+                                    // ✅ VALIDASI KOLOM
+                                    if (!this.currentColumnId) {
+                                        this.showNotification('Kolom tujuan tidak ditemukan', 'error');
+                                        return;
+                                    }
 
-        try {
-            // ✅ SIAPKAN DATA UNTUK BACKEND
-            const formData = {
-                workspace_id: workspaceId,
-                board_column_id: this.currentColumnId,
-                
-                // Field Wajib
-                title: this.taskForm.title.trim(),
-                description: catatanContent,
-                start_datetime: `${this.taskForm.startDate} ${this.taskForm.startTime}:00`,
-                due_datetime: `${this.taskForm.dueDate} ${this.taskForm.dueTime}:00`,
-                
-                // Field Opsional
-                phase: this.taskForm.phase?.trim() || null,
-                is_secret: this.taskForm.is_secret || false,
-                priority: this.taskForm.priority || 'medium'
-            };
+                                    // ✅ VALIDASI WORKSPACE
+                                    const workspaceId = this.getCurrentWorkspaceId();
+                                    if (!workspaceId) {
+                                        this.showNotification('Workspace tidak valid', 'error');
+                                        return;
+                                    }
 
-            // ✅ TAMBAHKAN FIELD OPSIONAL (HANYA JIKA ADA ISI)
-            
-            // Anggota (user_ids)
-            if (this.taskForm.members && this.taskForm.members.length > 0) {
-                formData.user_ids = this.taskForm.members.map(m => m.id);
-            }
+                                    console.log('✅ All validations passed, creating task...');
 
-            // Label (label_ids)
-            if (this.taskForm.labels && this.taskForm.labels.length > 0) {
-                formData.label_ids = this.taskForm.labels.map(l => l.id);
-            }
+                                    try {
+                                        // ✅ SIAPKAN DATA UNTUK BACKEND
+                                        const formData = {
+                                            workspace_id: workspaceId,
+                                            board_column_id: this.currentColumnId,
 
-            // Checklist
-            if (this.taskForm.checklists && this.taskForm.checklists.length > 0) {
-                formData.checklists = this.taskForm.checklists
-                    .filter(item => item.title && item.title.trim()) // Filter yang kosong
-                    .map(item => ({
-                        title: item.title.trim(),
-                        is_done: item.is_done || false
-                    }));
-                
-                // Hapus jika semua checklist kosong
-                if (formData.checklists.length === 0) {
-                    delete formData.checklists;
-                }
-            }
+                                            // Field Wajib
+                                            title: this.taskForm.title.trim(),
+                                            description: catatanContent,
+                                            start_datetime: `${this.taskForm.startDate} ${this.taskForm.startTime}:00`,
+                                            due_datetime: `${this.taskForm.dueDate} ${this.taskForm.dueTime}:00`,
 
-            // Attachment (attachment_ids)
-            if (this.taskForm.attachments && this.taskForm.attachments.length > 0) {
-                formData.attachment_ids = this.taskForm.attachments.map(att => att.id);
-            }
+                                            // Field Opsional
+                                            phase: this.taskForm.phase?.trim() || null,
+                                            is_secret: this.taskForm.is_secret || false,
+                                            priority: this.taskForm.priority || 'medium'
+                                        };
 
-            console.log('📤 Sending task data:', {
-                ...formData,
-                description_length: formData.description?.length,
-                has_phase: !!formData.phase,
-                has_members: !!formData.user_ids,
-                has_labels: !!formData.label_ids,
-                has_checklists: !!formData.checklists,
-                has_attachments: !!formData.attachment_ids
-            });
+                                        // ✅ TAMBAHKAN FIELD OPSIONAL (HANYA JIKA ADA ISI)
 
-            // ✅ KIRIM REQUEST KE BACKEND
-            const response = await fetch('/tasks/create-with-assignments', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': this.getCsrfToken(),
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            });
+                                        // Anggota (user_ids)
+                                        if (this.taskForm.members && this.taskForm.members.length > 0) {
+                                            formData.user_ids = this.taskForm.members.map(m => m.id);
+                                        }
 
-            console.log('📥 Response status:', response.status);
+                                        // Label (label_ids)
+                                        if (this.taskForm.labels && this.taskForm.labels.length > 0) {
+                                            formData.label_ids = this.taskForm.labels.map(l => l.id);
+                                        }
 
-            // ✅ CEK RESPONSE
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error('❌ Server error:', errorData);
-                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-            }
+                                        // Checklist
+                                        if (this.taskForm.checklists && this.taskForm.checklists.length > 0) {
+                                            formData.checklists = this.taskForm.checklists
+                                                .filter(item => item.title && item.title.trim()) // Filter yang kosong
+                                                .map(item => ({
+                                                    title: item.title.trim(),
+                                                    is_done: item.is_done || false
+                                                }));
 
-            const data = await response.json();
-            console.log('📥 Response data:', data);
+                                            // Hapus jika semua checklist kosong
+                                            if (formData.checklists.length === 0) {
+                                                delete formData.checklists;
+                                            }
+                                        }
 
-            if (data.success) {
-                console.log('✅ Task created successfully:', data.task);
+                                        // Attachment (attachment_ids)
+                                        if (this.taskForm.attachments && this.taskForm.attachments.length > 0) {
+                                            formData.attachment_ids = this.taskForm.attachments.map(att => att.id);
+                                        }
 
-                // ✅ TAMPILKAN NOTIFIKASI SUKSES
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Berhasil!',
-                    text: 'Tugas berhasil dibuat',
-                    timer: 2000,
-                    showConfirmButton: false,
-                    background: '#f7faff',
-                    customClass: {
-                        popup: 'swal-custom-popup'
-                    }
-                });
+                                        console.log('📤 Sending task data:', {
+                                            ...formData,
+                                            description_length: formData.description?.length,
+                                            has_phase: !!formData.phase,
+                                            has_members: !!formData.user_ids,
+                                            has_labels: !!formData.label_ids,
+                                            has_checklists: !!formData.checklists,
+                                            has_attachments: !!formData.attachment_ids
+                                        });
 
-                // ✅ UPDATE KANBAN BOARD
-                this.addNewTaskToKanban(data.task);
+                                        // ✅ KIRIM REQUEST KE BACKEND
+                                        const response = await fetch('/tasks/create-with-assignments', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-CSRF-TOKEN': this.getCsrfToken(),
+                                                'Accept': 'application/json'
+                                            },
+                                            body: JSON.stringify(formData)
+                                        });
 
-                // ✅ RESET FORM & TUTUP MODAL
-                this.resetTaskForm();
-                this.openTaskModal = false;
+                                        console.log('📥 Response status:', response.status);
 
-                // ✅ RELOAD KANBAN DATA UNTUK SINKRONISASI
-                await this.loadKanbanTasks();
+                                        // ✅ CEK RESPONSE
+                                        if (!response.ok) {
+                                            const errorData = await response.json().catch(() => ({}));
+                                            console.error('❌ Server error:', errorData);
+                                            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                                        }
 
-            } else {
-                throw new Error(data.message || 'Gagal membuat tugas');
-            }
+                                        const data = await response.json();
+                                        console.log('📥 Response data:', data);
 
-        } catch (error) {
-            console.error('❌ Error creating task:', error);
-            
-            await Swal.fire({
-                icon: 'error',
-                title: 'Gagal Membuat Tugas',
-                text: error.message || 'Terjadi kesalahan saat membuat tugas',
-                confirmButtonText: 'OK',
-                confirmButtonColor: '#ef4444',
-                background: '#f7faff',
-                customClass: {
-                    popup: 'swal-custom-popup',
-                    title: 'swal-custom-title',
-                    htmlContainer: 'swal-custom-text'
-                }
-            });
-        }
-    } catch (error) {
-        console.error('❌ Critical error in createTask:', error);
-        
-        await Swal.fire({
-            icon: 'error',
-            title: 'Kesalahan Sistem',
-            text: 'Terjadi kesalahan yang tidak terduga. Silakan coba lagi.',
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#ef4444',
-            background: '#f7faff'
-        });
-    }
-},
+                                        if (data.success) {
+                                            console.log('✅ Task created successfully:', data.task);
+
+                                            // ✅ TAMPILKAN NOTIFIKASI SUKSES
+                                            await Swal.fire({
+                                                icon: 'success',
+                                                title: 'Berhasil!',
+                                                text: 'Tugas berhasil dibuat',
+                                                timer: 2000,
+                                                showConfirmButton: false,
+                                                background: '#f7faff',
+                                                customClass: {
+                                                    popup: 'swal-custom-popup'
+                                                }
+                                            });
+
+                                            // ✅ UPDATE KANBAN BOARD
+                                            this.addNewTaskToKanban(data.task);
+
+                                            // ✅ RESET FORM & TUTUP MODAL
+                                            this.resetTaskForm();
+                                            this.openTaskModal = false;
+
+                                            // ✅ RELOAD KANBAN DATA UNTUK SINKRONISASI
+                                            await this.loadKanbanTasks();
+
+                                        } else {
+                                            throw new Error(data.message || 'Gagal membuat tugas');
+                                        }
+
+                                    } catch (error) {
+                                        console.error('❌ Error creating task:', error);
+
+                                        await Swal.fire({
+                                            icon: 'error',
+                                            title: 'Gagal Membuat Tugas',
+                                            text: error.message || 'Terjadi kesalahan saat membuat tugas',
+                                            confirmButtonText: 'OK',
+                                            confirmButtonColor: '#ef4444',
+                                            background: '#f7faff',
+                                            customClass: {
+                                                popup: 'swal-custom-popup',
+                                                title: 'swal-custom-title',
+                                                htmlContainer: 'swal-custom-text'
+                                            }
+                                        });
+                                    }
+                                } catch (error) {
+                                    console.error('❌ Critical error in createTask:', error);
+
+                                    await Swal.fire({
+                                        icon: 'error',
+                                        title: 'Kesalahan Sistem',
+                                        text: 'Terjadi kesalahan yang tidak terduga. Silakan coba lagi.',
+                                        confirmButtonText: 'OK',
+                                        confirmButtonColor: '#ef4444',
+                                        background: '#f7faff'
+                                    });
+                                }
+                            },
 
 
 
@@ -3930,9 +3931,12 @@ async createTask() {
 
                                     if (data.success) {
                                         this.boardColumns = data.columns;
-                                        // Initialize Sortable setelah kolom dimuat
+
+                                        // ✅ PERBAIKAN: Initialize Sortable hanya sekali setelah DOM ready
                                         this.$nextTick(() => {
-                                            this.initializeSortable();
+                                            this.boardColumns.forEach(column => {
+                                                this.initializeSortableForColumn(column.id);
+                                            });
                                         });
                                     } else {
                                         console.error('Gagal memuat kolom:', data.message);
@@ -4062,76 +4066,37 @@ async createTask() {
                             // Di kanbanApp() - update method initializeSortableForColumn
                             // Di dalam kanbanApp() - PERBAIKI method ini
                             // Di dalam kanbanApp() - PERBAIKI method initializeSortableForColumn
+                            // ✅ HAPUS method initializeSortable() yang lama, ganti dengan ini:
                             initializeSortableForColumn(columnId) {
-                                // Tunggu sedikit untuk memastikan DOM sudah dirender
-                                this.$nextTick(() => {
-                                    setTimeout(() => {
-                                        const el = document.getElementById(`column-${columnId}`);
+                                const el = document.getElementById(`column-${columnId}`);
 
-                                        if (el && !el._sortableInstance) {
-                                            el._sortableInstance = new Sortable(el, {
-                                                group: {
-                                                    name: 'kanban',
-                                                    pull: true,
-                                                    put: true
-                                                },
-                                                animation: 150,
-                                                ghostClass: 'sortable-ghost',
-                                                chosenClass: 'sortable-chosen',
-                                                dragClass: 'sortable-drag',
-                                                filter: '.ignore-elements', // Filter elemen yang tidak bisa didrag
-                                                preventOnFilter: false,
-                                                forceFallback: false, // Gunakan native HTML5 DnD
-                                                fallbackClass: 'sortable-fallback',
-                                                fallbackOnBody: true,
-                                                fallbackTolerance: 0,
-                                                scroll: true,
-                                                scrollSensitivity: 30,
-                                                scrollSpeed: 10,
-                                                bubbleScroll: true,
+                                // ✅ Cek apakah sudah ada instance
+                                if (!el || el._sortableInstance) {
+                                    return;
+                                }
 
-                                                // Event handlers
-                                                onStart: (evt) => {
-                                                    evt.item.classList.add('dragging-active');
-                                                    console.log('Drag started:', evt.item.dataset.taskId);
-                                                },
+                                try {
+                                    el._sortableInstance = new Sortable(el, {
+                                        group: {
+                                            name: 'kanban',
+                                            pull: true,
+                                            put: true
+                                        },
+                                        animation: 150,
+                                        ghostClass: 'sortable-ghost',
+                                        chosenClass: 'sortable-chosen',
+                                        dragClass: 'sortable-drag',
 
-                                                onEnd: (evt) => {
-                                                    evt.item.classList.remove('dragging-active');
-                                                    this.handleTaskMove(evt, columnId);
-                                                },
-
-                                                onAdd: (evt) => {
-                                                    console.log('Task added to column:', columnId);
-                                                },
-
-                                                onRemove: (evt) => {
-                                                    console.log('Task removed from column:', columnId);
-                                                },
-
-                                                // Untuk mengatasi blur text
-                                                setData: (dataTransfer, dragEl) => {
-                                                    // Gunakan text/plain untuk mencegah browser rendering default
-                                                    dataTransfer.setData('text/plain', dragEl.dataset
-                                                        .taskId);
-                                                },
-
-                                                // Optional: Custom drag image
-                                                dragImage: (dragEl) => {
-                                                    // Buat custom drag image untuk visual yang lebih baik
-                                                    const dragImage = dragEl.cloneNode(true);
-                                                    dragImage.style.opacity = '0.7';
-                                                    dragImage.style.transform = 'rotate(5deg)';
-                                                    dragImage.style.width = dragEl.offsetWidth + 'px';
-                                                    dragImage.style.height = dragEl.offsetHeight + 'px';
-                                                    return dragImage;
-                                                }
-                                            });
-
-                                            console.log('✅ Sortable initialized for column:', columnId);
+                                        onEnd: (evt) => {
+                                            evt.item.classList.remove('dragging-active');
+                                            this.handleTaskMove(evt, columnId);
                                         }
-                                    }, 300);
-                                });
+                                    });
+
+                                    console.log('✅ Sortable initialized for column:', columnId);
+                                } catch (error) {
+                                    console.error('❌ Error initializing sortable:', error);
+                                }
                             },
 
 
@@ -4397,22 +4362,28 @@ async createTask() {
                                         searchLabel: ''
                                     };
 
-                                    // Load data
-                                    this.loadBoardColumns();
-                                    this.loadKanbanTasks();
-                                    this.loadTimelineData();
-                                    this.loadWorkspaceMembers();
-                                    this.loadLabels();
-                                    this.loadColors();
+                                    // ✅ PERBAIKAN: Load data secara berurutan dengan priority
+                                    this.loadBoardColumns().then(() => {
+                                        // Setelah kolom selesai, baru load tasks
+                                        return this.loadKanbanTasks();
+                                    }).then(() => {
+                                        // Load data sekunder setelah data utama selesai
+                                        Promise.all([
+                                            this.loadWorkspaceMembers(),
+                                            this.loadLabels(),
+                                            this.loadColors()
+                                        ]);
+                                    });
+
+                                    // Load timeline di background (tidak blocking)
+                                    setTimeout(() => {
+                                        this.loadTimelineData();
+                                    }, 1000);
+
                                     this.uploadingDetail = false;
                                     this.uploadProgressDetail = 0;
 
-                                    console.log('✅ Aplikasi initialized dengan semua state');
-
-                                    // Inisialisasi Sortable setelah semua data dimuat
-                                    setTimeout(() => {
-                                        this.initializeSortable();
-                                    }, 1000);
+                                    console.log('✅ Aplikasi initialized');
 
                                 } catch (error) {
                                     console.error('❌ Error initializing app:', error);
@@ -5431,23 +5402,30 @@ async createTask() {
                                     const workspaceId = this.getCurrentWorkspaceId();
                                     if (!workspaceId) return;
 
+                                    // ✅ PERBAIKAN: Tambahkan loading indicator
+                                    console.log('🔄 Loading kanban tasks...');
+
                                     const response = await fetch(`/tasks/workspace/${workspaceId}/kanban-tasks`);
+
+                                    if (!response.ok) {
+                                        throw new Error(`HTTP ${response.status}`);
+                                    }
+
                                     const data = await response.json();
 
                                     if (data.success) {
-                                        // Transform data untuk kompatibilitas dengan frontend
                                         this.tasks = data.tasks.map(task => ({
                                             id: task.id,
                                             title: task.title,
                                             phase: task.phase,
-                                            status: task.board_column_id, // Gunakan board_column_id sebagai status
+                                            status: task.board_column_id,
                                             board_column_id: task.board_column_id,
-                                            members: task.assignees, // Assignees sebagai members
+                                            members: task.assignees,
                                             secret: task.is_secret,
                                             is_secret: task.is_secret,
                                             notes: task.description,
                                             description: task.description,
-                                            attachments: [], // Bisa di-load terpisah jika perlu
+                                            attachments: [],
                                             labels: task.labels,
                                             checklist: task.checklists.map(cl => ({
                                                 name: cl.title,
@@ -5457,9 +5435,9 @@ async createTask() {
                                             })),
                                             startDate: task.start_datetime ? task.start_datetime.split('T')[0] : '',
                                             startTime: task.start_datetime ? task.start_datetime.split('T')[1]
-                                                .substring(0, 5) : '',
+                                                ?.substring(0, 5) : '',
                                             dueDate: task.due_datetime ? task.due_datetime.split('T')[0] : '',
-                                            dueTime: task.due_datetime ? task.due_datetime.split('T')[1].substring(0,
+                                            dueTime: task.due_datetime ? task.due_datetime.split('T')[1]?.substring(0,
                                                 5) : '',
                                             priority: task.priority,
                                             progress_percentage: task.progress_percentage,
@@ -5468,12 +5446,11 @@ async createTask() {
                                             updated_at: task.updated_at
                                         }));
 
-                                        console.log('✅ Tasks loaded from database:', this.tasks.length);
-                                    } else {
-                                        console.error('Gagal memuat tasks:', data.message);
+                                        console.log('✅ Tasks loaded:', this.tasks.length);
                                     }
                                 } catch (error) {
-                                    console.error('Error loading kanban tasks:', error);
+                                    console.error('❌ Error loading kanban tasks:', error);
+                                    this.showNotification('Gagal memuat data tugas', 'error');
                                 }
                             },
 
