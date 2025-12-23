@@ -214,8 +214,10 @@ class StatistikController extends Controller
                         'id' => $m->id,
                         'name' => $m->name,
                         'avatar' => $m->avatar
-                            ? asset('storage/' . $m->avatar) // ✅ FIX
-                            : 'https://i.pravatar.cc/40?u=' . $m->id
+                            ? (filter_var($m->avatar, FILTER_VALIDATE_URL)
+                                ? $m->avatar
+                                : asset('storage/' . $m->avatar))
+                            : 'https://ui-avatars.com/api/?name=' . urlencode($m->name) . '&background=random&color=fff'
                     ]),
                     'tasks' => $tasks,
                     'rekap_kinerja' => $rekapKinerja,
@@ -598,8 +600,10 @@ class StatistikController extends Controller
                         'id' => $u->id,
                         'name' => $u->name,
                         'avatar' => $u->avatar
-                            ? asset('storage/' . $u->avatar) // ✅ FIX
-                            : 'https://i.pravatar.cc/40?u=' . $u->id
+                            ? (filter_var($u->avatar, FILTER_VALIDATE_URL)
+                                ? $u->avatar
+                                : asset('storage/' . $u->avatar))
+                            : 'https://ui-avatars.com/api/?name=' . urlencode($u->name) . '&background=random&color=fff'
                     ])->values() // ✅ TAMBAH values() untuk reset array key
                 ];
             })
@@ -648,8 +652,10 @@ class StatistikController extends Controller
                 'user_id' => $member->id,
                 'name' => $member->name,
                 'avatar' => $member->avatar
-                    ? asset('storage/' . $member->avatar) // ✅ FIX: Tambah storage/
-                    : 'https://i.pravatar.cc/40?u=' . $member->id,
+                    ? (filter_var($member->avatar, FILTER_VALIDATE_URL)
+                        ? $member->avatar
+                        : asset('storage/' . $member->avatar))
+                    : 'https://ui-avatars.com/api/?name=' . urlencode($member->name) . '&background=random&color=fff',
                 'total_tasks' => $total,
                 'completed_tasks' => $done,
                 'overdue_tasks' => $overdue,
@@ -992,8 +998,10 @@ class StatistikController extends Controller
                     'id' => $u->id,
                     'name' => $u->name,
                     'avatar' => $u->avatar
-                        ? asset('storage/' . $u->avatar) // ✅ FIX
-                        : 'https://i.pravatar.cc/40?u=' . $u->id
+                        ? (filter_var($u->avatar, FILTER_VALIDATE_URL)
+                            ? $u->avatar
+                            : asset('storage/' . $u->avatar))
+                        : 'https://ui-avatars.com/api/?name=' . urlencode($u->name) . '&background=random&color=fff'
                 ])->values() // ✅ TAMBAH values() untuk reset array key
             ];
         });
@@ -1274,8 +1282,10 @@ class StatistikController extends Controller
                     'id' => $member->id,
                     'name' => $member->name,
                     'avatar' => $member->avatar
-                        ? asset('storage/' . $member->avatar)
-                        : 'https://i.pravatar.cc/40?u=' . $member->id
+                        ? (filter_var($member->avatar, FILTER_VALIDATE_URL)
+                            ? $member->avatar
+                            : asset('storage/' . $member->avatar))
+                        : 'https://ui-avatars.com/api/?name=' . urlencode($member->name) . '&background=random&color=fff'
                 ];
             });
         }
@@ -1624,8 +1634,10 @@ class StatistikController extends Controller
                     'id' => $u->id,
                     'name' => $u->name,
                     'avatar' => $u->avatar
-                        ? asset('storage/' . $u->avatar) // ✅ FIX
-                        : 'https://i.pravatar.cc/40?u=' . $u->id
+                        ? (filter_var($u->avatar, FILTER_VALIDATE_URL)
+                            ? $u->avatar
+                            : asset('storage/' . $u->avatar))
+                        : 'https://ui-avatars.com/api/?name=' . urlencode($u->name) . '&background=random&color=fff'
                 ])->values() // ✅ TAMBAH values() untuk reset array key
             ];
         });
