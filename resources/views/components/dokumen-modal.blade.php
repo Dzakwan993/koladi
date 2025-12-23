@@ -264,69 +264,91 @@
     </div>
 </div>
 
-
 {{-- Modal Tambah Peserta --}}
 <div x-show="openAddMemberModal" x-cloak
     class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4" x-transition>
 
-    <div class="bg-white rounded-xl w-full max-w-sm shadow-2xl">
+    <div class="bg-white rounded-xl w-full max-w-md shadow-2xl flex flex-col max-h-[90vh]">
 
-        {{-- 🔥 UPDATED: Form dengan JavaScript handler --}}
         <form method="POST" action="{{ route('document.recipients.store') }}"
-            @submit.prevent="handleAddMembers($event)">
+            @submit.prevent="handleAddMembers($event)" class="flex flex-col h-full">
             @csrf
 
-            <!-- Hidden Input: document_id -->
+            <!-- Hidden Inputs -->
             <input type="hidden" name="document_id"
                 x-bind:value="currentFolder ? currentFolder.id : (currentFile ? currentFile.id : '')">
-
-            <!-- Hidden Input: Selected Members as JSON -->
             <input type="hidden" name="selected_members"
                 x-bind:value="JSON.stringify(members.filter(m => m.selected).map(m => m.id))">
 
             <!-- Header -->
-            <div class="px-6 py-4 border-b">
-                <h2 class="text-center font-bold text-lg text-gray-800">Tambah Peserta</h2>
+            <div class="p-6 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900">Tambah Peserta</h2>
             </div>
 
-            <!-- Isi Modal -->
-            <div class="p-6 space-y-4">
-
-                <!-- Input Cari -->
+            <!-- Search Bar -->
+            <div class="p-4 border-b border-gray-200">
                 <div class="relative">
-                    <input type="text" placeholder="Cari anggota..."
-                        class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                        x-model="searchMember">
+                    <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input type="text" x-model="searchMember" placeholder="Cari anggota..."
+                        class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
+            </div>
 
-                <!-- Pilih Semua -->
-                <div class="flex items-center justify-between border-b pb-2">
-                    <span class="font-medium text-gray-700 text-sm">Pilih Semua</span>
-                    <input type="checkbox" x-model="selectAll" @change="toggleSelectAll">
-                </div>
+            <!-- Select All -->
+            <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                <label class="flex items-center justify-between cursor-pointer">
+                    <span class="text-sm font-medium text-gray-700">Pilih Semua</span>
+                    <input type="checkbox" x-model="selectAll" @change="toggleSelectAll"
+                        class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2">
+                </label>
+            </div>
 
-                <!-- List Anggota -->
-                <div class="space-y-3 max-h-60 overflow-y-auto">
+            <!-- Members List -->
+            <div class="flex-1 overflow-y-auto p-4">
+                <div class="space-y-3">
                     <template x-for="(member, index) in filteredMembers()" :key="index">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <img :src="member.avatar" class="w-8 h-8 rounded-full" alt="">
-                                <span class="text-sm font-medium text-gray-700" x-text="member.name"></span>
+                        <div class="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition">
+                            <div class="flex items-center gap-3 flex-1">
+                                <img :src="member.avatar" :alt="member.name" 
+                                     class="w-10 h-10 rounded-full object-cover border-2 border-gray-200">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-900 truncate" x-text="member.name"></p>
+                                    <p class="text-xs text-gray-500 truncate" x-text="member.email"></p>
+                                </div>
                             </div>
-                            <input type="checkbox" x-model="member.selected">
+                            <input type="checkbox" x-model="member.selected"
+                                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2 flex-shrink-0 ml-3">
                         </div>
                     </template>
+
+                    <!-- Empty State -->
+                    <div x-show="filteredMembers().length === 0" class="text-center py-8">
+                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p class="text-gray-500 text-sm">Tidak ada anggota yang ditemukan</p>
+                    </div>
                 </div>
             </div>
 
             <!-- Footer -->
-            <div class="flex justify-end gap-3 p-4 border-t">
-                <button type="button" @click="openAddMemberModal = false"
-                    class="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700">Batal</button>
-
-                <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white">
-                    Simpan
-                </button>
+            <div class="p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+                <div class="flex justify-end gap-3">
+                    <button type="button" @click="openAddMemberModal = false"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        Batal
+                    </button>
+                    <button type="submit"
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        Simpan
+                    </button>
+                </div>
             </div>
 
         </form>
@@ -482,8 +504,66 @@
 
     </form>
 </div>
+{{-- Modal Daftar Penerima --}}
+<div x-show="showRecipientsModal" 
+     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0" 
+     x-transition:enter-end="opacity-100"
+     class="fixed inset-0 z-50 overflow-y-auto" 
+     style="display: none;">
 
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showRecipientsModal = false"></div>
 
+    <!-- Modal Container -->
+    <div class="flex min-h-screen items-center justify-center p-4">
+        <div @click.stop 
+             class="relative w-full max-w-md bg-white rounded-2xl shadow-2xl"
+             x-transition:enter="transition ease-out duration-200" 
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-gray-900">Diterima Oleh</h3>
+                <button @click="showRecipientsModal = false"
+                    class="p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- List Recipients -->
+            <div class="p-4">
+                <div class="space-y-3 max-h-96 overflow-y-auto">
+                    <template x-for="recipient in selectedRecipients" :key="recipient.id">
+                        <div class="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                            <img :src="recipient.avatar" 
+                                 :alt="recipient.name"
+                                 class="w-10 h-10 rounded-full object-cover border-2 border-gray-200" />
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-900" x-text="recipient.name"></p>
+                                <p class="text-xs text-gray-500" x-text="recipient.email"></p>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Empty State -->
+                    <div x-show="selectedRecipients.length === 0" class="text-center py-8">
+                        <svg class="w-12 h-12 text-gray-400 mx-auto mb-3" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        <p class="text-gray-500 text-sm">Tidak ada penerima</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 

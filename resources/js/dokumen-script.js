@@ -95,6 +95,8 @@ export default function documentSearch() {
         editingFolder: null,
         deletingFolder: null,
         showDeleteFileModal: false,
+        showRecipientsModal: false,
+        selectedRecipients: [],
         deletingFile: null,
         showEditFileModal: false,
         editingFile: null,
@@ -123,6 +125,14 @@ export default function documentSearch() {
         pdfFiles: [],
         wordFiles: [],
         excelFiles: [],
+        powerPointFiles: [], // ✅ TAMBAHKAN INI
+        textFiles: [], // ✅ TAMBAHKAN INI
+        imageFiles: [], // ✅ TAMBAHKAN INI
+        zipFiles: [], // ✅ TAMBAHKAN INI
+        videoFiles: [], // ✅ TAMBAHKAN INI
+        audioFiles: [], // ✅ TAMBAHKAN INI
+        codeFiles: [], // ✅ TAMBAHKAN INI
+        unknownFiles: [], // ✅ TAMBAHKAN INI
         members: [],
         availableWorkspaces: [],
         loadingWorkspaces: false,
@@ -147,6 +157,7 @@ export default function documentSearch() {
         },
 
         init() {
+            // ✅ PERBAIKAN: Hapus listener lama dulu sebelum pasang baru
             const handlePopState = (event) => {
                 console.log("=== POPSTATE TRIGGERED ===");
                 console.log("event.state:", event.state);
@@ -158,6 +169,7 @@ export default function documentSearch() {
                 const fileIdFromUrl = url.searchParams.get("file");
 
                 // ✅ FILE STATE
+                // ✅ FILE STATE
                 if (event.state && event.state.fileId) {
                     console.log(
                         "🔹 Detected fileId (popstate):",
@@ -165,17 +177,18 @@ export default function documentSearch() {
                     );
                     const fileId = event.state.fileId;
                     const allFiles = this.getAllFiles(this.folders);
-                    const file = allFiles.find(
+                    const rootFiles = this.allFiles || [];
+                    const combinedFiles = [...allFiles, ...rootFiles];
+
+                    const file = combinedFiles.find(
                         (f) => String(f.id) === String(fileId)
                     );
 
                     if (file) {
-                        // ✅ PERBAIKAN SIMPLE: Langsung pakai getFolderPathFull
                         const folderId = event.state.folderId || file.folder_id;
                         let folderPath = [];
 
                         if (folderId) {
-                            // getFolderPathFull(folderId) sudah return full path INCLUDING folderId itu sendiri
                             folderPath = this.getFolderPathFull(folderId);
                             console.log(
                                 "📂 Rebuilt folderPath for file:",
@@ -183,25 +196,35 @@ export default function documentSearch() {
                             );
                         }
 
+                        // ✅ PERBAIKAN: Set state dengan data lengkap
                         this.currentFile = {
                             ...file,
                             folder: file.folder || null,
                             folderPath: folderPath,
+                            creator: file.creator || this.getCurrentUser(),
+                            createdAt:
+                                file.createdAt || new Date().toISOString(),
+                            size:
+                                file.size ||
+                                this.formatFileSize(file.size || 1024 * 1024),
+                            recipients:
+                                file.recipients || this.getDefaultRecipients(),
+                            comments: file.comments || [], // ✅ PENTING: Default ke [] bukan getDefaultComments()
                         };
 
                         this.currentFileUploadedBy =
                             file.uploaded_by || file.uploader?.id || null;
                         this.currentFolder = null;
+                        this.currentFolderCreatedBy = null;
                         this.breadcrumbs = [];
                         this.folderHistory = [];
+
+                        // ✅ Load members dan comments
                         this.loadMembersFromAPI();
 
                         console.log("✅ Restored file via popstate:", fileId);
-                        console.log(
-                            "📂 File folderPath:",
-                            this.currentFile.folderPath.map((f) => f.name)
-                        );
                     } else {
+                        console.warn("⚠️ File not found:", fileId);
                         this.currentFile = null;
                         this.currentFolder = null;
                     }
@@ -222,7 +245,6 @@ export default function documentSearch() {
                     if (folder) {
                         console.log("📂 Restoring folder:", folder.name);
 
-                        // ✅ REBUILD breadcrumb path dari parent chain
                         if (folder.parent_id) {
                             const fullPath = this.getFolderPath(
                                 folder.parent_id
@@ -236,17 +258,13 @@ export default function documentSearch() {
                             this.folderHistory = [];
                         }
 
-                        // Set current folder
                         this.currentFolder = folder;
-                        this.currentFile = null; // ✅ Clear file
+                        this.currentFile = null;
                         this.currentFolderCreatedBy =
                             folder.creator?.id || folder.creator_id || null;
-                        this.currentFileUploadedBy = null; // ✅ Clear file uploader
+                        this.currentFileUploadedBy = null;
 
-                        // Update breadcrumbs
                         this.updateBreadcrumbs();
-
-                        // Load members
                         this.loadMembersFromAPI();
 
                         console.log(
@@ -265,12 +283,15 @@ export default function documentSearch() {
                 // ✅ ROOT STATE (no folder, no file)
                 console.log("🔹 No state -> going root");
                 this.currentFolder = null;
-                this.currentFile = null; // ✅ Clear file
+                this.currentFile = null;
                 this.folderHistory = [];
                 this.currentFolderCreatedBy = null;
                 this.currentFileUploadedBy = null;
                 this.updateBreadcrumbs();
             };
+
+            // ✅ PENTING: Simpan handler ke instance property
+            this._handlePopState = handlePopState;
 
             // ✅ TAMBAHAN: Listen untuk workspace documents
             window.addEventListener("init-workspace-documents", (e) => {
@@ -302,7 +323,8 @@ export default function documentSearch() {
                 );
             });
 
-            window.addEventListener("popstate", handlePopState);
+            // ✅ PERBAIKAN: Pasang listener HANYA SEKALI
+            window.addEventListener("popstate", this._handlePopState);
 
             // pageshow untuk bfcache
             window.addEventListener("pageshow", (e) => {
@@ -315,6 +337,17 @@ export default function documentSearch() {
                         }
                     }
                     this.restoreFolderFromUrl();
+                }
+            });
+
+            // ✅ TAMBAHAN: Cleanup saat component destroy
+            this.$watch("$el", (el) => {
+                if (!el) {
+                    window.removeEventListener(
+                        "popstate",
+                        this._handlePopState
+                    );
+                    console.log("✅ popstate listener removed");
                 }
             });
         },
@@ -350,6 +383,25 @@ export default function documentSearch() {
             }
         },
 
+        openRecipientsModal(folderOrFile) {
+            console.log("🔥 openRecipientsModal called", folderOrFile);
+            console.log(
+                "📦 folderOrFile.recipients:",
+                folderOrFile?.recipients
+            );
+
+            if (!folderOrFile || !folderOrFile.recipients) {
+                console.log("❌ No recipients found");
+                return;
+            }
+
+            this.selectedRecipients = folderOrFile.recipients;
+            this.showRecipientsModal = true;
+
+            console.log("✅ Modal should open now");
+            console.log("📋 selectedRecipients:", this.selectedRecipients);
+        },
+
         // Function untuk inisialisasi data
         initData(foldersData, rootFilesData, context) {
             console.log("🚀 ========== initData START ==========");
@@ -371,6 +423,12 @@ export default function documentSearch() {
                 this.currentCompanyId = context.id;
             }
 
+            // ⬇️ TAMBAHKAN INI
+            console.log("📦 Sample folder data:", foldersData[0]);
+            console.log(
+                "👥 Sample document_recipients:",
+                foldersData[0]?.document_recipients
+            );
             // Convert data Laravel Collection ke format Alpine
             this.processBackendData();
 
@@ -517,7 +575,7 @@ export default function documentSearch() {
         },
 
         processBackendData() {
-            // Process folders
+            // Cek sekitar baris 350-380
             this.folders = this.backendFolders.map((folder) => ({
                 id: folder.id,
                 parent_id: folder.parent_id,
@@ -527,17 +585,26 @@ export default function documentSearch() {
                 isSecret: folder.is_private || false,
                 creator: {
                     id: folder.creator?.id || folder.creator_id || null,
-                    name: folder.creator?.full_name || "kiki",
-                    avatar:
-                        folder.creator?.avatar ||
-                        "https://i.pravatar.cc/32?img=8",
+                    name: folder.creator?.full_name || "Unknown",
+                    avatar: this.getAvatarUrl(folder.creator?.avatar),
                 },
+                creatorAvatar: this.getAvatarUrl(folder.creator?.avatar),
                 createdAt: folder.created_at,
-                recipients: [],
+                // ⬇️ PASTIKAN BAGIAN INI ADA DAN BENAR
+                recipients: (folder.document_recipients || []).map((dr) => ({
+                    id: dr.user?.id,
+                    name: dr.user?.full_name,
+                    email: dr.user?.email,
+                    avatar: this.getAvatarUrl(dr.user?.avatar),
+                })),
                 subFolders: [],
                 files: folder.files ? this.processFiles(folder.files) : [],
                 filesCount: folder.files_count || 0,
             }));
+
+            // Tambahkan setelah mapping folders (sekitar baris 395)
+            console.log("📂 Processed folders sample:", this.folders[0]);
+            console.log("👥 Sample recipients:", this.folders[0]?.recipients);
 
             // Step 2: sambungkan folder-child
             this.folders.forEach((folder) => {
@@ -580,51 +647,42 @@ export default function documentSearch() {
 
         processFiles(files) {
             return (files || []).map((file) => {
-                // Ambil nama dari properti yang ada, atau ekstrak dari URL
-                console.log("Isi file URL kamu adlah:", file.file_url);
-                console.log("👤 Raw uploaded_by:", file.uploaded_by);
-                console.log("👤 Raw uploader:", file.uploader);
-
                 const originalName = file.name || file.file_name || null;
                 const extractedName = file.file_url
                     ? file.file_url.split("/").pop()
                     : null;
-                // Prioritaskan originalName bila ada, kalau gak ada pakai extractedName
                 const displayName =
                     originalName || extractedName || "Unknown File";
-
-                // Dapatkan type dari displayName (getFileType harus mampu menerima nama)
                 const type = this.getFileType(displayName);
-
                 const uploaderId =
                     file.uploaded_by || file.uploader?.id || null;
 
                 return {
                     id: file.id,
-                    folder_id: file.folder_id ?? null, // ⬅⬅ TAMBAHKAN INI
-                    // gunakan displayName agar di Blade x-text="file.name" muncul
+                    folder_id: file.folder_id ?? null,
                     name: displayName,
                     type: type,
                     icon: this.getFileIcon(type),
                     size: this.formatFileSize(file.file_size || 0),
-                    file_url: file.file_url, // ⬅⬅ WAJIB
-
-                    // 🔥 Tambahkan ID uploader
+                    file_url: file.file_url,
                     uploaded_by: uploaderId,
                     creator: {
-                        // perhatikan properti uploader: kamu pakai full_name di data
                         name:
                             file.uploader?.full_name ||
                             file.uploader?.name ||
                             "Unknown",
-                        avatar:
-                            file.uploader?.avatar ||
-                            "https://i.pravatar.cc/32?img=8",
+                        avatar: this.getAvatarUrl(file.uploader?.avatar), // ⬅️ GUNAKAN HELPER
                     },
+                    creatorAvatar: this.getAvatarUrl(file.uploader?.avatar), // ⬅️ GUNAKAN HELPER
                     createdAt: file.created_at || file.uploaded_at,
                     isSecret: file.is_private || false,
                     comments: file.comments || [],
-                    recipients: [],
+                    recipients: (file.document_recipients || []).map((dr) => ({
+                        id: dr.user?.id,
+                        name: dr.user?.full_name,
+                        email: dr.user?.email, // ⬅️ TAMBAHKAN INI
+                        avatar: this.getAvatarUrl(dr.user?.avatar), // ⬅️ GUNAKAN HELPER
+                    })),
                 };
             });
         },
@@ -1426,10 +1484,6 @@ export default function documentSearch() {
 
         // 2️⃣ Handle Create Folder
         async handleCreateFolder(event) {
-            if (!this.editingFolder || !this.editingFolder.id) {
-                console.error("No folder to edit");
-                return;
-            }
             console.log("🚀 handleCreateFolder called");
 
             // ✅ PREVENT DOUBLE SUBMIT
@@ -1679,18 +1733,16 @@ export default function documentSearch() {
         },
 
         // 5️⃣ Handle Add Members
+        // 5️⃣ Handle Add Members
+        // 5️⃣ Handle Add Members
+        // 5️⃣ Handle Add Members
         async handleAddMembers(event) {
             console.log("🚀 handleAddMembers called");
-            console.log(
-                "📍 history.length BEFORE add members:",
-                history.length
-            );
 
             const form = event.target;
             const formData = new FormData(form);
             const url = form.action;
 
-            // Loading
             showCustomSwal({
                 title: "Menambahkan peserta...",
                 showConfirmButton: false,
@@ -1712,30 +1764,50 @@ export default function documentSearch() {
                 console.log("✅ Add members response:", data);
 
                 if (data.success && data.redirect_url) {
-                    // Reset modal state
                     this.openAddMemberModal = false;
                     this.searchMember = "";
                     this.selectAll = false;
 
-                    // Success alert
+                    // ✅ PERBAIKAN: Format avatar URL menggunakan helper
+                    if (data.full_recipients) {
+                        const formattedRecipients = data.full_recipients.map(
+                            (recipient) => ({
+                                ...recipient,
+                                avatar: this.getAvatarUrl(recipient.avatar), // ⬅️ GUNAKAN HELPER
+                            })
+                        );
+
+                        if (this.currentFolder) {
+                            this.currentFolder.recipients = formattedRecipients;
+                            console.log(
+                                "✅ Folder recipients updated:",
+                                this.currentFolder.recipients
+                            );
+                        }
+
+                        if (this.currentFile) {
+                            this.currentFile.recipients = formattedRecipients;
+                            console.log(
+                                "✅ File recipients updated:",
+                                this.currentFile.recipients
+                            );
+                        }
+                    }
+
                     if (data.alert) {
                         showCustomSwal({
                             icon: data.alert.icon,
                             title: data.alert.title,
                             text: data.alert.text,
-                            timer: 2000,
+                            timer: 1500,
                             showConfirmButton: false,
                         });
                     }
 
-                    // Redirect
+                    // ✅ Reload members untuk update checkbox
                     setTimeout(() => {
-                        console.log(
-                            "📍 history.length BEFORE replace:",
-                            history.length
-                        );
-                        window.location.replace(data.redirect_url);
-                    }, 1500);
+                        this.loadMembersFromAPI();
+                    }, 1000);
                 } else {
                     showCustomSwal({
                         icon: "error",
@@ -1748,7 +1820,6 @@ export default function documentSearch() {
                 }
             } catch (error) {
                 console.error("❌ Add members error:", error);
-
                 showCustomSwal({
                     icon: "error",
                     title: "Error!",
@@ -1808,7 +1879,8 @@ export default function documentSearch() {
         // Folder Navigation
         openFolder(folder) {
             console.log("✅ openFolder START, folder:", folder.name);
-            console.log("📍 history.length BEFORE openFolder:", history.length);
+            console.log("👥 folder.recipients:", folder.recipients); // ⬅️ TAMBAHKAN INI
+            console.log("📦 Full folder data:", folder); // ⬅️ TAMBAHKAN INI
 
             this.currentFile = null;
             this.currentFolderCreatedBy = null;
@@ -1955,10 +2027,7 @@ export default function documentSearch() {
             console.log(
                 "🔥🔥🔥 ========== restoreFolderFromUrl START =========="
             );
-            console.log("🕐 Time:", new Date().toISOString());
             console.log("📍 Current URL:", window.location.href);
-            console.log("📂 Folders available:", this.folders.length);
-            console.log("🚪 _restoring flag BEFORE:", this._restoring);
 
             if (this._restoring) {
                 console.warn(
@@ -1968,7 +2037,6 @@ export default function documentSearch() {
             }
 
             this._restoring = true;
-            console.log("🚪 _restoring flag SET TO:", this._restoring);
 
             const url = new URL(window.location);
             const folderIdFromUrl = url.searchParams.get("folder");
@@ -1981,7 +2049,62 @@ export default function documentSearch() {
                 fileIdFromUrl
             );
 
-            // === HANDLE FILE ===
+            // === HANDLE FILE (PRIORITAS TERTINGGI) ===
+            if (fileIdFromUrl) {
+                console.log("🔹 Found file param:", fileIdFromUrl);
+
+                const allFiles = this.getAllFiles(this.folders);
+                const rootFiles = this.allFiles || [];
+                const combinedFiles = [...allFiles, ...rootFiles];
+
+                const file = combinedFiles.find(
+                    (f) => String(f.id) === String(fileIdFromUrl)
+                );
+
+                if (file) {
+                    console.log("📄 Restoring file:", file.name);
+
+                    // ✅ Build folderPath jika file ada di dalam folder
+                    let folderPath = [];
+                    if (file.folder_id) {
+                        folderPath = this.getFolderPathFull(file.folder_id);
+                        console.log(
+                            "📂 File folder path:",
+                            folderPath.map((f) => f.name)
+                        );
+                    }
+
+                    // ✅ Set currentFile dengan folderPath lengkap
+                    this.currentFile = {
+                        ...file,
+                        folder: file.folder || null,
+                        folderPath: folderPath,
+                    };
+
+                    this.currentFileUploadedBy =
+                        file.uploaded_by || file.uploader?.id || null;
+                    this.currentFolder = null;
+                    this.breadcrumbs = [];
+                    this.folderHistory = [];
+
+                    this.$nextTick(() => {
+                        this.loadMembersFromAPI();
+                        this.ready = true;
+                        this._restoring = false;
+                        console.log(
+                            "✅ File restored, history.length:",
+                            history.length
+                        );
+                    });
+                } else {
+                    console.warn("⚠️ File not found");
+                    this.ready = true;
+                    this._restoring = false;
+                }
+                return;
+            }
+
+            // === HANDLE FOLDER ===
             if (folderIdFromUrl) {
                 console.log("🔹 Found folder param:", folderIdFromUrl);
 
@@ -1992,7 +2115,6 @@ export default function documentSearch() {
                 if (folder) {
                     console.log("📂 Restoring folder:", folder.name);
 
-                    // ✅ TAMBAHAN: Rebuild folder history dari parent chain
                     if (folder.parent_id) {
                         const fullPath = this.getFolderPath(folder.parent_id);
                         this.folderHistory = fullPath;
@@ -2004,12 +2126,12 @@ export default function documentSearch() {
                         this.folderHistory = [];
                     }
 
-                    // Set current folder
                     this.currentFolder = folder;
+                    this.currentFile = null;
                     this.currentFolderCreatedBy =
                         folder.creator?.id || folder.creator_id || null;
+                    this.currentFileUploadedBy = null;
 
-                    // Update breadcrumbs dengan history yang sudah direbuild
                     this.updateBreadcrumbs();
 
                     this.$nextTick(() => {
@@ -2029,36 +2151,6 @@ export default function documentSearch() {
                 return;
             }
 
-            // === HANDLE FOLDER ===
-            if (folderIdFromUrl) {
-                console.log("🔹 Found folder param:", folderIdFromUrl);
-
-                const folder = this.folders.find(
-                    (f) => String(f.id) === String(folderIdFromUrl)
-                );
-
-                if (folder) {
-                    console.log("📂 Restoring folder:", folder.name);
-
-                    // 🔥 openFolder akan cek this._restoring dan pakai replace=true
-                    this.openFolder(folder);
-
-                    this.$nextTick(() => {
-                        this.ready = true;
-                        this._restoring = false; // ⬅️ RESET FLAG
-                        console.log(
-                            "✅ Folder restored, history.length:",
-                            history.length
-                        );
-                    });
-                } else {
-                    console.warn("⚠️ Folder not found");
-                    this.ready = true;
-                    this._restoring = false; // ⬅️ RESET FLAG
-                }
-                return;
-            }
-
             // === ROOT STATE ===
             console.log("🔹 No params -> going root");
             this.currentFolder = null;
@@ -2068,7 +2160,7 @@ export default function documentSearch() {
             this.ready = true;
 
             this.$nextTick(() => {
-                this._restoring = false; // ⬅️ RESET FLAG
+                this._restoring = false;
                 console.log(
                     "✅ Root restored, history.length:",
                     history.length
@@ -2238,20 +2330,30 @@ export default function documentSearch() {
                 console.error("Invalid file");
                 return;
             }
-            console.log("openFile dipanggil", file);
-            console.log(
-                "📂 Current breadcrumbs before open:",
-                this.breadcrumbs
-            );
-            console.log("📁 Current folder before open:", this.currentFolder);
 
-            // Simpan folder context sebelum clear
+            console.log("=== openFile START ===");
+            console.log("📄 File:", file.name);
+            console.log("📍 Current URL:", window.location.href);
+
+            // ✅ PERBAIKAN: Cek apakah file SUDAH BENAR-BENAR TERBUKA
+            // (URL match DAN currentFile sudah set)
+            const url = new URL(window.location);
+            const currentFileId = url.searchParams.get("file");
+
+            if (
+                currentFileId === String(file.id) &&
+                this.currentFile &&
+                this.currentFile.id === file.id
+            ) {
+                console.log("✅ File already fully opened, skip");
+                return;
+            }
+
+            // ✅ Jika URL match tapi currentFile belum set, lanjutkan set state
             const parentFolder = this.currentFolder;
-
-            // ✅ Build folderPath dengan data LENGKAP
             let folderPath = [];
+
             if (parentFolder) {
-                // ✅ PERBAIKAN: Ambil data lengkap dari this.folders, bukan dari breadcrumbs
                 const fullBreadcrumbs = this.breadcrumbs.map((crumb) => {
                     const fullData = this.folders.find(
                         (f) => f.id === crumb.id
@@ -2259,20 +2361,12 @@ export default function documentSearch() {
                     return fullData || crumb;
                 });
 
-                // Ambil data lengkap parentFolder juga
                 const fullParentData =
                     this.folders.find((f) => f.id === parentFolder.id) ||
                     parentFolder;
-
                 folderPath = [...fullBreadcrumbs, fullParentData];
             }
 
-            console.log(
-                "📂 Folder path for file (with full data):",
-                folderPath
-            );
-
-            // Clear folder UI
             this.currentFolder = null;
             this.currentFolderCreatedBy = null;
 
@@ -2280,7 +2374,6 @@ export default function documentSearch() {
             const folderId =
                 (fileFolder && fileFolder.id) || file.folder_id || null;
 
-            // ✅ PERBAIKI bagian ini (sekitar baris 1400)
             this.currentFile = {
                 ...file,
                 folder: fileFolder,
@@ -2296,17 +2389,18 @@ export default function documentSearch() {
             this.currentFileUploadedBy = file.uploaded_by;
             this.loadMembersFromAPI();
 
-            // Push file state (file view) so back/forward works
-            this.setHistoryState(
-                { fileId: file.id, folderId: folderId },
-                false
-            );
+            // ✅ Hanya push history jika URL belum match
+            if (currentFileId !== String(file.id)) {
+                console.log("📍 Pushing new file state to history");
+                this.setHistoryState(
+                    { fileId: file.id, folderId: folderId },
+                    false
+                );
+            } else {
+                console.log("📍 URL already correct, skip push");
+            }
 
-            console.log(
-                "📂 openFile selesai, file pushed to history:",
-                file.id
-            );
-            console.log("📂 File folderPath:", this.currentFile.folderPath);
+            console.log("=== openFile END ===");
         },
 
         // Comment Functions
@@ -2558,6 +2652,21 @@ export default function documentSearch() {
             return [];
         },
 
+        // Tambahkan method ini di sekitar baris 2100 (sebelum getFileType)
+        getAvatarUrl(avatar) {
+            if (!avatar) {
+                return "https://i.pravatar.cc/32?img=8";
+            }
+
+            // ✅ Jika sudah full URL (https://...), langsung return
+            if (avatar.startsWith("http://") || avatar.startsWith("https://")) {
+                return avatar;
+            }
+
+            // ✅ Jika path storage lokal (avatars/...), tambahkan prefix
+            return window.assetPath + "storage/" + avatar;
+        },
+
         getFileType(filename) {
             const name = filename.toLowerCase();
             if (name.endsWith(".pdf")) return "PDF";
@@ -2713,14 +2822,22 @@ export default function documentSearch() {
         loadMembersFromAPI() {
             console.log("🔄 loadMembersFromAPI called");
             console.log("📋 currentContext:", this.currentContext);
-            console.log(
-                "📋 currentFolderCreatedBy:",
-                this.currentFolderCreatedBy
-            );
-            console.log(
-                "📋 currentFileUploadedBy:",
-                this.currentFileUploadedBy
-            );
+            console.log("📋 currentWorkspaceId:", this.currentWorkspaceId);
+            console.log("📋 currentCompanyId:", this.currentCompanyId);
+
+            // ✅ VALIDASI: Pastikan context dan ID tersedia
+            if (
+                this.currentContext === "workspace" &&
+                !this.currentWorkspaceId
+            ) {
+                console.error("❌ Workspace ID undefined!");
+                return;
+            }
+
+            if (this.currentContext === "company" && !this.currentCompanyId) {
+                console.error("❌ Company ID undefined!");
+                return;
+            }
 
             this.isLoadingPermission = true;
 
@@ -2729,7 +2846,6 @@ export default function documentSearch() {
                 file_uploaded_by: this.currentFileUploadedBy ?? "",
             });
 
-            // ✅ Tentukan endpoint berdasarkan context
             let endpoint;
             if (this.currentContext === "workspace") {
                 endpoint = `/workspaces/${this.currentWorkspaceId}/members?${params}`;
@@ -2747,6 +2863,7 @@ export default function documentSearch() {
                 .then(async (res) => {
                     console.log("✅ Response status:", res.status);
                     this.memberListAllowed = res.status === 200;
+
                     if (!this.memberListAllowed) {
                         console.warn("⚠️ memberListAllowed = false");
                         this.members = [];
@@ -2755,25 +2872,51 @@ export default function documentSearch() {
                     return await res.json();
                 })
                 .then(async (data) => {
-                    if (!data?.members) return;
+                    if (!data?.members) {
+                        console.warn("⚠️ No members data in response");
+                        return;
+                    }
+
+                    console.log("👥 Members received:", data.members.length);
+
+                    if (!this.currentFolder && !this.currentFile) {
+                        console.warn(
+                            "⚠️ No currentFolder or currentFile, skipping recipients fetch"
+                        );
+                        this.members = data.members.map((m) => ({
+                            ...m,
+                            avatar: this.getAvatarUrl(m.avatar),
+                            email: m.email,
+                            selected: false,
+                        }));
+                        this.selectAll = false;
+                        return;
+                    }
 
                     // Fetch recipients
                     const docId =
                         this.currentFolder?.id || this.currentFile?.id;
+                    console.log("📄 Fetching recipients for docId:", docId);
+
                     const recipientsRes = await fetch(
                         `/documents/${docId}/recipients`
                     );
                     const recipientsData = await recipientsRes.json();
+
                     const selectedUserIds = recipientsData?.recipients || [];
 
                     this.members = data.members.map((m) => ({
                         ...m,
+                        avatar: this.getAvatarUrl(m.avatar),
+                        email: m.email,
                         selected: selectedUserIds.includes(m.id),
                     }));
 
                     this.selectAll =
                         this.members.length > 0 &&
                         this.members.every((m) => m.selected);
+
+                    console.log("✅ Members processed:", this.members.length);
                 })
                 .catch((error) => {
                     console.error("❌ Error loading members:", error);
@@ -3402,12 +3545,50 @@ window.documentCommentSection = function () {
         },
 
         async loadCommentsForFile(fileId) {
+            // ✅ SAFETY CHECK
+            if (!this.currentFile || this.currentFile.id !== fileId) {
+                console.warn(
+                    "⚠️ currentFile mismatch or null, skip loading comments"
+                );
+                return;
+            }
+
             try {
                 const response = await fetch(`/documents/${fileId}/comments`);
                 const data = await response.json();
 
+                // ✅ CEK LAGI sebelum set comments
+                if (!this.currentFile) {
+                    console.warn("⚠️ currentFile became null during fetch");
+                    return;
+                }
+
                 if (data.comments) {
-                    this.currentFile.comments = data.comments;
+                    this.currentFile.comments = data.comments.map(
+                        (comment) => ({
+                            ...comment,
+                            author: {
+                                ...comment.author,
+                                avatar: this.getAvatarUrl(
+                                    comment.author?.avatar
+                                ),
+                            },
+                            replies: (comment.replies || []).map((reply) => ({
+                                ...reply,
+                                author: {
+                                    ...reply.author,
+                                    avatar: this.getAvatarUrl(
+                                        reply.author?.avatar
+                                    ),
+                                },
+                            })),
+                        })
+                    );
+
+                    console.log(
+                        "✅ Comments loaded:",
+                        this.currentFile.comments.length
+                    );
                 }
             } catch (error) {
                 console.error("Error loading comments:", error);

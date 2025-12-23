@@ -168,7 +168,23 @@
         <div class="mb-6">
             <label class="text-sm font-medium text-gray-700 mb-2 block">Tulis Komentar</label>
             <div class="flex items-start gap-3">
-                <img src="https://i.pravatar.cc/40?img=11" alt="Avatar" class="rounded-full w-10 h-10">
+                @php
+                    $user = auth()->user();
+                    $avatar = $user->avatar;
+
+                    if (!$avatar) {
+                        $avatarUrl =
+                            'https://ui-avatars.com/api/?name=' .
+                            urlencode($user->full_name) .
+                            '&background=random&color=fff';
+                    } elseif (str_starts_with($avatar, 'http')) {
+                        $avatarUrl = $avatar;
+                    } else {
+                        $avatarUrl = asset('storage/' . $avatar);
+                    }
+                @endphp
+
+                <img src="{{ $avatarUrl }}" alt="Avatar" class="rounded-full w-10 h-10">
 
                 <div class="flex-1">
                     <div class="bg-white border border-gray-300 rounded-lg p-4">
@@ -272,8 +288,7 @@
             </template>
 
             {{-- Empty State Komentar --}}
-            <div x-show="!currentFile?.comments?.length"
-                class="text-center py-8 text-gray-500">
+            <div x-show="!currentFile?.comments?.length" class="text-center py-8 text-gray-500">
                 <svg class="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor"
                     viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"

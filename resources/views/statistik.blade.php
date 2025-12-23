@@ -1820,7 +1820,7 @@
                                                 </template>
                                                 <template
                                                     x-if="!task.assigned_users || (task.assigned_users || []).length === 0">
-                                                    <span class="text-gray-400">Tidak ada anggota</span>
+                                                    <span class="text-gray-400">Tidak ada anggota ditugaskan</span>
                                                 </template>
                                             </span>
                                         </div>
