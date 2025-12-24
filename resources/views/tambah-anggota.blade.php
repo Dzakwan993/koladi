@@ -70,7 +70,9 @@
                                     Tidak dapat mengundang atau mengaktifkan user baru.
                                 </p>
                                 <p class="text-xs text-red-600">
-                                    💡 Untuk menambah user: Nonaktifkan user lain atau
+                                    💡 Untuk menambah user: <a href="{{ route('pembayaran') }}"
+                                        class="font-bold underline hover:text-red-800">
+                                        Nonaktifkan user lain </a> atau 
                                     <a href="{{ route('pembayaran') }}" class="font-bold underline hover:text-red-800">
                                         upgrade paket subscription
                                     </a>
@@ -80,7 +82,7 @@
                     </div>
                 @endif
 
-               
+
             </div>
 
             {{-- Content Area - Scrollable --}}
