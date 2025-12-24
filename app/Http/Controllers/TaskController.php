@@ -1856,7 +1856,7 @@ class TaskController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'title' => 'sometimes|string|max:255',
-                'phase' => 'sometimes|string|max:255',
+                'phase' => 'nullable|string|max:255', // Ubah dari 'sometimes' ke 'nullable'
                 'description' => 'nullable|string',
                 'is_secret' => 'boolean',
                 'start_datetime' => 'nullable|date',
@@ -1867,6 +1867,21 @@ class TaskController extends Controller
                 'label_ids' => 'array',
                 'label_ids.*' => 'exists:labels,id'
             ]);
+
+            // DEBUG: Log validation errors
+            if ($validator->fails()) {
+                Log::error('Validation failed for task update:', [
+                    'task_id' => $taskId,
+                    'errors' => $validator->errors()->toArray(),
+                    'request_data' => $request->all()
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
             if ($validator->fails()) {
                 return response()->json([

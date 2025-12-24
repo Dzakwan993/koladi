@@ -1792,7 +1792,7 @@
                                     // ✅ FORMAT DATA UNTUK BACKEND
                                     const formData = {
                                         title: this.currentTask.title,
-                                        phase: this.currentTask.phase,
+                                        phase: this.currentTask.phase?.trim() || null, // Bisa null (akan dihandle oleh nullabl
                                         description: description,
                                         is_secret: this.currentTask.is_secret,
                                         user_ids: this.assignedMembers.map(member => member.id),
@@ -3931,12 +3931,9 @@
 
                                     if (data.success) {
                                         this.boardColumns = data.columns;
-
-                                        // ✅ PERBAIKAN: Initialize Sortable hanya sekali setelah DOM ready
+                                        // Initialize Sortable setelah kolom dimuat
                                         this.$nextTick(() => {
-                                            this.boardColumns.forEach(column => {
-                                                this.initializeSortableForColumn(column.id);
-                                            });
+                                            this.initializeSortable();
                                         });
                                     } else {
                                         console.error('Gagal memuat kolom:', data.message);
@@ -4066,37 +4063,76 @@
                             // Di kanbanApp() - update method initializeSortableForColumn
                             // Di dalam kanbanApp() - PERBAIKI method ini
                             // Di dalam kanbanApp() - PERBAIKI method initializeSortableForColumn
-                            // ✅ HAPUS method initializeSortable() yang lama, ganti dengan ini:
                             initializeSortableForColumn(columnId) {
-                                const el = document.getElementById(`column-${columnId}`);
+                                // Tunggu sedikit untuk memastikan DOM sudah dirender
+                                this.$nextTick(() => {
+                                    setTimeout(() => {
+                                        const el = document.getElementById(`column-${columnId}`);
 
-                                // ✅ Cek apakah sudah ada instance
-                                if (!el || el._sortableInstance) {
-                                    return;
-                                }
+                                        if (el && !el._sortableInstance) {
+                                            el._sortableInstance = new Sortable(el, {
+                                                group: {
+                                                    name: 'kanban',
+                                                    pull: true,
+                                                    put: true
+                                                },
+                                                animation: 150,
+                                                ghostClass: 'sortable-ghost',
+                                                chosenClass: 'sortable-chosen',
+                                                dragClass: 'sortable-drag',
+                                                filter: '.ignore-elements', // Filter elemen yang tidak bisa didrag
+                                                preventOnFilter: false,
+                                                forceFallback: false, // Gunakan native HTML5 DnD
+                                                fallbackClass: 'sortable-fallback',
+                                                fallbackOnBody: true,
+                                                fallbackTolerance: 0,
+                                                scroll: true,
+                                                scrollSensitivity: 30,
+                                                scrollSpeed: 10,
+                                                bubbleScroll: true,
 
-                                try {
-                                    el._sortableInstance = new Sortable(el, {
-                                        group: {
-                                            name: 'kanban',
-                                            pull: true,
-                                            put: true
-                                        },
-                                        animation: 150,
-                                        ghostClass: 'sortable-ghost',
-                                        chosenClass: 'sortable-chosen',
-                                        dragClass: 'sortable-drag',
+                                                // Event handlers
+                                                onStart: (evt) => {
+                                                    evt.item.classList.add('dragging-active');
+                                                    console.log('Drag started:', evt.item.dataset.taskId);
+                                                },
 
-                                        onEnd: (evt) => {
-                                            evt.item.classList.remove('dragging-active');
-                                            this.handleTaskMove(evt, columnId);
+                                                onEnd: (evt) => {
+                                                    evt.item.classList.remove('dragging-active');
+                                                    this.handleTaskMove(evt, columnId);
+                                                },
+
+                                                onAdd: (evt) => {
+                                                    console.log('Task added to column:', columnId);
+                                                },
+
+                                                onRemove: (evt) => {
+                                                    console.log('Task removed from column:', columnId);
+                                                },
+
+                                                // Untuk mengatasi blur text
+                                                setData: (dataTransfer, dragEl) => {
+                                                    // Gunakan text/plain untuk mencegah browser rendering default
+                                                    dataTransfer.setData('text/plain', dragEl.dataset
+                                                        .taskId);
+                                                },
+
+                                                // Optional: Custom drag image
+                                                dragImage: (dragEl) => {
+                                                    // Buat custom drag image untuk visual yang lebih baik
+                                                    const dragImage = dragEl.cloneNode(true);
+                                                    dragImage.style.opacity = '0.7';
+                                                    dragImage.style.transform = 'rotate(5deg)';
+                                                    dragImage.style.width = dragEl.offsetWidth + 'px';
+                                                    dragImage.style.height = dragEl.offsetHeight + 'px';
+                                                    return dragImage;
+                                                }
+                                            });
+
+                                            console.log('✅ Sortable initialized for column:', columnId);
                                         }
-                                    });
-
-                                    console.log('✅ Sortable initialized for column:', columnId);
-                                } catch (error) {
-                                    console.error('❌ Error initializing sortable:', error);
-                                }
+                                    }, 300);
+                                });
                             },
 
 
@@ -4362,28 +4398,22 @@
                                         searchLabel: ''
                                     };
 
-                                    // ✅ PERBAIKAN: Load data secara berurutan dengan priority
-                                    this.loadBoardColumns().then(() => {
-                                        // Setelah kolom selesai, baru load tasks
-                                        return this.loadKanbanTasks();
-                                    }).then(() => {
-                                        // Load data sekunder setelah data utama selesai
-                                        Promise.all([
-                                            this.loadWorkspaceMembers(),
-                                            this.loadLabels(),
-                                            this.loadColors()
-                                        ]);
-                                    });
-
-                                    // Load timeline di background (tidak blocking)
-                                    setTimeout(() => {
-                                        this.loadTimelineData();
-                                    }, 1000);
-
+                                    // Load data
+                                    this.loadBoardColumns();
+                                    this.loadKanbanTasks();
+                                    this.loadTimelineData();
+                                    this.loadWorkspaceMembers();
+                                    this.loadLabels();
+                                    this.loadColors();
                                     this.uploadingDetail = false;
                                     this.uploadProgressDetail = 0;
 
-                                    console.log('✅ Aplikasi initialized');
+                                    console.log('✅ Aplikasi initialized dengan semua state');
+
+                                    // Inisialisasi Sortable setelah semua data dimuat
+                                    setTimeout(() => {
+                                        this.initializeSortable();
+                                    }, 1000);
 
                                 } catch (error) {
                                     console.error('❌ Error initializing app:', error);
@@ -5402,30 +5432,23 @@
                                     const workspaceId = this.getCurrentWorkspaceId();
                                     if (!workspaceId) return;
 
-                                    // ✅ PERBAIKAN: Tambahkan loading indicator
-                                    console.log('🔄 Loading kanban tasks...');
-
                                     const response = await fetch(`/tasks/workspace/${workspaceId}/kanban-tasks`);
-
-                                    if (!response.ok) {
-                                        throw new Error(`HTTP ${response.status}`);
-                                    }
-
                                     const data = await response.json();
 
                                     if (data.success) {
+                                        // Transform data untuk kompatibilitas dengan frontend
                                         this.tasks = data.tasks.map(task => ({
                                             id: task.id,
                                             title: task.title,
                                             phase: task.phase,
-                                            status: task.board_column_id,
+                                            status: task.board_column_id, // Gunakan board_column_id sebagai status
                                             board_column_id: task.board_column_id,
-                                            members: task.assignees,
+                                            members: task.assignees, // Assignees sebagai members
                                             secret: task.is_secret,
                                             is_secret: task.is_secret,
                                             notes: task.description,
                                             description: task.description,
-                                            attachments: [],
+                                            attachments: [], // Bisa di-load terpisah jika perlu
                                             labels: task.labels,
                                             checklist: task.checklists.map(cl => ({
                                                 name: cl.title,
@@ -5435,9 +5458,9 @@
                                             })),
                                             startDate: task.start_datetime ? task.start_datetime.split('T')[0] : '',
                                             startTime: task.start_datetime ? task.start_datetime.split('T')[1]
-                                                ?.substring(0, 5) : '',
+                                                .substring(0, 5) : '',
                                             dueDate: task.due_datetime ? task.due_datetime.split('T')[0] : '',
-                                            dueTime: task.due_datetime ? task.due_datetime.split('T')[1]?.substring(0,
+                                            dueTime: task.due_datetime ? task.due_datetime.split('T')[1].substring(0,
                                                 5) : '',
                                             priority: task.priority,
                                             progress_percentage: task.progress_percentage,
@@ -5446,11 +5469,12 @@
                                             updated_at: task.updated_at
                                         }));
 
-                                        console.log('✅ Tasks loaded:', this.tasks.length);
+                                        console.log('✅ Tasks loaded from database:', this.tasks.length);
+                                    } else {
+                                        console.error('Gagal memuat tasks:', data.message);
                                     }
                                 } catch (error) {
-                                    console.error('❌ Error loading kanban tasks:', error);
-                                    this.showNotification('Gagal memuat data tugas', 'error');
+                                    console.error('Error loading kanban tasks:', error);
                                 }
                             },
 
