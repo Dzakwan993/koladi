@@ -105,11 +105,12 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
             </a>
 
             {{-- Ruang Kerja --}}
+            {{-- Ruang Kerja --}}
             <a href="{{ url('/kelola-workspace') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
-                      {{ Request::is('kelola-workspace*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+          {{ Request::is('kelola-workspace*') || Request::is('workspace/*') || Request::is('kanban-tugas/*') || Request::is('workspace/*/pengumuman*') || Request::is('jadwal*') || Request::is('chat/*') || Request::is('workspace/*/mindmap*') || Request::is('dokumen-dan-file/*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
                 <img src="{{ asset('images/icons/sidebar_ruang-kerja.svg') }}" alt="Ruang Kerja"
-                    class="w-5 h-5 {{ Request::is('kelola-workspace*') ? 'filter-blue' : '' }}">
+                    class="w-5 h-5 {{ Request::is('kelola-workspace*') || Request::is('workspace/*') || Request::is('kanban-tugas/*') || Request::is('workspace/*/pengumuman*') || Request::is('jadwal*') || Request::is('chat/*') || Request::is('workspace/*/mindmap*') || Request::is('dokumen-dan-file/*') ? 'filter-blue' : '' }}">
                 <span class="text-sm">Ruang Kerja</span>
             </a>
 
@@ -351,9 +352,9 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 }
 
                 return workspaces.sort((a, b) => {
-                    return this.sortOrder === 'asc' 
-                        ? a.name.localeCompare(b.name)
-                        : b.name.localeCompare(a.name);
+                    return this.sortOrder === 'asc' ?
+                        a.name.localeCompare(b.name) :
+                        b.name.localeCompare(a.name);
                 });
             },
 
@@ -367,9 +368,9 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 }
 
                 return workspaces.sort((a, b) => {
-                    return this.sortOrder === 'asc' 
-                        ? a.name.localeCompare(b.name)
-                        : b.name.localeCompare(a.name);
+                    return this.sortOrder === 'asc' ?
+                        a.name.localeCompare(b.name) :
+                        b.name.localeCompare(a.name);
                 });
             }
         }));
