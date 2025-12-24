@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\UserCompany;
 use App\Mail\OtpMail;
 use Illuminate\Http\Request;
 use App\Models\OtpVerification;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+
 
 class AuthController extends Controller
 {
@@ -234,38 +236,50 @@ class AuthController extends Controller
     }
 
     // ✅ Proses login
-    public function login(Request $request)
+     public function login(Request $request)
     {
         $credentials = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
             $user = Auth::user();
 
+            // 🔥 CEK SYSTEM ADMIN
             if ($user->isSystemAdmin()) {
                 return redirect()->route('admin.dashboard')
                     ->with('success', 'Selamat datang, Admin Sistem!');
             }
 
-
             // ✅ Handle pending invitation
             $pendingToken = session('pending_invitation_token');
             if ($pendingToken) {
-                // Token akan dihapus di InvitationController@accept setelah sukses
                 return redirect()->route('invite.accept', $pendingToken);
             }
 
-            // 🔥 PRIORITAS 2: Check apakah user punya company
-            $userCompany = \App\Models\UserCompany::where('user_id', $user->id)
+            // 🔥 PRIORITAS 2: Check apakah user punya company AKTIF
+            $userCompany = UserCompany::where('user_id', $user->id)
+                ->where('status_active', true) // 🔥 VALIDASI STATUS AKTIF
                 ->whereNull('deleted_at')
                 ->first();
 
             if (!$userCompany) {
-                Log::warning('User has no company, redirecting to create company', [
+                // Cek apakah user ada tapi nonaktif
+                $inactiveCompany = UserCompany::where('user_id', $user->id)
+                    ->where('status_active', false)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if ($inactiveCompany) {
+                    Auth::logout();
+                    return back()->withErrors([
+                        'email' => 'Akun Anda telah dinonaktifkan oleh Administrator. Hubungi admin untuk informasi lebih lanjut.',
+                    ])->onlyInput('email');
+                }
+
+                Log::warning('User has no active company, redirecting to create company', [
                     'user_id' => $user->id,
                 ]);
 
@@ -276,7 +290,7 @@ class AuthController extends Controller
             // ✅ SET SESSION active_company_id
             session(['active_company_id' => $userCompany->company_id]);
 
-            // 🎯 CEK APAKAH INI FIRST LOGIN (untuk trigger onboarding)
+            // 🎯 CEK APAKAH INI FIRST LOGIN
             $isFirstLogin = !session()->has('has_logged_in_before');
             if ($isFirstLogin) {
                 session(['has_logged_in_before' => true]);

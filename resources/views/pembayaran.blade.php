@@ -191,7 +191,7 @@
                             </button>
                         </div>
 
-                        <!-- Pemakaian Anggota -->
+                        <!-- Pemakaian Anggota dengan Toggle Status -->
                         <div class="bg-white rounded-xl shadow-md p-5 border border-gray-200">
                             <h3 class="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
                                 <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -200,20 +200,26 @@
                                 </svg>
                                 Pemakaian Anggota
                             </h3>
+
+                            {{-- 🔥 PERUBAHAN: Gunakan active_users_count --}}
                             <div class="flex items-end gap-2 mb-3">
-                                <h2 class="text-4xl sm:text-5xl font-bold text-gray-900">{{ $company->users->count() }}
-                                </h2>
+                                <h2 class="text-4xl sm:text-5xl font-bold text-gray-900">
+                                    {{ $company->active_users_count }}</h2>
                                 <span
                                     class="text-2xl sm:text-3xl font-semibold text-gray-400 mb-1">/{{ $company->subscription->total_user_limit ?? '∞' }}</span>
                             </div>
+
                             @php
                                 $remainingSlots =
-                                    ($company->subscription->total_user_limit ?? 999) - $company->users->count();
+                                    ($company->subscription->total_user_limit ?? 999) - $company->active_users_count;
                             @endphp
-                            <div class="flex items-center gap-2 text-xs">
+
+                            {{-- 🔥 PERUBAHAN: Tampilkan jumlah aktif & nonaktif --}}
+                            <div class="flex items-center gap-2 text-xs mb-4">
                                 @if ($remainingSlots > 0)
                                     <span class="bg-green-100 text-green-700 font-semibold px-3 py-1 rounded-full">
-                                        ✅ Bisa undang {{ $remainingSlots }} orang lagi
+                                        ✅ Aktif: {{ $company->active_users_count }} | Nonaktif:
+                                        {{ $company->inactive_users_count }}
                                     </span>
                                 @else
                                     <span class="bg-red-100 text-red-700 font-semibold px-3 py-1 rounded-full">
@@ -221,6 +227,14 @@
                                     </span>
                                 @endif
                             </div>
+
+                            {{-- 🔥 TAMBAHAN BARU: Tombol Kelola Status User (Hanya SuperAdmin) --}}
+                            @if (isset($currentUserRole) && ($currentUserRole === 'SuperAdmin' || $currentUserRole === 'Super Admin'))
+                                <button onclick="openUserStatusModal()"
+                                    class="w-full bg-blue-600 text-white text-sm font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition shadow-md">
+                                    ⚙️ Kelola Status Anggota
+                                </button>
+                            @endif
                         </div>
                     </div>
 
@@ -364,6 +378,41 @@
 
     <!-- Modal Pilih Paket -->
     @include('components.pilihan-paket')
+
+
+    {{-- 🔥 MODAL KELOLA STATUS USER --}}
+    <div id="modalUserStatus" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6">
+
+            {{-- Header Modal --}}
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-gray-900">⚙️ Kelola Status Anggota</h3>
+                <button onclick="closeUserStatusModal()" class="text-gray-400 hover:text-gray-600 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Info Jumlah User --}}
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p class="text-sm text-blue-800">
+                    <strong>Total User:</strong> {{ $company->users->count() }} |
+                    <strong class="text-green-700">Aktif:</strong> {{ $company->active_users_count }} |
+                    <strong class="text-red-700">Nonaktif:</strong> {{ $company->inactive_users_count }}
+                </p>
+            </div>
+
+            {{-- User List Container (diisi via JavaScript) --}}
+            <div id="userStatusList" class="space-y-3">
+                <div class="text-center py-8">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p class="text-gray-600">Memuat data anggota...</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -401,5 +450,185 @@
                 confirmButtonColor: '#1e40af'
             });
         }
+
+
+
+        async function openUserStatusModal() {
+            const modal = document.getElementById('modalUserStatus');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+
+            try {
+                const response = await fetch(`/api/company/{{ $company->id }}/users-status`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.message || 'Gagal memuat data');
+                }
+
+                const container = document.getElementById('userStatusList');
+
+                if (data.users.length === 0) {
+                    container.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <p>Tidak ada anggota lain yang dapat dikelola</p>
+                </div>
+            `;
+                    return;
+                }
+
+                container.innerHTML = data.users.map(user => `
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-blue-300 transition">
+                
+                {{-- Info User --}}
+                <div class="flex items-center gap-3 flex-1">
+                    <img src="${user.avatar}" 
+                         class="w-12 h-12 rounded-full border-2 border-white shadow-md" 
+                         alt="${user.full_name}"
+                         onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name)}'">
+                    <div>
+                        <p class="font-bold text-gray-900">${user.full_name}</p>
+                        <p class="text-xs text-gray-600">${user.email}</p>
+                        <span class="inline-block mt-1 text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-semibold">
+                            ${user.role_name}
+                        </span>
+                    </div>
+                </div>
+                
+                {{-- Toggle Switch --}}
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" 
+                           ${user.status_active ? 'checked' : ''}
+                           onchange="toggleUserStatus('${user.user_company_id}', this.checked)"
+                           class="sr-only peer">
+                    
+                    {{-- Toggle Switch UI --}}
+                    <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer 
+                         peer-checked:after:translate-x-full peer-checked:after:border-white 
+                         after:content-[''] after:absolute after:top-0.5 after:left-[4px] 
+                         after:bg-white after:border-gray-300 after:border after:rounded-full 
+                         after:h-6 after:w-6 after:transition-all 
+                         peer-checked:bg-green-500"></div>
+                    
+                    {{-- Label Status --}}
+                    <span class="ml-3 text-sm font-bold whitespace-nowrap ${user.status_active ? 'text-green-600' : 'text-red-600'}">
+                        ${user.status_active ? '✅ Aktif' : '❌ Nonaktif'}
+                    </span>
+                </label>
+                
+            </div>
+        `).join('');
+
+            } catch (error) {
+                console.error('Error loading users:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Memuat Data',
+                    text: error.message || 'Terjadi kesalahan saat memuat data anggota',
+                    confirmButtonColor: '#dc2626'
+                });
+                closeUserStatusModal();
+            }
+        }
+
+        /**
+         * Tutup modal kelola status user
+         */
+        function closeUserStatusModal() {
+            const modal = document.getElementById('modalUserStatus');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+
+        /**
+         * Toggle status aktif/nonaktif user
+         */
+        async function toggleUserStatus(userCompanyId, isActive) {
+            const statusText = isActive ? 'mengaktifkan' : 'menonaktifkan';
+
+            // Konfirmasi dulu
+            const result = await Swal.fire({
+                title: 'Konfirmasi',
+                text: `Anda yakin ingin ${statusText} user ini?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: isActive ? '#16a34a' : '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Lanjutkan',
+                cancelButtonText: 'Batal'
+            });
+
+            if (!result.isConfirmed) {
+                // Revert toggle jika user cancel
+                event.target.checked = !isActive;
+                return;
+            }
+
+            // Show loading
+            Swal.fire({
+                title: 'Memproses...',
+                text: 'Mohon tunggu sebentar',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                const response = await fetch('/subscription/toggle-user-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        user_company_id: userCompanyId,
+                        status_active: isActive
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Gagal mengubah status user');
+                }
+
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: data.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                // Refresh halaman
+                setTimeout(() => window.location.reload(), 2000);
+
+            } catch (error) {
+                console.error('Error:', error);
+
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: error.message || 'Terjadi kesalahan saat mengubah status user',
+                    confirmButtonColor: '#dc2626'
+                });
+
+                // Revert toggle jika error
+                event.target.checked = !isActive;
+            }
+        }
+
+        // Close modal dengan ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('modalUserStatus');
+                if (!modal.classList.contains('hidden')) {
+                    closeUserStatusModal();
+                }
+            }
+        });
     </script>
 @endpush

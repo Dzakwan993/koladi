@@ -124,6 +124,16 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/subscription/verify-payment', [SubscriptionController::class, 'verifyManualPayment'])->name('subscription.verify-payment');
     });
 
+
+        // 🔥 BARU: Toggle user status (SuperAdmin only)
+    Route::post('/subscription/toggle-user-status', [SubscriptionController::class, 'toggleUserStatus'])
+        ->name('subscription.toggle-user-status');
+
+    // 🔥 BARU: Get users with status (untuk modal)
+    Route::get('/api/company/{companyId}/users-status', [SubscriptionController::class, 'getUsersWithStatus'])
+        ->name('api.company.users-status');
+
+
     // ========================================
     // 🔥 NEW: API ROUTES UNTUK DOKUMEN
     // (Letakkan DI AWAL setelah Route::middleware(['auth'])->group)
