@@ -137,86 +137,86 @@ class SubscriptionController extends Controller
 
 
     public function index()
-{
-    $companyId = session('active_company_id');
+    {
+        $companyId = session('active_company_id');
 
-    if (!$companyId) {
-        $userCompany = UserCompany::where('user_id', auth()->id())->first();
-        if (!$userCompany) {
+        if (!$companyId) {
+            $userCompany = UserCompany::where('user_id', auth()->id())->first();
+            if (!$userCompany) {
+                return redirect()->route('dashboard')
+                    ->with('error', 'Anda belum terdaftar di perusahaan manapun.');
+            }
+            $companyId = $userCompany->company_id;
+            session(['active_company_id' => $companyId]);
+        }
+
+        $hasAccess = UserCompany::where('user_id', auth()->id())
+            ->where('company_id', $companyId)
+            ->exists();
+
+        if (!$hasAccess) {
             return redirect()->route('dashboard')
-                ->with('error', 'Anda belum terdaftar di perusahaan manapun.');
+                ->with('error', 'Anda tidak memiliki akses ke perusahaan ini.');
         }
-        $companyId = $userCompany->company_id;
-        session(['active_company_id' => $companyId]);
-    }
 
-    $hasAccess = UserCompany::where('user_id', auth()->id())
-        ->where('company_id', $companyId)
-        ->exists();
+        $company = Company::with(['subscription.plan', 'users'])->find($companyId);
 
-    if (!$hasAccess) {
-        return redirect()->route('dashboard')
-            ->with('error', 'Anda tidak memiliki akses ke perusahaan ini.');
-    }
-
-    $company = Company::with(['subscription.plan', 'users'])->find($companyId);
-
-    if (!$company) {
-        return redirect()->route('dashboard')
-            ->with('error', 'Perusahaan tidak ditemukan.');
-    }
-
-    $companies = Company::whereHas('users', function ($q) {
-        $q->where('users.id', auth()->id());
-    })->with(['users', 'subscription.plan'])->get();
-
-    $trialDaysLeft = 0;
-    $trialStatus = 'expired';
-
-    if ($company->status === 'trial' && $company->trial_end) {
-        $trialEnds = Carbon::parse($company->trial_end);
-        if ($trialEnds->isFuture()) {
-            $trialDaysLeft = $trialEnds->diffInDays(now());
-            $trialStatus = 'active';
+        if (!$company) {
+            return redirect()->route('dashboard')
+                ->with('error', 'Perusahaan tidak ditemukan.');
         }
+
+        $companies = Company::whereHas('users', function ($q) {
+            $q->where('users.id', auth()->id());
+        })->with(['users', 'subscription.plan'])->get();
+
+        $trialDaysLeft = 0;
+        $trialStatus = 'expired';
+
+        if ($company->status === 'trial' && $company->trial_end) {
+            $trialEnds = Carbon::parse($company->trial_end);
+            if ($trialEnds->isFuture()) {
+                $trialDaysLeft = $trialEnds->diffInDays(now());
+                $trialStatus = 'active';
+            }
+        }
+
+        $invoices = SubscriptionInvoice::whereHas('subscription', function ($q) use ($company) {
+            $q->where('company_id', $company->id);
+        })->with('subscription.plan')->latest()->get();
+
+        $hasActiveSubscription = $company->subscription &&
+            $company->subscription->status === 'active' &&
+            Carbon::parse($company->subscription->end_date)->isFuture();
+
+        // 🔥 TAMBAHAN BARU: Ambil role user saat ini
+        $currentUserRole = null;
+        $userCompany = UserCompany::where('user_id', auth()->id())
+            ->where('company_id', $companyId)
+            ->with('role')
+            ->first();
+
+        if ($userCompany && $userCompany->role) {
+            $currentUserRole = $userCompany->role->name;
+        }
+
+        // 🔥 DEBUGGING: Log untuk cek role (hapus setelah testing)
+        \Log::info('Current User Role in Pembayaran:', [
+            'user_id' => auth()->id(),
+            'company_id' => $companyId,
+            'role' => $currentUserRole
+        ]);
+
+        return view('pembayaran', compact(
+            'company',
+            'companies',
+            'invoices',
+            'trialDaysLeft',
+            'trialStatus',
+            'hasActiveSubscription',
+            'currentUserRole' // 🔥 PENTING: Jangan lupa pass variable ini!
+        ));
     }
-
-    $invoices = SubscriptionInvoice::whereHas('subscription', function ($q) use ($company) {
-        $q->where('company_id', $company->id);
-    })->with('subscription.plan')->latest()->get();
-
-    $hasActiveSubscription = $company->subscription &&
-        $company->subscription->status === 'active' &&
-        Carbon::parse($company->subscription->end_date)->isFuture();
-
-    // 🔥 TAMBAHAN BARU: Ambil role user saat ini
-    $currentUserRole = null;
-    $userCompany = UserCompany::where('user_id', auth()->id())
-        ->where('company_id', $companyId)
-        ->with('role')
-        ->first();
-    
-    if ($userCompany && $userCompany->role) {
-        $currentUserRole = $userCompany->role->name;
-    }
-
-    // 🔥 DEBUGGING: Log untuk cek role (hapus setelah testing)
-    \Log::info('Current User Role in Pembayaran:', [
-        'user_id' => auth()->id(),
-        'company_id' => $companyId,
-        'role' => $currentUserRole
-    ]);
-
-    return view('pembayaran', compact(
-        'company',
-        'companies',
-        'invoices',
-        'trialDaysLeft',
-        'trialStatus',
-        'hasActiveSubscription',
-        'currentUserRole' // 🔥 PENTING: Jangan lupa pass variable ini!
-    ));
-}
 
     // API: Get plans
     public function getPlans()
@@ -247,7 +247,7 @@ class SubscriptionController extends Controller
     }
 
     // 🔥 CREATE SUBSCRIPTION - MANUAL PAYMENT
-   public function createSubscription(Request $request)
+    public function createSubscription(Request $request)
     {
         $request->validate([
             'plan_id' => 'required|exists:plans,id',
@@ -290,10 +290,10 @@ class SubscriptionController extends Controller
 
                 if ($activeUserCount > $newLimit) {
                     $excess = $activeUserCount - $newLimit;
-                    
+
                     throw new \Exception(
                         "Tidak dapat downgrade. Jumlah user aktif ({$activeUserCount}) melebihi limit paket baru ({$newLimit}). " .
-                        "Silakan nonaktifkan {$excess} user terlebih dahulu."
+                            "Silakan nonaktifkan {$excess} user terlebih dahulu."
                     );
                 }
             }
@@ -309,7 +309,7 @@ class SubscriptionController extends Controller
                 ['company_id' => $company->id],
                 [
                     'status' => 'trial',
-                    'total_user_limit' => 5,
+                    'total_user_limit' => 0,
                     'start_date' => now(),
                     'end_date' => now()->addDays(7)
                 ]
@@ -357,11 +357,10 @@ class SubscriptionController extends Controller
             }
 
             throw new \Exception('Metode pembayaran tidak didukung saat ini.');
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('❌ Subscription creation error: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()
@@ -371,7 +370,7 @@ class SubscriptionController extends Controller
 
 
 
-   public function toggleUserStatus(Request $request)
+    public function toggleUserStatus(Request $request)
     {
         $request->validate([
             'user_company_id' => 'required|exists:user_companies,id',
@@ -380,7 +379,7 @@ class SubscriptionController extends Controller
 
         try {
             $companyId = session('active_company_id');
-            
+
             // Validasi SuperAdmin
             $currentUserCompany = UserCompany::where('user_id', auth()->id())
                 ->where('company_id', $companyId)
@@ -420,10 +419,9 @@ class SubscriptionController extends Controller
                 'success' => true,
                 'message' => "User berhasil {$statusText}"
             ]);
-
         } catch (\Exception $e) {
             Log::error('Toggle user status error: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
@@ -431,11 +429,11 @@ class SubscriptionController extends Controller
         }
     }
 
-     public function getUsersWithStatus($companyId)
+    public function getUsersWithStatus($companyId)
     {
         try {
             $company = Company::findOrFail($companyId);
-            
+
             // Validasi akses
             $hasAccess = UserCompany::where('user_id', auth()->id())
                 ->where('company_id', $companyId)
@@ -452,7 +450,7 @@ class SubscriptionController extends Controller
             $users = $company->userCompanies()
                 ->with(['user', 'role'])
                 ->get()
-                ->map(function($uc) {
+                ->map(function ($uc) {
                     return [
                         'user_company_id' => $uc->id,
                         'user_id' => $uc->user_id,
@@ -472,10 +470,9 @@ class SubscriptionController extends Controller
                 'success' => true,
                 'users' => $users->values()
             ]);
-
         } catch (\Exception $e) {
             Log::error('Get users status error: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan'
@@ -589,11 +586,9 @@ class SubscriptionController extends Controller
             'admin_notes' => 'nullable|string|max:500'
         ]);
 
-        // TODO: Tambahkan middleware admin untuk route ini
-
         DB::beginTransaction();
         try {
-            $invoice = SubscriptionInvoice::with('subscription.company')
+            $invoice = SubscriptionInvoice::with(['subscription.company', 'subscription.plan'])
                 ->findOrFail($request->invoice_id);
 
             if ($invoice->payment_method !== 'manual') {
@@ -605,7 +600,7 @@ class SubscriptionController extends Controller
             }
 
             if ($request->action === 'approve') {
-                // Approve pembayaran
+                // 1. Update status invoice
                 $invoice->update([
                     'status' => 'paid',
                     'paid_at' => now(),
@@ -614,17 +609,42 @@ class SubscriptionController extends Controller
                     'admin_notes' => $request->admin_notes
                 ]);
 
-                // Aktifkan subscription
+                // 2. 🔥 AMBIL DATA PAKET DARI payment_details
+                $paymentDetails = $invoice->payment_details;
+                $newPlanId = $paymentDetails['plan_id'] ?? null;
+                $newAddonCount = $paymentDetails['new_addon_count'] ?? 0;
+                $newTotalLimit = $paymentDetails['new_total_limit'] ?? 0;
+
+                if (!$newPlanId) {
+                    throw new \Exception('Data paket tidak ditemukan di invoice');
+                }
+
+                // 3. 🔥 UPDATE SUBSCRIPTION dengan data BARU (REPLACE, bukan ADD)
                 $subscription = $invoice->subscription;
+
                 $subscription->update([
+                    'plan_id' => $newPlanId,                    // 🔥 UPDATE plan
+                    'addons_user_count' => $newAddonCount,      // 🔥 UPDATE addon count
+                    'total_user_limit' => $newTotalLimit,       // 🔥 REPLACE limit (bukan tambah!)
                     'status' => 'active',
                     'start_date' => now(),
                     'end_date' => now()->addMonth()
                 ]);
 
-                // Update company status
+                // 4. Update company status
                 $subscription->company->update([
-                    'status' => 'active'
+                    'status' => 'active',
+                    'trial_end' => null  // Hapus trial jika ada
+                ]);
+
+                // 5. 🔥 LOG untuk debugging
+                Log::info('✅ Payment approved - Subscription updated', [
+                    'invoice_id' => $invoice->id,
+                    'old_plan' => $invoice->subscription->plan->plan_name ?? 'N/A',
+                    'new_plan_id' => $newPlanId,
+                    'new_addon_count' => $newAddonCount,
+                    'new_total_limit' => $newTotalLimit,
+                    'company_id' => $subscription->company_id
                 ]);
 
                 $message = 'Pembayaran berhasil diverifikasi dan subscription diaktifkan';
@@ -635,6 +655,11 @@ class SubscriptionController extends Controller
                     'verified_at' => now(),
                     'verified_by' => auth()->id(),
                     'admin_notes' => $request->admin_notes ?? 'Pembayaran ditolak oleh admin'
+                ]);
+
+                Log::info('❌ Payment rejected', [
+                    'invoice_id' => $invoice->id,
+                    'reason' => $request->admin_notes
                 ]);
 
                 $message = 'Pembayaran ditolak';
@@ -648,7 +673,10 @@ class SubscriptionController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Verify payment error:', ['error' => $e->getMessage()]);
+            Log::error('Verify payment error:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             return response()->json([
                 'success' => false,

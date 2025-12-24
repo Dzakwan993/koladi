@@ -125,61 +125,120 @@ class AdminController extends Controller
 
     // Tambahkan method baru untuk handle verifikasi
     public function verifyPayment(Request $request, $id)
-    {
-        try {
-            $request->validate([
-                'action' => 'required|in:approve,reject',
-                'admin_notes' => 'nullable|string|max:255'
+{
+    try {
+        $request->validate([
+            'action' => 'required|in:approve,reject',
+            'admin_notes' => 'nullable|string|max:255'
+        ]);
+
+        DB::beginTransaction();
+
+        $invoice = SubscriptionInvoice::with('subscription.company')->findOrFail($id);
+        $subscription = $invoice->subscription;
+        $company = $subscription->company;
+
+        if ($request->action === 'approve') {
+            // ✅ UPDATE STATUS INVOICE
+            $invoice->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+                'verified_at' => now(),
+                'verified_by' => auth()->id(),
+                'admin_notes' => $request->admin_notes ?? 'Disetujui oleh admin'
             ]);
 
-            $invoice = SubscriptionInvoice::with('subscription.company')->findOrFail($id);
-            $subscription = $invoice->subscription;
+            // ✅ AMBIL DATA DARI payment_details
+            $details = $invoice->payment_details;
+            $newPlan = Plan::find($details['plan_id']);
+            $newAddonCount = $details['new_addon_count'] ?? 0;
+            $isDowngrade = $details['is_downgrade'] ?? false;
 
-            if ($request->action === 'approve') {
-                // --- 1. UPDATE STATUS INVOICE ---
-                $invoice->update([
-                    'status' => 'paid',
-                    'paid_at' => now(),
-                    'verified_at' => now(),
-                    'verified_by' => auth()->id(),
-                    'admin_notes' => $request->admin_notes ?? 'Disetujui oleh admin'
-                ]);
-
-                // --- 2. LOGIKA AKTIVASI PAKET ---
-                $details = $invoice->payment_details;
-                $currentEndDate = ($subscription->end_date && $subscription->end_date->isFuture())
-                    ? $subscription->end_date
-                    : now();
-
-                $newPlan = Plan::find($details['plan_id']);
-                $newAddonCount = $details['new_addon_count'] ?? 0;
-
-                $subscription->update([
-                    'status' => 'active',
-                    'plan_id' => $details['plan_id'] ?? $subscription->plan_id,
-                    'addons_user_count' => $subscription->addons_user_count + $newAddonCount,
-                    'total_user_limit' => ($subscription->total_user_limit ?? 0) + ($newPlan->base_user_limit ?? 0) + $newAddonCount,
-                    'start_date' => $subscription->start_date ?? now(),
-                    'end_date' => $currentEndDate->addMonth(),
-                ]);
-
-                $subscription->company->update(['status' => 'active']);
-
-                return response()->json(['success' => true, 'message' => "Pembayaran disetujui dan paket diaktifkan!"]);
-            } else {
-                // Logika Reject
-                $invoice->update([
-                    'status' => 'failed',
-                    'admin_notes' => $request->admin_notes ?? 'Pembayaran ditolak.',
-                    'verified_at' => now(),
-                    'verified_by' => auth()->id(),
-                ]);
-                return response()->json(['success' => true, 'message' => "Pembayaran ditolak."]);
+            if (!$newPlan) {
+                throw new \Exception('Plan tidak ditemukan');
             }
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+
+            // 🔥 LOGIKA BARU: REPLACE, BUKAN TAMBAH
+            $newTotalLimit = $newPlan->base_user_limit + $newAddonCount;
+
+            // ✅ CEK: Apakah subscription masih aktif?
+            $isCurrentlyActive = $subscription->status === 'active' 
+                && $subscription->end_date 
+                && Carbon::parse($subscription->end_date)->isFuture();
+
+            if ($isCurrentlyActive) {
+                // 🔥 SUBSCRIPTION MASIH AKTIF: Extend end_date
+                $currentEndDate = Carbon::parse($subscription->end_date);
+                $newEndDate = $currentEndDate->addMonth();
+            } else {
+                // 🔥 SUBSCRIPTION EXPIRED/TRIAL: Start dari sekarang
+                $newEndDate = now()->addMonth();
+            }
+
+            // ✅ UPDATE SUBSCRIPTION (REPLACE VALUES)
+            $subscription->update([
+                'status' => 'active',
+                'plan_id' => $newPlan->id,
+                'addons_user_count' => $newAddonCount, // 🔥 REPLACE (bukan tambah)
+                'total_user_limit' => $newTotalLimit,  // 🔥 REPLACE (bukan tambah)
+                'start_date' => $subscription->start_date ?? now(),
+                'end_date' => $newEndDate,
+            ]);
+
+            // ✅ UPDATE COMPANY STATUS
+            $company->update(['status' => 'active']);
+
+            // 🔥 LOGGING UNTUK DEBUG
+            Log::info('✅ Payment Verified & Subscription Updated', [
+                'invoice_id' => $invoice->id,
+                'company_id' => $company->id,
+                'company_name' => $company->name,
+                'plan' => $newPlan->plan_name,
+                'base_limit' => $newPlan->base_user_limit,
+                'addon_count' => $newAddonCount,
+                'total_limit' => $newTotalLimit,
+                'is_downgrade' => $isDowngrade,
+                'active_users' => $company->active_users_count,
+                'end_date' => $newEndDate->format('Y-m-d H:i:s')
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true, 
+                'message' => "Pembayaran disetujui! Paket {$newPlan->plan_name} diaktifkan dengan limit {$newTotalLimit} user."
+            ]);
+
+        } else {
+            // ✅ LOGIKA REJECT (tidak berubah)
+            $invoice->update([
+                'status' => 'failed',
+                'admin_notes' => $request->admin_notes ?? 'Pembayaran ditolak.',
+                'verified_at' => now(),
+                'verified_by' => auth()->id(),
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true, 
+                'message' => "Pembayaran ditolak."
+            ]);
         }
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('❌ Verify Payment Error:', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'success' => false, 
+            'message' => $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Tampilkan detail perusahaan
