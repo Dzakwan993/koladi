@@ -137,86 +137,86 @@ class SubscriptionController extends Controller
 
 
     public function index()
-    {
-        $companyId = session('active_company_id');
+{
+    $companyId = session('active_company_id');
 
-        if (!$companyId) {
-            $userCompany = UserCompany::where('user_id', auth()->id())->first();
-            if (!$userCompany) {
-                return redirect()->route('dashboard')
-                    ->with('error', 'Anda belum terdaftar di perusahaan manapun.');
-            }
-            $companyId = $userCompany->company_id;
-            session(['active_company_id' => $companyId]);
-        }
-
-        $hasAccess = UserCompany::where('user_id', auth()->id())
-            ->where('company_id', $companyId)
-            ->exists();
-
-        if (!$hasAccess) {
+    if (!$companyId) {
+        $userCompany = UserCompany::where('user_id', auth()->id())->first();
+        if (!$userCompany) {
             return redirect()->route('dashboard')
-                ->with('error', 'Anda tidak memiliki akses ke perusahaan ini.');
+                ->with('error', 'Anda belum terdaftar di perusahaan manapun.');
         }
-
-        $company = Company::with(['subscription.plan', 'users'])->find($companyId);
-
-        if (!$company) {
-            return redirect()->route('dashboard')
-                ->with('error', 'Perusahaan tidak ditemukan.');
-        }
-
-        $companies = Company::whereHas('users', function ($q) {
-            $q->where('users.id', auth()->id());
-        })->with(['users', 'subscription.plan'])->get();
-
-        $trialDaysLeft = 0;
-        $trialStatus = 'expired';
-
-        if ($company->status === 'trial' && $company->trial_end) {
-            $trialEnds = Carbon::parse($company->trial_end);
-            if ($trialEnds->isFuture()) {
-                $trialDaysLeft = $trialEnds->diffInDays(now());
-                $trialStatus = 'active';
-            }
-        }
-
-        $invoices = SubscriptionInvoice::whereHas('subscription', function ($q) use ($company) {
-            $q->where('company_id', $company->id);
-        })->with('subscription.plan')->latest()->get();
-
-        $hasActiveSubscription = $company->subscription &&
-            $company->subscription->status === 'active' &&
-            Carbon::parse($company->subscription->end_date)->isFuture();
-
-        // 🔥 TAMBAHAN BARU: Ambil role user saat ini
-        $currentUserRole = null;
-        $userCompany = UserCompany::where('user_id', auth()->id())
-            ->where('company_id', $companyId)
-            ->with('role')
-            ->first();
-
-        if ($userCompany && $userCompany->role) {
-            $currentUserRole = $userCompany->role->name;
-        }
-
-        // 🔥 DEBUGGING: Log untuk cek role (hapus setelah testing)
-        \Log::info('Current User Role in Pembayaran:', [
-            'user_id' => auth()->id(),
-            'company_id' => $companyId,
-            'role' => $currentUserRole
-        ]);
-
-        return view('pembayaran', compact(
-            'company',
-            'companies',
-            'invoices',
-            'trialDaysLeft',
-            'trialStatus',
-            'hasActiveSubscription',
-            'currentUserRole' // 🔥 PENTING: Jangan lupa pass variable ini!
-        ));
+        $companyId = $userCompany->company_id;
+        session(['active_company_id' => $companyId]);
     }
+
+    $hasAccess = UserCompany::where('user_id', auth()->id())
+        ->where('company_id', $companyId)
+        ->exists();
+
+    if (!$hasAccess) {
+        return redirect()->route('dashboard')
+            ->with('error', 'Anda tidak memiliki akses ke perusahaan ini.');
+    }
+
+    $company = Company::with(['subscription.plan', 'users'])->find($companyId);
+
+    if (!$company) {
+        return redirect()->route('dashboard')
+            ->with('error', 'Perusahaan tidak ditemukan.');
+    }
+
+    $companies = Company::whereHas('users', function ($q) {
+        $q->where('users.id', auth()->id());
+    })->with(['users', 'subscription.plan'])->get();
+
+    $trialDaysLeft = 0;
+    $trialStatus = 'expired';
+
+    if ($company->status === 'trial' && $company->trial_end) {
+        $trialEnds = Carbon::parse($company->trial_end);
+        if ($trialEnds->isFuture()) {
+            $trialDaysLeft = $trialEnds->diffInDays(now());
+            $trialStatus = 'active';
+        }
+    }
+
+    $invoices = SubscriptionInvoice::whereHas('subscription', function ($q) use ($company) {
+        $q->where('company_id', $company->id);
+    })->with('subscription.plan')->latest()->get();
+
+    $hasActiveSubscription = $company->subscription &&
+        $company->subscription->status === 'active' &&
+        Carbon::parse($company->subscription->end_date)->isFuture();
+
+    // 🔥 TAMBAHAN BARU: Ambil role user saat ini
+    $currentUserRole = null;
+    $userCompany = UserCompany::where('user_id', auth()->id())
+        ->where('company_id', $companyId)
+        ->with('role')
+        ->first();
+    
+    if ($userCompany && $userCompany->role) {
+        $currentUserRole = $userCompany->role->name;
+    }
+
+    // 🔥 DEBUGGING: Log untuk cek role (hapus setelah testing)
+    \Log::info('Current User Role in Pembayaran:', [
+        'user_id' => auth()->id(),
+        'company_id' => $companyId,
+        'role' => $currentUserRole
+    ]);
+
+    return view('pembayaran', compact(
+        'company',
+        'companies',
+        'invoices',
+        'trialDaysLeft',
+        'trialStatus',
+        'hasActiveSubscription',
+        'currentUserRole' // 🔥 PENTING: Jangan lupa pass variable ini!
+    ));
+}
 
     // API: Get plans
     public function getPlans()
@@ -371,63 +371,92 @@ class SubscriptionController extends Controller
 
 
     public function toggleUserStatus(Request $request)
-    {
-        $request->validate([
-            'user_company_id' => 'required|exists:user_companies,id',
-            'status_active' => 'required|boolean'
-        ]);
+{
+    $request->validate([
+        'user_company_id' => 'required|exists:user_companies,id',
+        'status_active' => 'required|boolean'
+    ]);
 
-        try {
-            $companyId = session('active_company_id');
+    try {
+        $companyId = session('active_company_id');
+        
+        // Validasi SuperAdmin
+        $currentUserCompany = UserCompany::where('user_id', auth()->id())
+            ->where('company_id', $companyId)
+            ->with('role')
+            ->first();
 
-            // Validasi SuperAdmin
-            $currentUserCompany = UserCompany::where('user_id', auth()->id())
-                ->where('company_id', $companyId)
-                ->with('role')
-                ->first();
-
-            if (!$currentUserCompany || !in_array($currentUserCompany->role->name, ['SuperAdmin', 'Super Admin'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Hanya SuperAdmin yang dapat mengubah status user'
-                ], 403);
-            }
-
-            $userCompany = UserCompany::findOrFail($request->user_company_id);
-
-            // Tidak bisa nonaktifkan diri sendiri
-            if ($userCompany->user_id === auth()->id()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak dapat menonaktifkan akun sendiri'
-                ], 403);
-            }
-
-            $userCompany->status_active = $request->status_active;
-            $userCompany->save();
-
-            $statusText = $request->status_active ? 'diaktifkan' : 'dinonaktifkan';
-
-            Log::info("User status changed", [
-                'user_id' => $userCompany->user_id,
-                'company_id' => $userCompany->company_id,
-                'status_active' => $request->status_active,
-                'changed_by' => auth()->id()
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => "User berhasil {$statusText}"
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Toggle user status error: ' . $e->getMessage());
-
+        if (!$currentUserCompany || !in_array($currentUserCompany->role->name, ['SuperAdmin', 'Super Admin'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Hanya SuperAdmin yang dapat mengubah status user'
+            ], 403);
         }
+
+        $userCompany = UserCompany::findOrFail($request->user_company_id);
+
+        // Tidak bisa nonaktifkan diri sendiri
+        if ($userCompany->user_id === auth()->id()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak dapat menonaktifkan akun sendiri'
+            ], 403);
+        }
+
+        // 🔥 VALIDASI BARU: Jika mau AKTIFKAN user
+        if ($request->status_active === true) {
+            $company = Company::with('subscription')->findOrFail($companyId);
+            
+            // Hitung jumlah user yang SUDAH AKTIF saat ini
+            $currentActiveCount = UserCompany::where('company_id', $companyId)
+                ->where('status_active', true)
+                ->count();
+
+            // Ambil limit dari subscription
+            $userLimit = $company->subscription->total_user_limit ?? 0;
+
+            // 🔥 CEK: Apakah sudah mencapai batas?
+            if ($currentActiveCount >= $userLimit) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Tidak dapat mengaktifkan user. Batas maksimal ({$userLimit} user aktif) sudah tercapai. Silakan nonaktifkan user lain terlebih dahulu atau upgrade paket."
+                ], 400);
+            }
+
+            Log::info('✅ User activation allowed', [
+                'current_active' => $currentActiveCount,
+                'limit' => $userLimit,
+                'user_to_activate' => $userCompany->user->email
+            ]);
+        }
+
+        // ✅ Update status
+        $userCompany->status_active = $request->status_active;
+        $userCompany->save();
+
+        $statusText = $request->status_active ? 'diaktifkan' : 'dinonaktifkan';
+
+        Log::info("User status changed", [
+            'user_id' => $userCompany->user_id,
+            'company_id' => $userCompany->company_id,
+            'status_active' => $request->status_active,
+            'changed_by' => auth()->id()
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "User berhasil {$statusText}"
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Toggle user status error: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     public function getUsersWithStatus($companyId)
     {

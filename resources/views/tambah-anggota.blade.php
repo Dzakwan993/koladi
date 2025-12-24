@@ -13,19 +13,74 @@
                     <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Anggota Perusahaan</h1>
                 </div>
 
-                {{-- ✅ Tombol Undang - Hanya tampil untuk SuperAdmin, Admin, Manager --}}
-                @if ($canInvite ?? false)
-                    <button onClick="openInviteModal(event)"
-                        class="bg-[#225AD6] hover:bg-blue-600 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-semibold transition flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm">
-                        <img src="{{ asset('images/icons/add-user.svg') }}" alt="Schedule" class="w-5 h-5 sm:w-6 sm:h-6" />
-                        Undang
-                    </button>
-                @else
-                    {{-- ❌ Jika tidak punya izin, tampilkan pesan atau hide button --}}
-                    <div class="text-xs text-gray-500 italic">
-                        Anda tidak memiliki izin untuk mengundang anggota
+                {{-- Di bagian header, SEBELUM tombol Undang --}}
+
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">Kelola Anggota</h2>
+
+                    <div class="flex items-center gap-3">
+                        {{-- 🔥 Info Limit User --}}
+                        <div class="text-sm">
+                            <span class="font-semibold {{ $isLimitReached ? 'text-red-600' : 'text-gray-700' }}">
+                                {{ $activeUserCount }} / {{ $userLimit }} user aktif
+                            </span>
+                        </div>
+
+                        {{-- ✅ Tombol Undang - dengan kondisi disable --}}
+                        @if ($canInvite ?? false)
+                            @if ($isLimitReached)
+                                {{-- 🔥 Tombol DISABLED jika limit tercapai --}}
+                                <button disabled
+                                    class="bg-gray-400 cursor-not-allowed text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-semibold flex items-center justify-center gap-1.5 sm:gap-2 opacity-60">
+                                    <img src="{{ asset('images/icons/add-user.svg') }}" alt="Undang"
+                                        class="w-5 h-5 sm:w-6 sm:h-6" />
+                                    Undang (Limit Tercapai)
+                                </button>
+                            @else
+                                {{-- ✅ Tombol AKTIF jika masih ada slot --}}
+                                <button onClick="openInviteModal(event)"
+                                    class="bg-[#225AD6] hover:bg-blue-600 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-semibold transition flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm">
+                                    <img src="{{ asset('images/icons/add-user.svg') }}" alt="Undang"
+                                        class="w-5 h-5 sm:w-6 sm:h-6" />
+                                    Undang ({{ $userLimit - $activeUserCount }} slot tersisa)
+                                </button>
+                            @endif
+                        @else
+                            {{-- ❌ User tidak punya izin --}}
+                            <div class="text-xs text-gray-500 italic">
+                                Anda tidak memiliki izin untuk mengundang anggota
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                {{-- 🔥 Alert jika limit tercapai --}}
+                @if ($isLimitReached)
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-lg">
+                        <div class="flex items-start">
+                            <svg class="w-5 h-5 text-red-500 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-bold text-red-800 mb-1">⚠️ Batas Maksimal User Tercapai</h3>
+                                <p class="text-sm text-red-700 mb-2">
+                                    Anda telah mencapai batas maksimal <strong>{{ $userLimit }} user aktif</strong>.
+                                    Tidak dapat mengundang atau mengaktifkan user baru.
+                                </p>
+                                <p class="text-xs text-red-600">
+                                    💡 Untuk menambah user: Nonaktifkan user lain atau
+                                    <a href="{{ route('pembayaran') }}" class="font-bold underline hover:text-red-800">
+                                        upgrade paket subscription
+                                    </a>
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 @endif
+
+               
             </div>
 
             {{-- Content Area - Scrollable --}}
@@ -228,7 +283,8 @@
 
                     <div class="flex items-center gap-2 mb-5">
                         <div class="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
-                            <div class="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full" style="width: 50%">
+                            <div class="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"
+                                style="width: 50%">
                             </div>
                         </div>
                         <span class="text-xs font-medium text-gray-500">2/4</span>
@@ -627,6 +683,224 @@
                     .then(() => {
                         document.getElementById('onboarding-step3-sidebar')?.remove();
                     });
+            }
+
+
+            // Di file tambah-anggota.blade.php atau file JS terpisah
+
+            // 🔥 Fungsi kirim undangan (dengan error handling limit)
+            async function sendInvitation() {
+                const emailInput = document.getElementById('inviteEmail');
+                const email = emailInput.value.trim();
+
+                if (!email) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Email Kosong',
+                        text: 'Silakan masukkan email yang akan diundang',
+                        confirmButtonColor: '#dc2626'
+                    });
+                    return;
+                }
+
+                // Validasi email format
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Format Email Salah',
+                        text: 'Silakan masukkan email yang valid',
+                        confirmButtonColor: '#dc2626'
+                    });
+                    return;
+                }
+
+                // Show loading
+                Swal.fire({
+                    title: 'Mengirim Undangan...',
+                    text: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                try {
+                    const response = await fetch('/invite/send', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            email_target: email
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        // 🔥 Handle error limit user
+                        if (response.status === 400 && data.error.includes('Batas maksimal')) {
+                            await Swal.fire({
+                                icon: 'warning',
+                                title: 'Batas User Tercapai',
+                                html: `
+                        <p class="text-gray-700 mb-3">${data.error}</p>
+                        <div class="bg-blue-50 rounded-lg p-3 text-sm text-left">
+                            <p class="font-semibold text-blue-900 mb-2">💡 Solusi:</p>
+                            <ol class="list-decimal list-inside space-y-1 text-blue-800">
+                                <li>Nonaktifkan user lain terlebih dahulu, atau</li>
+                                <li>Upgrade paket subscription Anda</li>
+                            </ol>
+                        </div>
+                    `,
+                                confirmButtonText: 'Upgrade Paket',
+                                showCancelButton: true,
+                                cancelButtonText: 'Tutup',
+                                confirmButtonColor: '#2563eb',
+                                cancelButtonColor: '#6b7280'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = '/pembayaran';
+                                }
+                            });
+                            return;
+                        }
+
+                        throw new Error(data.error || 'Terjadi kesalahan');
+                    }
+
+                    if (data.success) {
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Undangan Terkirim!',
+                            text: `Undangan telah dikirim ke ${email}`,
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+
+                        // Reset form dan reload
+                        emailInput.value = '';
+                        closeInviteModal();
+                        setTimeout(() => window.location.reload(), 2000);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Mengirim Undangan',
+                        text: error.message || 'Terjadi kesalahan saat mengirim undangan',
+                        confirmButtonColor: '#dc2626'
+                    });
+                }
+            }
+
+            // 🔥 Fungsi toggle user status (dengan error handling limit)
+            async function toggleUserStatus(userCompanyId, isActive) {
+                const statusText = isActive ? 'mengaktifkan' : 'menonaktifkan';
+
+                // Konfirmasi dulu
+                const result = await Swal.fire({
+                    title: 'Konfirmasi',
+                    text: `Anda yakin ingin ${statusText} user ini?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: isActive ? '#16a34a' : '#dc2626',
+                    cancelButtonColor: '#6b7280',
+                    confirmButtonText: 'Ya, Lanjutkan',
+                    cancelButtonText: 'Batal'
+                });
+
+                if (!result.isConfirmed) {
+                    event.target.checked = !isActive;
+                    return;
+                }
+
+                // Show loading
+                Swal.fire({
+                    title: 'Memproses...',
+                    text: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                try {
+                    const response = await fetch('/subscription/toggle-user-status', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            user_company_id: userCompanyId,
+                            status_active: isActive
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        // 🔥 Handle error limit user
+                        if (response.status === 400 && data.message.includes('Batas maksimal')) {
+                            await Swal.fire({
+                                icon: 'warning',
+                                title: 'Batas User Tercapai',
+                                html: `
+                        <p class="text-gray-700 mb-3">${data.message}</p>
+                        <div class="bg-blue-50 rounded-lg p-3 text-sm text-left">
+                            <p class="font-semibold text-blue-900 mb-2">💡 Solusi:</p>
+                            <ol class="list-decimal list-inside space-y-1 text-blue-800">
+                                <li>Nonaktifkan user lain terlebih dahulu, atau</li>
+                                <li>Upgrade paket subscription Anda</li>
+                            </ol>
+                        </div>
+                    `,
+                                confirmButtonText: 'Upgrade Paket',
+                                showCancelButton: true,
+                                cancelButtonText: 'Tutup',
+                                confirmButtonColor: '#2563eb',
+                                cancelButtonColor: '#6b7280'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    window.location.href = '/pembayaran';
+                                }
+                            });
+
+                            // Revert toggle
+                            event.target.checked = !isActive;
+                            return;
+                        }
+
+                        throw new Error(data.message || 'Gagal mengubah status user');
+                    }
+
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: data.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+
+                    // Refresh halaman
+                    setTimeout(() => window.location.reload(), 2000);
+
+                } catch (error) {
+                    console.error('Error:', error);
+
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal',
+                        text: error.message || 'Terjadi kesalahan saat mengubah status user',
+                        confirmButtonColor: '#dc2626'
+                    });
+
+                    // Revert toggle jika error
+                    event.target.checked = !isActive;
+                }
             }
         </script>
     @endpush
