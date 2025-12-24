@@ -93,7 +93,6 @@ class TaskController extends Controller
         try {
             $user = Auth::user();
 
-            // ✅ VALIDASI: Gunakan method helper untuk cek akses
             if (!$this->canAccessWorkspace($workspaceId)) {
                 return response()->json([
                     'success' => false,
@@ -101,30 +100,27 @@ class TaskController extends Controller
                 ], 403);
             }
 
-            $workspace = Workspace::find($workspaceId);
-            if (!$workspace) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Workspace tidak ditemukan'
-                ], 404);
-            }
-
-            // Ambil kolom dari workspace ini saja
-            $columns = BoardColumn::where('workspace_id', $workspaceId)
-                ->orderBy('position')
-                ->get();
+            // ✅ PERBAIKAN: Gunakan cache untuk data yang jarang berubah
+            $columns = cache()->remember(
+                "board_columns_{$workspaceId}",
+                now()->addMinutes(5),
+                function () use ($workspaceId) {
+                    return BoardColumn::where('workspace_id', $workspaceId)
+                        ->orderBy('position')
+                        ->select(['id', 'name', 'position', 'workspace_id']) // ✅ Select only needed fields
+                        ->get();
+                }
+            );
 
             return response()->json([
                 'success' => true,
-                'columns' => $columns,
-                'workspace_name' => $workspace->name,
-                'workspace_id' => $workspace->id
+                'columns' => $columns
             ]);
         } catch (\Exception $e) {
             Log::error('Error getting board columns: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data kolom: ' . $e->getMessage()
+                'message' => 'Gagal mengambil data kolom'
             ], 500);
         }
     }
@@ -1743,7 +1739,7 @@ class TaskController extends Controller
                     return [
                         'id' => $checklist->id,
                         'title' => $checklist->title,
-                        'is_done' => (bool)$checklist->is_done,
+                        'is_done' => (bool) $checklist->is_done,
                         'position' => $checklist->position
                     ];
                 })->toArray(),
@@ -1860,7 +1856,7 @@ class TaskController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'title' => 'sometimes|string|max:255',
-                'phase' => 'sometimes|string|max:255',
+                'phase' => 'nullable|string|max:255', // Ubah dari 'sometimes' ke 'nullable'
                 'description' => 'nullable|string',
                 'is_secret' => 'boolean',
                 'start_datetime' => 'nullable|date',
@@ -1871,6 +1867,21 @@ class TaskController extends Controller
                 'label_ids' => 'array',
                 'label_ids.*' => 'exists:labels,id'
             ]);
+
+            // DEBUG: Log validation errors
+            if ($validator->fails()) {
+                Log::error('Validation failed for task update:', [
+                    'task_id' => $taskId,
+                    'errors' => $validator->errors()->toArray(),
+                    'request_data' => $request->all()
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
             if ($validator->fails()) {
                 return response()->json([
@@ -2337,7 +2348,7 @@ class TaskController extends Controller
         $comment = Comment::create([
             'id' => $request->input('id') ?? Str::uuid()->toString(),
             'user_id' => Auth::id(),
-            'content' => $request->content,
+            'content' => $request->input('content'), // ✅ BENAR: Pakai input()
             'commentable_id' => $task->id,
             'commentable_type' => Task::class,
             'parent_comment_id' => $request->parent_comment_id ?? null,
@@ -2431,7 +2442,7 @@ class TaskController extends Controller
 
 
     // Tambahkan method ini di TaskController.php
-   // Di TaskController.php - tambahkan method ini
+    // Di TaskController.php - tambahkan method ini
 
     /**
      * Get phase date range and duration
@@ -2492,12 +2503,12 @@ class TaskController extends Controller
 
             foreach ($tasks as $task) {
                 if (!$task->phase || empty(trim($task->phase))) {
-                Log::info('Skipping task without phase:', ['task_id' => $task->id]);
-                continue; // Skip ke task berikutnya
-            }
+                    Log::info('Skipping task without phase:', ['task_id' => $task->id]);
+                    continue; // Skip ke task berikutnya
+                }
 
-            $originalPhaseName = trim($task->phase);
-            $normalizedKey = strtolower($originalPhaseName);
+                $originalPhaseName = trim($task->phase);
+                $normalizedKey = strtolower($originalPhaseName);
 
                 // Handle empty phase name
                 if (empty($normalizedKey)) {
@@ -2609,9 +2620,12 @@ class TaskController extends Controller
             // ✅ PERBAIKAN: Sort phases by start date (yang paling awal dulu)
             usort($timelineData, function ($a, $b) {
                 // Handle null dates
-                if (!$a['start_date'] && !$b['start_date']) return 0;
-                if (!$a['start_date']) return 1; // Yang null di akhir
-                if (!$b['start_date']) return -1; // Yang null di akhir
+                if (!$a['start_date'] && !$b['start_date'])
+                    return 0;
+                if (!$a['start_date'])
+                    return 1; // Yang null di akhir
+                if (!$b['start_date'])
+                    return -1; // Yang null di akhir
 
                 // Convert to timestamp for comparison
                 $timeA = strtotime($a['start_date']);
