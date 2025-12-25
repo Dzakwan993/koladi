@@ -6,84 +6,68 @@
     <div
         class="p-3 sm:p-4 md:p-6 lg:p-8 h-screen overflow-hidden mx-4 sm:mx-6 md:mx-12 lg:mx-16 xl:mx-24 font-[Inter,sans-serif]">
         <div class="max-w-7xl mx-auto h-full flex flex-col">
-            {{-- Header - Fixed Height --}}
-            <div
-                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 pb-2 mb-4 sm:mb-5 md:mb-6 flex-shrink-0">
-                <div>
-                    <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Anggota Perusahaan</h1>
-                </div>
+           {{-- ================= HEADER ================= --}}
+<div class="flex flex-col gap-4 mb-6 flex-shrink-0">
 
-                {{-- Di bagian header, SEBELUM tombol Undang --}}
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-xl font-bold text-gray-800">Kelola Anggota</h2>
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Anggota Perusahaan</h1>
+            <p class="text-sm text-gray-500">
+                Kelola anggota dan izin akses perusahaan
+            </p>
+        </div>
 
-                    <div class="flex items-center gap-3">
-                        {{-- 🔥 Info Limit User --}}
-                        <div class="text-sm">
-                            <span class="font-semibold {{ $isLimitReached ? 'text-red-600' : 'text-gray-700' }}">
-                                {{ $activeUserCount }} / {{ $userLimit }} user aktif
-                            </span>
-                        </div>
-
-                        {{-- ✅ Tombol Undang - dengan kondisi disable --}}
-                        @if ($canInvite ?? false)
-                            @if ($isLimitReached)
-                                {{-- 🔥 Tombol DISABLED jika limit tercapai --}}
-                                <button disabled
-                                    class="bg-gray-400 cursor-not-allowed text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-semibold flex items-center justify-center gap-1.5 sm:gap-2 opacity-60">
-                                    <img src="{{ asset('images/icons/add-user.svg') }}" alt="Undang"
-                                        class="w-5 h-5 sm:w-6 sm:h-6" />
-                                    Undang (Limit Tercapai)
-                                </button>
-                            @else
-                                {{-- ✅ Tombol AKTIF jika masih ada slot --}}
-                                <button onClick="openInviteModal(event)"
-                                    class="bg-[#225AD6] hover:bg-blue-600 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-semibold transition flex items-center justify-center gap-1.5 sm:gap-2 shadow-sm">
-                                    <img src="{{ asset('images/icons/add-user.svg') }}" alt="Undang"
-                                        class="w-5 h-5 sm:w-6 sm:h-6" />
-                                    Undang ({{ $userLimit - $activeUserCount }} slot tersisa)
-                                </button>
-                            @endif
-                        @else
-                            {{-- ❌ User tidak punya izin --}}
-                            <div class="text-xs text-gray-500 italic">
-                                Anda tidak memiliki izin untuk mengundang anggota
-                            </div>
-                        @endif
-                    </div>
-                </div>
-
-                {{-- 🔥 Alert jika limit tercapai --}}
-                @if ($isLimitReached)
-                    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-lg">
-                        <div class="flex items-start">
-                            <svg class="w-5 h-5 text-red-500 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            <div class="flex-1">
-                                <h3 class="text-sm font-bold text-red-800 mb-1">⚠️ Batas Maksimal User Tercapai</h3>
-                                <p class="text-sm text-red-700 mb-2">
-                                    Anda telah mencapai batas maksimal <strong>{{ $userLimit }} user aktif</strong>.
-                                    Tidak dapat mengundang atau mengaktifkan user baru.
-                                </p>
-                                <p class="text-xs text-red-600">
-                                    💡 Untuk menambah user: <a href="{{ route('pembayaran') }}"
-                                        class="font-bold underline hover:text-red-800">
-                                        Nonaktifkan user lain </a> atau 
-                                    <a href="{{ route('pembayaran') }}" class="font-bold underline hover:text-red-800">
-                                        upgrade paket subscription
-                                    </a>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-
+        <div class="flex items-center gap-4">
+            <div class="text-sm font-semibold
+                {{ $isLimitReached ? 'text-red-600' : 'text-gray-700' }}">
+                {{ $activeUserCount }} / {{ $userLimit }} user aktif
             </div>
+
+            @if ($canInvite ?? false)
+                <button
+                    @if($isLimitReached) disabled @else onclick="openInviteModal(event)" @endif
+                    class="px-4 py-2 rounded-lg text-sm font-semibold
+                        {{ $isLimitReached
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700 text-white' }}">
+                    Undang
+                </button>
+            @endif
+        </div>
+    </div>
+
+
+    @if ($isLimitReached && $currentUserRole === 'SuperAdmin')
+        <div class="flex gap-3 items-start bg-red-50 border border-red-200 rounded-xl p-4">
+            <div class="mt-0.5">
+                <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clip-rule="evenodd" />
+                </svg>
+            </div>
+
+            <div class="flex-1">
+                <p class="font-semibold text-red-800">
+                    Batas maksimal {{ $userLimit }} user aktif tercapai
+                </p>
+                <p class="text-sm text-red-700 mt-1">
+                    Anda tidak dapat menambahkan user baru.
+                </p>
+                <p class="text-xs text-red-600 mt-2">
+                    💡 Solusi:
+                    <a href="{{ route('pembayaran') }}" class="underline font-semibold">nonaktifkan user</a>
+                    atau
+                    <a href="{{ route('pembayaran') }}" class="underline font-semibold">upgrade paket</a>
+                </p>
+            </div>
+        </div>
+    @endif
+
+</div>
+{{-- ================= END HEADER ================= --}}
+
 
             {{-- Content Area - Scrollable --}}
             <div class="flex-1 overflow-y-auto flex flex-col gap-2 sm:gap-2.5 md:gap-3">

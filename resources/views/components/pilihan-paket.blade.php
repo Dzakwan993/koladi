@@ -547,10 +547,41 @@ async function proceedPayment() {
             })
         });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Terjadi kesalahan pada server');
+       if (!response.ok) {
+    const errorData = await response.json();
+
+    let title = 'Gagal';
+    let text = 'Terjadi kesalahan pada server';
+    let icon = 'error';
+
+    try {
+        const parsed = JSON.parse(errorData.message);
+
+        if (parsed.type === 'downgrade_error') {
+            title = parsed.title;
+            text = parsed.message;
+            icon = 'warning';
         }
+    } catch (e) {
+        text = errorData.message || text;
+    }
+
+    Swal.fire({
+        icon: icon,
+        title: title,
+        text: text,
+        confirmButtonText: 'Mengerti',
+        customClass: {
+            popup: 'swal-custom-popup',
+            title: 'swal-custom-title',
+            text: 'swal-custom-text'
+        }
+    });
+
+    // ⛔ PENTING: stop proses tanpa alert browser
+    return;
+}
+
 
         const data = await response.json();
 

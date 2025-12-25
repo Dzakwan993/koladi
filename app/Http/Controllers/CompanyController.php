@@ -156,7 +156,8 @@ class CompanyController extends Controller
         'canInvite',
         'activeUserCount',    // 🔥 TAMBAHAN
         'userLimit',          // 🔥 TAMBAHAN
-        'isLimitReached'      // 🔥 TAMBAHAN
+        'isLimitReached',    // 🔥 TAMBAHAN
+        'currentUserRole' 
     ));
 }
 

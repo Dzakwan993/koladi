@@ -285,18 +285,21 @@ class SubscriptionController extends Controller
             }
 
             if ($isDowngrade) {
-                $activeUserCount = $company->active_users_count;
-                $newLimit = $plan->base_user_limit + ($request->addon_user_count ?? 0);
+    $activeUserCount = $company->active_users_count;
+    $newLimit = $plan->base_user_limit + ($request->addon_user_count ?? 0);
 
-                if ($activeUserCount > $newLimit) {
-                    $excess = $activeUserCount - $newLimit;
+    if ($activeUserCount > $newLimit) {
+        $excess = $activeUserCount - $newLimit;
 
-                    throw new \Exception(
-                        "Tidak dapat downgrade. Jumlah user aktif ({$activeUserCount}) melebihi limit paket baru ({$newLimit}). " .
-                            "Silakan nonaktifkan {$excess} user terlebih dahulu."
-                    );
-                }
-            }
+        throw new \Exception(json_encode([
+            'type' => 'downgrade_error',
+            'title' => 'Tidak Dapat Downgrade',
+            'message' => "User aktif saat ini: {$activeUserCount}\nLimit paket baru: {$newLimit}\n\nSilakan nonaktifkan {$excess} user terlebih dahulu sebelum downgrade paket.",
+            'excess' => $excess
+        ]));
+    }
+}
+
 
             // 3. Hitung total biaya
             $addonCount = $request->addon_user_count ?? 0;
