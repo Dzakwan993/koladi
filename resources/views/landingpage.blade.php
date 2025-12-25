@@ -607,24 +607,39 @@
                             </div>
                         </div>
 
-                        <!-- CTA row (dirapikan, sekarang ada spasi yang enak dibaca) -->
+                    </div>
+                </div>
+
+                <div class="mt-10 md:mt-20 flex flex-col items-center text-center">
+                    <!-- JUDUL -->
+                    <h2 class="mb-6 md:mb-10 max-w-4xl text-2xl md:text-4xl font-bold text-slate-900">
+                        <span class="text-slate-800">
+                            Prioritas yang harus dibereskan saat ini
+                        </span>
+                    </h2>
+
+                    <!-- IMAGE -->
+                    <div class="relative w-full max-w-7xl">
+                        <div
+                            class="absolute inset-0 -z-10 blur-3xl opacity-40 bg-gradient-to-tr from-blue-500/20 via-purple-500/10 to-red-500/10 rounded-[40px]">
+                        </div>
+
+                        <img src="images/ai.svg" alt="Koladi AI"
+                            class="w-full h-auto max-h-[700px] object-contain scale-110 md:scale-125 drop-shadow-[0_30px_80px_rgba(15,23,42,0.20)]" />
+                    </div>
+                </div>
+                {{-- end foto ai --}}
+                {{-- <!-- CTA row -->
                         <div class="mt-10 flex justify-center">
                             <p class="text-lg md:text-xl text-slate-700 font-semibold text-center">
                                 Semua solusi ini <span class="font-extrabold text-slate-900">terintegrasi dalam
                                     Koladi</span>
                             </p>
-                        </div>
-
-                    </div>
-                </div>
-
-                <!-- trust note -->
-                <p class="mt-6 text-center text-sm text-slate-500 font-semibold">
-                    {{-- Koladi = manajemen kerja + AI insight untuk keputusan yang lebih cepat dan terukur. --}}
-                </p>
+                        </div> --}}
             </div>
         </div>
     </section>
+
 
 
 
