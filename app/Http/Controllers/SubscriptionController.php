@@ -430,25 +430,58 @@ class SubscriptionController extends Controller
             ]);
         }
 
-        // ✅ Update status
+        DB::beginTransaction();
+
+        // ✅ Update status di user_companies
         $userCompany->status_active = $request->status_active;
         $userCompany->save();
 
+        // 🔥 JIKA NONAKTIFKAN: Hapus dari SEMUA workspace di company ini
+        if ($request->status_active === false) {
+            $removedWorkspaces = \App\Models\UserWorkspace::whereHas('workspace', function($q) use ($companyId) {
+                $q->where('company_id', $companyId);
+            })
+            ->where('user_id', $userCompany->user_id)
+            ->get();
+
+            // Log workspaces yang akan dihapus
+            Log::info('🗑️ Removing user from workspaces', [
+                'user_id' => $userCompany->user_id,
+                'company_id' => $companyId,
+                'workspace_count' => $removedWorkspaces->count(),
+                'workspaces' => $removedWorkspaces->pluck('workspace_id')->toArray()
+            ]);
+
+            // Hapus dari semua workspace
+            \App\Models\UserWorkspace::whereHas('workspace', function($q) use ($companyId) {
+                $q->where('company_id', $companyId);
+            })
+            ->where('user_id', $userCompany->user_id)
+            ->delete();
+        }
+
+        DB::commit();
+
         $statusText = $request->status_active ? 'diaktifkan' : 'dinonaktifkan';
+        $additionalMessage = !$request->status_active 
+            ? ' dan dihapus dari semua workspace' 
+            : '';
 
         Log::info("User status changed", [
             'user_id' => $userCompany->user_id,
             'company_id' => $userCompany->company_id,
             'status_active' => $request->status_active,
-            'changed_by' => auth()->id()
+            'changed_by' => auth()->id(),
+            'workspaces_removed' => !$request->status_active
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => "User berhasil {$statusText}"
+            'message' => "User berhasil {$statusText}{$additionalMessage}"
         ]);
 
     } catch (\Exception $e) {
+        DB::rollBack();
         Log::error('Toggle user status error: ' . $e->getMessage());
         
         return response()->json([

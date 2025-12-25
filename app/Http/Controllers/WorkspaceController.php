@@ -17,51 +17,81 @@ use Illuminate\Support\Facades\Log;
 class WorkspaceController extends Controller
 {
     public function index()
-    {
-        $user = Auth::user();
-        $activeCompany = session('active_company_id')
-            ? Company::find(session('active_company_id'))
-            : $user->companies->first();
+{
+    $user = Auth::user();
+    $activeCompany = session('active_company_id')
+        ? Company::find(session('active_company_id'))
+        : $user->companies->first();
 
-        if (!$activeCompany) {
-            return redirect()->route('buat-perusahaan.create')
-                ->with('error', 'Silakan buat perusahaan terlebih dahulu.');
-        }
-
-        $userCompany = $user->userCompanies()
-            ->where('company_id', $activeCompany->id)
-            ->with('role')
-            ->first();
-
-        $userRole = $userCompany?->role?->name ?? 'Member';
-
-        if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
-            $workspaces = Workspace::with(['creator', 'userWorkspaces.user', 'userWorkspaces.role'])
-                ->where('company_id', $activeCompany->id)
-                ->active()
-                ->get()
-                ->groupBy('type');
-        } else {
-            $workspaces = Workspace::with(['creator', 'userWorkspaces.user', 'userWorkspaces.role'])
-                ->where('company_id', $activeCompany->id)
-                ->active()
-                ->whereHas('userWorkspaces', function ($query) use ($user) {
-                    $query->where('user_id', $user->id)
-                        ->where('status_active', true);
-                })
-                ->get()
-                ->groupBy('type');
-        }
-
-        $roles = Role::select('id', 'name')->get();
-
-        return view('kelola-workspace', [
-            'workspaces' => $workspaces,
-            'activeCompany' => $activeCompany,
-            'roles' => $roles,
-            'userRole' => $userRole
-        ]);
+    if (!$activeCompany) {
+        return redirect()->route('buat-perusahaan.create')
+            ->with('error', 'Silakan buat perusahaan terlebih dahulu.');
     }
+
+    // 🔥 CEK STATUS AKTIF USER DI COMPANY
+    $userCompany = $user->userCompanies()
+        ->where('company_id', $activeCompany->id)
+        ->where('status_active', true) // 🔥 VALIDASI STATUS AKTIF
+        ->with('role')
+        ->first();
+
+    // 🔥 Jika user tidak aktif di company ini, redirect
+    if (!$userCompany) {
+        return redirect()->route('dashboard')
+            ->with('error', 'Anda tidak memiliki akses aktif ke perusahaan ini.');
+    }
+
+    $userRole = $userCompany->role?->name ?? 'Member';
+
+    // Admin/Manager bisa lihat semua workspace
+    if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
+        $workspaces = Workspace::with(['creator', 'userWorkspaces.user', 'userWorkspaces.role'])
+            ->where('company_id', $activeCompany->id)
+            ->active()
+            ->get()
+            ->map(function($workspace) {
+                // 🔥 Filter user workspace untuk hanya tampilkan yang aktif
+                $workspace->userWorkspaces = $workspace->userWorkspaces->filter(function($uw) use ($workspace) {
+                    $userCompany = $uw->user->userCompanies
+                        ->where('company_id', $workspace->company_id)
+                        ->first();
+                    return $userCompany && $userCompany->status_active === true;
+                });
+                return $workspace;
+            })
+            ->groupBy('type');
+    } else {
+        // Member hanya lihat workspace yang dia ikuti DAN masih aktif
+        $workspaces = Workspace::with(['creator', 'userWorkspaces.user', 'userWorkspaces.role'])
+            ->where('company_id', $activeCompany->id)
+            ->active()
+            ->whereHas('userWorkspaces', function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->where('status_active', true);
+            })
+            ->get()
+            ->map(function($workspace) {
+                // 🔥 Filter user workspace untuk hanya tampilkan yang aktif
+                $workspace->userWorkspaces = $workspace->userWorkspaces->filter(function($uw) use ($workspace) {
+                    $userCompany = $uw->user->userCompanies
+                        ->where('company_id', $workspace->company_id)
+                        ->first();
+                    return $userCompany && $userCompany->status_active === true;
+                });
+                return $workspace;
+            })
+            ->groupBy('type');
+    }
+
+    $roles = Role::select('id', 'name')->get();
+
+    return view('kelola-workspace', [
+        'workspaces' => $workspaces,
+        'activeCompany' => $activeCompany,
+        'roles' => $roles,
+        'userRole' => $userRole
+    ]);
+}
 
     public function store(Request $request)
     {
@@ -218,80 +248,100 @@ class WorkspaceController extends Controller
     }
 
     public function manageMembers(Request $request, $workspaceId)
-    {
-        $request->validate([
-            'user_ids' => 'array',
-            'user_ids.*' => 'exists:users,id',
-            'role_id' => 'required|exists:roles,id'
-        ]);
+{
+    $request->validate([
+        'user_ids' => 'array',
+        'user_ids.*' => 'exists:users,id',
+        'role_id' => 'required|exists:roles,id'
+    ]);
 
-        $workspace = Workspace::findOrFail($workspaceId);
+    $workspace = Workspace::findOrFail($workspaceId);
 
-        if (!$this->canManageWorkspaceMembers($workspace)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda tidak memiliki izin untuk mengelola anggota workspace. Hanya SuperAdmin, Admin, Manager di company, atau Manager di workspace yang dapat mengelola anggota.'
-            ], 403);
-        }
-
-        try {
-            DB::beginTransaction();
-
-            $validUserIds = User::whereHas('userCompanies', function ($query) use ($workspace) {
-                $query->where('company_id', $workspace->company_id)
-                    ->where('status_active', true)
-                    ->whereHas('role', function ($roleQuery) {
-                        $roleQuery->where('name', 'Member');
-                    });
-            })->whereIn('id', $request->user_ids)->pluck('id')->toArray();
-
-            UserWorkspace::where('workspace_id', $workspaceId)
-                ->whereNotIn('user_id', $validUserIds)
-                ->delete();
-
-            foreach ($validUserIds as $userId) {
-                UserWorkspace::updateOrCreate(
-                    [
-                        'user_id' => $userId,
-                        'workspace_id' => $workspaceId
-                    ],
-                    [
-                        'roles_id' => $request->role_id,
-                        'status_active' => true
-                    ]
-                );
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Anggota workspace berhasil diupdate!'
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Manage members error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengupdate anggota: ' . $e->getMessage()
-            ], 500);
-        }
+    if (!$this->canManageWorkspaceMembers($workspace)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Anda tidak memiliki izin untuk mengelola anggota workspace. Hanya SuperAdmin, Admin, Manager di company, atau Manager di workspace yang dapat mengelola anggota.'
+        ], 403);
     }
 
-    public function getMembers($workspaceId)
-    {
-        $workspace = Workspace::with(['userWorkspaces.user', 'userWorkspaces.role'])->findOrFail($workspaceId);
+    try {
+        DB::beginTransaction();
 
-        if (!$this->canManageWorkspaceMembers($workspace)) {
-            return response()->json([
-                'error' => 'Anda tidak memiliki akses untuk melihat anggota workspace ini'
-            ], 403);
+        // 🔥 FILTER: Hanya user dengan status_active = true yang bisa ditambahkan
+        $validUserIds = User::whereHas('userCompanies', function ($query) use ($workspace) {
+            $query->where('company_id', $workspace->company_id)
+                ->where('status_active', true) // 🔥 VALIDASI STATUS AKTIF
+                ->whereHas('role', function ($roleQuery) {
+                    $roleQuery->where('name', 'Member');
+                });
+        })->whereIn('id', $request->user_ids)->pluck('id')->toArray();
+
+        // Hapus user yang tidak valid (termasuk yang nonaktif)
+        UserWorkspace::where('workspace_id', $workspaceId)
+            ->whereNotIn('user_id', $validUserIds)
+            ->delete();
+
+        // Tambahkan/update user yang valid
+        foreach ($validUserIds as $userId) {
+            UserWorkspace::updateOrCreate(
+                [
+                    'user_id' => $userId,
+                    'workspace_id' => $workspaceId
+                ],
+                [
+                    'roles_id' => $request->role_id,
+                    'status_active' => true
+                ]
+            );
         }
 
-        $members = $workspace->userWorkspaces->map(function ($userWorkspace) {
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Anggota workspace berhasil diupdate!'
+        ]);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Manage members error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengupdate anggota: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+    public function getMembers($workspaceId)
+{
+    // 1️⃣ Ambil workspace dulu
+    $workspace = Workspace::findOrFail($workspaceId);
+
+    // 2️⃣ Load relasi SETELAH workspace ada
+    $workspace->load([
+        'userWorkspaces.user.userCompanies' => function ($q) use ($workspace) {
+            $q->where('company_id', $workspace->company_id);
+        },
+        'userWorkspaces.role'
+    ]);
+
+    // 🔐 Permission check
+    if (!$this->canManageWorkspaceMembers($workspace)) {
+        return response()->json([
+            'error' => 'Anda tidak memiliki akses untuk melihat anggota workspace ini'
+        ], 403);
+    }
+
+    $members = $workspace->userWorkspaces
+        ->filter(function ($userWorkspace) use ($workspace) {
+            $userCompany = $userWorkspace->user->userCompanies
+                ->where('company_id', $workspace->company_id)
+                ->first();
+
+            return $userCompany && $userCompany->status_active === true;
+        })
+        ->map(function ($userWorkspace) {
             $user = $userWorkspace->user;
 
-            // ✅ LOGIC AVATAR LENGKAP (dari main branch)
             if ($user->avatar && \Str::startsWith($user->avatar, ['http://', 'https://'])) {
                 $avatarUrl = $user->avatar;
             } elseif ($user->avatar) {
@@ -307,53 +357,56 @@ class WorkspaceController extends Controller
                 'role' => $userWorkspace->role->name,
                 'avatar' => $avatarUrl
             ];
-        });
+        })
+        ->values();
 
-        return response()->json($members);
-    }
+    return response()->json($members);
+}
 
-    public function getAvailableUsers()
-    {
-        try {
-            $user = Auth::user();
-            $activeCompanyId = session('active_company_id');
 
-            if (!$activeCompanyId) {
-                return response()->json(['error' => 'No active company'], 400);
+   public function getAvailableUsers()
+{
+    try {
+        $user = Auth::user();
+        $activeCompanyId = session('active_company_id');
+
+        if (!$activeCompanyId) {
+            return response()->json(['error' => 'No active company'], 400);
+        }
+
+        // 🔥 FILTER: Hanya user dengan status_active = true
+        $companyUsers = User::whereHas('userCompanies', function ($query) use ($activeCompanyId) {
+            $query->where('company_id', $activeCompanyId)
+                ->where('status_active', true) // 🔥 TAMBAHAN: Filter status aktif
+                ->whereHas('role', function ($roleQuery) {
+                    $roleQuery->where('name', 'Member');
+                });
+        })->get();
+
+        $users = $companyUsers->map(function ($user) {
+            // ✅ LOGIC AVATAR YANG BENAR
+            if ($user->avatar && \Str::startsWith($user->avatar, ['http://', 'https://'])) {
+                $avatarUrl = $user->avatar;
+            } elseif ($user->avatar) {
+                $avatarUrl = asset('storage/' . $user->avatar);
+            } else {
+                $avatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($user->full_name ?? 'User') . '&background=4F46E5&color=fff&bold=true';
             }
 
-            $companyUsers = User::whereHas('userCompanies', function ($query) use ($activeCompanyId) {
-                $query->where('company_id', $activeCompanyId)
-                    ->where('status_active', true)
-                    ->whereHas('role', function ($roleQuery) {
-                        $roleQuery->where('name', 'Member');
-                    });
-            })->get();
+            return [
+                'id' => $user->id,
+                'name' => $user->full_name,
+                'email' => $user->email,
+                'avatar' => $avatarUrl
+            ];
+        });
 
-            $users = $companyUsers->map(function ($user) {
-                // ✅ LOGIC AVATAR YANG BENAR (sama seperti di getMembers)
-                if ($user->avatar && \Str::startsWith($user->avatar, ['http://', 'https://'])) {
-                    $avatarUrl = $user->avatar;
-                } elseif ($user->avatar) {
-                    $avatarUrl = asset('storage/' . $user->avatar);
-                } else {
-                    $avatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($user->full_name ?? 'User') . '&background=4F46E5&color=fff&bold=true';
-                }
-
-                return [
-                    'id' => $user->id,
-                    'name' => $user->full_name,
-                    'email' => $user->email,
-                    'avatar' => $avatarUrl // ✅ GUNAKAN AVATAR DARI DATABASE
-                ];
-            });
-
-            return response()->json($users);
-        } catch (\Exception $e) {
-            Log::error('Error in getAvailableUsers: ' . $e->getMessage());
-            return response()->json(['error' => 'Server error'], 500);
-        }
+        return response()->json($users);
+    } catch (\Exception $e) {
+        Log::error('Error in getAvailableUsers: ' . $e->getMessage());
+        return response()->json(['error' => 'Server error'], 500);
     }
+}
 
     private function checkWorkspaceAccess($workspace)
     {
@@ -414,63 +467,75 @@ class WorkspaceController extends Controller
     }
 
     private function canAccessWorkspace($workspace)
-    {
-        $user = Auth::user();
-        $activeCompanyId = session('active_company_id');
+{
+    $user = Auth::user();
+    $activeCompanyId = session('active_company_id');
 
-        if ($workspace->created_by === $user->id) {
-            return true;
-        }
-
-        if ($activeCompanyId && $workspace->company_id !== $activeCompanyId) {
-            return false;
-        }
-
-        $userCompany = $user->userCompanies()
-            ->where('company_id', $activeCompanyId)
-            ->with('role')
-            ->first();
-
-        $userRole = $userCompany?->role?->name ?? 'Member';
-
-        if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
-            return true;
-        }
-
-        $userWorkspace = UserWorkspace::where('user_id', $user->id)
-            ->where('workspace_id', $workspace->id)
-            ->where('status_active', true)
-            ->first();
-
-        return !is_null($userWorkspace);
+    if ($workspace->created_by === $user->id) {
+        return true;
     }
+
+    if ($activeCompanyId && $workspace->company_id !== $activeCompanyId) {
+        return false;
+    }
+
+    $userCompany = $user->userCompanies()
+        ->where('company_id', $activeCompanyId)
+        ->where('status_active', true) // 🔥 VALIDASI STATUS AKTIF
+        ->with('role')
+        ->first();
+
+    // 🔥 Jika user nonaktif di company, tidak bisa akses workspace
+    if (!$userCompany) {
+        return false;
+    }
+
+    $userRole = $userCompany->role?->name ?? 'Member';
+
+    if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
+        return true;
+    }
+
+    $userWorkspace = UserWorkspace::where('user_id', $user->id)
+        ->where('workspace_id', $workspace->id)
+        ->where('status_active', true)
+        ->first();
+
+    return !is_null($userWorkspace);
+}
 
     private function canManageWorkspaceMembers($workspace)
-    {
-        $user = Auth::user();
-        $activeCompanyId = session('active_company_id');
+{
+    $user = Auth::user();
+    $activeCompanyId = session('active_company_id');
 
-        $userCompany = $user->userCompanies()
-            ->where('company_id', $activeCompanyId)
-            ->with('role')
-            ->first();
+    $userCompany = $user->userCompanies()
+        ->where('company_id', $activeCompanyId)
+        ->where('status_active', true) // 🔥 VALIDASI STATUS AKTIF
+        ->with('role')
+        ->first();
 
-        $userCompanyRole = $userCompany?->role?->name ?? 'Member';
-
-        if (in_array($userCompanyRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
-            return true;
-        }
-
-        $userWorkspace = UserWorkspace::where('user_id', $user->id)
-            ->where('workspace_id', $workspace->id)
-            ->where('status_active', true)
-            ->with('role')
-            ->first();
-
-        $userWorkspaceRole = $userWorkspace?->role?->name ?? 'Member';
-
-        return $userWorkspaceRole === 'Manager';
+    // 🔥 Jika user nonaktif di company, tidak bisa manage members
+    if (!$userCompany) {
+        return false;
     }
+
+    $userCompanyRole = $userCompany->role?->name ?? 'Member';
+
+    if (in_array($userCompanyRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
+        return true;
+    }
+
+    $userWorkspace = UserWorkspace::where('user_id', $user->id)
+        ->where('workspace_id', $workspace->id)
+        ->where('status_active', true)
+        ->with('role')
+        ->first();
+
+    $userWorkspaceRole = $userWorkspace?->role?->name ?? 'Member';
+
+    return $userWorkspaceRole === 'Manager';
+}
 
     private function canEditDeleteWorkspace()
     {
