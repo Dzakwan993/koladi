@@ -232,20 +232,34 @@ class CompanyController extends Controller
     }
 
     // Switch perusahaan
-    public function switchCompany($companyId)
-    {
-        $user = Auth::user();
-        $hasAccess = UserCompany::where('user_id', $user->id)
-            ->where('company_id', $companyId)
-            ->exists();
+   // Switch perusahaan - DENGAN CEK STATUS AKTIF
+public function switchCompany($companyId)
+{
+    $user = Auth::user();
+    
+    // 🔥 CEK STATUS AKTIF
+    $userCompany = UserCompany::where('user_id', $user->id)
+        ->where('company_id', $companyId)
+        ->where('status_active', true) // 🔥 HANYA YANG AKTIF
+        ->first();
 
-        if ($hasAccess) {
-            session(['active_company_id' => $companyId]);
-            return redirect()->route('dashboard')->with('success', 'Berhasil beralih perusahaan');
-        }
-
-        return redirect()->route('dashboard')->with('error', 'Anda tidak memiliki akses ke perusahaan ini');
+    if ($userCompany) {
+        session(['active_company_id' => $companyId]);
+        return redirect()->route('dashboard')->with('success', 'Berhasil beralih perusahaan');
     }
+
+    // Cek apakah user ada di company tapi nonaktif
+    $inactiveCompany = UserCompany::where('user_id', $user->id)
+        ->where('company_id', $companyId)
+        ->where('status_active', false)
+        ->first();
+
+    if ($inactiveCompany) {
+        return redirect()->route('dashboard')->with('error', 'Akun Anda di perusahaan ini telah dinonaktifkan oleh Administrator.');
+    }
+
+    return redirect()->route('dashboard')->with('error', 'Anda tidak memiliki akses ke perusahaan ini');
+}
 
     // Halaman form buat perusahaan
     public function create()

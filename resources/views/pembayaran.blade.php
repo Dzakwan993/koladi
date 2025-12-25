@@ -67,7 +67,12 @@
                         <div class="space-y-2 mb-3">
                             @foreach ($companies as $comp)
                                 @php
-                                    // Check status untuk setiap perusahaan
+                                    // 🔥 CEK STATUS USER DI COMPANY INI
+                                    $userCompanyStatus =
+                                        $comp->users()->where('users.id', Auth::id())->first()?->pivot
+                                            ?->status_active ?? true;
+
+                                    // Check status subscription untuk company
                                     $compTrialActive = false;
                                     if ($comp->status === 'trial' && $comp->trial_end) {
                                         $compTrialActive = \Carbon\Carbon::parse($comp->trial_end)->isFuture();
@@ -77,47 +82,89 @@
                                         $comp->subscription->status === 'active' &&
                                         \Carbon\Carbon::parse($comp->subscription->end_date)->isFuture();
 
-                                    $isExpired = !$compTrialActive && !$compSubActive;
+                                    // Company expired jika tidak trial aktif dan tidak ada subscription aktif
+                                    $isCompanyExpired = !$compTrialActive && !$compSubActive;
+
+                                    // User nonaktif di company ini
+                                    $isUserInactive = !$userCompanyStatus;
                                 @endphp
 
-                                <a href="{{ route('company.switch', $comp->id) }}"
-                                    class="flex items-center gap-3 p-3 rounded-lg border-2 transition-all {{ $comp->id === $company->id ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200' : ($isExpired ? 'bg-red-50 border-red-200 hover:border-red-300' : 'bg-gray-50 border-gray-200 hover:border-blue-300 hover:bg-blue-50') }}">
+                                {{-- Jika user nonaktif, tampilkan dengan style berbeda dan disabled --}}
+                                @if ($isUserInactive)
                                     <div
-                                        class="w-10 h-10 {{ $comp->id === $company->id ? 'bg-blue-600' : ($isExpired ? 'bg-red-400' : 'bg-gray-400') }} rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <span class="text-white font-bold text-lg">{{ substr($comp->name, 0, 1) }}</span>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-semibold text-gray-900 truncate flex items-center gap-1">
-                                            {{ $comp->name }}
-                                            @if ($comp->id === $company->id)
-                                                <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd"
-                                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                                        clip-rule="evenodd" />
+                                        class="flex items-center gap-3 p-3 rounded-lg border-2 bg-gray-100 border-gray-300 opacity-60 cursor-not-allowed">
+                                        <div
+                                            class="w-10 h-10 bg-gray-400 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <span
+                                                class="text-white font-bold text-lg">{{ substr($comp->name, 0, 1) }}</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-semibold text-gray-700 truncate">
+                                                {{ $comp->name }}
+                                            </p>
+                                            <p class="text-xs text-gray-500 flex items-center gap-1">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path
+                                                        d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                                                 </svg>
+                                                {{ $comp->users->count() }} Anggota
+                                            </p>
+                                        </div>
+                                        <span class="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold">
+                                            ❌ Nonaktif
+                                        </span>
+                                    </div>
+                                @else
+                                    {{-- User aktif, tampilkan normal --}}
+                                    <a href="{{ route('company.switch', $comp->id) }}"
+                                        class="flex items-center gap-3 p-3 rounded-lg border-2 transition-all 
+                {{ $comp->id === $company->id
+                    ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200'
+                    : ($isCompanyExpired
+                        ? 'bg-red-50 border-red-200 hover:border-red-300'
+                        : 'bg-gray-50 border-gray-200 hover:border-blue-300 hover:bg-blue-50') }}">
+
+                                        <div
+                                            class="w-10 h-10 {{ $comp->id === $company->id ? 'bg-blue-600' : ($isCompanyExpired ? 'bg-red-400' : 'bg-gray-400') }} rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <span
+                                                class="text-white font-bold text-lg">{{ substr($comp->name, 0, 1) }}</span>
+                                        </div>
+
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-semibold text-gray-900 truncate flex items-center gap-1">
+                                                {{ $comp->name }}
+                                                @if ($comp->id === $company->id)
+                                                    <svg class="w-4 h-4 text-blue-600" fill="currentColor"
+                                                        viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd"
+                                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                            clip-rule="evenodd" />
+                                                    </svg>
+                                                @endif
+                                            </p>
+                                            <p class="text-xs text-gray-600 flex items-center gap-1">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path
+                                                        d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                                                </svg>
+                                                {{ $comp->users->count() }} Anggota
+                                            </p>
+                                        </div>
+
+                                        <div class="flex-shrink-0">
+                                            @if ($compTrialActive)
+                                                <span
+                                                    class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold">Trial</span>
+                                            @elseif($compSubActive)
+                                                <span
+                                                    class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">Aktif</span>
+                                            @else
+                                                <span
+                                                    class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold">Expired</span>
                                             @endif
-                                        </p>
-                                        <p class="text-xs text-gray-600 flex items-center gap-1">
-                                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                <path
-                                                    d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                                            </svg>
-                                            {{ $comp->users->count() }} Anggota
-                                        </p>
-                                    </div>
-                                    <div class="flex-shrink-0">
-                                        @if ($compTrialActive)
-                                            <span
-                                                class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-semibold">Trial</span>
-                                        @elseif($compSubActive)
-                                            <span
-                                                class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">Aktif</span>
-                                        @else
-                                            <span
-                                                class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-semibold">Expired</span>
-                                        @endif
-                                    </div>
-                                </a>
+                                        </div>
+                                    </a>
+                                @endif
                             @endforeach
                         </div>
 
