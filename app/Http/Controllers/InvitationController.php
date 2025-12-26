@@ -40,92 +40,108 @@ class InvitationController extends Controller
         return in_array($role, ['SuperAdmin', 'Super Admin', 'Admin', 'Administrator', 'Manager']);
     }
 
-    // ✅ Kirim undangan dengan permission check
+    // ✅ Helper: Cek apakah perusahaan masih dalam masa trial
+    private function isCompanyInTrial($company)
+    {
+        return $company->status === 'trial' && 
+               $company->trial_end && 
+               now()->lessThan($company->trial_end);
+    }
+
+    // ✅ Kirim undangan dengan permission check - DIUBAH
     public function send(Request $request)
-{
-    $request->validate([
-        'email_target' => 'required|email'
-    ]);
+    {
+        $request->validate([
+            'email_target' => 'required|email'
+        ]);
 
-    $user = Auth::user();
-    $companyId = session('active_company_id');
+        $user = Auth::user();
+        $companyId = session('active_company_id');
 
-    if (!$companyId) {
-        return response()->json(['error' => 'Company tidak ditemukan.'], 400);
+        if (!$companyId) {
+            return response()->json(['error' => 'Company tidak ditemukan.'], 400);
+        }
+
+        // ✅ Check permission
+        $currentUserRole = $this->getUserRole($companyId);
+
+        if (!$this->canInviteMember($currentUserRole)) {
+            return response()->json([
+                'error' => 'Anda tidak memiliki izin untuk mengundang anggota! Hanya SuperAdmin, Admin, dan Manager yang dapat mengundang.'
+            ], 403);
+        }
+
+        // 🔍 Dapatkan data perusahaan
+        $company = \App\Models\Company::findOrFail($companyId);
+
+        // 🔥 PERUBAHAN PENTING: Skip limit check jika masih trial
+        $isTrial = $this->isCompanyInTrial($company);
+        
+        if (!$isTrial) {
+            // 🔥 VALIDASI LIMIT USER hanya jika TIDAK dalam trial
+            $activeUserCount = $company->active_users_count;
+            $userLimit = $company->subscription->total_user_limit ?? 0;
+
+            // Cek apakah sudah mencapai limit
+            if ($activeUserCount >= $userLimit) {
+                return response()->json([
+                    'error' => "Tidak dapat mengundang user baru. Batas maksimal user aktif ({$userLimit}) telah tercapai. Saat ini ada {$activeUserCount} user aktif. Silakan nonaktifkan user lain atau upgrade paket terlebih dahulu."
+                ], 400);
+            }
+        }
+
+        // 🔍 Debug
+        Log::info('Sending invitation:', [
+            'email' => $request->email_target,
+            'company_id' => $companyId,
+            'invited_by' => $user->id,
+            'inviter_role' => $currentUserRole,
+            'company_status' => $company->status,
+            'is_trial' => $isTrial,
+            'trial_end' => $company->trial_end
+        ]);
+
+        // Cek apakah email sudah ada di perusahaan
+        $existing = User::where('email', $request->email_target)->first();
+        if ($existing && UserCompany::where('user_id', $existing->id)->where('company_id', $companyId)->exists()) {
+            return response()->json(['error' => 'User sudah terdaftar di perusahaan ini.'], 400);
+        }
+
+        // Cek apakah sudah ada undangan pending
+        $pendingInvite = Invitation::where('email_target', $request->email_target)
+            ->where('company_id', $companyId)
+            ->where('status', 'pending')
+            ->where('expired_at', '>', now())
+            ->first();
+
+        if ($pendingInvite) {
+            return response()->json(['error' => 'Undangan masih aktif untuk email ini.'], 400);
+        }
+
+        // ✅ Generate token
+        $token = Str::random(64);
+
+        // Buat invitation baru
+        $invitation = Invitation::create([
+            'email_target' => $request->email_target,
+            'token' => $token,
+            'invited_by' => $user->id,
+            'company_id' => $companyId,
+            'expired_at' => now()->addDays(3),
+        ]);
+
+        Log::info('Invitation created:', $invitation->toArray());
+
+        // Kirim email
+        try {
+            Mail::to($request->email_target)->send(new InvitationMail($invitation, $user));
+            Log::info('Email sent successfully to: ' . $request->email_target);
+        } catch (\Exception $e) {
+            Log::error('Failed to send email: ' . $e->getMessage());
+        }
+
+        return response()->json(['success' => true]);
     }
-
-    // ✅ Check permission
-    $currentUserRole = $this->getUserRole($companyId);
-
-    if (!$this->canInviteMember($currentUserRole)) {
-        return response()->json([
-            'error' => 'Anda tidak memiliki izin untuk mengundang anggota! Hanya SuperAdmin, Admin, dan Manager yang dapat mengundang.'
-        ], 403);
-    }
-
-    // 🔥 VALIDASI LIMIT USER
-    $company = \App\Models\Company::findOrFail($companyId);
-    $activeUserCount = $company->active_users_count;
-    $userLimit = $company->subscription->total_user_limit ?? 0;
-
-    // Cek apakah sudah mencapai limit
-    if ($activeUserCount >= $userLimit) {
-        return response()->json([
-            'error' => "Tidak dapat mengundang user baru. Batas maksimal user aktif ({$userLimit}) telah tercapai. Saat ini ada {$activeUserCount} user aktif. Silakan nonaktifkan user lain atau upgrade paket terlebih dahulu."
-        ], 400);
-    }
-
-    // 🔍 Debug
-    Log::info('Sending invitation:', [
-        'email' => $request->email_target,
-        'company_id' => $companyId,
-        'invited_by' => $user->id,
-        'inviter_role' => $currentUserRole,
-        'active_users' => $activeUserCount,
-        'user_limit' => $userLimit
-    ]);
-
-    // Cek apakah email sudah ada di perusahaan
-    $existing = User::where('email', $request->email_target)->first();
-    if ($existing && UserCompany::where('user_id', $existing->id)->where('company_id', $companyId)->exists()) {
-        return response()->json(['error' => 'User sudah terdaftar di perusahaan ini.'], 400);
-    }
-
-    // Cek apakah sudah ada undangan pending
-    $pendingInvite = Invitation::where('email_target', $request->email_target)
-        ->where('company_id', $companyId)
-        ->where('status', 'pending')
-        ->where('expired_at', '>', now())
-        ->first();
-
-    if ($pendingInvite) {
-        return response()->json(['error' => 'Undangan masih aktif untuk email ini.'], 400);
-    }
-
-    // ✅ Generate token
-    $token = Str::random(64);
-
-    // Buat invitation baru
-    $invitation = Invitation::create([
-        'email_target' => $request->email_target,
-        'token' => $token,
-        'invited_by' => $user->id,
-        'company_id' => $companyId,
-        'expired_at' => now()->addDays(3),
-    ]);
-
-    Log::info('Invitation created:', $invitation->toArray());
-
-    // Kirim email
-    try {
-        Mail::to($request->email_target)->send(new InvitationMail($invitation, $user));
-        Log::info('Email sent successfully to: ' . $request->email_target);
-    } catch (\Exception $e) {
-        Log::error('Failed to send email: ' . $e->getMessage());
-    }
-
-    return response()->json(['success' => true]);
-}
 
     // ✅ Batalkan undangan dengan permission check
     public function cancel($id)

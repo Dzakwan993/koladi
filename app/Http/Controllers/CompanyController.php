@@ -139,13 +139,21 @@ class CompanyController extends Controller
     // ✅ Check permission untuk undang member
     $canInvite = $this->canInviteMember($currentUserRole);
 
-    // 🔥 CEK LIMIT USER
+    // 🔥 CEK STATUS TRIAL DAN LIMIT USER
     $company = Company::findOrFail($companyId);
+    
+    // 🔥 TAMBAHAN: Cek apakah perusahaan masih dalam masa trial
+    $isTrial = $company->status === 'trial' && 
+               $company->trial_end && 
+               now()->lessThan($company->trial_end);
+    
     $activeUserCount = $company->active_users_count;
     $userLimit = $company->subscription->total_user_limit ?? 0;
-    $isLimitReached = $activeUserCount >= $userLimit;
+    
+    // 🔥 PERUBAHAN LOGIKA: Limit tidak berlaku jika masih trial
+    $isLimitReached = !$isTrial && ($activeUserCount >= $userLimit);
 
-    // 🔥 Jika limit tercapai, disable tombol undang
+    // 🔥 Jika limit tercapai DAN bukan trial, disable tombol undang
     if ($isLimitReached) {
         $canInvite = false;
     }
@@ -154,10 +162,12 @@ class CompanyController extends Controller
         'members', 
         'invites', 
         'canInvite',
-        'activeUserCount',    // 🔥 TAMBAHAN
-        'userLimit',          // 🔥 TAMBAHAN
-        'isLimitReached',    // 🔥 TAMBAHAN
-        'currentUserRole' 
+        'activeUserCount',
+        'userLimit',
+        'isLimitReached',
+        'currentUserRole',
+        'company',        // 🔥 TAMBAHAN: Kirim data company ke view
+        'isTrial'         // 🔥 TAMBAHAN PENTING: Kirim status trial
     ));
 }
 

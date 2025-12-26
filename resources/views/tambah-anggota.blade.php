@@ -6,48 +6,75 @@
     <div
         class="p-3 sm:p-4 md:p-6 lg:p-8 h-screen overflow-hidden mx-4 sm:mx-6 md:mx-12 lg:mx-16 xl:mx-24 font-[Inter,sans-serif]">
         <div class="max-w-7xl mx-auto h-full flex flex-col">
-           {{-- ================= HEADER ================= --}}
+          {{-- ================= HEADER ================= --}}
 <div class="flex flex-col gap-4 mb-6 flex-shrink-0">
-
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Anggota Perusahaan</h1>
             <p class="text-sm text-gray-500">
                 Kelola anggota dan izin akses perusahaan
+                @if($isTrial)
+                    <span class="ml-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
+                        🔥 Masa Trial Aktif
+                    </span>
+                @endif
             </p>
         </div>
 
         <div class="flex items-center gap-4">
             <div class="text-sm font-semibold
                 {{ $isLimitReached ? 'text-red-600' : 'text-gray-700' }}">
-                {{ $activeUserCount }} / {{ $userLimit }} user aktif
+                {{ $activeUserCount }} / 
+                @if($isTrial)
+                    <span class="text-green-600">∞ (Trial)</span>
+                @else
+                    {{ $userLimit }}
+                @endif
+                user aktif
             </div>
 
-            @if ($canInvite ?? false)
-                <button
-                    @if($isLimitReached) disabled @else onclick="openInviteModal(event)" @endif
-                    class="px-4 py-2 rounded-lg text-sm font-semibold
-                        {{ $isLimitReached
-                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white' }}">
-                    Undang
-                </button>
-            @endif
+           @if ($canInvite ?? false)
+    <button
+        onclick="openInviteModal(event)"
+        @if($isLimitReached && !($isTrial ?? false)) disabled @endif
+        class="px-4 py-2 rounded-lg text-sm font-semibold
+            {{ ($isLimitReached && !($isTrial ?? false))
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 text-white' }}">
+        Undang
+    </button>
+@endif
         </div>
     </div>
 
+    {{-- Tampilkan info trial --}}
+    @if($isTrial)
+        <div class="flex gap-3 items-start bg-green-50 border border-green-200 rounded-xl p-4">
+            <div class="mt-0.5">
+                <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="font-semibold text-green-800">
+                    Anda sedang dalam masa trial
+                </p>
+                <p class="text-sm text-green-700 mt-1">
+                    Selama masa trial, Anda dapat mengundang anggota tanpa batasan jumlah user.
+                    Trial berakhir: {{ \Carbon\Carbon::parse($company->trial_end)->format('d M Y') }}
+                </p>
+            </div>
+        </div>
+    @endif
 
-    @if ($isLimitReached && $currentUserRole === 'SuperAdmin')
+    {{-- Tampilkan warning limit jika bukan trial --}}
+    @if ($isLimitReached && !$isTrial && $currentUserRole === 'SuperAdmin')
         <div class="flex gap-3 items-start bg-red-50 border border-red-200 rounded-xl p-4">
             <div class="mt-0.5">
                 <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clip-rule="evenodd" />
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
                 </svg>
             </div>
-
             <div class="flex-1">
                 <p class="font-semibold text-red-800">
                     Batas maksimal {{ $userLimit }} user aktif tercapai
@@ -64,7 +91,6 @@
             </div>
         </div>
     @endif
-
 </div>
 {{-- ================= END HEADER ================= --}}
 
