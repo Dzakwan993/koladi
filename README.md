@@ -74,7 +74,23 @@ DB_PASSWORD=postgres
 
 ---
 
-## 4. Jalankan Docker
+## 4. Jalankan Docker (Database dulu)
+
+```bash
+docker compose up -d db
+```
+
+---
+
+## 5. Install PHP Dependencies (Composer)
+
+```bash
+docker compose run --rm app composer install
+```
+
+---
+
+## 6. Jalankan App Container
 
 ```bash
 docker compose up -d
@@ -87,13 +103,12 @@ docker compose ps
 ```
 
 Harusnya:
-
-* koladi_app → running
 * koladi_db → running
+* koladi_app → running
 
 ---
 
-## 5. Import Database (.sql)
+## 7. Import Database (.sql)
 
 File SQL tersedia di:
 
@@ -111,7 +126,7 @@ Ini menjadi **baseline schema + data awal**.
 
 ---
 
-## 6. Generate APP KEY
+## 8. Generate APP KEY
 
 ```bash
 docker compose exec app php artisan key:generate
@@ -119,20 +134,7 @@ docker compose exec app php artisan key:generate
 
 ---
 
-## 7. Jalankan Migration
-
-```bash
-docker compose exec app php artisan migrate
-```
-
-Catatan:
-
-* Tabel yang **sudah ada di SQL tidak akan dibuat ulang**
-* Migration baru tetap jalan
-
----
-
-## 8. Jalankan Seeder
+## 9. Jalankan Seeder
 
 ```bash
 docker compose exec app php artisan db:seed
@@ -147,7 +149,7 @@ Seeder Koladi bersifat **aman (idempotent / semi-idempotent)** untuk:
 
 ---
 
-## 9. Jalankan Frontend (WAJIB)
+## 10. Jalankan Frontend (WAJIB)
 
 Di **terminal host (bukan Docker)**:
 
@@ -160,7 +162,7 @@ Tanpa ini, halaman seperti `/dashboard` akan error (`Vite manifest not found`).
 
 ---
 
-## 10. Akses Aplikasi
+## 11. Akses Aplikasi
 
 ```text
 http://localhost:8000
@@ -173,7 +175,7 @@ Login Admin Sistem (jika ada):
 
 ---
 
-## 11. Ringkasan Alur (Laptop Baru)
+## 12. Ringkasan Alur (Laptop Baru)
 
 ```text
 1. Install Docker Desktop
@@ -191,7 +193,7 @@ Login Admin Sistem (jika ada):
 
 ---
 
-## 12. Pembuktian Docker (Tanpa Dependency Lokal)
+## 13. Pembuktian Docker (Tanpa Dependency Lokal)
 
 Yang **TIDAK perlu diinstall** di laptop:
 
@@ -205,7 +207,7 @@ Node.js **boleh dihapus** nanti jika frontend sudah dibuild (production).
 
 ---
 
-## 13. Catatan Penting
+## 14. Catatan Penting
 
 * Ini **Fase Development**
 * Masih menggunakan:
