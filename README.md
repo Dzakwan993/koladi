@@ -1,61 +1,220 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<!-- <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
 <a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+</p> -->
 
-## About Laravel
+# Koladi — Development Setup (Docker)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Dokumen ini menjelaskan **cara menjalankan Koladi di laptop mana pun (Mac/Linux/Windows)** menggunakan **Docker** untuk fase **development**.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Target utama:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+* Laptop **tidak perlu** install PHP, Composer, PostgreSQL
+* Cukup **Docker + Node.js** (Node hanya untuk Vite / frontend dev)
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## 1. Prasyarat
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Wajib
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+* **Docker Desktop** (termasuk Docker Compose)
 
-## Laravel Sponsors
+  * [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Untuk Frontend (Vite)
 
-### Premium Partners
+* **Node.js ≥ 18**
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+  * Digunakan **di host**, bukan di container
+  * Cek:
 
-## Contributing
+    ```bash
+    node -v
+    npm -v
+    ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+> ❗ Tanpa Node.js, halaman yang pakai `@vite(...)` akan error.
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## 2. Clone Repository
 
-## Security Vulnerabilities
+```bash
+git clone <repo-koladi>
+cd koladi
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## 3. File Environment (.env)
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Salin `.env.example` menjadi `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Pastikan konfigurasi database **SESUAI Docker**:
+
+```env
+DB_CONNECTION=pgsql
+DB_HOST=db
+DB_PORT=5432
+DB_DATABASE=koladi
+DB_USERNAME=postgres
+DB_PASSWORD=postgres
+```
+
+> `.env` **tetap diperlukan**, walaupun Docker dipakai.
+
+---
+
+## 4. Jalankan Docker
+
+```bash
+docker compose up -d
+```
+
+Cek container:
+
+```bash
+docker compose ps
+```
+
+Harusnya:
+
+* koladi_app → running
+* koladi_db → running
+
+---
+
+## 5. Import Database (.sql)
+
+File SQL tersedia di:
+
+```
+koladi/Koladi.sql
+```
+
+Import dari host ke Postgres container:
+
+```bash
+docker compose exec -T db psql -U postgres -d koladi < Koladi.sql
+```
+
+Ini menjadi **baseline schema + data awal**.
+
+---
+
+## 6. Generate APP KEY
+
+```bash
+docker compose exec app php artisan key:generate
+```
+
+---
+
+## 7. Jalankan Migration
+
+```bash
+docker compose exec app php artisan migrate
+```
+
+Catatan:
+
+* Tabel yang **sudah ada di SQL tidak akan dibuat ulang**
+* Migration baru tetap jalan
+
+---
+
+## 8. Jalankan Seeder
+
+```bash
+docker compose exec app php artisan db:seed
+```
+
+Seeder Koladi bersifat **aman (idempotent / semi-idempotent)** untuk:
+
+* Role
+* Subscription
+* Color
+* Admin Sistem
+
+---
+
+## 9. Jalankan Frontend (WAJIB)
+
+Di **terminal host (bukan Docker)**:
+
+```bash
+npm install
+npm run dev
+```
+
+Tanpa ini, halaman seperti `/dashboard` akan error (`Vite manifest not found`).
+
+---
+
+## 10. Akses Aplikasi
+
+```text
+http://localhost:8000
+```
+
+Login Admin Sistem (jika ada):
+
+* Email: `admin@koladi.com`
+* Password: sesuai seeder
+
+---
+
+## 11. Ringkasan Alur (Laptop Baru)
+
+```text
+1. Install Docker Desktop
+2. Install Node.js
+3. git clone repo
+4. cp .env.example .env
+5. docker compose up -d
+6. import Koladi.sql
+7. php artisan key:generate
+8. php artisan migrate
+9. php artisan db:seed
+10. npm run dev
+11. buka localhost:8000
+```
+
+---
+
+## 12. Pembuktian Docker (Tanpa Dependency Lokal)
+
+Yang **TIDAK perlu diinstall** di laptop:
+
+* PHP
+* Composer
+* PostgreSQL
+
+Semua sudah ada di Docker.
+
+Node.js **boleh dihapus** nanti jika frontend sudah dibuild (production).
+
+---
+
+## 13. Catatan Penting
+
+* Ini **Fase Development**
+* Masih menggunakan:
+
+  * `php artisan serve`
+  * `npm run dev`
+* **Belum production ready** (belum Nginx, belum build asset)
+
+---
+
+
+

@@ -45,6 +45,11 @@ class ColorSeeder extends Seeder
             ['id' => 'fe4955e8-9aad-4677-b0d8-3665c5c84b53', 'rgb' => '#9C27B0'], // Purple
         ];
 
-        DB::table('colors')->insert($colors);
+        foreach ($colors as $color) {
+            DB::table('colors')->updateOrInsert(
+                ['id' => $color['id']],
+                ['rgb' => $color['rgb']]
+            );
+        }
     }
 }
