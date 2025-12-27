@@ -205,7 +205,25 @@ Seeder Koladi bersifat **aman (idempotent / semi-idempotent)** untuk:
 
 ---
 
-## 10. Jalankan Frontend (WAJIB)
+## 10. Setup Storage Link
+```bash
+docker compose exec app php artisan storage:link
+```
+
+Perintah ini membuat symbolic link agar file di `storage/app/public` bisa diakses via `public/storage`.
+
+---
+
+## 11. Fix Permissions (Jika Masih Error)
+
+Jika masih ada error 403, jalankan:
+```bash
+docker compose exec app chmod -R 775 storage bootstrap/cache
+docker compose exec app chown -R www-data:www-data storage bootstrap/cache
+```
+---
+
+## 12. Jalankan Frontend (WAJIB)
 
 Di **terminal host (bukan Docker)**:
 
@@ -218,7 +236,7 @@ Tanpa ini, halaman seperti `/dashboard` akan error (`Vite manifest not found`).
 
 ---
 
-## 11. Akses Aplikasi
+## 13. Akses Aplikasi
 
 ```text
 http://localhost:8000
@@ -231,7 +249,7 @@ Login Admin Sistem (jika ada):
 
 ---
 
-## 12. Ringkasan Alur (Laptop Baru)
+## 14. Ringkasan Alur (Laptop Baru)
 
 ```text
 1. Install Docker Desktop
@@ -249,7 +267,7 @@ Login Admin Sistem (jika ada):
 
 ---
 
-## 13. Pembuktian Docker (Tanpa Dependency Lokal)
+## 15. Pembuktian Docker (Tanpa Dependency Lokal)
 
 Yang **TIDAK perlu diinstall** di laptop:
 
@@ -263,7 +281,7 @@ Node.js **boleh dihapus** nanti jika frontend sudah dibuild (production).
 
 ---
 
-## 14. Catatan Penting
+## 16. Catatan Penting
 
 * Ini **Fase Development**
 * Masih menggunakan:
