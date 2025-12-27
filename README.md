@@ -53,13 +53,15 @@ cd koladi
 
 ## 3. File Environment (.env)
 
-Salin `.env.example` menjadi `.env`:
+Salin file `.env.example` menjadi `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
-Pastikan konfigurasi database **SESUAI Docker**:
+### Konfigurasi Database (Docker)
+
+Pastikan konfigurasi database **sesuai dengan Docker Compose**:
 
 ```env
 DB_CONNECTION=pgsql
@@ -70,7 +72,61 @@ DB_USERNAME=postgres
 DB_PASSWORD=postgres
 ```
 
-> `.env` **tetap diperlukan**, walaupun Docker dipakai.
+> File `.env` **tetap wajib ada**, meskipun aplikasi dijalankan menggunakan Docker.
+
+---
+
+### Konfigurasi Login Google (OAuth)
+
+Aplikasi Koladi mendukung **Login dengan Google** menggunakan OAuth 2.0.
+Untuk mengaktifkannya, isi variabel berikut di file `.env`:
+
+```env
+GOOGLE_CLIENT_ID=xxxxxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=xxxxxxxx
+GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+```
+
+---
+
+### Cara Mendapatkan GOOGLE_CLIENT_ID & GOOGLE_CLIENT_SECRET
+
+Nilai tersebut **didapatkan dari Google Cloud Console**, **bukan dari Laravel atau Docker**.
+
+Langkah singkat:
+
+1. Buka **Google Cloud Console**
+   👉 [https://console.cloud.google.com](https://console.cloud.google.com)
+
+2. Buat atau pilih **Project**
+
+3. Masuk ke menu
+   **APIs & Services → OAuth consent screen**
+
+   * User Type: **External**
+   * Isi data dasar (App name, email)
+   * Simpan
+
+4. Masuk ke
+   **APIs & Services → Credentials → Create Credentials → OAuth Client ID**
+
+   * Application type: **Web application**
+   * Tambahkan **Authorized Redirect URI**:
+
+     ```
+     http://localhost:8000/auth/google/callback
+     ```
+
+5. Setelah dibuat, Google akan menampilkan:
+
+   * **Client ID**
+   * **Client Secret**
+
+6. Salin kedua nilai tersebut ke file `.env`
+
+---
+
+> ⚠️ Setiap developer **harus membuat OAuth Client sendiri** atau menggunakan credentials yang dibagikan oleh pemilik project.
 
 ---
 
