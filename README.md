@@ -45,7 +45,7 @@ Target utama:
 ## 2. Clone Repository
 
 ```bash
-git clone <repo-koladi>
+git clone -b docker <repo-koladi>
 cd koladi
 ```
 
