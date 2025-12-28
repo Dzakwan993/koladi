@@ -46,111 +46,118 @@ class CompanyChatController extends Controller
     /**
      * 🔥 FIXED: Get chat data untuk company
      */
-    public function getChatData(string $companyId)
-    {
-        $userId = Auth::id();
-        $company = Company::findOrFail($companyId);
+    /**
+ * 🔥 UPDATED: Get chat data untuk company - Filter user nonaktif
+ */
+public function getChatData(string $companyId)
+{
+    $userId = Auth::id();
+    $company = Company::findOrFail($companyId);
 
-        // Validasi akses company
-        $isCompanyMember = $company->users()->where('users.id', $userId)->exists();
-        if (!$isCompanyMember) {
-            return response()->json(['error' => 'Akses ditolak'], 403);
-        }
-
-        // Main company group
-        $mainCompanyGroup = Conversation::where('company_id', $companyId)
-            ->where('scope', 'company')
-            ->where('type', 'group')
-            ->first();
-
-        if (!$mainCompanyGroup) {
-            $mainCompanyGroup = Conversation::create([
-                'company_id' => $companyId,
-                'scope' => 'company',
-                'type' => 'group',
-                'name' => $company->name,
-                'created_by' => $userId
-            ]);
-
-            Log::info("Created new main company conversation for company {$companyId} with name '{$company->name}'");
-        } else {
-            // Sync nama conversation dengan nama company
-            if ($mainCompanyGroup->name !== $company->name) {
-                $mainCompanyGroup->update(['name' => $company->name]);
-                Log::info("Synced company conversation name from '{$mainCompanyGroup->name}' to '{$company->name}' for company {$companyId}");
-            }
-        }
-
-        // Pastikan user adalah participant
-        ConversationParticipant::firstOrCreate(
-            ['conversation_id' => $mainCompanyGroup->id, 'user_id' => $userId],
-            ['last_read_at' => now()]
-        );
-
-        // Other conversations (private chats)
-        $otherConversations = Conversation::where('company_id', $companyId)
-            ->where('scope', 'company')
-            ->where('type', 'private')
-            ->where('id', '!=', $mainCompanyGroup->id)
-            ->whereHas('participants', fn($q) => $q->where('user_id', $userId))
-            ->with(['participants.user'])
-            ->get()
-            ->map(function ($conversation) use ($userId) {
-                // Calculate unread count
-                $participantData = $conversation->participants->where('user_id', $userId)->first();
-                $lastReadAt = $participantData ? $participantData->last_read_at : null;
-
-                if ($lastReadAt) {
-                    $conversation->unread_count = Message::where('conversation_id', $conversation->id)
-                        ->where('sender_id', '!=', $userId)
-                        ->where('created_at', '>', $lastReadAt)
-                        ->count();
-                } else {
-                    $conversation->unread_count = $conversation->messages()
-                        ->where('sender_id', '!=', $userId)
-                        ->count();
-                }
-
-                // Load last message
-                $conversation->last_message = $conversation->messages()
-                    ->with(['sender', 'attachments'])
-                    ->orderBy('created_at', 'DESC')
-                    ->first();
-
-                return $conversation;
-            });
-
-        // Calculate unread untuk main group
-        $participantData = $mainCompanyGroup->participants->where('user_id', $userId)->first();
-        $lastReadAt = $participantData ? $participantData->last_read_at : null;
-
-        if ($lastReadAt) {
-            $mainCompanyGroup->unread_count = Message::where('conversation_id', $mainCompanyGroup->id)
-                ->where('sender_id', '!=', $userId)
-                ->where('created_at', '>', $lastReadAt)
-                ->count();
-        } else {
-            $mainCompanyGroup->unread_count = $mainCompanyGroup->messages()
-                ->where('sender_id', '!=', $userId)
-                ->count();
-        }
-
-        $mainCompanyGroup->last_message = $mainCompanyGroup->messages()
-            ->with('sender', 'attachments')
-            ->orderBy('created_at', 'DESC')
-            ->first();
-
-        // Get semua member company
-        $members = $company->users()
-            ->where('users.id', '!=', $userId)
-            ->get();
-
-        return response()->json([
-            'main_group' => $mainCompanyGroup,
-            'conversations' => $otherConversations,
-            'members' => $members,
-        ]);
+    // Validasi akses company
+    $isCompanyMember = $company->users()->where('users.id', $userId)->exists();
+    if (!$isCompanyMember) {
+        return response()->json(['error' => 'Akses ditolak'], 403);
     }
+
+    // Main company group
+    $mainCompanyGroup = Conversation::where('company_id', $companyId)
+        ->where('scope', 'company')
+        ->where('type', 'group')
+        ->first();
+
+    if (!$mainCompanyGroup) {
+        $mainCompanyGroup = Conversation::create([
+            'company_id' => $companyId,
+            'scope' => 'company',
+            'type' => 'group',
+            'name' => $company->name,
+            'created_by' => $userId
+        ]);
+
+        Log::info("Created new main company conversation for company {$companyId} with name '{$company->name}'");
+    } else {
+        // Sync nama conversation dengan nama company
+        if ($mainCompanyGroup->name !== $company->name) {
+            $mainCompanyGroup->update(['name' => $company->name]);
+            Log::info("Synced company conversation name from '{$mainCompanyGroup->name}' to '{$company->name}' for company {$companyId}");
+        }
+    }
+
+    // Pastikan user adalah participant
+    ConversationParticipant::firstOrCreate(
+        ['conversation_id' => $mainCompanyGroup->id, 'user_id' => $userId],
+        ['last_read_at' => now()]
+    );
+
+    // Other conversations (private chats)
+    $otherConversations = Conversation::where('company_id', $companyId)
+        ->where('scope', 'company')
+        ->where('type', 'private')
+        ->where('id', '!=', $mainCompanyGroup->id)
+        ->whereHas('participants', fn($q) => $q->where('user_id', $userId))
+        ->with(['participants.user'])
+        ->get()
+        ->map(function ($conversation) use ($userId) {
+            // Calculate unread count
+            $participantData = $conversation->participants->where('user_id', $userId)->first();
+            $lastReadAt = $participantData ? $participantData->last_read_at : null;
+
+            if ($lastReadAt) {
+                $conversation->unread_count = Message::where('conversation_id', $conversation->id)
+                    ->where('sender_id', '!=', $userId)
+                    ->where('created_at', '>', $lastReadAt)
+                    ->count();
+            } else {
+                $conversation->unread_count = $conversation->messages()
+                    ->where('sender_id', '!=', $userId)
+                    ->count();
+            }
+
+            // Load last message
+            $conversation->last_message = $conversation->messages()
+                ->with(['sender', 'attachments'])
+                ->orderBy('created_at', 'DESC')
+                ->first();
+
+            return $conversation;
+        });
+
+    // Calculate unread untuk main group
+    $participantData = $mainCompanyGroup->participants->where('user_id', $userId)->first();
+    $lastReadAt = $participantData ? $participantData->last_read_at : null;
+
+    if ($lastReadAt) {
+        $mainCompanyGroup->unread_count = Message::where('conversation_id', $mainCompanyGroup->id)
+            ->where('sender_id', '!=', $userId)
+            ->where('created_at', '>', $lastReadAt)
+            ->count();
+    } else {
+        $mainCompanyGroup->unread_count = $mainCompanyGroup->messages()
+            ->where('sender_id', '!=', $userId)
+            ->count();
+    }
+
+    $mainCompanyGroup->last_message = $mainCompanyGroup->messages()
+        ->with('sender', 'attachments')
+        ->orderBy('created_at', 'DESC')
+        ->first();
+
+    // 🔥 UPDATED: Get semua member company yang AKTIF
+    $members = $company->users()
+        ->where('users.id', '!=', $userId)
+        ->whereHas('userCompanies', function($q) use ($companyId) {
+            $q->where('company_id', $companyId)
+              ->where('status_active', true); // 🔥 FILTER AKTIF
+        })
+        ->get();
+
+    return response()->json([
+        'main_group' => $mainCompanyGroup,
+        'conversations' => $otherConversations,
+        'members' => $members,
+    ]);
+}
 
     /**
      * 🔥 FIXED: Show messages untuk company chat

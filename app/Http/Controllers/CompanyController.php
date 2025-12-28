@@ -89,58 +89,87 @@ class CompanyController extends Controller
     }
 
     // ✅ Tampilkan anggota perusahaan dengan permission check
-    public function showMembers()
-    {
-        $companyId = session('active_company_id');
-        if (!$companyId) return redirect()->route('dashboard');
+   public function showMembers()
+{
+    $companyId = session('active_company_id');
+    if (!$companyId) return redirect()->route('dashboard');
 
-        $hasAccess = UserCompany::where('user_id', Auth::id())
-            ->where('company_id', $companyId)
-            ->exists();
+    $hasAccess = UserCompany::where('user_id', Auth::id())
+        ->where('company_id', $companyId)
+        ->exists();
 
-        if (!$hasAccess) {
-            session()->forget('active_company_id');
-            return redirect()->route('dashboard')->with('error', 'Anda tidak memiliki akses ke perusahaan ini.');
-        }
-
-        // ✅ Ambil role user yang sedang login
-        $currentUserRole = $this->getUserRole($companyId);
-
-        $members = User::whereHas('userCompanies', function ($query) use ($companyId) {
-            $query->where('company_id', $companyId);
-        })
-            ->with(['userCompanies' => function ($query) use ($companyId) {
-                $query->where('company_id', $companyId)->with('role');
-            }])
-            ->get()
-            ->map(function ($user) use ($companyId, $currentUserRole) {
-                $userCompany = $user->userCompanies->where('company_id', $companyId)->first();
-                $user->role_name = ($userCompany && $userCompany->role)
-                    ? ($userCompany->role->nama_role ?? $userCompany->role->name ?? null)
-                    : null;
-
-                // ✅ Check apakah current user bisa hapus member ini
-                $user->can_delete = $this->canDeleteMember($currentUserRole, $user->role_name);
-
-                return $user;
-            })
-            // ❌ Filter out AdminSistem dari list (jangan tampilkan di UI)
-            ->filter(function ($user) {
-                return $user->role_name !== 'AdminSistem';
-            });
-
-        $invites = Invitation::where('company_id', $companyId)
-            ->where('status', 'pending')
-            ->where('expired_at', '>', now())
-            ->with('inviter')
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        // ✅ Check permission untuk undang member
-        $canInvite = $this->canInviteMember($currentUserRole);
-
-        return view('tambah-anggota', compact('members', 'invites', 'canInvite'));
+    if (!$hasAccess) {
+        session()->forget('active_company_id');
+        return redirect()->route('dashboard')->with('error', 'Anda tidak memiliki akses ke perusahaan ini.');
     }
+
+    // ✅ Ambil role user yang sedang login
+    $currentUserRole = $this->getUserRole($companyId);
+
+    $members = User::whereHas('userCompanies', function ($query) use ($companyId) {
+        $query->where('company_id', $companyId);
+    })
+        ->with(['userCompanies' => function ($query) use ($companyId) {
+            $query->where('company_id', $companyId)->with('role');
+        }])
+        ->get()
+        ->map(function ($user) use ($companyId, $currentUserRole) {
+            $userCompany = $user->userCompanies->where('company_id', $companyId)->first();
+            $user->role_name = ($userCompany && $userCompany->role)
+                ? ($userCompany->role->nama_role ?? $userCompany->role->name ?? null)
+                : null;
+
+            // ✅ Check apakah current user bisa hapus member ini
+            $user->can_delete = $this->canDeleteMember($currentUserRole, $user->role_name);
+
+            return $user;
+        })
+        // ❌ Filter out AdminSistem dari list
+        ->filter(function ($user) {
+            return $user->role_name !== 'AdminSistem';
+        });
+
+    $invites = Invitation::where('company_id', $companyId)
+        ->where('status', 'pending')
+        ->where('expired_at', '>', now())
+        ->with('inviter')
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    // ✅ Check permission untuk undang member
+    $canInvite = $this->canInviteMember($currentUserRole);
+
+    // 🔥 CEK STATUS TRIAL DAN LIMIT USER
+    $company = Company::findOrFail($companyId);
+    
+    // 🔥 TAMBAHAN: Cek apakah perusahaan masih dalam masa trial
+    $isTrial = $company->status === 'trial' && 
+               $company->trial_end && 
+               now()->lessThan($company->trial_end);
+    
+    $activeUserCount = $company->active_users_count;
+    $userLimit = $company->subscription->total_user_limit ?? 0;
+    
+    // 🔥 PERUBAHAN LOGIKA: Limit tidak berlaku jika masih trial
+    $isLimitReached = !$isTrial && ($activeUserCount >= $userLimit);
+
+    // 🔥 Jika limit tercapai DAN bukan trial, disable tombol undang
+    if ($isLimitReached) {
+        $canInvite = false;
+    }
+
+    return view('tambah-anggota', compact(
+        'members', 
+        'invites', 
+        'canInvite',
+        'activeUserCount',
+        'userLimit',
+        'isLimitReached',
+        'currentUserRole',
+        'company',        // 🔥 TAMBAHAN: Kirim data company ke view
+        'isTrial'         // 🔥 TAMBAHAN PENTING: Kirim status trial
+    ));
+}
 
     // ✅ Hapus anggota perusahaan dengan permission check
     public function deleteMember($id)
@@ -214,20 +243,34 @@ class CompanyController extends Controller
     }
 
     // Switch perusahaan
-    public function switchCompany($companyId)
-    {
-        $user = Auth::user();
-        $hasAccess = UserCompany::where('user_id', $user->id)
-            ->where('company_id', $companyId)
-            ->exists();
+   // Switch perusahaan - DENGAN CEK STATUS AKTIF
+public function switchCompany($companyId)
+{
+    $user = Auth::user();
+    
+    // 🔥 CEK STATUS AKTIF
+    $userCompany = UserCompany::where('user_id', $user->id)
+        ->where('company_id', $companyId)
+        ->where('status_active', true) // 🔥 HANYA YANG AKTIF
+        ->first();
 
-        if ($hasAccess) {
-            session(['active_company_id' => $companyId]);
-            return redirect()->route('dashboard')->with('success', 'Berhasil beralih perusahaan');
-        }
-
-        return redirect()->route('dashboard')->with('error', 'Anda tidak memiliki akses ke perusahaan ini');
+    if ($userCompany) {
+        session(['active_company_id' => $companyId]);
+        return redirect()->route('dashboard')->with('success', 'Berhasil beralih perusahaan');
     }
+
+    // Cek apakah user ada di company tapi nonaktif
+    $inactiveCompany = UserCompany::where('user_id', $user->id)
+        ->where('company_id', $companyId)
+        ->where('status_active', false)
+        ->first();
+
+    if ($inactiveCompany) {
+        return redirect()->route('dashboard')->with('error', 'Akun Anda di perusahaan ini telah dinonaktifkan oleh Administrator.');
+    }
+
+    return redirect()->route('dashboard')->with('error', 'Anda tidak memiliki akses ke perusahaan ini');
+}
 
     // Halaman form buat perusahaan
     public function create()

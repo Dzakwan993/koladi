@@ -235,12 +235,14 @@ class CalendarController extends Controller
 
         // Ambil semua user di company
         $members = User::whereHas('userCompanies', function ($query) use ($activeCompanyId) {
-            $query->where('company_id', $activeCompanyId)
-                ->whereNull('deleted_at');
-        })->get()->map(function ($member) {
-            $member->avatar_url = $this->getAvatarUrl($member);
-            return $member;
-        });
+    $query->where('company_id', $activeCompanyId)
+        ->where('status_active', true) // ✅ HANYA USER AKTIF
+        ->whereNull('deleted_at');
+})->get()->map(function ($member) {
+    $member->avatar_url = $this->getAvatarUrl($member);
+    return $member;
+});
+
 
         return view('jadwal.umum.buatJadwalUmum', [
 
@@ -248,115 +250,131 @@ class CalendarController extends Controller
             'members' => $members
         ]);
     }
-    public function companyStore(Request $request)
-    {
-        if (!$this->canCreateCompanySchedule()) {
-            return back()->with('error', 'Anda tidak memiliki izin untuk membuat jadwal.');
+   public function companyStore(Request $request)
+{
+    if (!$this->canCreateCompanySchedule()) {
+        return back()->with('error', 'Anda tidak memiliki izin untuk membuat jadwal.');
+    }
+
+    $validated = $request->validate([
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'start_datetime' => 'required|date',
+        'end_datetime' => 'required|date|after:start_datetime',
+        'recurrence' => 'nullable|string',
+        'is_private' => 'nullable|boolean',
+        'meeting_mode' => 'required|in:online,offline',
+        'meeting_link' => 'required_if:meeting_mode,online|nullable|url',
+        'location' => 'required_if:meeting_mode,offline|nullable|string|max:255',
+        'participants' => 'nullable|array',
+        'participants.*' => 'uuid|exists:users,id',
+    ]);
+
+    DB::beginTransaction();
+    try {
+        $activeCompanyId = session('active_company_id');
+
+        if (!$activeCompanyId) {
+            return back()->with('error', 'Silakan pilih perusahaan terlebih dahulu.');
         }
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'start_datetime' => 'required|date',
-            'end_datetime' => 'required|date|after:start_datetime',
-            'recurrence' => 'nullable|string',
-            'is_private' => 'nullable|boolean',
-            'meeting_mode' => 'required|in:online,offline',
-            'meeting_link' => 'required_if:meeting_mode,online|nullable|url',
-            'location' => 'required_if:meeting_mode,offline|nullable|string|max:255',
-            'participants' => 'nullable|array',
-            'participants.*' => 'uuid|exists:users,id',
+        // 🔥 VALIDASI: Filter participants yang tidak aktif
+        if (!empty($validated['participants'])) {
+            $activeParticipants = User::whereHas('userCompanies', function($q) use ($activeCompanyId) {
+                $q->where('company_id', $activeCompanyId)
+                  ->where('status_active', true);
+            })->whereIn('id', $validated['participants'])
+              ->pluck('id')
+              ->toArray();
+
+            // Replace dengan hanya user yang aktif
+            $validated['participants'] = $activeParticipants;
+
+            $removedCount = count($request->participants) - count($activeParticipants);
+            if ($removedCount > 0) {
+                Log::info("Removed {$removedCount} inactive participants from event creation");
+            }
+        }
+
+        $isPrivate = filter_var($validated['is_private'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $isOnlineMeeting = $validated['meeting_mode'] === 'online';
+
+        $recurrence = $validated['recurrence'] ?? 'Jangan Ulangi';
+        if ($recurrence === 'Jangan Ulangi') {
+            $recurrence = null;
+        }
+
+        $startDatetime = Carbon::parse($validated['start_datetime'], 'Asia/Jakarta');
+        $endDatetime = Carbon::parse($validated['end_datetime'], 'Asia/Jakarta');
+
+        $event = CalendarEvent::create([
+            'workspace_id' => null,
+            'company_id' => $activeCompanyId,
+            'created_by' => Auth::id(),
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'start_datetime' => $startDatetime,
+            'end_datetime' => $endDatetime,
+            'recurrence' => $recurrence,
+            'is_private' => $isPrivate,
+            'is_online_meeting' => $isOnlineMeeting,
+            'meeting_link' => $isOnlineMeeting ? ($validated['meeting_link'] ?? null) : null,
+            'location' => !$isOnlineMeeting ? ($validated['location'] ?? null) : null,
         ]);
 
-        DB::beginTransaction();
-        try {
-            // ✅ FIXED: Dapatkan activeCompanyId di awal
-            $activeCompanyId = session('active_company_id');
+        // ✅ Jika tidak rahasia, tambahkan semua anggota company yang AKTIF
+        if (!$isPrivate) {
+            // 🔥 FILTER: Hanya user AKTIF
+            $allCompanyUsers = User::whereHas('userCompanies', function ($query) use ($activeCompanyId) {
+                $query->where('company_id', $activeCompanyId)
+                    ->where('status_active', true) // 🔥 FILTER AKTIF
+                    ->whereNull('deleted_at');
+            })->pluck('id');
 
-            if (!$activeCompanyId) {
-                return back()->with('error', 'Silakan pilih perusahaan terlebih dahulu.');
-            }
-
-            $isPrivate = filter_var($validated['is_private'] ?? false, FILTER_VALIDATE_BOOLEAN);
-            $isOnlineMeeting = $validated['meeting_mode'] === 'online';
-
-            $recurrence = $validated['recurrence'] ?? 'Jangan Ulangi';
-            if ($recurrence === 'Jangan Ulangi') {
-                $recurrence = null;
-            }
-
-            $startDatetime = Carbon::parse($validated['start_datetime'], 'Asia/Jakarta');
-            $endDatetime = Carbon::parse($validated['end_datetime'], 'Asia/Jakarta');
-
-            $event = CalendarEvent::create([
-                'workspace_id' => null,
-                'company_id' => $activeCompanyId, // ✅ Gunakan variabel yang sudah didefinisikan
-                'created_by' => Auth::id(),
-                'title' => $validated['title'],
-                'description' => $validated['description'] ?? null,
-                'start_datetime' => $startDatetime,
-                'end_datetime' => $endDatetime,
-                'recurrence' => $recurrence,
-                'is_private' => $isPrivate,
-                'is_online_meeting' => $isOnlineMeeting,
-                'meeting_link' => $isOnlineMeeting ? ($validated['meeting_link'] ?? null) : null,
-                'location' => !$isOnlineMeeting ? ($validated['location'] ?? null) : null,
-            ]);
-
-            // ✅ FIXED: Jika tidak rahasia, tambahkan semua anggota company
-            if (!$isPrivate) {
-                // Ambil semua user di company
-                $allCompanyUsers = User::whereHas('userCompanies', function ($query) use ($activeCompanyId) {
-                    $query->where('company_id', $activeCompanyId)
-                        ->whereNull('deleted_at');
-                })->pluck('id');
-
-                // Tambahkan semua user sebagai participant
-                foreach ($allCompanyUsers as $userId) {
-                    CalendarParticipant::create([
-                        'event_id' => $event->id,
-                        'user_id' => $userId,
-                        'status' => 'accepted',
-                    ]);
-                }
-            } else {
-                // ✅ Jika rahasia, hanya creator dan yang dipilih
-                // Creator langsung accepted
+            foreach ($allCompanyUsers as $userId) {
                 CalendarParticipant::create([
                     'event_id' => $event->id,
-                    'user_id' => Auth::id(),
+                    'user_id' => $userId,
                     'status' => 'accepted',
                 ]);
+            }
+        } else {
+            // Creator langsung accepted
+            CalendarParticipant::create([
+                'event_id' => $event->id,
+                'user_id' => Auth::id(),
+                'status' => 'accepted',
+            ]);
 
-                if (!empty($validated['participants'])) {
-                    foreach ($validated['participants'] as $userId) {
-                        if ($userId !== Auth::id()) {
-                            CalendarParticipant::create([
-                                'event_id' => $event->id,
-                                'user_id' => $userId,
-                                'status' => 'accepted',
-                            ]);
-                        }
+            if (!empty($validated['participants'])) {
+                foreach ($validated['participants'] as $userId) {
+                    if ($userId !== Auth::id()) {
+                        CalendarParticipant::create([
+                            'event_id' => $event->id,
+                            'user_id' => $userId,
+                            'status' => 'accepted',
+                        ]);
                     }
                 }
             }
-
-            DB::commit();
-
-            $this->notificationService->notifyEventCreated($event);
-
-            return redirect()
-                ->route('jadwal-umum')
-                ->with('success', 'Jadwal berhasil dibuat!');
-        } catch (\Exception $e) {
-            DB::rollback();
-            Log::error('Error creating company calendar event: ' . $e->getMessage());
-
-            return back()
-                ->withInput()
-                ->with('error', 'Gagal membuat jadwal: ' . $e->getMessage());
         }
+
+        DB::commit();
+
+        $this->notificationService->notifyEventCreated($event);
+
+        return redirect()
+            ->route('jadwal-umum')
+            ->with('success', 'Jadwal berhasil dibuat!');
+    } catch (\Exception $e) {
+        DB::rollback();
+        Log::error('Error creating company calendar event: ' . $e->getMessage());
+
+        return back()
+            ->withInput()
+            ->with('error', 'Gagal membuat jadwal: ' . $e->getMessage());
     }
+}
 
     /**
      * ✅ BARU: Get Events untuk Jadwal Umum
@@ -543,13 +561,15 @@ class CalendarController extends Controller
         $activeCompanyId = session('active_company_id');
         $company = Company::findOrFail($activeCompanyId);
 
-        $members = User::whereHas('userCompanies', function ($query) use ($activeCompanyId) {
-            $query->where('company_id', $activeCompanyId)
-                ->whereNull('deleted_at');
-        })->get()->map(function ($member) {
-            $member->avatar_url = $this->getAvatarUrl($member);
-            return $member;
-        });
+       $members = User::whereHas('userCompanies', function ($query) use ($activeCompanyId) {
+    $query->where('company_id', $activeCompanyId)
+        ->where('status_active', true) // ✅ HANYA USER AKTIF
+        ->whereNull('deleted_at');
+})->get()->map(function ($member) {
+    $member->avatar_url = $this->getAvatarUrl($member);
+    return $member;
+});
+
 
         $event->participants->each(function ($participant) {
             $participant->user->avatar_url = $this->getAvatarUrl($participant->user);
@@ -562,115 +582,131 @@ class CalendarController extends Controller
      * ✅ BARU: Update Jadwal Umum
      */
     public function companyUpdate(Request $request, $id)
-    {
-        $activeCompanyId = session('active_company_id');
+{
+    $activeCompanyId = session('active_company_id');
 
-        $event = CalendarEvent::whereNull('workspace_id')
-            ->where('company_id', $activeCompanyId)
-            ->findOrFail($id);
+    $event = CalendarEvent::whereNull('workspace_id')
+        ->where('company_id', $activeCompanyId)
+        ->findOrFail($id);
 
-        if ($event->created_by !== Auth::id()) {
-            abort(403, 'Anda tidak memiliki akses untuk mengupdate jadwal ini');
+    if ($event->created_by !== Auth::id()) {
+        abort(403, 'Anda tidak memiliki akses untuk mengupdate jadwal ini');
+    }
+
+    $validated = $request->validate([
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'start_datetime' => 'required|date',
+        'end_datetime' => 'required|date|after:start_datetime',
+        'recurrence' => 'nullable|string',
+        'is_private' => 'nullable|boolean',
+        'meeting_mode' => 'required|in:online,offline',
+        'meeting_link' => 'required_if:meeting_mode,online|nullable|url',
+        'location' => 'required_if:meeting_mode,offline|nullable|string|max:255',
+        'participants' => 'nullable|array',
+        'participants.*' => 'uuid|exists:users,id',
+    ]);
+
+    DB::beginTransaction();
+    try {
+        // 🔥 VALIDASI: Filter participants yang tidak aktif
+        if (!empty($validated['participants'])) {
+            $activeParticipants = User::whereHas('userCompanies', function($q) use ($activeCompanyId) {
+                $q->where('company_id', $activeCompanyId)
+                  ->where('status_active', true);
+            })->whereIn('id', $validated['participants'])
+              ->pluck('id')
+              ->toArray();
+
+            $validated['participants'] = $activeParticipants;
+
+            $removedCount = count($request->participants) - count($activeParticipants);
+            if ($removedCount > 0) {
+                Log::info("Removed {$removedCount} inactive participants from event update");
+            }
         }
 
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'start_datetime' => 'required|date',
-            'end_datetime' => 'required|date|after:start_datetime',
-            'recurrence' => 'nullable|string',
-            'is_private' => 'nullable|boolean',
-            'meeting_mode' => 'required|in:online,offline',
-            'meeting_link' => 'required_if:meeting_mode,online|nullable|url',
-            'location' => 'required_if:meeting_mode,offline|nullable|string|max:255',
-            'participants' => 'nullable|array',
-            'participants.*' => 'uuid|exists:users,id',
+        $isPrivate = filter_var($validated['is_private'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $isOnlineMeeting = $validated['meeting_mode'] === 'online';
+
+        $recurrence = $validated['recurrence'] ?? 'Jangan Ulangi';
+        if ($recurrence === 'Jangan Ulangi') {
+            $recurrence = null;
+        }
+
+        $startDatetime = Carbon::parse($validated['start_datetime'], 'Asia/Jakarta');
+        $endDatetime = Carbon::parse($validated['end_datetime'], 'Asia/Jakarta');
+
+        $event->update([
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'start_datetime' => $startDatetime,
+            'end_datetime' => $endDatetime,
+            'recurrence' => $recurrence,
+            'is_private' => $isPrivate,
+            'is_online_meeting' => $isOnlineMeeting,
+            'meeting_link' => $isOnlineMeeting ? ($validated['meeting_link'] ?? null) : null,
+            'location' => !$isOnlineMeeting ? ($validated['location'] ?? null) : null,
         ]);
 
-        DB::beginTransaction();
-        try {
-            $isPrivate = filter_var($validated['is_private'] ?? false, FILTER_VALIDATE_BOOLEAN);
-            $isOnlineMeeting = $validated['meeting_mode'] === 'online';
+        // ✅ Handle participants berdasarkan privasi
+        if (!$isPrivate) {
+            CalendarParticipant::where('event_id', $event->id)->delete();
 
-            $recurrence = $validated['recurrence'] ?? 'Jangan Ulangi';
-            if ($recurrence === 'Jangan Ulangi') {
-                $recurrence = null;
-            }
+            // 🔥 FILTER: Hanya user AKTIF
+            $allCompanyUsers = User::whereHas('userCompanies', function ($query) use ($activeCompanyId) {
+                $query->where('company_id', $activeCompanyId)
+                    ->where('status_active', true) // 🔥 FILTER AKTIF
+                    ->whereNull('deleted_at');
+            })->pluck('id');
 
-            $startDatetime = Carbon::parse($validated['start_datetime'], 'Asia/Jakarta');
-            $endDatetime = Carbon::parse($validated['end_datetime'], 'Asia/Jakarta');
-
-            $event->update([
-                'title' => $validated['title'],
-                'description' => $validated['description'] ?? null,
-                'start_datetime' => $startDatetime,
-                'end_datetime' => $endDatetime,
-                'recurrence' => $recurrence,
-                'is_private' => $isPrivate,
-                'is_online_meeting' => $isOnlineMeeting,
-                'meeting_link' => $isOnlineMeeting ? ($validated['meeting_link'] ?? null) : null,
-                'location' => !$isOnlineMeeting ? ($validated['location'] ?? null) : null,
-            ]);
-
-            // ✅ FIXED: Handle participants berdasarkan privasi
-            if (!$isPrivate) {
-                // Jika tidak rahasia, hapus semua dan tambahkan ulang semua anggota
-                CalendarParticipant::where('event_id', $event->id)->delete();
-
-                $allCompanyUsers = User::whereHas('userCompanies', function ($query) use ($activeCompanyId) {
-                    $query->where('company_id', $activeCompanyId)
-                        ->whereNull('deleted_at');
-                })->pluck('id');
-
-                foreach ($allCompanyUsers as $userId) {
-                    CalendarParticipant::create([
-                        'event_id' => $event->id,
-                        'user_id' => $userId,
-                        'status' => 'accepted',
-                    ]);
-                }
-            } else {
-                // Jika rahasia, update sesuai pilihan
-                CalendarParticipant::where('event_id', $event->id)
-                    ->where('user_id', '!=', $event->created_by)
-                    ->delete();
-
-                // Pastikan creator tetap ada
-                CalendarParticipant::firstOrCreate([
+            foreach ($allCompanyUsers as $userId) {
+                CalendarParticipant::create([
                     'event_id' => $event->id,
-                    'user_id' => $event->created_by,
-                ], [
+                    'user_id' => $userId,
                     'status' => 'accepted',
                 ]);
+            }
+        } else {
+            CalendarParticipant::where('event_id', $event->id)
+                ->where('user_id', '!=', $event->created_by)
+                ->delete();
 
-                if (isset($validated['participants'])) {
-                    foreach ($validated['participants'] as $userId) {
-                        if ($userId !== $event->created_by) {
-                            CalendarParticipant::firstOrCreate([
-                                'event_id' => $event->id,
-                                'user_id' => $userId,
-                            ], [
-                                'status' => 'accepted',
-                            ]);
-                        }
+            CalendarParticipant::firstOrCreate([
+                'event_id' => $event->id,
+                'user_id' => $event->created_by,
+            ], [
+                'status' => 'accepted',
+            ]);
+
+            if (isset($validated['participants'])) {
+                foreach ($validated['participants'] as $userId) {
+                    if ($userId !== $event->created_by) {
+                        CalendarParticipant::firstOrCreate([
+                            'event_id' => $event->id,
+                            'user_id' => $userId,
+                        ], [
+                            'status' => 'accepted',
+                        ]);
                     }
                 }
             }
-
-            DB::commit();
-
-            return redirect()
-                ->route('jadwal-umum')
-                ->with('success', 'Jadwal berhasil diperbarui!');
-        } catch (\Exception $e) {
-            DB::rollback();
-            Log::error('Error updating company event: ' . $e->getMessage());
-
-            return back()
-                ->withInput()
-                ->with('error', 'Gagal mengupdate jadwal: ' . $e->getMessage());
         }
+
+        DB::commit();
+
+        return redirect()
+            ->route('jadwal-umum')
+            ->with('success', 'Jadwal berhasil diperbarui!');
+    } catch (\Exception $e) {
+        DB::rollback();
+        Log::error('Error updating company event: ' . $e->getMessage());
+
+        return back()
+            ->withInput()
+            ->with('error', 'Gagal mengupdate jadwal: ' . $e->getMessage());
     }
+}
 
 
     /**

@@ -19,20 +19,17 @@ class GoogleController extends Controller
         return Socialite::driver('google')->redirect();
     }
 
-    // Handle callback dari Google
     public function handleGoogleCallback()
     {
         try {
             $googleUser = Socialite::driver('google')->user();
 
-            // 🔍 DEBUG LOG
             Log::info('=== GOOGLE LOGIN DEBUG ===', [
                 'google_id' => $googleUser->getId(),
                 'email' => $googleUser->getEmail(),
                 'name' => $googleUser->getName(),
             ]);
 
-            // ✅ Cari atau buat user
             $user = User::where('email', $googleUser->getEmail())->first();
 
             if (!$user) {
@@ -41,10 +38,9 @@ class GoogleController extends Controller
                     'email' => $googleUser->getEmail(),
                     'google_id' => $googleUser->getId(),
                     'password' => bcrypt(Str::random(16)),
-                    'email_verified_at' => now(), // ⬅️ Google user sudah terverifikasi
+                    'email_verified_at' => now(),
                 ]);
             } else {
-                // Update Google ID jika user sudah ada tapi belum punya google_id
                 if (!$user->google_id) {
                     $user->update([
                         'google_id' => $googleUser->getId(),
@@ -53,41 +49,48 @@ class GoogleController extends Controller
                 }
             }
 
-            // ✅ Login user
             Auth::login($user);
 
-            // 🔍 DEBUG LOG
             Log::info('User logged in via Google:', [
                 'user_id' => $user->id,
                 'email' => $user->email,
             ]);
 
-            // ===================================
-            // 🔥 PERBAIKAN UTAMA: SET SESSION
-            // ===================================
-
-            // ✅ Handle pending invitation (jika ada)
+            // Handle pending invitation
             $pendingToken = session('pending_invitation_token');
             if ($pendingToken) {
                 Log::info('User has pending invitation, redirecting to accept');
                 return redirect()->route('invite.accept', $pendingToken);
             }
 
-            // ✅ PERBAIKAN: Ambil data company (bukan cuma cek exists)
+            // 🔥 Check user company dengan validasi status_active
             $userCompany = UserCompany::where('user_id', $user->id)
-                ->whereNull('deleted_at') // ⬅️ Pastikan tidak soft deleted
-                ->first(); // ⬅️ AMBIL DATA, bukan exists()
+                ->where('status_active', true) // 🔥 VALIDASI STATUS AKTIF
+                ->whereNull('deleted_at')
+                ->first();
 
-            // 🔍 DEBUG LOG
             Log::info('User Company Check (Google):', [
                 'has_company' => $userCompany ? 'YES' : 'NO',
                 'company_id' => $userCompany?->company_id,
                 'role_id' => $userCompany?->roles_id,
+                'status_active' => $userCompany?->status_active,
             ]);
 
-            // ❌ Jika user BENAR-BENAR tidak punya company
+            // ❌ Jika user tidak punya company aktif
             if (!$userCompany) {
-                Log::warning('User has no company (Google login), redirecting to create', [
+                // Cek apakah user ada tapi nonaktif
+                $inactiveCompany = UserCompany::where('user_id', $user->id)
+                    ->where('status_active', false)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if ($inactiveCompany) {
+                    Auth::logout();
+                    return redirect()->route('masuk')
+                        ->with('error', 'Akun Anda telah dinonaktifkan oleh Administrator. Hubungi admin untuk informasi lebih lanjut.');
+                }
+
+                Log::warning('User has no active company (Google login), redirecting to create', [
                     'user_id' => $user->id,
                 ]);
 
@@ -95,27 +98,25 @@ class GoogleController extends Controller
                     ->with('info', 'Silakan buat perusahaan terlebih dahulu.');
             }
 
-            // ✅ SET SESSION active_company_id (INI YANG PENTING!)
+            // ✅ SET SESSION active_company_id
             session(['active_company_id' => $userCompany->company_id]);
 
-            // 🔍 DEBUG LOG
             Log::info('Session Set After Google Login:', [
                 'active_company_id' => session('active_company_id'),
                 'company_id_from_db' => $userCompany->company_id,
             ]);
 
-            // 🎯 CEK APAKAH INI FIRST LOGIN (untuk trigger onboarding)
+            // 🎯 CEK FIRST LOGIN
             $isFirstLogin = !session()->has('has_logged_in_before');
             if ($isFirstLogin) {
                 session(['has_logged_in_before' => true]);
                 session()->flash('first_login', true);
             }
 
-            // ✅ Redirect ke dashboard dengan intended (biar bisa handle redirect sebelumnya)
             return redirect()->intended('/dashboard')
                 ->with('success', 'Berhasil masuk dengan Google!');
+
         } catch (\Exception $e) {
-            // ❌ Error handling
             Log::error('Google Login Error:', [
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),

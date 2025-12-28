@@ -189,13 +189,32 @@ class SubscriptionController extends Controller
             $company->subscription->status === 'active' &&
             Carbon::parse($company->subscription->end_date)->isFuture();
 
+        // 🔥 TAMBAHAN BARU: Ambil role user saat ini
+        $currentUserRole = null;
+        $userCompany = UserCompany::where('user_id', auth()->id())
+            ->where('company_id', $companyId)
+            ->with('role')
+            ->first();
+
+        if ($userCompany && $userCompany->role) {
+            $currentUserRole = $userCompany->role->name;
+        }
+
+        // 🔥 DEBUGGING: Log untuk cek role (hapus setelah testing)
+        \Log::info('Current User Role in Pembayaran:', [
+            'user_id' => auth()->id(),
+            'company_id' => $companyId,
+            'role' => $currentUserRole
+        ]);
+
         return view('pembayaran', compact(
             'company',
             'companies',
             'invoices',
             'trialDaysLeft',
             'trialStatus',
-            'hasActiveSubscription'
+            'hasActiveSubscription',
+            'currentUserRole' // 🔥 PENTING: Jangan lupa pass variable ini!
         ));
     }
 
@@ -228,92 +247,363 @@ class SubscriptionController extends Controller
     }
 
     // 🔥 CREATE SUBSCRIPTION - MANUAL PAYMENT
-    public function createSubscription(Request $request)
-    {
-        $request->validate([
-            'plan_id' => 'required|exists:plans,id',
-            'addon_user_count' => 'integer|min:0',
-            'company_id' => 'required|exists:companies,id',
-            'payment_method' => 'required|in:midtrans,manual'
+   public function createSubscription(Request $request)
+{
+    $request->validate([
+        'plan_id'          => 'required|exists:plans,id',
+        'addon_user_count' => 'nullable|integer|min:0',
+        'company_id'       => 'required|exists:companies,id',
+        'payment_method'   => 'required|in:midtrans,manual',
+    ]);
+
+    DB::beginTransaction();
+
+    try {
+        // =========================
+        // 1. Ambil Data Utama
+        // =========================
+        $plan    = Plan::findOrFail($request->plan_id);
+        $addon   = Addon::where('is_active', true)->first();
+        $company = Company::findOrFail($request->company_id);
+
+        $addonCount       = $request->addon_user_count ?? 0;
+        $activeUserCount  = $company->active_users_count;
+        $newLimit         = $plan->base_user_limit + $addonCount;
+
+        // =========================
+        // 2. Validasi Akses User
+        // =========================
+        $hasAccess = UserCompany::where('user_id', auth()->id())
+            ->where('company_id', $company->id)
+            ->where('status_active', true)
+            ->exists();
+
+        if (!$hasAccess) {
+            throw new \Exception('Anda tidak memiliki akses ke perusahaan ini');
+        }
+
+        // =========================
+        // 3. Validasi Downgrade Paket
+        // =========================
+        $currentSubscription = $company->subscription;
+        $isDowngrade = false;
+
+        if ($currentSubscription && $currentSubscription->plan) {
+            $currentPlan = $currentSubscription->plan;
+            $isDowngrade = $plan->base_user_limit < $currentPlan->base_user_limit;
+        }
+
+        if ($isDowngrade && $activeUserCount > $newLimit) {
+            $excess = $activeUserCount - $newLimit;
+
+            throw new \Exception(json_encode([
+                'type'    => 'downgrade_error',
+                'title'   => 'Tidak Dapat Downgrade',
+                'message' => "User aktif saat ini: {$activeUserCount}\n" .
+                             "Limit paket baru: {$newLimit}\n\n" .
+                             "Silakan nonaktifkan {$excess} user terlebih dahulu sebelum downgrade paket.",
+                'excess'  => $excess,
+            ]));
+        }
+
+        // =========================
+        // 4. Validasi Trial → Paid
+        // =========================
+        $isComingFromTrial =
+            $company->status === 'trial' &&
+            (!$currentSubscription || $currentSubscription->status === 'trial');
+
+        if ($isComingFromTrial && $activeUserCount > $newLimit) {
+            $excess = $activeUserCount - $newLimit;
+
+            throw new \Exception(json_encode([
+                'type'    => 'trial_to_paid_error',
+                'title'   => 'Limit Paket Tidak Cukup',
+                'message' => "User aktif saat ini: {$activeUserCount}\n" .
+                             "Limit paket baru: {$newLimit}\n\n" .
+                             "Silakan nonaktifkan {$excess} user atau pilih paket dengan limit yang lebih besar.",
+                'excess'  => $excess,
+            ]));
+        }
+
+        // =========================
+// 4B. Validasi Trial SUDAH EXPIRED
+// =========================
+$isTrialExpired =
+    !$company->isOnTrial() &&
+    !$company->hasActiveSubscription();
+
+if ($isTrialExpired) {
+
+    // 🔥 Wajib beli paket (tidak boleh bypass)
+    if ($activeUserCount > $newLimit) {
+        $excess = $activeUserCount - $newLimit;
+
+        throw new \Exception(json_encode([
+            'type'    => 'trial_expired_error',
+            'title'   => 'Trial Anda Telah Berakhir',
+            'message' => "Masa trial perusahaan Anda telah berakhir.\n\n" .
+                         "User aktif saat ini: {$activeUserCount}\n" .
+                         "Limit paket yang dipilih: {$newLimit}\n\n" .
+                         "Silakan nonaktifkan {$excess} user atau pilih paket dengan limit lebih besar untuk melanjutkan.",
+            'excess'  => $excess,
+        ]));
+    }
+}
+
+
+        // =========================
+        // 5. Hitung Biaya
+        // =========================
+        $addonPrice  = $addonCount * ($addon->price_per_user ?? 0);
+        $totalAmount = $plan->price_monthly + $addonPrice;
+
+        // =========================
+        // 6. Ambil / Buat Subscription
+        // =========================
+        $subscription = Subscription::firstOrCreate(
+            ['company_id' => $company->id],
+            [
+                'status'           => 'trial',
+                'total_user_limit' => 0,
+                'start_date'       => now(),
+                'end_date'         => now()->addDays(7),
+            ]
+        );
+
+        // =========================
+        // 7. Generate Invoice
+        // =========================
+        $orderId = 'INV-' . time() . '-' . rand(100, 999);
+
+        $invoice = SubscriptionInvoice::create([
+            'subscription_id' => $subscription->id,
+            'external_id'     => $orderId,
+            'amount'          => $totalAmount,
+            'billing_month'   => now()->format('Y-m'),
+            'status'          => 'pending',
+            'payment_method'  => $request->payment_method,
+            'payment_details' => [
+                'plan_id'         => $plan->id,
+                'plan_name'       => $plan->plan_name,
+                'new_addon_count' => $addonCount,
+                'new_total_limit' => $newLimit,
+                'is_downgrade'    => $isDowngrade,
+            ],
         ]);
 
-        DB::beginTransaction();
+        Log::info('✅ Invoice created', [
+            'invoice_id'  => $invoice->id,
+            'company_id'  => $company->id,
+            'plan'        => $plan->plan_name,
+            'is_downgrade'=> $isDowngrade,
+            'active_users'=> $activeUserCount,
+            'new_limit'   => $newLimit,
+        ]);
+
+        // =========================
+        // 8. Response Berdasarkan Metode Pembayaran
+        // =========================
+        if ($request->payment_method === 'manual') {
+            DB::commit();
+
+            return response()->json([
+                'success'        => true,
+                'payment_method'=> 'manual',
+                'invoice_id'     => $invoice->id,
+                'external_id'    => $orderId,
+                'amount'         => $totalAmount,
+                'is_downgrade'   => $isDowngrade,
+                'message'        => 'Invoice berhasil dibuat. Silakan upload bukti transfer.',
+            ]);
+        }
+
+        throw new \Exception('Metode pembayaran tidak didukung saat ini.');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        Log::error('❌ Subscription creation error', [
+            'error' => $e->getMessage(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
+
+
+    public function toggleUserStatus(Request $request)
+    {
+        $request->validate([
+            'user_company_id' => 'required|exists:user_companies,id',
+            'status_active' => 'required|boolean'
+        ]);
+
         try {
-            $plan = Plan::findOrFail($request->plan_id);
-            $addon = Addon::where('is_active', true)->first();
-            $company = Company::findOrFail($request->company_id);
+            $companyId = session('active_company_id');
 
-            // 1. Validasi akses user
-            $hasAccess = UserCompany::where('user_id', auth()->id())
-                ->where('company_id', $company->id)
-                ->exists();
+            // Validasi SuperAdmin
+            $currentUserCompany = UserCompany::where('user_id', auth()->id())
+                ->where('company_id', $companyId)
+                ->with('role')
+                ->first();
 
-            if (!$hasAccess) {
-                throw new \Exception('Anda tidak memiliki akses ke perusahaan ini');
+            if (!$currentUserCompany || !in_array($currentUserCompany->role->name, ['SuperAdmin', 'Super Admin'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Hanya SuperAdmin yang dapat mengubah status user'
+                ], 403);
             }
 
-            // 2. Hitung total biaya
-            $addonCount = $request->addon_user_count ?? 0;
-            $totalUserLimit = $plan->base_user_limit + $addonCount;
-            $addonPrice = $addonCount * ($addon->price_per_user ?? 0);
-            $totalAmount = $plan->price_monthly + $addonPrice;
+            $userCompany = UserCompany::findOrFail($request->user_company_id);
 
-            // 3. Ambil record Subscription yang sudah ada (JANGAN UPDATE DATA DI SINI)
-            // Jika belum ada sama sekali, baru kita buatkan defaultnya
-            $subscription = Subscription::firstOrCreate(
-                ['company_id' => $company->id],
-                [
-                    'status' => 'trial',
-                    'total_user_limit' => 5,
-                    'start_date' => now(),
-                    'end_date' => now()->addDays(7)
-                ]
-            );
-
-            // 4. Generate Order ID
-            $orderId = 'INV-' . time() . '-' . rand(100, 999);
-
-            // 5. Buat Invoice dan SIMPAN RENCANA perubahan di payment_details
-            // Setelah baris ini:
-            $invoice = SubscriptionInvoice::create([
-                'subscription_id' => $subscription->id,
-                'external_id' => $orderId,
-                'amount' => $totalAmount,
-                'billing_month' => now()->format('Y-m'),
-                'status' => 'pending',
-                'payment_method' => $request->payment_method,
-                'payment_details' => [
-                    'plan_id' => $plan->id,
-                    'new_addon_count' => $addonCount,
-                    'new_total_limit' => $totalUserLimit
-                ]
-            ]);
-            Log::info('Invoice created', [
-                'plan_id' => $plan->id,
-                'plan_name' => $plan->plan_name, // 🔥 TAMBAHKAN
-                'addon_count' => $addonCount,
-                'total_limit' => $totalUserLimit
-            ]);
-
-            if ($request->payment_method === 'manual') {
-                DB::commit();
+            // Tidak bisa nonaktifkan diri sendiri
+            if ($userCompany->user_id === auth()->id()) {
                 return response()->json([
-                    'success' => true,
-                    'payment_method' => 'manual',
-                    'invoice_id' => $invoice->id,
-                    'external_id' => $orderId,
-                    'amount' => $totalAmount,
-                    'message' => 'Invoice berhasil dibuat. Silakan upload bukti transfer.'
+                    'success' => false,
+                    'message' => 'Anda tidak dapat menonaktifkan akun sendiri'
+                ], 403);
+            }
+
+            // 🔥 VALIDASI BARU: Jika mau AKTIFKAN user
+            if ($request->status_active === true) {
+                $company = Company::with('subscription')->findOrFail($companyId);
+
+                // Hitung jumlah user yang SUDAH AKTIF saat ini
+                $currentActiveCount = UserCompany::where('company_id', $companyId)
+                    ->where('status_active', true)
+                    ->count();
+
+                // Ambil limit dari subscription
+                $userLimit = $company->subscription->total_user_limit ?? 0;
+
+                // 🔥 CEK: Apakah sudah mencapai batas?
+                if ($currentActiveCount >= $userLimit) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Tidak dapat mengaktifkan user. Batas maksimal ({$userLimit} user aktif) sudah tercapai. Silakan nonaktifkan user lain terlebih dahulu atau upgrade paket."
+                    ], 400);
+                }
+
+                Log::info('✅ User activation allowed', [
+                    'current_active' => $currentActiveCount,
+                    'limit' => $userLimit,
+                    'user_to_activate' => $userCompany->user->email
                 ]);
             }
 
-            throw new \Exception('Metode pembayaran tidak didukung saat ini.');
+            DB::beginTransaction();
+
+            // ✅ Update status di user_companies
+            $userCompany->status_active = $request->status_active;
+            $userCompany->save();
+
+            // 🔥 JIKA NONAKTIFKAN: Hapus dari SEMUA workspace di company ini
+            if ($request->status_active === false) {
+                $removedWorkspaces = \App\Models\UserWorkspace::whereHas('workspace', function ($q) use ($companyId) {
+                    $q->where('company_id', $companyId);
+                })
+                    ->where('user_id', $userCompany->user_id)
+                    ->get();
+
+                // Log workspaces yang akan dihapus
+                Log::info('🗑️ Removing user from workspaces', [
+                    'user_id' => $userCompany->user_id,
+                    'company_id' => $companyId,
+                    'workspace_count' => $removedWorkspaces->count(),
+                    'workspaces' => $removedWorkspaces->pluck('workspace_id')->toArray()
+                ]);
+
+                // Hapus dari semua workspace
+                \App\Models\UserWorkspace::whereHas('workspace', function ($q) use ($companyId) {
+                    $q->where('company_id', $companyId);
+                })
+                    ->where('user_id', $userCompany->user_id)
+                    ->delete();
+            }
+
+            DB::commit();
+
+            $statusText = $request->status_active ? 'diaktifkan' : 'dinonaktifkan';
+            $additionalMessage = !$request->status_active
+                ? ' dan dihapus dari semua workspace'
+                : '';
+
+            Log::info("User status changed", [
+                'user_id' => $userCompany->user_id,
+                'company_id' => $userCompany->company_id,
+                'status_active' => $request->status_active,
+                'changed_by' => auth()->id(),
+                'workspaces_removed' => !$request->status_active
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "User berhasil {$statusText}{$additionalMessage}"
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Subscription creation error: ' . $e->getMessage());
+            Log::error('Toggle user status error: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getUsersWithStatus($companyId)
+    {
+        try {
+            $company = Company::findOrFail($companyId);
+
+            // Validasi akses
+            $hasAccess = UserCompany::where('user_id', auth()->id())
+                ->where('company_id', $companyId)
+                ->where('status_active', true)
+                ->exists();
+
+            if (!$hasAccess) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses'
+                ], 403);
+            }
+
+            $users = $company->userCompanies()
+                ->with(['user', 'role'])
+                ->get()
+                ->map(function ($uc) {
+                    return [
+                        'user_company_id' => $uc->id,
+                        'user_id' => $uc->user_id,
+                        'full_name' => $uc->user->full_name,
+                        'email' => $uc->user->email,
+                        'avatar' => $uc->user->avatar,
+                        'role_name' => $uc->role->name ?? 'Member',
+                        'status_active' => $uc->status_active
+                    ];
+                })
+                // Filter out current user (tidak bisa disable diri sendiri)
+                ->filter(fn($u) => $u['user_id'] !== auth()->id())
+                // Filter out AdminSistem
+                ->filter(fn($u) => $u['role_name'] !== 'AdminSistem');
+
+            return response()->json([
+                'success' => true,
+                'users' => $users->values()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Get users status error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan'
             ], 500);
         }
     }
@@ -424,11 +714,9 @@ class SubscriptionController extends Controller
             'admin_notes' => 'nullable|string|max:500'
         ]);
 
-        // TODO: Tambahkan middleware admin untuk route ini
-
         DB::beginTransaction();
         try {
-            $invoice = SubscriptionInvoice::with('subscription.company')
+            $invoice = SubscriptionInvoice::with(['subscription.company', 'subscription.plan'])
                 ->findOrFail($request->invoice_id);
 
             if ($invoice->payment_method !== 'manual') {
@@ -440,7 +728,7 @@ class SubscriptionController extends Controller
             }
 
             if ($request->action === 'approve') {
-                // Approve pembayaran
+                // 1. Update status invoice
                 $invoice->update([
                     'status' => 'paid',
                     'paid_at' => now(),
@@ -449,17 +737,42 @@ class SubscriptionController extends Controller
                     'admin_notes' => $request->admin_notes
                 ]);
 
-                // Aktifkan subscription
+                // 2. 🔥 AMBIL DATA PAKET DARI payment_details
+                $paymentDetails = $invoice->payment_details;
+                $newPlanId = $paymentDetails['plan_id'] ?? null;
+                $newAddonCount = $paymentDetails['new_addon_count'] ?? 0;
+                $newTotalLimit = $paymentDetails['new_total_limit'] ?? 0;
+
+                if (!$newPlanId) {
+                    throw new \Exception('Data paket tidak ditemukan di invoice');
+                }
+
+                // 3. 🔥 UPDATE SUBSCRIPTION dengan data BARU (REPLACE, bukan ADD)
                 $subscription = $invoice->subscription;
+
                 $subscription->update([
+                    'plan_id' => $newPlanId,                    // 🔥 UPDATE plan
+                    'addons_user_count' => $newAddonCount,      // 🔥 UPDATE addon count
+                    'total_user_limit' => $newTotalLimit,       // 🔥 REPLACE limit (bukan tambah!)
                     'status' => 'active',
                     'start_date' => now(),
                     'end_date' => now()->addMonth()
                 ]);
 
-                // Update company status
+                // 4. Update company status
                 $subscription->company->update([
-                    'status' => 'active'
+                    'status' => 'active',
+                    'trial_end' => null  // Hapus trial jika ada
+                ]);
+
+                // 5. 🔥 LOG untuk debugging
+                Log::info('✅ Payment approved - Subscription updated', [
+                    'invoice_id' => $invoice->id,
+                    'old_plan' => $invoice->subscription->plan->plan_name ?? 'N/A',
+                    'new_plan_id' => $newPlanId,
+                    'new_addon_count' => $newAddonCount,
+                    'new_total_limit' => $newTotalLimit,
+                    'company_id' => $subscription->company_id
                 ]);
 
                 $message = 'Pembayaran berhasil diverifikasi dan subscription diaktifkan';
@@ -470,6 +783,11 @@ class SubscriptionController extends Controller
                     'verified_at' => now(),
                     'verified_by' => auth()->id(),
                     'admin_notes' => $request->admin_notes ?? 'Pembayaran ditolak oleh admin'
+                ]);
+
+                Log::info('❌ Payment rejected', [
+                    'invoice_id' => $invoice->id,
+                    'reason' => $request->admin_notes
                 ]);
 
                 $message = 'Pembayaran ditolak';
@@ -483,7 +801,10 @@ class SubscriptionController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Verify payment error:', ['error' => $e->getMessage()]);
+            Log::error('Verify payment error:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
             return response()->json([
                 'success' => false,

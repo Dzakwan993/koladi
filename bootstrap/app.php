@@ -6,7 +6,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\CheckSubscription;
 use App\Http\Middleware\CheckWorkspaceAccess;
 use App\Http\Middleware\CheckSystemAdmin;
-
+use App\Http\Middleware\CheckUserCompanyStatus; // 🔥 TAMBAHAN BARU
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -22,7 +22,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'check.subscription' => CheckSubscription::class,
             'check.workspace' => CheckWorkspaceAccess::class,
             'check.system.admin' => CheckSystemAdmin::class,
+            'check.user.status' => CheckUserCompanyStatus::class, // 🔥 TAMBAHAN BARU
         ]);
+
+        // 🔥 TAMBAHAN: Terapkan middleware ke semua route web yang authenticated
+        // Ini akan otomatis cek status user setiap kali ada request
+        $middleware->appendToGroup('web', CheckUserCompanyStatus::class);
 
         // ✅ Pengecualian CSRF untuk Midtrans callback
         $middleware->validateCsrfTokens(except: [
@@ -30,9 +35,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'midtrans/*',
         ]);
 
-        // ✅ OPTIONAL: Jika ingin apply CheckSubscription ke semua route authenticated
-        // Uncomment baris dibawah jika mau otomatis ke semua route
-        // $middleware->appendToGroup('web', CheckSubscription::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
