@@ -109,12 +109,9 @@
         }
 
         @keyframes pulse {
-
-            0%,
-            100% {
+            0%, 100% {
                 opacity: 1;
             }
-
             50% {
                 opacity: 0.8;
             }
@@ -139,10 +136,8 @@
         }
     </style>
 
-    <div
-        class="h-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex justify-center items-center py-4 px-4 sm:px-6">
+    <div class="h-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex justify-center items-center py-4 px-4 sm:px-6">
         <div class="w-full max-w-md lg:max-w-lg">
-
             <div class="form-card p-5 sm:p-6 md:p-8">
 
                 <!-- Avatar + Email Section -->
@@ -203,15 +198,31 @@
                                     class="text-gray-400 font-normal text-xs">(opsional)</span></label>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                     </svg>
                                 </div>
-                                <input type="password" name="current_password"
+                                <input id="currentPassword" type="password" name="current_password"
                                     placeholder="Kosongkan jika tidak ingin mengubah"
-                                    class="input-custom w-full border-2 border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    class="input-custom w-full border-2 border-gray-200 rounded-xl py-3.5 pl-12 pr-12 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+
+                                <!-- Toggle Password Button -->
+                                <button type="button" id="toggleCurrentPassword"
+                                    class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none">
+                                    <!-- Eye Open -->
+                                    <svg id="eyeOpenCurrent" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    <!-- Eye Closed -->
+                                    <svg id="eyeClosedCurrent" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.957 9.957 0 012.125-3.368m2.59-2.591A9.956 9.956 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.956 9.956 0 01-2.318 3.74M15 12a3 3 0 00-4.243-4.243M3 3l18 18" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
 
@@ -221,22 +232,37 @@
                                     class="text-gray-400 font-normal text-xs">(opsional)</span></label>
                             <div class="relative">
                                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
+                                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                                     </svg>
                                 </div>
-                                <input type="password" name="new_password" placeholder="Minimal 6 karakter"
-                                    class="input-custom w-full border-2 border-gray-200 rounded-xl py-3.5 pl-12 pr-4 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <input id="newPassword" type="password" name="new_password" placeholder="Minimal 6 karakter"
+                                    class="input-custom w-full border-2 border-gray-200 rounded-xl py-3.5 pl-12 pr-12 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+
+                                <!-- Toggle Password Button -->
+                                <button type="button" id="toggleNewPassword"
+                                    class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none">
+                                    <!-- Eye Open -->
+                                    <svg id="eyeOpenNew" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                    <!-- Eye Closed -->
+                                    <svg id="eyeClosedNew" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.957 9.957 0 012.125-3.368m2.59-2.591A9.956 9.956 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.956 9.956 0 01-2.318 3.74M15 12a3 3 0 00-4.243-4.243M3 3l18 18" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
                     @else
-                        <!-- ✅ Info untuk user Google -->
+                        <!-- Info untuk user Google -->
                         <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
                             <div class="flex items-start gap-3">
-                                <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor"
-                                    viewBox="0 0 20 20">
+                                <svg class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd"
                                         d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
                                         clip-rule="evenodd" />
@@ -307,6 +333,36 @@
                 avatarFileInput.files = dataTransfer.files;
             }
         });
+
+        // Toggle Password Visibility - Current Password
+        const currentPasswordInput = document.getElementById('currentPassword');
+        const toggleCurrentPassword = document.getElementById('toggleCurrentPassword');
+        const eyeOpenCurrent = document.getElementById('eyeOpenCurrent');
+        const eyeClosedCurrent = document.getElementById('eyeClosedCurrent');
+
+        if (toggleCurrentPassword && currentPasswordInput) {
+            toggleCurrentPassword.addEventListener('click', function() {
+                const isPassword = currentPasswordInput.type === 'password';
+                currentPasswordInput.type = isPassword ? 'text' : 'password';
+                eyeOpenCurrent.classList.toggle('hidden', !isPassword);
+                eyeClosedCurrent.classList.toggle('hidden', isPassword);
+            });
+        }
+
+        // Toggle Password Visibility - New Password
+        const newPasswordInput = document.getElementById('newPassword');
+        const toggleNewPassword = document.getElementById('toggleNewPassword');
+        const eyeOpenNew = document.getElementById('eyeOpenNew');
+        const eyeClosedNew = document.getElementById('eyeClosedNew');
+
+        if (toggleNewPassword && newPasswordInput) {
+            toggleNewPassword.addEventListener('click', function() {
+                const isPassword = newPasswordInput.type === 'password';
+                newPasswordInput.type = isPassword ? 'text' : 'password';
+                eyeOpenNew.classList.toggle('hidden', !isPassword);
+                eyeClosedNew.classList.toggle('hidden', isPassword);
+            });
+        }
 
         // Konfirmasi sebelum simpan
         document.getElementById('btnSave').addEventListener('click', function(e) {
