@@ -1,61 +1,347 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Koladi — Development Setup (Docker)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Dokumen ini menjelaskan **cara menjalankan Koladi di laptop mana pun (Mac/Linux/Windows)** menggunakan **Docker** untuk fase **development**.
 
-## About Laravel
+Target utama:
+* Laptop **tidak perlu** install PHP, Composer, PostgreSQL
+* Cukup **Docker + Node.js** (Node hanya untuk Vite / frontend dev)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 1. Prasyarat
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Wajib
+* **Docker Desktop** (termasuk Docker Compose)
+  * [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
 
-## Learning Laravel
+### Untuk Frontend (Vite)
+* **Node.js ≥ 18**
+  * Digunakan **di host**, bukan di container
+  * Cek:
+    ```bash
+    node -v
+    npm -v
+    ```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+> ❗ Tanpa Node.js, halaman yang pakai `@vite(...)` akan error.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+---
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 2. Clone Repository
 
-## Laravel Sponsors
+```bash
+git clone -b docker <repo-koladi>
+cd koladi
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+## 3. Start Docker
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+docker compose up -d
+```
 
-## Contributing
+**Setup otomatis berjalan di background!** ✨
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Yang dilakukan secara otomatis:
+- ✅ Install Composer dependencies
+- ✅ Copy `.env` dari `.env.docker.example`
+- ✅ Generate `APP_KEY`
+- ✅ Import database `Koladi.sql` (jika database kosong)
+- ✅ Run database seeder
+- ✅ Create storage symlink
+- ✅ Fix permissions
 
-## Code of Conduct
+Cek logs untuk melihat progress:
+```bash
+docker compose logs -f app
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## 4. (Opsional) Konfigurasi Login Google (OAuth)
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Aplikasi Koladi mendukung **Login dengan Google** menggunakan OAuth 2.0.
 
-## License
+### Setup Google OAuth
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+1. Edit file `.env`:
+   ```bash
+   nano .env
+   ```
+
+2. Isi variabel berikut:
+   ```env
+   GOOGLE_CLIENT_ID=xxxxxxxx.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=xxxxxxxx
+   GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+   ```
+
+3. Restart container:
+   ```bash
+   docker compose restart app
+   ```
+
+### Cara Mendapatkan GOOGLE_CLIENT_ID & GOOGLE_CLIENT_SECRET
+
+Nilai tersebut **didapatkan dari Google Cloud Console**, **bukan dari Laravel atau Docker**.
+
+Langkah singkat:
+
+1. Buka **Google Cloud Console**
+   👉 [https://console.cloud.google.com](https://console.cloud.google.com)
+
+2. Buat atau pilih **Project**
+
+3. Masuk ke menu **APIs & Services → OAuth consent screen**
+   * User Type: **External**
+   * Isi data dasar (App name, email)
+   * Simpan
+
+4. Masuk ke **APIs & Services → Credentials → Create Credentials → OAuth Client ID**
+   * Application type: **Web application**
+   * Tambahkan **Authorized Redirect URI**:
+     ```
+     http://localhost:8000/auth/google/callback
+     ```
+
+5. Setelah dibuat, Google akan menampilkan:
+   * **Client ID**
+   * **Client Secret**
+
+6. Salin kedua nilai tersebut ke file `.env`
+
+> ⚠️ Setiap developer **harus membuat OAuth Client sendiri** atau menggunakan credentials yang dibagikan oleh pemilik project.
+
+---
+
+## 5. Jalankan Frontend (WAJIB)
+
+Di **terminal host (bukan Docker)**:
+
+```bash
+npm install
+npm run dev
+```
+
+Tanpa ini, halaman seperti `/dashboard` akan error (`Vite manifest not found`).
+
+---
+
+## 6. Akses Aplikasi
+
+```
+http://localhost:8000
+```
+
+Login Admin Sistem (jika ada):
+* Email: `admin@koladi.com`
+* Password: sesuai seeder
+
+---
+
+## Ringkasan Setup (Laptop Baru)
+
+```bash
+# 1. Install Docker Desktop & Node.js
+
+# 2. Clone dan start
+git clone -b docker <repo-koladi>
+cd koladi
+docker compose up -d
+
+# 3. (Opsional) Setup Google OAuth
+nano .env  # isi GOOGLE_CLIENT_ID & GOOGLE_CLIENT_SECRET
+docker compose restart app
+
+# 4. Jalankan frontend
+npm install
+npm run dev
+
+# 5. Buka browser
+# http://localhost:8000
+```
+
+**3-5 langkah saja!** 🚀
+
+---
+
+## Command Berguna
+
+### Lihat Logs
+```bash
+# Semua logs
+docker compose logs
+
+# Logs app saja (real-time)
+docker compose logs -f app
+
+# Logs database
+docker compose logs db
+```
+
+### Restart Container
+```bash
+# Restart app saja
+docker compose restart app
+
+# Restart semua
+docker compose restart
+```
+
+### Masuk ke Container
+```bash
+# Masuk ke app container
+docker compose exec app bash
+
+# Jalankan artisan command
+docker compose exec app php artisan migrate
+docker compose exec app php artisan tinker
+```
+
+### Stop & Start
+```bash
+# Stop container (data tetap ada)
+docker compose down
+
+# Start ulang
+docker compose up -d
+```
+
+### Reset Database
+```bash
+# Hapus semua (⚠️ DATA HILANG!)
+docker compose down -v
+
+# Start ulang (akan import Koladi.sql otomatis)
+docker compose up -d
+```
+
+---
+
+## FAQ
+
+### ❓ Apakah harus import database setiap kali restart container?
+
+**TIDAK!** 
+
+- `docker compose down` → hanya stop container, **data tetap ada**
+- `docker compose up -d` → start ulang, **data otomatis kembali**
+
+Import database **hanya sekali** saat pertama kali setup atau setelah `docker compose down -v`.
+
+### ❓ Bagaimana jika ubah Dockerfile atau docker-compose.yml?
+
+```bash
+# Rebuild dan restart
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+```
+
+### ❓ Bagaimana jika ada error 403 saat load gambar avatar?
+
+```bash
+# Fix permissions
+docker compose exec app chmod -R 775 storage bootstrap/cache
+docker compose exec app php artisan storage:link
+docker compose restart app
+```
+
+### ❓ Bagaimana cara update dependencies (composer/npm)?
+
+```bash
+# Update Composer
+docker compose exec app composer update
+
+# Update npm (di host)
+npm update
+
+# Tidak perlu restart container
+```
+
+### ❓ Command mana yang BAHAYA (hapus data)?
+
+```bash
+# ⚠️ Ini hapus DATABASE!
+docker compose down -v
+
+# ⚠️ Ini hapus semua (image, volume, container)
+docker compose down -v --rmi all
+```
+
+**Rule of thumb:**
+- `docker compose down` (tanpa `-v`) = **AMAN**, data tetap ada
+- `docker compose down -v` = **BAHAYA**, data hilang
+
+---
+
+## Pembuktian Docker (Tanpa Dependency Lokal)
+
+Yang **TIDAK perlu diinstall** di laptop:
+* ❌ PHP
+* ❌ Composer
+* ❌ PostgreSQL
+
+Semua sudah ada di Docker.
+
+Yang **masih perlu** di laptop:
+* ✅ Node.js (untuk `npm run dev`)
+
+> Node.js **boleh dihapus** nanti jika frontend sudah di-build untuk production.
+
+---
+
+## Catatan Penting
+
+* Ini **Fase Development**
+* Masih menggunakan:
+  * `php artisan serve`
+  * `npm run dev`
+* **Belum production ready** (belum Nginx, belum build asset)
+
+---
+
+## Troubleshooting
+
+### Database connection refused
+```bash
+# Cek database running
+docker compose ps db
+
+# Lihat logs database
+docker compose logs db
+
+# Restart database
+docker compose restart db
+```
+
+### Port 8000 sudah dipakai
+```bash
+# Cek process yang pakai port
+lsof -i :8000  # Mac/Linux
+netstat -ano | findstr :8000  # Windows
+
+# Atau ubah port di docker-compose.yml
+ports:
+  - "9000:8000"  # Ubah 8000 jadi 9000
+```
+
+### Vite manifest not found
+```bash
+# Pastikan npm run dev sudah jalan
+npm install
+npm run dev
+```
+
+### Container tidak bisa start
+```bash
+# Lihat logs error
+docker compose logs app
+
+# Rebuild dari awal
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+```

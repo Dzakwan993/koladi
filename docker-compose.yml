@@ -1,0 +1,34 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    container_name: koladi_app
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/var/www
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      # ✅ TAMBAHKAN INI: Run as www-data user
+      user: "1000:1000"  # Sesuaikan dengan user ID di laptop kamu
+      command: sh -c "chmod -R 775 storage bootstrap/cache && php artisan serve --host=0.0.0.0 --port=8000"
+
+
+  db:
+    image: postgres:15
+    container_name: koladi_db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: koladi
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
