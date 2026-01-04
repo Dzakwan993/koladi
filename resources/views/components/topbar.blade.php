@@ -189,7 +189,7 @@
             </button>
 
             <!-- Modal Notifikasi -->
-            <div x-show="showNotifications" @click.outside="showNotifications = false" x-transition
+            <div x-show="showNotifications"  x-cloak @click.outside="showNotifications = false" x-transition style="display: none;"
                 class="absolute right-0 mt-3 z-50">
 
                 <div class="bg-white rounded-xl shadow-xl w-[400px] max-h-[580px] border border-gray-200 flex flex-col"
