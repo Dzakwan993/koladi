@@ -177,7 +177,8 @@
                         {{-- ✅ Calendar - Improved responsive height --}}
                         <div
                             class="bg-white rounded-2xl shadow-lg p-3 sm:p-4 lg:p-5 mb-4 sm:mb-5 border border-gray-100 h-[280px] sm:h-[320px] lg:h-[350px]">
-                            <div id="calendar" class="w-full h-full" role="application" aria-label="Kalender Jadwal"></div>
+                            <div id="calendar" class="w-full h-full" role="application" aria-label="Kalender Jadwal">
+                            </div>
                         </div>
 
                         {{-- ✅ Jadwal List - Better flexible sizing --}}

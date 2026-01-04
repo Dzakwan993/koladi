@@ -159,6 +159,14 @@ class SubscriptionController extends Controller
                 ->with('error', 'Anda tidak memiliki akses ke perusahaan ini.');
         }
 
+        $userCompany = UserCompany::where('user_id', auth()->id())
+            ->where('company_id', $companyId)
+            ->where('status_active', true) // pastikan user masih aktif
+            ->with('role') // eager load role
+            ->first();
+            
+        $currentUserRole = $userCompany->role->name;
+
         $company = Company::with(['subscription.plan', 'users'])->find($companyId);
 
         if (!$company) {
@@ -188,24 +196,6 @@ class SubscriptionController extends Controller
         $hasActiveSubscription = $company->subscription &&
             $company->subscription->status === 'active' &&
             Carbon::parse($company->subscription->end_date)->isFuture();
-
-        // 🔥 TAMBAHAN BARU: Ambil role user saat ini
-        $currentUserRole = null;
-        $userCompany = UserCompany::where('user_id', auth()->id())
-            ->where('company_id', $companyId)
-            ->with('role')
-            ->first();
-
-        if ($userCompany && $userCompany->role) {
-            $currentUserRole = $userCompany->role->name;
-        }
-
-        // 🔥 DEBUGGING: Log untuk cek role (hapus setelah testing)
-        \Log::info('Current User Role in Pembayaran:', [
-            'user_id' => auth()->id(),
-            'company_id' => $companyId,
-            'role' => $currentUserRole
-        ]);
 
         return view('pembayaran', compact(
             'company',
@@ -247,192 +237,192 @@ class SubscriptionController extends Controller
     }
 
     // 🔥 CREATE SUBSCRIPTION - MANUAL PAYMENT
-   public function createSubscription(Request $request)
-{
-    $request->validate([
-        'plan_id'          => 'required|exists:plans,id',
-        'addon_user_count' => 'nullable|integer|min:0',
-        'company_id'       => 'required|exists:companies,id',
-        'payment_method'   => 'required|in:midtrans,manual',
-    ]);
+    public function createSubscription(Request $request)
+    {
+        $request->validate([
+            'plan_id' => 'required|exists:plans,id',
+            'addon_user_count' => 'nullable|integer|min:0',
+            'company_id' => 'required|exists:companies,id',
+            'payment_method' => 'required|in:midtrans,manual',
+        ]);
 
-    DB::beginTransaction();
+        DB::beginTransaction();
 
-    try {
-        // =========================
-        // 1. Ambil Data Utama
-        // =========================
-        $plan    = Plan::findOrFail($request->plan_id);
-        $addon   = Addon::where('is_active', true)->first();
-        $company = Company::findOrFail($request->company_id);
+        try {
+            // =========================
+            // 1. Ambil Data Utama
+            // =========================
+            $plan = Plan::findOrFail($request->plan_id);
+            $addon = Addon::where('is_active', true)->first();
+            $company = Company::findOrFail($request->company_id);
 
-        $addonCount       = $request->addon_user_count ?? 0;
-        $activeUserCount  = $company->active_users_count;
-        $newLimit         = $plan->base_user_limit + $addonCount;
+            $addonCount = $request->addon_user_count ?? 0;
+            $activeUserCount = $company->active_users_count;
+            $newLimit = $plan->base_user_limit + $addonCount;
 
-        // =========================
-        // 2. Validasi Akses User
-        // =========================
-        $hasAccess = UserCompany::where('user_id', auth()->id())
-            ->where('company_id', $company->id)
-            ->where('status_active', true)
-            ->exists();
+            // =========================
+            // 2. Validasi Akses User
+            // =========================
+            $hasAccess = UserCompany::where('user_id', auth()->id())
+                ->where('company_id', $company->id)
+                ->where('status_active', true)
+                ->exists();
 
-        if (!$hasAccess) {
-            throw new \Exception('Anda tidak memiliki akses ke perusahaan ini');
-        }
+            if (!$hasAccess) {
+                throw new \Exception('Anda tidak memiliki akses ke perusahaan ini');
+            }
 
-        // =========================
-        // 3. Validasi Downgrade Paket
-        // =========================
-        $currentSubscription = $company->subscription;
-        $isDowngrade = false;
+            // =========================
+            // 3. Validasi Downgrade Paket
+            // =========================
+            $currentSubscription = $company->subscription;
+            $isDowngrade = false;
 
-        if ($currentSubscription && $currentSubscription->plan) {
-            $currentPlan = $currentSubscription->plan;
-            $isDowngrade = $plan->base_user_limit < $currentPlan->base_user_limit;
-        }
+            if ($currentSubscription && $currentSubscription->plan) {
+                $currentPlan = $currentSubscription->plan;
+                $isDowngrade = $plan->base_user_limit < $currentPlan->base_user_limit;
+            }
 
-        if ($isDowngrade && $activeUserCount > $newLimit) {
-            $excess = $activeUserCount - $newLimit;
+            if ($isDowngrade && $activeUserCount > $newLimit) {
+                $excess = $activeUserCount - $newLimit;
 
-            throw new \Exception(json_encode([
-                'type'    => 'downgrade_error',
-                'title'   => 'Tidak Dapat Downgrade',
-                'message' => "User aktif saat ini: {$activeUserCount}\n" .
-                             "Limit paket baru: {$newLimit}\n\n" .
-                             "Silakan nonaktifkan {$excess} user terlebih dahulu sebelum downgrade paket.",
-                'excess'  => $excess,
-            ]));
-        }
+                throw new \Exception(json_encode([
+                    'type' => 'downgrade_error',
+                    'title' => 'Tidak Dapat Downgrade',
+                    'message' => "User aktif saat ini: {$activeUserCount}\n" .
+                        "Limit paket baru: {$newLimit}\n\n" .
+                        "Silakan nonaktifkan {$excess} user terlebih dahulu sebelum downgrade paket.",
+                    'excess' => $excess,
+                ]));
+            }
 
-        // =========================
-        // 4. Validasi Trial → Paid
-        // =========================
-        $isComingFromTrial =
-            $company->status === 'trial' &&
-            (!$currentSubscription || $currentSubscription->status === 'trial');
+            // =========================
+            // 4. Validasi Trial → Paid
+            // =========================
+            $isComingFromTrial =
+                $company->status === 'trial' &&
+                (!$currentSubscription || $currentSubscription->status === 'trial');
 
-        if ($isComingFromTrial && $activeUserCount > $newLimit) {
-            $excess = $activeUserCount - $newLimit;
+            if ($isComingFromTrial && $activeUserCount > $newLimit) {
+                $excess = $activeUserCount - $newLimit;
 
-            throw new \Exception(json_encode([
-                'type'    => 'trial_to_paid_error',
-                'title'   => 'Limit Paket Tidak Cukup',
-                'message' => "User aktif saat ini: {$activeUserCount}\n" .
-                             "Limit paket baru: {$newLimit}\n\n" .
-                             "Silakan nonaktifkan {$excess} user atau pilih paket dengan limit yang lebih besar.",
-                'excess'  => $excess,
-            ]));
-        }
+                throw new \Exception(json_encode([
+                    'type' => 'trial_to_paid_error',
+                    'title' => 'Limit Paket Tidak Cukup',
+                    'message' => "User aktif saat ini: {$activeUserCount}\n" .
+                        "Limit paket baru: {$newLimit}\n\n" .
+                        "Silakan nonaktifkan {$excess} user atau pilih paket dengan limit yang lebih besar.",
+                    'excess' => $excess,
+                ]));
+            }
 
-        // =========================
+            // =========================
 // 4B. Validasi Trial SUDAH EXPIRED
 // =========================
-$isTrialExpired =
-    !$company->isOnTrial() &&
-    !$company->hasActiveSubscription();
+            $isTrialExpired =
+                !$company->isOnTrial() &&
+                !$company->hasActiveSubscription();
 
-if ($isTrialExpired) {
+            if ($isTrialExpired) {
 
-    // 🔥 Wajib beli paket (tidak boleh bypass)
-    if ($activeUserCount > $newLimit) {
-        $excess = $activeUserCount - $newLimit;
+                // 🔥 Wajib beli paket (tidak boleh bypass)
+                if ($activeUserCount > $newLimit) {
+                    $excess = $activeUserCount - $newLimit;
 
-        throw new \Exception(json_encode([
-            'type'    => 'trial_expired_error',
-            'title'   => 'Trial Anda Telah Berakhir',
-            'message' => "Masa trial perusahaan Anda telah berakhir.\n\n" .
-                         "User aktif saat ini: {$activeUserCount}\n" .
-                         "Limit paket yang dipilih: {$newLimit}\n\n" .
-                         "Silakan nonaktifkan {$excess} user atau pilih paket dengan limit lebih besar untuk melanjutkan.",
-            'excess'  => $excess,
-        ]));
-    }
-}
+                    throw new \Exception(json_encode([
+                        'type' => 'trial_expired_error',
+                        'title' => 'Trial Anda Telah Berakhir',
+                        'message' => "Masa trial perusahaan Anda telah berakhir.\n\n" .
+                            "User aktif saat ini: {$activeUserCount}\n" .
+                            "Limit paket yang dipilih: {$newLimit}\n\n" .
+                            "Silakan nonaktifkan {$excess} user atau pilih paket dengan limit lebih besar untuk melanjutkan.",
+                        'excess' => $excess,
+                    ]));
+                }
+            }
 
 
-        // =========================
-        // 5. Hitung Biaya
-        // =========================
-        $addonPrice  = $addonCount * ($addon->price_per_user ?? 0);
-        $totalAmount = $plan->price_monthly + $addonPrice;
+            // =========================
+            // 5. Hitung Biaya
+            // =========================
+            $addonPrice = $addonCount * ($addon->price_per_user ?? 0);
+            $totalAmount = $plan->price_monthly + $addonPrice;
 
-        // =========================
-        // 6. Ambil / Buat Subscription
-        // =========================
-        $subscription = Subscription::firstOrCreate(
-            ['company_id' => $company->id],
-            [
-                'status'           => 'trial',
-                'total_user_limit' => 0,
-                'start_date'       => now(),
-                'end_date'         => now()->addDays(7),
-            ]
-        );
+            // =========================
+            // 6. Ambil / Buat Subscription
+            // =========================
+            $subscription = Subscription::firstOrCreate(
+                ['company_id' => $company->id],
+                [
+                    'status' => 'trial',
+                    'total_user_limit' => 0,
+                    'start_date' => now(),
+                    'end_date' => now()->addDays(7),
+                ]
+            );
 
-        // =========================
-        // 7. Generate Invoice
-        // =========================
-        $orderId = 'INV-' . time() . '-' . rand(100, 999);
+            // =========================
+            // 7. Generate Invoice
+            // =========================
+            $orderId = 'INV-' . time() . '-' . rand(100, 999);
 
-        $invoice = SubscriptionInvoice::create([
-            'subscription_id' => $subscription->id,
-            'external_id'     => $orderId,
-            'amount'          => $totalAmount,
-            'billing_month'   => now()->format('Y-m'),
-            'status'          => 'pending',
-            'payment_method'  => $request->payment_method,
-            'payment_details' => [
-                'plan_id'         => $plan->id,
-                'plan_name'       => $plan->plan_name,
-                'new_addon_count' => $addonCount,
-                'new_total_limit' => $newLimit,
-                'is_downgrade'    => $isDowngrade,
-            ],
-        ]);
+            $invoice = SubscriptionInvoice::create([
+                'subscription_id' => $subscription->id,
+                'external_id' => $orderId,
+                'amount' => $totalAmount,
+                'billing_month' => now()->format('Y-m'),
+                'status' => 'pending',
+                'payment_method' => $request->payment_method,
+                'payment_details' => [
+                    'plan_id' => $plan->id,
+                    'plan_name' => $plan->plan_name,
+                    'new_addon_count' => $addonCount,
+                    'new_total_limit' => $newLimit,
+                    'is_downgrade' => $isDowngrade,
+                ],
+            ]);
 
-        Log::info('✅ Invoice created', [
-            'invoice_id'  => $invoice->id,
-            'company_id'  => $company->id,
-            'plan'        => $plan->plan_name,
-            'is_downgrade'=> $isDowngrade,
-            'active_users'=> $activeUserCount,
-            'new_limit'   => $newLimit,
-        ]);
+            Log::info('✅ Invoice created', [
+                'invoice_id' => $invoice->id,
+                'company_id' => $company->id,
+                'plan' => $plan->plan_name,
+                'is_downgrade' => $isDowngrade,
+                'active_users' => $activeUserCount,
+                'new_limit' => $newLimit,
+            ]);
 
-        // =========================
-        // 8. Response Berdasarkan Metode Pembayaran
-        // =========================
-        if ($request->payment_method === 'manual') {
-            DB::commit();
+            // =========================
+            // 8. Response Berdasarkan Metode Pembayaran
+            // =========================
+            if ($request->payment_method === 'manual') {
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'payment_method' => 'manual',
+                    'invoice_id' => $invoice->id,
+                    'external_id' => $orderId,
+                    'amount' => $totalAmount,
+                    'is_downgrade' => $isDowngrade,
+                    'message' => 'Invoice berhasil dibuat. Silakan upload bukti transfer.',
+                ]);
+            }
+
+            throw new \Exception('Metode pembayaran tidak didukung saat ini.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            Log::error('❌ Subscription creation error', [
+                'error' => $e->getMessage(),
+            ]);
 
             return response()->json([
-                'success'        => true,
-                'payment_method'=> 'manual',
-                'invoice_id'     => $invoice->id,
-                'external_id'    => $orderId,
-                'amount'         => $totalAmount,
-                'is_downgrade'   => $isDowngrade,
-                'message'        => 'Invoice berhasil dibuat. Silakan upload bukti transfer.',
-            ]);
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         }
-
-        throw new \Exception('Metode pembayaran tidak didukung saat ini.');
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-
-        Log::error('❌ Subscription creation error', [
-            'error' => $e->getMessage(),
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => $e->getMessage(),
-        ], 500);
     }
-}
 
 
 

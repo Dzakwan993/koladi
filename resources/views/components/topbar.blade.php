@@ -149,8 +149,8 @@
                         <!-- Empty State in Modal -->
                         <template x-if="users.length === 0">
                             <div class="text-center py-12">
-                                <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none"
-                                    stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                         d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                 </svg>
@@ -172,10 +172,10 @@
             <img src="{{ asset('images/icons/akses.svg') }}" alt="Atur Akses" class="w-5 h-5">
         </button>
 
-        <a href="{{ url('/pembayaran') }}" class="p-2 hover:bg-gray-100 rounded-lg transition" title="Dollar">
+        <a href="javascript:void(0)" onclick="checkSuperAdminAccess()"
+            class="p-2 hover:bg-gray-100 rounded-lg transition" title="Dollar">
             <img src="{{ asset('images/icons/dollar.svg') }}" alt="Dollar" class="w-5 h-5">
         </a>
-
         <!-- Tombol Notifikasi -->
         <div class="relative" x-data="{ showNotifications: false }">
             <button @click="showNotifications = true" class="p-2 hover:bg-gray-100 rounded-lg transition relative"
@@ -402,6 +402,10 @@
         </style>
 
         <script>
+            function checkSuperAdminAccess() {
+                window.location.replace('{{ url('/pembayaran') }}');
+            }
+
             // ============================================
             // Alpine.js Component untuk Notification Modal
             // ============================================

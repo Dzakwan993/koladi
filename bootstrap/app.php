@@ -7,6 +7,7 @@ use App\Http\Middleware\CheckSubscription;
 use App\Http\Middleware\CheckWorkspaceAccess;
 use App\Http\Middleware\CheckSystemAdmin;
 use App\Http\Middleware\CheckUserCompanyStatus; // 🔥 TAMBAHAN BARU
+use App\Http\Middleware\CheckSuperAdmin;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'check.workspace' => CheckWorkspaceAccess::class,
             'check.system.admin' => CheckSystemAdmin::class,
             'check.user.status' => CheckUserCompanyStatus::class, // 🔥 TAMBAHAN BARU
+            'superadmin' => CheckSuperAdmin::class,
         ]);
 
         // 🔥 TAMBAHAN: Terapkan middleware ke semua route web yang authenticated

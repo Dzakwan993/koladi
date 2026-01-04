@@ -111,7 +111,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/buat-perusahaan', [CompanyController::class, 'store'])->name('buat-perusahaan');
 
     // Payment Routes
-    Route::get('/pembayaran', [SubscriptionController::class, 'index'])->name('pembayaran');
+    Route::get('/pembayaran', [SubscriptionController::class, 'index'])
+        ->middleware('superadmin')
+        ->name('pembayaran');
     Route::get('/api/plans', [SubscriptionController::class, 'getPlans'])->name('api.plans');
     Route::post('/subscription/create', [SubscriptionController::class, 'createSubscription'])->name('subscription.create');
     Route::get('/api/subscription/status', [SubscriptionController::class, 'checkTrialStatus'])->name('api.subscription.status');

@@ -91,6 +91,94 @@
 </head>
 
 <body class="bg-[#f3f6fc] flex h-screen overflow-hidden">
+    @if (session('error-pembayaran'))
+        <div id="error-toast"
+            class="fixed top-4 right-4 z-[10000] transform translate-x-0 opacity-0 transition-all duration-500 ease-out">
+            <div
+                class="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-4 rounded-xl shadow-2xl border border-red-400/50 backdrop-blur-sm max-w-md">
+                <div class="flex items-start gap-3">
+                    <!-- Icon -->
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-bold text-sm mb-1">Akses Ditolak</h4>
+                        <p class="text-sm text-white/90 leading-relaxed">
+                            {{ session('error-pembayaran') }}
+                        </p>
+                    </div>
+
+                    <!-- Close Button -->
+                    <button onclick="closeErrorToast()"
+                        class="flex-shrink-0 text-white/80 hover:text-white transition-colors ml-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mt-3 h-1 bg-white/20 rounded-full overflow-hidden">
+                    <div id="toast-progress"
+                        class="h-full bg-white/60 rounded-full transition-all duration-[5000ms] ease-linear"
+                        style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // 🔥 Cek apakah user dari back button
+            const isBackButton = (
+                performance.getEntriesByType('navigation')[0]?.type === 'back_forward'
+            );
+
+            let shouldShowToast = !isBackButton;
+
+            document.addEventListener('DOMContentLoaded', function() {
+
+                if (!shouldShowToast) {
+                    const toast = document.getElementById('error-toast');
+                    if (toast) toast.remove();
+                    return;
+                }
+
+                const toast = document.getElementById('error-toast');
+                const progress = document.getElementById('toast-progress');
+
+                if (toast) {
+                    setTimeout(() => {
+                        toast.style.opacity = '1';
+                        toast.style.transform = 'translateX(0)';
+                    }, 100);
+
+                    setTimeout(() => {
+                        progress.style.width = '0%';
+                    }, 200);
+
+                    setTimeout(() => {
+                        closeErrorToast();
+                    }, 5200);
+                }
+            });
+
+            function closeErrorToast() {
+                const toast = document.getElementById('error-toast');
+                if (toast) {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(100%)';
+                    setTimeout(() => toast.remove(), 500);
+                }
+            }
+        </script>
+    @endif
 
     {{-- Sidebar --}}
     <x-sidebar />
