@@ -37,7 +37,7 @@
                 <h2 class="text-lg font-semibold text-gray-800" x-text="currentFolder?.name"></h2>
                 
                 {{-- ✅ Edit & Delete HANYA untuk workspace --}}
-                <div x-show="currentContext === 'workspace' && memberListAllowed" class="flex items-center gap-1">
+                <div x-show="memberListAllowed" class="flex items-center gap-1">
                     <button @click="openEditFolder(currentFolder)"
                         class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

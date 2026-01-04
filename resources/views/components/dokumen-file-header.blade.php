@@ -46,8 +46,8 @@
                 </button>
 
                 {{-- ✅ Edit & Delete HANYA untuk workspace --}}
-                <div x-show="currentContext === 'workspace' && memberListAllowed">
-                    <button @click="openEditFile(currentFile)"
+                <div x-show="memberListAllowed">
+                    <button x-show="currentContext === 'workspace'" @click="openEditFile(currentFile)"
                         class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

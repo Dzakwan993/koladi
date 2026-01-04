@@ -24,7 +24,7 @@
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition mb-4"
                     required>
 
-                <div class="flex items-center justify-between py-2">
+                {{-- <div class="flex items-center justify-between py-2">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
                             <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor"
@@ -45,7 +45,7 @@
                         <span :class="isSecretFolder ? 'translate-x-5' : 'translate-x-0'"
                             class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
                     </button>
-                </div>
+                </div> --}}
             </div>
 
             <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
@@ -75,7 +75,7 @@
             <p class="text-sm text-gray-600 mb-4">Masukkan nama folder</p>
             <input type="text" name="name" x-model="editFolderName" placeholder="Nama folder"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition mb-4">
-            <div class="flex items-center justify-between py-2">
+            {{-- <div class="flex items-center justify-between py-2">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
                         <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,7 +95,7 @@
                     <span :class="editIsSecretFolder ? 'translate-x-5' : 'translate-x-0'"
                         class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
                 </button>
-            </div>
+            </div> --}}
         </div>
         <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
             <button type="button" @click="showEditFolderModal = false"
@@ -372,7 +372,7 @@
                     <p class="text-xs text-gray-500" x-text="editingFile?.type"></p>
                 </div>
             </div>
-            <div class="flex items-center justify-between py-2">
+            {{-- <div class="flex items-center justify-between py-2">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
                         <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor"
@@ -393,7 +393,7 @@
                     <span :class="editFileIsSecret ? 'translate-x-5' : 'translate-x-0'"
                         class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow transition" />
                 </button>
-            </div>
+            </div> --}}
         </div>
         <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
             <button type="button" @click="showEditFileModal = false"

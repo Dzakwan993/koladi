@@ -988,10 +988,16 @@ export default function documentSearch() {
 
         // 2️⃣ Upload single DOCUMENT file (NAMA BARU)
         async uploadSingleDocumentFile(file, index, totalFiles) {
+            console.log("🔍 Debug Upload:");
+            console.log("Context:", this.currentContext);
+            console.log("Company ID:", this.currentCompanyId);
+            console.log("Folder ID:", this.currentFolder?.id);
+            console.log("File:", file.name);
+
             const formData = new FormData();
             formData.append("file", file);
 
-            if (this.currentFolder) {
+            if (this.currentFolder && this.currentFolder.id) {
                 formData.append("folder_id", this.currentFolder.id);
             }
 
@@ -1045,6 +1051,11 @@ export default function documentSearch() {
                     document.querySelector('meta[name="csrf-token"]').content
                 );
                 xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+                console.log("📤 FormData yang dikirim:");
+                for (let pair of formData.entries()) {
+                    console.log(pair[0] + ":", pair[1]);
+                }
+
                 xhr.send(formData);
             });
         },
