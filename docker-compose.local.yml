@@ -5,9 +5,13 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    container_name: koladi_app
+    container_name: koladi_app_local
+    volumes:
+      - .:/var/www
     env_file:
       - .env
+    entrypoint: ["/usr/local/bin/entrypoint.local.sh"]
+    command: ["php-fpm"]  
     depends_on:
       - db
     networks:
@@ -15,9 +19,9 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: koladi_nginx
+    container_name: koladi_nginx_local
     ports:
-      - "80:80"
+      - "8000:80"
     volumes:
       - .:/var/www
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
@@ -28,11 +32,15 @@ services:
 
   db:
     image: postgres:15
-    container_name: koladi_db
-    env_file:
-      - .env
+    container_name: koladi_db_local
+    environment:
+      POSTGRES_DB: koladi
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata_local:/var/lib/postgresql/data
     networks:
       - koladi_net
 
@@ -40,4 +48,4 @@ networks:
   koladi_net:
 
 volumes:
-  pgdata:
+  pgdata_local:
