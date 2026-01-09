@@ -399,15 +399,17 @@ function getAvatarUrl(user) {
 
 function fixFileUrl(fileUrl) {
     if (!fileUrl) return '';
-    if (fileUrl.includes('http://localhost/storage/')) {
-        return fileUrl.replace('http://localhost/storage/', 'http://127.0.0.1:8000/storage/');
-    }
+    
+    const baseUrl = window.location.origin;
+    
     if (fileUrl.startsWith('chat_files/')) {
-        return `${API_URL}/storage/${fileUrl}`;
+        return `${baseUrl}/storage/${fileUrl}`;
     }
-    if (fileUrl.startsWith('/storage/')) {
-        return `${API_URL}${fileUrl}`;
+    
+    if (fileUrl.startsWith('storage/')) {
+        return `${baseUrl}/${fileUrl}`;
     }
+    
     return fileUrl;
 }
 

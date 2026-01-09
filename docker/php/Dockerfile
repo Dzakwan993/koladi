@@ -13,6 +13,8 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # copy app
 COPY . /var/www
 
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
 # copy entrypoints (PATH FIX)
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY docker/entrypoint.local.sh /usr/local/bin/entrypoint.local.sh
