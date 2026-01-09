@@ -3,6 +3,8 @@ set -e
 
 echo "🚀 Koladi production booting..."
 
+composer install --no-dev --optimize-autoloader --no-interaction
+
 # 1️⃣ Generate key (safe)
 php artisan key:generate --force || true
 

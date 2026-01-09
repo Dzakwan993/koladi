@@ -8,8 +8,8 @@ services:
     container_name: koladi_app
     env_file:
       - .env
-    entrypoint: entrypoint.local.sh
-    command: php-fpm
+    entrypoint: ["/usr/local/bin/entrypoint.sh"]  # Harus pakai path lengkap & array
+    command: ["php-fpm"]
     depends_on:
       - db
     networks:
@@ -43,8 +43,3 @@ networks:
 
 volumes:
   pgdata:
-    driver: local
-    driver_opts:
-      type: none
-      device: /path/to/backup/location  # Path di host untuk backup
-      o: bind
