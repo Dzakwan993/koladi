@@ -36,8 +36,11 @@ use App\Http\Controllers\NotificationController;
 // 🔥 Broadcasting Routes
 Broadcast::routes(['middleware' => ['web', 'auth']]);
 
-Route::get('/', [LandingPageController::class, 'index'])
-    ->name('landingpage');
+
+Route::get('/', fn() => view('landingpage'))->name('landingpage');
+
+// Route::get('/', [LandingPageController::class, 'index'])
+//     ->name('landingpage');
 
 Route::post('/feedback', [FeedbackController::class, 'store'])
     ->name('feedback.store');

@@ -8,21 +8,19 @@ use Illuminate\Support\Facades\Auth;
 class LandingPageController extends Controller
 {
     public function index()
-    {
-        // Redirect kalau sudah login
-        if (Auth::check()) {
-            if (Auth::user()->isSystemAdmin()) {
-                return redirect()->route('admin.dashboard');
-            }
-            return redirect()->route('dashboard');
-        }
-
-        // HANYA ambil harga
+{
+    try {
         return view('landingpage', [
-            'basicPrice'    => Plan::where('plan_name', 'Paket Basic')->value('price_monthly'),
-            'standardPrice' => Plan::where('plan_name', 'Paket Standard')->value('price_monthly'),
-            'businessPrice' => Plan::where('plan_name', 'Paket Business')->value('price_monthly'),
+            'basicPrice'    => Plan::where('plan_name', 'Paket Basic')->value('price_monthly') ?? 0,
+            'standardPrice' => Plan::where('plan_name', 'Paket Standard')->value('price_monthly') ?? 0,
+            'businessPrice' => Plan::where('plan_name', 'Paket Business')->value('price_monthly') ?? 0,
+        ]);
+    } catch (\Throwable $e) {
+        return view('landingpage', [
+            'basicPrice'    => 0,
+            'standardPrice' => 0,
+            'businessPrice' => 0,
         ]);
     }
 }
-
+}

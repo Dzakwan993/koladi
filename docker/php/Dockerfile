@@ -2,28 +2,32 @@ FROM php:8.2-fpm
 
 WORKDIR /var/www
 
+# Install system deps + node
 RUN apt-get update && apt-get install -y \
-    git unzip curl \
+    git unzip curl zip \
     libpq-dev postgresql-client \
-    && docker-php-ext-install pdo pdo_pgsql \
+    libpng-dev libjpeg-dev libfreetype6-dev \
+    libzip-dev \
+    nodejs npm \
+    && docker-php-ext-configure zip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo pdo_pgsql zip gd \
     && rm -rf /var/lib/apt/lists/*
 
+# Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# copy app
 COPY . /var/www
 
-RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# copy entrypoints (PATH FIX)
+# Permission
+RUN chown -R www-data:www-data storage bootstrap/cache public \
+&& chmod -R 775 storage bootstrap/cache public
+
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-COPY docker/entrypoint.local.sh /usr/local/bin/entrypoint.local.sh
-
-RUN chmod +x /usr/local/bin/entrypoint.sh \
-    /usr/local/bin/entrypoint.local.sh
-
-RUN chown -R www-data:www-data storage bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 9000
 CMD ["php-fpm"]
+# Frontend build
+RUN npm install

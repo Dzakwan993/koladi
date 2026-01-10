@@ -49,4 +49,5 @@ php artisan view:cache
 
 echo "✅ Laravel production ready"
 
+
 exec "$@"
