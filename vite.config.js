@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 
-
 export default defineConfig({
     plugins: [
         laravel({
@@ -14,12 +13,16 @@ export default defineConfig({
                 'resources/css/dashboard.css',
 
                 // chat
-                'resources/js/chat.js',         // Untuk workspace chat
-                'resources/js/company-chat.js', // Untuk company chat
+                'resources/js/chat.js',
+                'resources/js/company-chat.js',
 
                 // jadwal
                 'resources/css/jadwal.css',
                 'resources/js/jadwal.js',
+
+                // statistik - TAMBAHKAN INI
+                'resources/css/statistik.css',
+                'resources/js/statistik.js',
             ],
             refresh: true,
         }),

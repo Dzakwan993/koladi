@@ -1,0 +1,70 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-DoBhIcSo.css",
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "names": [
+      "app.css"
+    ]
+  },
+  "resources/css/dashboard.css": {
+    "file": "assets/dashboard-BE5QLoEg.css",
+    "src": "resources/css/dashboard.css",
+    "isEntry": true,
+    "names": [
+      "dashboard.css"
+    ]
+  },
+  "resources/css/jadwal.css": {
+    "file": "assets/jadwal-BLNm27zs.css",
+    "src": "resources/css/jadwal.css",
+    "isEntry": true,
+    "names": [
+      "jadwal.css"
+    ]
+  },
+  "resources/css/statistik.css": {
+    "file": "assets/statistik-BKiSNydG.css",
+    "src": "resources/css/statistik.css",
+    "isEntry": true,
+    "names": [
+      "statistik.css"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-4_m9YCiB.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  },
+  "resources/js/chat.js": {
+    "file": "assets/chat-Cjl6ofLx.js",
+    "name": "chat",
+    "src": "resources/js/chat.js",
+    "isEntry": true
+  },
+  "resources/js/company-chat.js": {
+    "file": "assets/company-chat-CAOqWlj3.js",
+    "name": "company-chat",
+    "src": "resources/js/company-chat.js",
+    "isEntry": true
+  },
+  "resources/js/dashboard.js": {
+    "file": "assets/dashboard-DyVYaV1B.js",
+    "name": "dashboard",
+    "src": "resources/js/dashboard.js",
+    "isEntry": true
+  },
+  "resources/js/jadwal.js": {
+    "file": "assets/jadwal-HJdvvJgS.js",
+    "name": "jadwal",
+    "src": "resources/js/jadwal.js",
+    "isEntry": true
+  },
+  "resources/js/statistik.js": {
+    "file": "assets/statistik-CMEeChVD.js",
+    "name": "statistik",
+    "src": "resources/js/statistik.js",
+    "isEntry": true
+  }
+}
