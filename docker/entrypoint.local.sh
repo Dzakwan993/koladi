@@ -55,6 +55,6 @@ php artisan config:clear
 php artisan route:clear
 php artisan view:clear
 
-echo "✅ Laravel LOCAL ready"
-
-exec "$@"
+# 8️⃣ Start PHP-FPM
+echo "🚀 Starting PHP-FPM..."
+exec /usr/local/sbin/php-fpm
