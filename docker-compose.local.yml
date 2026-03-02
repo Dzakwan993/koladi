@@ -10,7 +10,7 @@ services:
       - .:/var/www
     env_file:
       - .env
-    entrypoint: ["/usr/local/bin/entrypoint.local.sh"]
+    entrypoint: ["/var/www/docker/entrypoint.local.sh"]
     command: ["php-fpm"]  
     depends_on:
       - db

@@ -37,10 +37,11 @@ use App\Http\Controllers\NotificationController;
 Broadcast::routes(['middleware' => ['web', 'auth']]);
 
 
-Route::get('/', fn() => view('landingpage'))->name('landingpage');
+// Route::get('/', [LandingPageController::class, 'index'])->name('landingpage');
 
-// Route::get('/', [LandingPageController::class, 'index'])
-//     ->name('landingpage');
+Route::get('/', [LandingPageController::class, 'index'])
+    ->name('landingpage');
+
 
 Route::post('/feedback', [FeedbackController::class, 'store'])
     ->name('feedback.store');
@@ -130,7 +131,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
 
-        // 🔥 BARU: Toggle user status (SuperAdmin only)
+    // 🔥 BARU: Toggle user status (SuperAdmin only)
     Route::post('/subscription/toggle-user-status', [SubscriptionController::class, 'toggleUserStatus'])
         ->name('subscription.toggle-user-status');
 
@@ -565,23 +566,23 @@ Route::middleware(['auth'])->group(function () {
 
 
 
-       Route::prefix('notifications')->group(function () {
-    // Get all notifications
-    Route::get('/', [NotificationController::class, 'index']);
+    Route::prefix('notifications')->group(function () {
+        // Get all notifications
+        Route::get('/', [NotificationController::class, 'index']);
 
-    // Get unread count
-    Route::get('/unread-count', [NotificationController::class, 'getUnreadCount']);
+        // Get unread count
+        Route::get('/unread-count', [NotificationController::class, 'getUnreadCount']);
 
-    // Mark single notification as read
-    Route::post('/{id}/read', [NotificationController::class, 'markAsRead']);
+        // Mark single notification as read
+        Route::post('/{id}/read', [NotificationController::class, 'markAsRead']);
 
-    // Mark all notifications as read
-    Route::post('/read-all', [NotificationController::class, 'markAllAsRead']);
+        // Mark all notifications as read
+        Route::post('/read-all', [NotificationController::class, 'markAllAsRead']);
 
-    // Delete notification
-    Route::delete('/{id}', [NotificationController::class, 'destroy']);
+        // Delete notification
+        Route::delete('/{id}', [NotificationController::class, 'destroy']);
 
-    // Clear all read notifications
-    Route::post('/clear-read', [NotificationController::class, 'clearRead']);
-});
+        // Clear all read notifications
+        Route::post('/clear-read', [NotificationController::class, 'clearRead']);
+    });
 });

@@ -3,6 +3,13 @@ set -e
 
 echo "🧪 Koladi LOCAL booting..."
 
+# 0️⃣ Install dependencies jika belum ada
+if [ ! -d "vendor" ] || [ ! -f "vendor/autoload.php" ]; then
+  echo "📦 Installing Composer dependencies (this may take a while)..."
+  composer install --no-interaction --prefer-dist --optimize-autoloader
+fi
+
+
 # 1️⃣ Generate APP_KEY kalau belum ada
 if ! grep -q "APP_KEY=base64:" .env 2>/dev/null; then
   echo "🔑 Generating APP_KEY"
