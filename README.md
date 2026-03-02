@@ -49,6 +49,15 @@ Gunakan mode ini untuk koding sehari-hari di laptop.
     docker compose -f docker-compose.local.yml up -d
     ```
 
+    > **💡 Tips Pengguna Windows (WSL2):**
+    > Jika muncul error `Permission Denied` atau `php-fpm: not found`, jalankan perintah ini di terminal (Git Bash/WSL) untuk memperbaiki izin dan format file:
+    > ```bash
+    > chmod +x docker/entrypoint.local.sh
+    > # Jika masih error 'not found', jalankan juga:
+    > sed -i 's/\r$//' docker/entrypoint.local.sh
+    > ```
+
+
 3.  **Jalankan Frontend (Vite)**
     Di terminal laptop kamu:
     ```bash
