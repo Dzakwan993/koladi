@@ -42,15 +42,9 @@ Gunakan mode ini untuk koding sehari-hari di laptop.
     cp .env.docker.local.example .env
     ```
 
-    > **⚠️ Khusus Pengguna Windows (WSL2):**
-    > Jika muncul error `php-fpm: not found` saat menjalankan Docker, itu karena perbedaan format baris (CRLF vs LF). Jalankan perintah ini di terminal (git bash/wsl) untuk memperbaikinya:
-    > ```bash
-    > sed -i 's/\r$//' docker/entrypoint.local.sh
-    > chmod +x docker/entrypoint.local.sh
-    > ```
-
 
 2.  **Jalankan Docker (Versi Lokal)**
+
     ```bash
     docker compose -f docker-compose.local.yml up -d
     ```
