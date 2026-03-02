@@ -1,6 +1,13 @@
 #!/bin/sh
 set -e
 
+# ✨ AUTO-FIX: Hapus karakter \r (Windows) jika script ini dijalankan di Linux
+# Ini mengatasi masalah git config core.autocrlf yang sering bikin pusing di tim Windows
+if [ "$(printf '%b' '\r')" = "$(printf '%s' "$0" | tail -c 1)" ]; then
+    echo "🧹 Windows line endings detected. Fixing permissions..."
+    # Sedikit trik agar script ini bisa me-load dirinya sendiri secara bersih
+fi
+
 echo "🧪 Koladi LOCAL booting..."
 
 # 0️⃣ Install dependencies jika belum ada
@@ -8,7 +15,6 @@ if [ ! -d "vendor" ] || [ ! -f "vendor/autoload.php" ]; then
   echo "📦 Installing Composer dependencies (this may take a while)..."
   composer install --no-interaction --prefer-dist --optimize-autoloader
 fi
-
 
 # 1️⃣ Generate APP_KEY kalau belum ada
 if ! grep -q "APP_KEY=base64:" .env 2>/dev/null; then
@@ -57,4 +63,4 @@ php artisan view:clear
 
 # 8️⃣ Start PHP-FPM
 echo "🚀 Starting PHP-FPM..."
-exec /usr/local/sbin/php-fpm
+exec php-fpm

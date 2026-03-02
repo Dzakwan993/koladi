@@ -1,13 +1,10 @@
-* text=auto eol=lf
+* text=auto
 
-*.blade.php diff=html
-*.css diff=css
-*.html diff=html
-*.md diff=markdown
-*.php diff=php
+# Force LF for shell scripts
 *.sh text eol=lf
 
-
-/.github export-ignore
-CHANGELOG.md export-ignore
-.styleci.yml export-ignore
+# Standard Laravel files
+*.php text eol=lf
+*.css text
+*.js text
+*.json text
