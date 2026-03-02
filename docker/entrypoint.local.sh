@@ -63,4 +63,4 @@ php artisan view:clear
 
 # 8️⃣ Start PHP-FPM
 echo "🚀 Starting PHP-FPM..."
-exec php-fpm
+exec /usr/local/sbin/php-fpm -F
