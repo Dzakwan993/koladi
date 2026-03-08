@@ -537,6 +537,83 @@
     </div>
 </div>
 
+{{-- ============================================ --}}
+{{-- ADD LINK MODAL (Company Context)            --}}
+{{-- ============================================ --}}
+<div x-show="showModalLink" x-cloak
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl w-full max-w-md shadow-2xl" @click.outside="showModalLink = false">
+
+        {{-- Header Modal --}}
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-800">Simpan Link</h3>
+            </div>
+            <button @click="showModalLink = false" class="p-1 hover:bg-gray-100 rounded-lg transition">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        {{-- Form --}}
+        <form method="POST" action="{{ route('company-documents.link.store') }}"
+            @submit.prevent="handleLinkUpload($event)">
+            @csrf
+            <input type="hidden" name="company_id" :value="currentCompanyId || '{{ $company->id }}'">
+            <input type="hidden" name="parent_id" :value="currentFolder ? currentFolder.id : ''">
+
+            <div class="px-6 py-5 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">URL Link <span class="text-red-500">*</span></label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
+                        </div>
+                        <input type="url" name="url" x-model="linkUrl"
+                            placeholder="https://"
+                            class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition text-sm"
+                            required>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 flex gap-2">
+                    <svg class="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p class="text-xs text-blue-700">Judul dan gambar preview akan diambil otomatis dari website tersebut.</p>
+                </div>
+            </div>
+
+            {{-- Footer Modal --}}
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+                <button type="button" @click="showModalLink = false; linkUrl = ''"
+                    class="px-4 py-2 text-sm text-blue-600 bg-white border border-blue-600 rounded-lg hover:bg-gray-50 transition">
+                    Batal
+                </button>
+                <button type="submit" :disabled="!linkUrl || isUploadingLink"
+                    :class="(!linkUrl || isUploadingLink) ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+                    class="px-4 py-2 text-sm text-white rounded-lg transition flex items-center gap-2">
+                    <template x-if="isUploadingLink">
+                        <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </template>
+                    <span x-text="isUploadingLink ? 'Menyimpan...' : 'Simpan Link'"></span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {{-- 7️⃣ CONFIRMATION MODAL (Sama untuk workspace & company) --}}
 <div x-show="showConfirmModal" x-cloak
     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">

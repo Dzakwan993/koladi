@@ -438,7 +438,8 @@ CREATE TABLE public.files (
     file_path character varying(255),
     file_size integer,
     file_type character varying(255),
-    company_id uuid
+    company_id uuid,
+    preview_image_url text -- 🔥 TAMBAHKAN INI DI BAWAH SINI
 );
 
 

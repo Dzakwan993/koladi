@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\UserWorkspace;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Embed\Embed;
 
 class DokumenController extends Controller
 {
@@ -256,6 +257,59 @@ class DokumenController extends Controller
                 'text' => 'File ' . $fileModel->file_name . ' sudah tersimpan.',
             ]
         ]);
+    }
+
+
+    public function storeLink(Request $request)
+    {
+        $request->validate([
+            'url'          => 'required|url',
+            'workspace_id' => 'required',
+            'parent_id'    => 'nullable'
+        ]);
+
+        try {
+            $embed = new Embed();
+            $info  = $embed->get($request->url);
+
+            File::create([
+                'id'                => Str::uuid()->toString(),
+                'workspace_id'      => $request->workspace_id,
+                'company_id'        => null,
+                'folder_id'         => $request->parent_id,
+                'uploaded_by'       => auth()->id(),
+                'file_name'         => $info->title ?? $request->url,
+                'file_type'         => 'Link',
+                'file_url'          => $request->url,
+                'preview_image_url' => (string) $info->image,
+                'is_private'        => false,
+                'uploaded_at'       => now(),
+                'file_size'         => 0,
+            ]);
+
+            $redirectUrl = route('dokumen-dan-file', ['workspace' => $request->workspace_id]);
+            if ($request->parent_id) {
+                $redirectUrl .= '?folder=' . $request->parent_id;
+            }
+
+            return response()->json([
+                'success'      => true,
+                'redirect_url' => $redirectUrl,
+                'alert'        => [
+                    'icon'  => 'success',
+                    'title' => 'Link berhasil disimpan!',
+                    'text'  => 'Data dari ' . ($info->providerName ?? 'situs') . ' berhasil diambil.',
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Workspace Link Scraper Error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil informasi dari link tersebut. Pastikan link bisa diakses publik.'
+            ], 422);
+        }
     }
 
 

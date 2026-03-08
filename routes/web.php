@@ -439,6 +439,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/dokumen-dan-file/{workspace}', [DokumenController::class, 'index'])->name('dokumen-dan-file');
         Route::post('/folder', [DokumenController::class, 'store'])->name('folder.store');
         Route::post('/file', [DokumenController::class, 'storeFile'])->name('file.store');
+        Route::post('/workspace-link', [DokumenController::class, 'storeLink'])->name('workspace.link.store');
         Route::post('/folders/{id}/update', [DokumenController::class, 'updateFolder'])->name('folder.update');
         Route::put('/files/{id}/update', [DokumenController::class, 'updateFile'])->name('files.update');
         Route::delete('/files/{id}/delete', [DokumenController::class, 'destroy'])->name('files.destroy');
@@ -461,6 +462,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/', [CompanyDokumenController::class, 'index'])->name('index');
             Route::post('/folder', [CompanyDokumenController::class, 'storeFolder'])->name('folder.store');
             Route::post('/file', [CompanyDokumenController::class, 'storeFile'])->name('file.store');
+            Route::post('/link', [CompanyDokumenController::class, 'storeLink'])->name('link.store');
             Route::post('/folders/{id}/update', [CompanyDokumenController::class, 'updateFolder'])->name('folder.update');
             Route::put('/files/{id}/update', [CompanyDokumenController::class, 'updateFile'])->name('files.update');
             Route::delete('/files/{id}/delete', [CompanyDokumenController::class, 'destroyFile'])->name('files.destroy');

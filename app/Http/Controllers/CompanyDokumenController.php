@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\StoreCompanyFolderRequest;
 use App\Http\Requests\StoreCompanyFileRequest;
 use App\Models\Workspace;
+use Embed\Embed;
+
 
 class CompanyDokumenController extends Controller
 {
@@ -265,6 +267,62 @@ class CompanyDokumenController extends Controller
         ]);
     }
 
+    public function storeLink(Request $request)
+    {
+        // 1. Validasi URL dan context
+        $request->validate([
+            'url' => 'required|url',
+            'company_id' => 'required',
+            'parent_id' => 'nullable'
+        ]);
+
+        try {
+            // 2. Scraping Metadata menggunakan php-embed (Sesuai dokumentasi terbaru)
+            $embed = new Embed();
+            $info = $embed->get($request->url);
+
+            // 3. Simpan ke database (Menggunakan Model File dengan UUID)
+            $fileModel = File::create([
+                'id' => Str::uuid()->toString(),
+                'company_id' => $request->company_id,
+                'workspace_id' => null,
+                'folder_id' => $request->parent_id, // Gunakan parent_id dari modal tadi
+                'uploaded_by' => auth()->id(),
+                'file_name' => $info->title ?? $request->url, // Judul otomatis
+                'file_type' => 'Link',                       // Penanda tipe
+                'file_url' => $request->url,                // Link asli tujuan
+                'preview_image_url' => (string) $info->image,        // URL Gambar (Kolom baru di SQL)
+                'is_private' => false,
+                'uploaded_at' => now(),
+                'file_size' => 0, // Karena link tidak punya ukuran file fisik
+            ]);
+
+            // 4. Redirect URL agar user kembali ke folder yang sedang dibuka
+            $redirectUrl = route('company-documents.index');
+            if ($request->parent_id) {
+                $redirectUrl .= '?folder=' . $request->parent_id;
+            }
+
+            return response()->json([
+                'success' => true,
+                'redirect_url' => $redirectUrl,
+                'alert' => [
+                    'icon' => 'success',
+                    'title' => 'Link berhasil disimpan!',
+                    'text' => 'Data dari ' . ($info->providerName ?? 'situs') . ' berhasil diambil.',
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Link Scraper Error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil informasi dari link tersebut. Pastikan link bisa diakses publik.'
+            ], 422);
+        }
+    }
+
     public function updateFolder(Request $request, $id)
     {
         $folder = Folder::findOrFail($id);
@@ -399,65 +457,65 @@ class CompanyDokumenController extends Controller
     }
 
     /**
- * 🔥 UPDATED: Get Company Members untuk Recipients - Filter user nonaktif
- */
-public function getCompanyMembers(Request $req)
-{
-    $user = Auth::user();
-    $activeCompanyId = session('active_company_id');
+     * 🔥 UPDATED: Get Company Members untuk Recipients - Filter user nonaktif
+     */
+    public function getCompanyMembers(Request $req)
+    {
+        $user = Auth::user();
+        $activeCompanyId = session('active_company_id');
 
-    $userCompany = $user->userCompanies()
-        ->where('company_id', $activeCompanyId)
-        ->with('role')
-        ->first();
+        $userCompany = $user->userCompanies()
+            ->where('company_id', $activeCompanyId)
+            ->with('role')
+            ->first();
 
-    $companyRole = $userCompany?->role?->name ?? 'Member';
-    $isHighRole = in_array($companyRole, ['SuperAdmin', 'Admin']);
+        $companyRole = $userCompany?->role?->name ?? 'Member';
+        $isHighRole = in_array($companyRole, ['SuperAdmin', 'Admin']);
 
-    $folderCreatedBy = $req->folder_created_by ?: null;
-    $fileUploadedBy = $req->file_uploaded_by ?: null;
+        $folderCreatedBy = $req->folder_created_by ?: null;
+        $fileUploadedBy = $req->file_uploaded_by ?: null;
 
-    if (!$isHighRole) {
-        if ($folderCreatedBy != $user->id && $fileUploadedBy != $user->id) {
-            return response()->json([
-                'error' => 'Anda tidak memiliki akses untuk melihat anggota company ini'
-            ], 403);
+        if (!$isHighRole) {
+            if ($folderCreatedBy != $user->id && $fileUploadedBy != $user->id) {
+                return response()->json([
+                    'error' => 'Anda tidak memiliki akses untuk melihat anggota company ini'
+                ], 403);
+            }
         }
+
+        // 🔥 UPDATED: Filter hanya user yang AKTIF di company
+        $members = User::whereHas('userCompanies', function ($q) use ($activeCompanyId) {
+            $q->where('company_id', $activeCompanyId)
+                ->where('status_active', true) // 🔥 FILTER USER AKTIF
+                ->whereNull('deleted_at');
+        })->get();
+
+        $filtered = $members->map(function ($m) use ($folderCreatedBy, $fileUploadedBy, $isHighRole, $user) {
+            $canBeSelected = false;
+
+            if ($isHighRole) {
+                $canBeSelected = true;
+            }
+
+            if ($folderCreatedBy && $m->id == $folderCreatedBy) {
+                $canBeSelected = true;
+            }
+
+            if ($fileUploadedBy && $m->id == $fileUploadedBy) {
+                $canBeSelected = true;
+            }
+
+            return [
+                'id' => $m->id,
+                'name' => $m->full_name ?? $m->name,
+                'avatar' => $m->avatar ?? 'https://i.pravatar.cc/150?img=' . rand(1, 70),
+                'can_be_selected' => $canBeSelected,
+                'selected' => false,
+            ];
+        });
+
+        return response()->json(['members' => $filtered]);
     }
-
-    // 🔥 UPDATED: Filter hanya user yang AKTIF di company
-    $members = User::whereHas('userCompanies', function ($q) use ($activeCompanyId) {
-        $q->where('company_id', $activeCompanyId)
-          ->where('status_active', true) // 🔥 FILTER USER AKTIF
-          ->whereNull('deleted_at');
-    })->get();
-
-    $filtered = $members->map(function ($m) use ($folderCreatedBy, $fileUploadedBy, $isHighRole, $user) {
-        $canBeSelected = false;
-
-        if ($isHighRole) {
-            $canBeSelected = true;
-        }
-
-        if ($folderCreatedBy && $m->id == $folderCreatedBy) {
-            $canBeSelected = true;
-        }
-
-        if ($fileUploadedBy && $m->id == $fileUploadedBy) {
-            $canBeSelected = true;
-        }
-
-        return [
-            'id' => $m->id,
-            'name' => $m->full_name ?? $m->name,
-            'avatar' => $m->avatar ?? 'https://i.pravatar.cc/150?img=' . rand(1, 70),
-            'can_be_selected' => $canBeSelected,
-            'selected' => false,
-        ];
-    });
-
-    return response()->json(['members' => $filtered]);
-}
 
     public function recipientsStore(Request $request)
     {

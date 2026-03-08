@@ -29,6 +29,7 @@ class File extends Model
         'is_private',
         'uploaded_by',
         'uploaded_at',
+        'preview_image_url'
     ];
 
     protected $casts = [

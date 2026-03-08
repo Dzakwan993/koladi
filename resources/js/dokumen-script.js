@@ -66,6 +66,9 @@ export default function documentSearch() {
         _submittingFolder: false, // ✅ TAMBAHKAN INI
         filteredDocuments: [],
         showCreateFolderModal: false,
+        showModalLink: false,
+        linkUrl: '',
+        isUploadingLink: false,
         showMoveDocumentsModal: false,
         showEditFolderModal: false,
         showDeleteFolderModal: false,
@@ -133,6 +136,7 @@ export default function documentSearch() {
         audioFiles: [], // ✅ TAMBAHKAN INI
         codeFiles: [], // ✅ TAMBAHKAN INI
         unknownFiles: [], // ✅ TAMBAHKAN INI
+        linkFiles: [], // ✅ BARU
         members: [],
         availableWorkspaces: [],
         loadingWorkspaces: false,
@@ -153,6 +157,7 @@ export default function documentSearch() {
                 ...this.audioFiles,
                 ...this.codeFiles,
                 ...this.unknownFiles,
+                ...this.linkFiles,
             ].filter((file) => file.folder_id === null);
         },
 
@@ -357,9 +362,8 @@ export default function documentSearch() {
             const params = new URLSearchParams();
             if (stateObj.folderId) params.set("folder", stateObj.folderId);
             if (stateObj.fileId) params.set("file", stateObj.fileId);
-            const newUrl = `${window.location.pathname}${
-                params.toString() ? "?" + params.toString() : ""
-            }`;
+            const newUrl = `${window.location.pathname}${params.toString() ? "?" + params.toString() : ""
+                }`;
 
             // 🔥 TAMBAHKAN LOGGING INI
             console.log("📍 setHistoryState called:");
@@ -643,6 +647,7 @@ export default function documentSearch() {
             this.unknownFiles = processedFiles.filter(
                 (f) => f.type === "Unknown"
             );
+            this.linkFiles = processedFiles.filter((f) => f.type === "Link");
         },
 
         processFiles(files) {
@@ -653,7 +658,7 @@ export default function documentSearch() {
                     : null;
                 const displayName =
                     originalName || extractedName || "Unknown File";
-                const type = this.getFileType(displayName);
+                const type = file.file_type === 'Link' ? 'Link' : this.getFileType(displayName);
                 const uploaderId =
                     file.uploaded_by || file.uploader?.id || null;
 
@@ -665,6 +670,7 @@ export default function documentSearch() {
                     icon: this.getFileIcon(type),
                     size: this.formatFileSize(file.file_size || 0),
                     file_url: file.file_url,
+                    preview_image_url: file.preview_image_url || null,
                     uploaded_by: uploaderId,
                     creator: {
                         name:
@@ -870,6 +876,66 @@ export default function documentSearch() {
         // 🔥 FORM SUBMISSION HANDLERS
         // ==========================================
 
+        // 2️⃣ Handle Upload Link
+        async handleLinkUpload(event) {
+            const form = event.target;
+            const formData = new FormData(form);
+            const url = formData.get('url');
+
+            if (!url) return;
+
+            this.isUploadingLink = true;
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Accept': 'application/json',
+                    },
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    this.showModalLink = false;
+                    this.linkUrl = '';
+
+                    if (data.alert) {
+                        showCustomSwal({
+                            icon: data.alert.icon,
+                            title: data.alert.title,
+                            text: data.alert.text,
+                            showConfirmButton: false,
+                            timer: 2000,
+                        });
+                    }
+
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, data.alert ? 2200 : 0);
+                } else {
+                    showCustomSwal({
+                        icon: 'error',
+                        title: 'Gagal!',
+                        text: data.message || 'Terjadi kesalahan saat menyimpan link.',
+                        showConfirmButton: true,
+                    });
+                }
+            } catch (err) {
+                console.error('Link upload error:', err);
+                showCustomSwal({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Terjadi kesalahan jaringan.',
+                    showConfirmButton: true,
+                });
+            } finally {
+                this.isUploadingLink = false;
+            }
+        },
+
         // 1️⃣ Handle Upload File
         // 1️⃣ Handle Upload File (MULTIPLE SUPPORT)
         // 1️⃣ Handle Upload File (MULTIPLE SUPPORT)
@@ -899,9 +965,8 @@ export default function documentSearch() {
                     showCustomSwal({
                         icon: "error",
                         title: "File Terlalu Besar!",
-                        text: `Video "${
-                            file.name
-                        }" maksimal 100 MB (${fileSizeMB.toFixed(2)} MB).`,
+                        text: `Video "${file.name
+                            }" maksimal 100 MB (${fileSizeMB.toFixed(2)} MB).`,
                         showConfirmButton: true,
                     });
                     continue;
@@ -911,9 +976,8 @@ export default function documentSearch() {
                     showCustomSwal({
                         icon: "error",
                         title: "File Terlalu Besar!",
-                        text: `"${
-                            file.name
-                        }" maksimal 20 MB (${fileSizeMB.toFixed(2)} MB).`,
+                        text: `"${file.name
+                            }" maksimal 20 MB (${fileSizeMB.toFixed(2)} MB).`,
                         showConfirmButton: true,
                     });
                     continue;
@@ -932,9 +996,8 @@ export default function documentSearch() {
                 .map(
                     (f, idx) => `
         <div class="flex items-center justify-between py-2 border-b">
-            <span class="text-sm text-gray-700 truncate flex-1">${idx + 1}. ${
-                        f.name
-                    }</span>
+            <span class="text-sm text-gray-700 truncate flex-1">${idx + 1}. ${f.name
+                        }</span>
             <div class="flex items-center gap-2">
                 <span id="progress-${idx}" class="text-xs text-gray-500">0%</span>
                 <div class="w-16 bg-gray-200 rounded-full h-1.5">
@@ -1115,6 +1178,53 @@ export default function documentSearch() {
                 this.loadingWorkspaces = false;
             }
         },
+
+        async handleLinkUpload(event) {
+            // 1. Ambil data dari form menggunakan event.target
+            const form = event.target;
+            const formData = new FormData(form);
+
+            // 2. Tampilkan loading (Pakai SweetAlert agar seragam dengan fungsi upload file mu)
+            Swal.fire({
+                title: 'Sedang memproses link...',
+                text: 'Mohon tunggu sebentar',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            try {
+                // 3. Kirim ke Backend (Route: company-documents.link.store)
+                const response = await axios.post(form.action, formData);
+
+                if (response.data.success) {
+                    // 4. Jika sukses, tutup modal dan bersihkan input
+                    this.showModalLink = false;
+                    this.linkUrl = '';
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil!',
+                        text: 'Link telah disimpan.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
+
+                    // Refresh halaman agar data baru muncul
+                    setTimeout(() => window.location.reload(), 1500);
+                }
+            } catch (error) {
+                // 5. Handle jika terjadi error (misal link tidak valid atau scraping gagal)
+                console.error("Link Upload Error:", error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal menyimpan link',
+                    text: error.response?.data?.message || 'Pastikan link yang dimasukkan valid.'
+                });
+            }
+        },
+
 
         // ✅ Method untuk memilih workspace dan load root folders
         // ✅ Method untuk memilih workspace dan load root folders
@@ -3201,7 +3311,7 @@ function insertUploadImageButtonToToolbar(editor, commentId) {
                                         if (
                                             item.is("element", "imageBlock") &&
                                             item.getAttribute("src") ===
-                                                data.url
+                                            data.url
                                         ) {
                                             // ✅ Gunakan attribute name yang BENAR
                                             writer.setAttribute(
@@ -3926,9 +4036,8 @@ window.documentCommentSection = function () {
             } catch (err) {
                 console.error("Editor creation error:", err);
                 // Fallback ke textarea
-                el.innerHTML = `<textarea id="${containerId}-fallback" class="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg bg-white resize-none">${
-                    options.initial || ""
-                }</textarea>`;
+                el.innerHTML = `<textarea id="${containerId}-fallback" class="w-full min-h-[120px] p-3 border border-gray-300 rounded-lg bg-white resize-none">${options.initial || ""
+                    }</textarea>`;
                 return null;
             }
         },
