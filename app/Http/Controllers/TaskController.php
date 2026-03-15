@@ -834,33 +834,24 @@ class TaskController extends Controller
 
 
     // untuk label dan warna pada tugas
-    public function getLabels($workspaceId)
-    {
-        try {
-            $user = Auth::user();
-
-            // ✅ VALIDASI: Gunakan method helper untuk cek akses
-            if (!$this->canAccessWorkspace($workspaceId)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke workspace ini'
-                ], 403);
-            }
-
-            $labels = Label::with('color')->get();
-
-            return response()->json([
-                'success' => true,
-                'labels' => $labels
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error getting labels: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengambil data label'
-            ], 500);
+   public function getLabels($workspaceId)
+{
+    try {
+        if (!$this->canAccessWorkspace($workspaceId)) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
         }
+
+        // ← Sebelumnya Label::with('color')->get() — tidak filter workspace!
+        $labels = Label::with('color')
+            ->where('workspace_id', $workspaceId)
+            ->get();
+
+        return response()->json(['success' => true, 'labels' => $labels]);
+    } catch (\Exception $e) {
+        Log::error('Error getting labels: ' . $e->getMessage());
+        return response()->json(['success' => false, 'message' => 'Gagal mengambil data label'], 500);
     }
+}
 
 
     // ✅ NEW: Create new label
@@ -902,20 +893,23 @@ class TaskController extends Controller
             }
 
             // Cek apakah label dengan nama yang sama sudah ada
-            $existingLabel = Label::where('name', $request->name)->first();
-            if ($existingLabel) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Label dengan nama ini sudah ada'
-                ], 400);
-            }
+$existingLabel = Label::where('name', $request->name)
+    ->where('workspace_id', $request->workspace_id)
+    ->first();
+
+if ($existingLabel) {
+    return response()->json([
+        'success' => false,
+        'message' => 'Label dengan nama ini sudah ada'
+    ], 400);
+}
 
             $label = Label::create([
-                'id' => Str::uuid()->toString(),
-                'name' => $request->name,
-                'color_id' => $request->color_id
-            ]);
-
+    'id' => Str::uuid()->toString(),
+    'name' => $request->name,
+    'color_id' => $request->color_id,
+    'workspace_id' => $request->workspace_id // ← tambahkan ini
+]);
             // Load relation color untuk response
             $label->load('color');
 

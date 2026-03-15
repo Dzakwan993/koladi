@@ -17,7 +17,8 @@ class Label extends Model
     protected $fillable = [
         'id',
         'name',
-        'color_id'
+        'color_id',
+        'workspace_id'
     ];
 
      protected static function boot()
@@ -48,4 +49,10 @@ class Label extends Model
                     ->using(TaskLabel::class)
                     ->withTimestamps();
     }
+
+    public function workspace()
+{
+    return $this->belongsTo(Workspace::class, 'workspace_id');
+}
+
 }
