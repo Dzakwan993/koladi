@@ -91,8 +91,8 @@ Route::middleware(['auth', 'check.system.admin'])->prefix('admin')->name('admin.
 });
 
 
-// Webhook Midtrans (tanpa auth)
-Route::post('/midtrans/callback', [SubscriptionController::class, 'callback'])->name('midtrans.callback');
+// Webhook Xendit (tanpa auth)
+Route::post('/xendit/callback', [SubscriptionController::class, 'xenditCallback'])->name('xendit.callback');
 
 // ============================================
 // 🔐 AUTHENTICATED ROUTES
@@ -139,7 +139,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/company/{companyId}/users-status', [SubscriptionController::class, 'getUsersWithStatus'])
         ->name('api.company.users-status');
 
-
+    Route::post('/subscription/cancel-pending', [SubscriptionController::class, 'cancelPending']);
     // ========================================
     // 🔥 NEW: API ROUTES UNTUK DOKUMEN
     // (Letakkan DI AWAL setelah Route::middleware(['auth'])->group)

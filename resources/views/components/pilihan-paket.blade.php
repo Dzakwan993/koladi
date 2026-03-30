@@ -90,20 +90,29 @@
                             </div>
                         </label>
 
-                        <!-- Midtrans (Disabled) -->
-                        <label class="relative cursor-not-allowed opacity-50">
-                            <input type="radio" name="payment_method" value="midtrans" disabled class="peer sr-only">
-                            <div class="border-2 border-gray-300 rounded-lg p-4 bg-gray-100">
+                        <!-- Xendit -->
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="payment_method" value="xendit" class="peer sr-only">
+                            <div
+                                class="border-2 border-gray-300 rounded-lg p-4 peer-checked:border-[#4A63E7] peer-checked:bg-blue-50 transition-all">
                                 <div class="flex items-center gap-3 mb-2">
-                                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor"
+                                    <svg class="w-6 h-6 text-[#4A63E7]" fill="none" stroke="currentColor"
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                                     </svg>
-                                    <span class="font-bold text-gray-600">Midtrans</span>
-                                    <span class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Segera</span>
+                                    <span class="font-bold text-gray-900">Xendit</span>
+                                    <span
+                                        class="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">Tersedia</span>
                                 </div>
-                                <p class="text-sm text-gray-500">Kartu kredit, e-wallet, dll</p>
+                                <p class="text-sm text-gray-600">QRIS, Virtual Account, e-wallet, dll</p>
+                                <span class="absolute top-4 right-4 hidden peer-checked:block text-[#4A63E7]">
+                                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd"
+                                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </span>
                             </div>
                         </label>
                     </div>
@@ -385,6 +394,21 @@
         document.getElementById('modalPilihPaket').classList.add('hidden');
         document.getElementById('modalPilihPaket').classList.remove('flex');
         resetModal();
+
+        // 🔥 BARU: Hapus invoice pending yang tidak jadi dibayar
+        if (window._lastPendingInvoiceId) {
+            fetch('/subscription/cancel-pending', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    external_id: window._lastPendingInvoiceId
+                })
+            });
+            window._lastPendingInvoiceId = null;
+        }
     }
 
     function openUploadModal(invoiceId, amount) {
@@ -680,25 +704,26 @@
             }
 
             /* ===============================
-               SUCCESS RESPONSE
-            =============================== */
+   SUCCESS RESPONSE
+=============================== */
             const data = await response.json();
 
             if (data.success) {
                 if (data.payment_method === 'manual') {
                     const totalAmount =
                         parseFloat(selectedPlan.price_monthly) +
-                        (addon ?
-                            parseFloat(addon.price_per_user) * addonCount :
-                            0);
+                        (addon ? parseFloat(addon.price_per_user) * addonCount : 0);
+
+                    // 🔥 Simpan invoice ID untuk cleanup jika modal ditutup tanpa upload
+                    window._lastPendingInvoiceId = data.external_id;
 
                     openUploadModal(data.external_id, totalAmount);
-                } else {
-                    Swal.fire({
-                        icon: 'info',
-                        title: 'Belum Tersedia',
-                        text: 'Pembayaran Midtrans belum tersedia'
-                    });
+
+                    // Reset setelah modal upload dibuka (tidak perlu cancel kalau sudah buka upload)
+                    window._lastPendingInvoiceId = null;
+
+                } else if (data.payment_method === 'xendit') {
+                    window.location.href = data.invoice_url;
                 }
             } else {
                 throw new Error(data.message || 'Gagal membuat pembayaran');
