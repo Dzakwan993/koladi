@@ -12,41 +12,22 @@ use Illuminate\Support\Str;
 class MindmapController extends Controller
 {
     public function index()
-{
-    // Misal ambil workspace pertama user
-    $workspace = Workspace::first();
+    {
+        $workspace = Workspace::first();
 
-    if (!$workspace) {
-        abort(404, 'Tidak ada workspace yang tersedia. Silakan buat workspace terlebih dahulu.');
+        if (!$workspace) {
+            abort(404, 'Tidak ada workspace yang tersedia. Silakan buat workspace terlebih dahulu.');
+        }
+
+        return $this->loadMindmapByWorkspace($workspace);
     }
 
-    return $this->loadMindmapByWorkspace($workspace);
-}
-
-
-private function loadMindmapByWorkspace(Workspace $workspace)
-{
-    $mindmap = Mindmap::firstOrCreate(
-        ['workspace_id' => $workspace->id],
-        [
-            'id' => Str::uuid(),
-            'title' => 'Mind Map ' . $workspace->name,
-            'description' => 'Mind map untuk workspace ' . $workspace->name
-        ]
-    );
-
-    return view('mindmap', compact('workspace', 'mindmap'));
-}
-
-    public function show($workspaceId)
+    private function loadMindmapByWorkspace(Workspace $workspace)
     {
-        $workspace = Workspace::findOrFail($workspaceId);
-
-        // Cari atau buat mindmap default untuk workspace
         $mindmap = Mindmap::firstOrCreate(
-            ['workspace_id' => $workspaceId],
+            ['workspace_id' => $workspace->id],
             [
-                'id' => Str::uuid(),
+                'id' => Str::uuid()->toString(),
                 'title' => 'Mind Map ' . $workspace->name,
                 'description' => 'Mind map untuk workspace ' . $workspace->name
             ]
@@ -55,14 +36,30 @@ private function loadMindmapByWorkspace(Workspace $workspace)
         return view('mindmap', compact('workspace', 'mindmap'));
     }
 
-    public function getMindmapData($mindmapId)
+    public function show($workspaceId)
     {
-        $mindmap = Mindmap::with(['nodes' => function ($query) {
-            $query->orderBy('sort_order');
-        }])->findOrFail($mindmapId);
+        $workspace = Workspace::findOrFail($workspaceId);
 
-        return response()->json([
-            'nodes' => $mindmap->nodes->map(function ($node) {
+        $mindmap = Mindmap::firstOrCreate(
+            ['workspace_id' => $workspaceId],
+            [
+                'id' => Str::uuid()->toString(),
+                'title' => 'Mind Map ' . $workspace->name,
+                'description' => 'Mind map untuk workspace ' . $workspace->name
+            ]
+        );
+
+        return view('mindmap', compact('workspace', 'mindmap'));
+    }
+
+    public function getData($id)
+    {
+        try {
+            $mindmap = Mindmap::with(['nodes' => function ($query) {
+                $query->orderBy('sort_order');
+            }])->findOrFail($id);
+
+            $nodes = $mindmap->nodes->map(function ($node) {
                 return [
                     'id' => $node->id,
                     'title' => $node->title,
@@ -72,127 +69,95 @@ private function loadMindmapByWorkspace(Workspace $workspace)
                     'isRoot' => $node->parent_id === null,
                     'type' => $node->type,
                     'parentId' => $node->parent_id,
-                    'connectionSide' => $node->connection_side
+                    'connectionSide' => $node->connection_side ?: 'auto:auto',
                 ];
-            })
-        ]);
+            });
+
+            return response()->json([
+                'nodes' => $nodes
+            ]);
+        } catch (\Exception $e) {
+            logger('Failed to get mindmap data: ' . $e->getMessage(), [
+                'mindmap_id' => $id,
+                'exception' => $e
+            ]);
+
+            return response()->json([
+                'nodes' => []
+            ], 500);
+        }
     }
 
-    public function saveNode(Request $request, $mindmapId)
+    public function save($id, Request $request)
     {
         $request->validate([
             'nodes' => 'required|array',
-            'nodes.*.id' => 'sometimes|string',
+            'nodes.*.id' => 'nullable|string',
             'nodes.*.title' => 'required|string|max:255',
             'nodes.*.description' => 'nullable|string',
             'nodes.*.x' => 'required|numeric',
             'nodes.*.y' => 'required|numeric',
             'nodes.*.parentId' => 'nullable|string',
-            'nodes.*.type' => 'required|string',
-            'nodes.*.connectionSide' => 'required|string'
+            'nodes.*.type' => 'required|string|max:50',
+            'nodes.*.connectionSide' => 'nullable|string|max:50',
         ]);
 
-        DB::transaction(function () use ($request, $mindmapId) {
+        try {
+            DB::beginTransaction();
+
+            $mindmap = Mindmap::findOrFail($id);
             $existingNodeIds = [];
 
             foreach ($request->nodes as $index => $nodeData) {
+                $nodeId = $nodeData['id'] ?? Str::uuid()->toString();
+
+                if (is_numeric($nodeId)) {
+                    $nodeId = Str::uuid()->toString();
+                }
+
                 $node = MindmapNode::updateOrCreate(
+                    ['id' => $nodeId],
                     [
-                        'id' => $nodeData['id'] ?? Str::uuid(),
-                    ],
-                    [
-                        'mindmap_id' => $mindmapId,
-                        'title' => $nodeData['title'],
+                        'mindmap_id' => $mindmap->id,
+                        'title' => $nodeData['title'] ?? 'Untitled',
                         'description' => $nodeData['description'] ?? '',
-                        'x_position' => $nodeData['x'],
-                        'y_position' => $nodeData['y'],
-                        'parent_id' => $nodeData['parentId'],
-                        'type' => $nodeData['type'],
-                        'connection_side' => $nodeData['connectionSide'],
-                        'sort_order' => $index
+                        'x_position' => $nodeData['x'] ?? 0,
+                        'y_position' => $nodeData['y'] ?? 0,
+                        'parent_id' => $nodeData['parentId'] ?? null,
+                        'type' => $nodeData['type'] ?? 'default',
+                        'connection_side' => $nodeData['connectionSide'] ?? 'auto:auto',
+                        'sort_order' => $index,
                     ]
                 );
 
                 $existingNodeIds[] = $node->id;
             }
 
-            // Hapus node yang tidak ada dalam request
-            MindmapNode::where('mindmap_id', $mindmapId)
+            MindmapNode::where('mindmap_id', $mindmap->id)
                 ->whereNotIn('id', $existingNodeIds)
                 ->delete();
-        });
 
-        // Broadcast ke Pusher
-        $this->broadcastMindmapUpdate($mindmapId);
+            DB::commit();
 
-        return response()->json(['message' => 'Mindmap saved successfully']);
-    }
+            $this->broadcastMindmapUpdate($mindmap->id);
 
-    public function addNode(Request $request, $mindmapId)
-    {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'x' => 'required|numeric',
-            'y' => 'required|numeric',
-            'parent_id' => 'nullable|string|exists:mindmap_nodes,id',
-            'type' => 'required|string',
-            'connection_side' => 'required|string'
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Mindmap saved successfully'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
 
-        $node = MindmapNode::create([
-            'id' => Str::uuid(),
-            'mindmap_id' => $mindmapId,
-            'parent_id' => $request->parent_id,
-            'title' => $request->title,
-            'description' => $request->description,
-            'x_position' => $request->x,
-            'y_position' => $request->y,
-            'type' => $request->type,
-            'connection_side' => $request->connection_side,
-            'sort_order' => MindmapNode::where('mindmap_id', $mindmapId)->count()
-        ]);
+            logger('Failed to save mindmap: ' . $e->getMessage(), [
+                'mindmap_id' => $id,
+                'exception' => $e
+            ]);
 
-        // Broadcast ke Pusher
-        $this->broadcastMindmapUpdate($mindmapId);
-
-        return response()->json([
-            'message' => 'Node added successfully',
-            'node' => $node
-        ]);
-    }
-
-    public function updateNode(Request $request, $nodeId)
-    {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'x' => 'required|numeric',
-            'y' => 'required|numeric',
-            'parent_id' => 'nullable|string|exists:mindmap_nodes,id',
-            'type' => 'required|string',
-            'connection_side' => 'required|string'
-        ]);
-
-        $node = MindmapNode::findOrFail($nodeId);
-
-        $node->update([
-            'title' => $request->title,
-            'description' => $request->description,
-            'x_position' => $request->x,
-            'y_position' => $request->y,
-            'parent_id' => $request->parent_id,
-            'type' => $request->type,
-            'connection_side' => $request->connection_side
-        ]);
-
-        // Broadcast ke Pusher
-        $this->broadcastMindmapUpdate($node->mindmap_id);
-
-        return response()->json([
-            'message' => 'Node updated successfully',
-            'node' => $node
-        ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save mindmap: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function deleteNode($nodeId)
@@ -200,148 +165,46 @@ private function loadMindmapByWorkspace(Workspace $workspace)
         $node = MindmapNode::findOrFail($nodeId);
         $mindmapId = $node->mindmap_id;
 
-        // Hapus node dan semua child nodes secara recursive
         $this->deleteNodeRecursive($node);
 
-        // Broadcast ke Pusher
         $this->broadcastMindmapUpdate($mindmapId);
 
-        return response()->json(['message' => 'Node deleted successfully']);
+        return response()->json([
+            'message' => 'Node deleted successfully'
+        ]);
     }
 
     private function deleteNodeRecursive($node)
     {
-        // Hapus semua child nodes terlebih dahulu
+        $node->load('children');
+
         foreach ($node->children as $child) {
             $this->deleteNodeRecursive($child);
         }
 
-        // Hapus node itu sendiri
         $node->delete();
     }
 
     private function broadcastMindmapUpdate($mindmapId)
     {
-        // Broadcast update ke Pusher
         if (class_exists('Pusher\Pusher')) {
-            $pusher = new \Pusher\Pusher(
-                config('broadcasting.connections.pusher.key'),
-                config('broadcasting.connections.pusher.secret'),
-                config('broadcasting.connections.pusher.app_id'),
-                config('broadcasting.connections.pusher.options')
-            );
+            try {
+                $pusher = new \Pusher\Pusher(
+                    config('broadcasting.connections.pusher.key'),
+                    config('broadcasting.connections.pusher.secret'),
+                    config('broadcasting.connections.pusher.app_id'),
+                    config('broadcasting.connections.pusher.options')
+                );
 
-            $pusher->trigger("mindmap-{$mindmapId}", 'mindmap-updated', [
-                'message' => 'Mindmap updated',
-                'timestamp' => now()
-            ]);
-        }
-    }
-
-    public function getData($id)
-{
-    try {
-        $mindmap = Mindmap::with('nodes')->findOrFail($id);
-
-        $nodes = $mindmap->nodes->map(function ($node) {
-            return [
-                'id' => $node->id,
-                'title' => $node->title,
-                'description' => $node->description,
-                'x' => (float) $node->x_position,
-                'y' => (float) $node->y_position,
-                'isRoot' => $node->parent_id === null,
-                'type' => $node->type,
-                'parentId' => $node->parent_id,
-                'connectionSide' => $node->connection_side
-            ];
-        });
-
-        return response()->json([
-            'nodes' => $nodes
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'nodes' => []
-        ], 500);
-    }
-}
-
-public function save($id, Request $request)
-{
-    // GANTI: \Log::info dengan logger()
-    logger('Save mindmap request received', [
-        'mindmap_id' => $id,
-        'nodes_count' => count($request->nodes ?? []),
-        'nodes_data' => $request->nodes
-    ]);
-
-    try {
-        DB::beginTransaction();
-
-        $existingNodeIds = [];
-
-        foreach ($request->nodes as $index => $nodeData) {
-            // Generate UUID baru untuk node yang belum ada di database
-            $nodeId = $nodeData['id'] ?? Str::uuid();
-
-            // Jika ID adalah number, convert ke string dan generate UUID baru
-            if (is_numeric($nodeId)) {
-                $nodeId = Str::uuid();
+                $pusher->trigger("mindmap-{$mindmapId}", 'mindmap-updated', [
+                    'message' => 'Mindmap updated',
+                    'timestamp' => now()->toDateTimeString()
+                ]);
+            } catch (\Throwable $e) {
+                logger('Pusher broadcast failed: ' . $e->getMessage(), [
+                    'mindmap_id' => $mindmapId
+                ]);
             }
-
-            $node = MindmapNode::updateOrCreate(
-                [
-                    'id' => $nodeId,
-                ],
-                [
-                    'mindmap_id' => $id,
-                    'title' => $nodeData['title'] ?? 'Untitled',
-                    'description' => $nodeData['description'] ?? '',
-                    'x_position' => $nodeData['x'] ?? 0,
-                    'y_position' => $nodeData['y'] ?? 0,
-                    'parent_id' => $nodeData['parentId'] ?? null,
-                    'type' => $nodeData['type'] ?? 'default',
-                    'connection_side' => $nodeData['connectionSide'] ?? 'auto',
-                    'sort_order' => $index
-                ]
-            );
-
-            $existingNodeIds[] = $node->id;
         }
-
-        // Hapus node yang tidak ada dalam request
-        MindmapNode::where('mindmap_id', $id)
-            ->whereNotIn('id', $existingNodeIds)
-            ->delete();
-
-        DB::commit();
-
-        // GANTI: \Log::info dengan logger()
-        logger('Mindmap saved successfully', ['mindmap_id' => $id]);
-
-        // Broadcast ke Pusher
-        $this->broadcastMindmapUpdate($id);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Mindmap saved successfully'
-        ]);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-
-        // GANTI: \Log::error dengan logger() atau report()
-        logger('Failed to save mindmap: ' . $e->getMessage(), [
-            'mindmap_id' => $id,
-            'exception' => $e
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to save mindmap: ' . $e->getMessage()
-        ], 500);
     }
-}
-
 }
