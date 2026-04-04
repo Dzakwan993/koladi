@@ -3027,7 +3027,13 @@
                                             this.openTaskModal = false;
 
                                             // ✅ RELOAD KANBAN DATA UNTUK SINKRONISASI
-                                            await this.loadKanbanTasks();
+                                           // ✅ RELOAD KANBAN DATA UNTUK SINKRONISASI
+await this.loadKanbanTasks();
+
+// ✅ RELOAD TIMELINE jika task punya phase
+if (formData.phase) {
+    await this.loadTimelineData();
+}
 
                                         } else {
                                             throw new Error(data.message || 'Gagal membuat tugas');
