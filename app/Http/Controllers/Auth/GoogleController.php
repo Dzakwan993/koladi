@@ -59,8 +59,15 @@ class GoogleController extends Controller
             // Handle pending invitation
             $pendingToken = session('pending_invitation_token');
             if ($pendingToken) {
-                Log::info('User has pending invitation, redirecting to accept');
-                return redirect()->route('invite.accept', $pendingToken);
+                $invitation = \App\Models\Invitation::where('token', $pendingToken)->first();
+                // Hanya redirect ke accept jika email user yang login SAMA dengan target undangan
+                if ($invitation && $user->email === $invitation->email_target) {
+                    Log::info('User has pending invitation, redirecting to accept');
+                    return redirect()->route('invite.accept', $pendingToken);
+                } else {
+                    // Hapus token dari session agar tidak mengganggu login akun lain
+                    session()->forget('pending_invitation_token');
+                }
             }
 
             // 🔥 Check user company dengan validasi status_active
@@ -106,12 +113,7 @@ class GoogleController extends Controller
                 'company_id_from_db' => $userCompany->company_id,
             ]);
 
-            // 🎯 CEK FIRST LOGIN
-            $isFirstLogin = !session()->has('has_logged_in_before');
-            if ($isFirstLogin) {
-                session(['has_logged_in_before' => true]);
-                session()->flash('first_login', true);
-            }
+
 
             return redirect()->intended('/dashboard')
                 ->with('success', 'Berhasil masuk dengan Google!');

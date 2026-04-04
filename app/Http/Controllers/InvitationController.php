@@ -250,9 +250,27 @@ class InvitationController extends Controller
         // Validasi email yang login harus sama dengan email yang diundang
         if ($user->email !== $invitation->email_target) {
             Auth::logout();
-            session(['pending_invitation_token' => $token]);
-            return redirect()->route('masuk')
-                ->with('error', 'Email Anda (' . $user->email . ') tidak sesuai dengan undangan (' . $invitation->email_target . '). Silakan login dengan email yang benar.');
+            
+            // ✅ Bersihkan seluruh session yang tertinggal (termasuk active_company_id dari user lama)
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+
+            // ✅ Cek apakah email yang diundang sudah terdaftar di sistem
+            $existingUser = User::where('email', $invitation->email_target)->first();
+
+            if (!$existingUser) {
+                // ✅ User BELUM PUNYA AKUN -> Langsung lempar ke DAFTAR (Auto-fill email)
+                // Simpan token di session agar setelah mendaftar, dia otomatis diterima
+                session(['pending_invitation_token' => $token]);
+                return redirect()->route('daftar', ['email' => $invitation->email_target])
+                    ->with('info', 'Sesi sebelumnya diakhiri karena link ini ditujukan untuk ' . $invitation->email_target . '. Silakan lanjut mendaftar.');
+            } else {
+                // ✅ User SUDAH PUNYA AKUN -> Lempar ke LOGIN
+                // Simpan token di session agar setelah dia login dengan email yang benar, otomatis diterima
+                session(['pending_invitation_token' => $token]);
+                return redirect()->route('masuk')
+                    ->with('info', 'Silakan masuk dengan akun ' . $invitation->email_target . ' untuk menerima undangan.');
+            }
         }
 
         // Cek apakah user sudah menjadi member perusahaan ini

@@ -353,10 +353,11 @@
             // 🎯 ONBOARDING SCRIPT - ULTIMATE FIX
             document.addEventListener('DOMContentLoaded', function() {
                 const shouldShowOnboarding = {{ isset($showOnboarding) && $showOnboarding ? 'true' : 'false' }};
+                const onboardingType = '{{ $onboardingType ?? "founder" }}';
 
-                console.log('Should show onboarding:', shouldShowOnboarding);
+                console.log('Should show onboarding:', shouldShowOnboarding, 'Type:', onboardingType);
 
-                if (shouldShowOnboarding) {
+                if (shouldShowOnboarding && onboardingType !== 'member') {
                     setTimeout(() => {
                         showOnboardingStep1();
                     }, 800);
@@ -364,13 +365,48 @@
             });
 
             function showOnboardingStep1() {
+                // ✅ Tambahkan CSS dinamis khusus untuk onboarding
+                if (!document.getElementById('onboarding-custom-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'onboarding-custom-style';
+                    style.textContent = `
+    @keyframes pulse {
+        0%, 100% {
+            box-shadow:
+                0 0 0 9999px rgba(0, 0, 0, 0.3),
+                0 0 0 13px rgba(59, 130, 246, 0.6),
+                0 0 40px 8px rgba(59, 130, 246, 0.4);
+            border-color: rgba(59, 130, 246, 0.9);
+        }
+        50% {
+            box-shadow:
+                0 0 0 9999px rgba(0, 0, 0, 0.3),
+                0 0 0 16px rgba(59, 130, 246, 0.7),
+                0 0 60px 12px rgba(59, 130, 246, 0.5);
+            border-color: rgba(59, 130, 246, 1);
+        }
+    }
+
+    #spotlight {
+        animation: pulse 2.5s ease-in-out infinite;
+    }
+
+    /* ✅ Pastikan button bisa diklik */
+    #tambah-anggota-btn {
+        cursor: pointer !important;
+        pointer-events: auto !important;
+    }
+`;
+                    document.head.appendChild(style);
+                }
+
                 const overlay = document.getElementById('onboarding-overlay');
                 const button = document.getElementById('tambah-anggota-btn');
                 const spotlight = document.getElementById('spotlight');
                 const tooltip = document.getElementById('onboarding-tooltip');
                 const arrow = document.getElementById('tooltip-arrow');
 
-                if (!button) {
+                if (!button || !overlay) {
                     console.error('Tombol Tambah Anggota tidak ditemukan');
                     return;
                 }
@@ -600,6 +636,12 @@
                         button.style.zIndex = '';
                         button.style.position = '';
                     }
+                    
+                    // ✅ Hapus custom style onboarding agar z-index kembali normal
+                    const customStyle = document.getElementById('onboarding-custom-style');
+                    if (customStyle) {
+                        customStyle.remove();
+                    }
                 }, 300);
 
                 // Cleanup
@@ -622,37 +664,7 @@
                 });
             }
 
-            // CSS animation
-            const style = document.createElement('style');
-            style.textContent = `
-    @keyframes pulse {
-        0%, 100% {
-            box-shadow:
-                0 0 0 9999px rgba(0, 0, 0, 0.3),
-                0 0 0 13px rgba(59, 130, 246, 0.6),
-                0 0 40px 8px rgba(59, 130, 246, 0.4);
-            border-color: rgba(59, 130, 246, 0.9);
-        }
-        50% {
-            box-shadow:
-                0 0 0 9999px rgba(0, 0, 0, 0.3),
-                0 0 0 16px rgba(59, 130, 246, 0.7),
-                0 0 60px 12px rgba(59, 130, 246, 0.5);
-            border-color: rgba(59, 130, 246, 1);
-        }
-    }
 
-    #spotlight {
-        animation: pulse 2.5s ease-in-out infinite;
-    }
-
-    /* ✅ Pastikan button bisa diklik */
-    #tambah-anggota-btn {
-        cursor: pointer !important;
-        pointer-events: auto !important;
-    }
-`;
-            document.head.appendChild(style);
 
             // ====================================
             // STEP 3: HIGHLIGHT RUANG KERJA DI SIDEBAR
@@ -780,4 +792,8 @@
             }
         </script>
     @endpush
+
+
+
 @endsection
+

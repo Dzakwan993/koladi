@@ -119,6 +119,7 @@
                     <a href="#fitur" class="font-bold hover:text-purple-600 transition-colors">Fitur</a>
                     <a href="#tentang" class=" font-bold hover:text-purple-600 transition-colors">Tentang</a>
                     <a href="#paket" class=" font-bold hover:text-purple-600 transition-colors">Paket</a>
+                    <a href="{{ route('tutorial.publik') }}" class="font-bold hover:text-blue-600 transition-colors">Tutorial</a>
                 </div>
 
                 <div class="hidden md:flex items-center space-x-4">
@@ -160,6 +161,7 @@
                 <a href="#fitur" class="block hover:text-purple-600 transition-colors">Fitur</a>
                 <a href="#tentang" class="block hover:text-purple-600 transition-colors">Tentang</a>
                 <a href="#paket" class="block hover:text-purple-600 transition-colors">Paket</a>
+                <a href="{{ route('tutorial.publik') }}" class="block hover:text-blue-600 transition-colors font-bold">Tutorial</a>
                 <div class="flex flex-col space-y-2 pt-4">
                     <a href="{{ route('masuk') }}">
                         <button

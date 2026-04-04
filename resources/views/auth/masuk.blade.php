@@ -39,6 +39,13 @@
                 </div>
             @endif
 
+            {{-- Notifikasi error (Flash) --}}
+            @if (session('error'))
+                <div class="mb-4 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg text-sm">
+                    {{ session('error') }}
+                </div>
+            @endif
+
             {{-- Notifikasi error --}}
             @if ($errors->any())
                 <div class="mb-4 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-lg text-sm">

@@ -257,7 +257,14 @@ public function login(Request $request)
         // ✅ Handle pending invitation
         $pendingToken = session('pending_invitation_token');
         if ($pendingToken) {
-            return redirect()->route('invite.accept', $pendingToken);
+            $invitation = \App\Models\Invitation::where('token', $pendingToken)->first();
+            // Hanya redirect ke accept jika email user yang login SAMA dengan target undangan
+            if ($invitation && $user->email === $invitation->email_target) {
+                return redirect()->route('invite.accept', $pendingToken);
+            } else {
+                // Hapus token dari session agar tidak mengganggu login akun lain
+                session()->forget('pending_invitation_token');
+            }
         }
 
         // 🔥 PRIORITAS 2: Check apakah user punya company AKTIF
@@ -291,12 +298,7 @@ public function login(Request $request)
         // ✅ SET SESSION active_company_id
         session(['active_company_id' => $userCompany->company_id]);
 
-        // 🎯 CEK APAKAH INI FIRST LOGIN
-        $isFirstLogin = !session()->has('has_logged_in_before');
-        if ($isFirstLogin) {
-            session(['has_logged_in_before' => true]);
-            session()->flash('first_login', true);
-        }
+
 
         return redirect()->intended('/dashboard')
             ->with('success', 'Berhasil masuk. Selamat datang!');

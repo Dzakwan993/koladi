@@ -32,6 +32,7 @@ use App\Http\Controllers\StatistikController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\TutorialController;
 
 // 🔥 Broadcasting Routes
 Broadcast::routes(['middleware' => ['web', 'auth']]);
@@ -40,7 +41,11 @@ Broadcast::routes(['middleware' => ['web', 'auth']]);
 // Route::get('/', [LandingPageController::class, 'index'])->name('landingpage');
 
 Route::get('/', [LandingPageController::class, 'index'])
+    ->middleware('guest')
     ->name('landingpage');
+
+// Halaman Tutorial Publik (bisa diakses tanpa login)
+Route::get('/tutorial-publik', [TutorialController::class, 'publik'])->name('tutorial.publik');
 
 
 Route::post('/feedback', [FeedbackController::class, 'store'])
@@ -164,6 +169,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
+
+    // Tutorial
+    Route::get('/tutorial', [TutorialController::class, 'index'])->name('tutorial');
 
     // Get modal full data
     Route::get('/statistik/modal-data', [StatistikController::class, 'getModalData']);

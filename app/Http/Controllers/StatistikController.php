@@ -21,6 +21,7 @@ class StatistikController extends Controller
 
     public function index()
     {
+        Carbon::setLocale('id');
         Log::info('=== STATISTIK CONTROLLER START ===');
 
         $user = Auth::user();
@@ -144,6 +145,7 @@ class StatistikController extends Controller
 
     public function getWorkspaceData(Request $request, $workspaceId)
     {
+        Carbon::setLocale('id');
         try {
             $user = Auth::user();
             $filter = $request->get('filter', 'todo');
@@ -246,6 +248,7 @@ class StatistikController extends Controller
      */
     public function getSuggestions(Request $request, DSSService $dssService)
     {
+        Carbon::setLocale('id');
         try {
             $user = Auth::user();
             $workspaceId = $request->get('workspace_id');
@@ -321,6 +324,7 @@ class StatistikController extends Controller
      */
     public function getModalData(Request $request, DSSService $dssService)
     {
+        Carbon::setLocale('id');
         try {
             $user = Auth::user();
             $workspaceId = $request->get('workspace_id');
@@ -1326,13 +1330,14 @@ class StatistikController extends Controller
      */
     private function getCurrentWeekPeriod()
     {
+        Carbon::setLocale('id');
         $now = Carbon::now();
         return [
             'label' => 'Minggu ini',
             'value' => 'current_week',
             'start' => $now->copy()->startOfWeek()->toDateString(),
             'end' => $now->copy()->endOfWeek()->toDateString(),
-            'display' => $now->copy()->startOfWeek()->format('d M') . ' - ' . $now->copy()->endOfWeek()->format('d M Y')
+            'display' => $now->copy()->startOfWeek()->translatedFormat('d M') . ' - ' . $now->copy()->endOfWeek()->translatedFormat('d M Y')
         ];
     }
 
@@ -1342,6 +1347,7 @@ class StatistikController extends Controller
      */
     private function generatePeriodOptions()
     {
+        Carbon::setLocale('id');
         $options = [];
 
         // Minggu ini

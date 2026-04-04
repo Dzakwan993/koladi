@@ -299,7 +299,11 @@ public function switchCompany($companyId)
             'phone' => $request->phone,
         ]);
 
-        return redirect()->route('dashboard')->with('success', 'Data perusahaan berhasil diperbarui!');
+        return redirect()->route('dashboard')->with('alert', [
+            'icon' => 'success',
+            'title' => 'Berhasil!',
+            'text' => 'Data perusahaan berhasil diperbarui!',
+        ]);
     }
 
     // ✅ Hapus perusahaan - HANYA SUPER ADMIN
@@ -312,14 +316,37 @@ public function switchCompany($companyId)
             return redirect()->back()->with('error', 'Hanya Super Admin yang dapat menghapus perusahaan!');
         }
 
+        $user = Auth::user();
+        $wasActive = session('active_company_id') === $id;
+
         UserCompany::where('company_id', $id)->delete();
         $company->delete();
 
-        if (session('active_company_id') === $id) {
+        cache()->forget("user_companies_{$user->id}");
+
+        if ($wasActive) {
             session()->forget('active_company_id');
+
+            // Find another company the user is member of
+            $nextCompany = UserCompany::where('user_id', $user->id)
+                ->where('status_active', true)
+                ->first();
+
+            if ($nextCompany) {
+                session(['active_company_id' => $nextCompany->company_id]);
+                return redirect()->route('dashboard')->with('alert', [
+                    'icon' => 'success',
+                    'title' => 'Terhapus!',
+                    'text' => 'Perusahaan berhasil dihapus. Anda dialihkan ke perusahaan lain.',
+                ]);
+            }
         }
 
-        return redirect()->route('dashboard')->with('success', 'Perusahaan berhasil dihapus!');
+        return redirect()->route('dashboard')->with('alert', [
+            'icon' => 'success',
+            'title' => 'Terhapus!',
+            'text' => 'Perusahaan berhasil dihapus!',
+        ]);
     }
 
     // ======================

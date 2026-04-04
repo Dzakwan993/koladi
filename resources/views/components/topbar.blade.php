@@ -1303,6 +1303,7 @@
                 </div>
 
                 <!-- Footer - Tambah Perusahaan -->
+                @if ($isSuperAdmin)
                 <div class="border-t border-gray-200">
                     <a href="{{ url('buat-perusahaan') }}"
                         class="flex items-center gap-3 px-4 py-3 w-full text-left hover:bg-gray-50 transition">
@@ -1316,6 +1317,7 @@
                         <span class="text-sm font-medium text-gray-700">Tambah perusahaan</span>
                     </a>
                 </div>
+                @endif
             </div>
         </div>
 
