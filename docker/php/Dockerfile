@@ -27,7 +27,9 @@ RUN chown -R www-data:www-data storage bootstrap/cache public \
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
+# Frontend build
+RUN npm ci && npm run build
+
 EXPOSE 9000
 CMD ["php-fpm"]
-# Frontend build
-RUN npm install
+

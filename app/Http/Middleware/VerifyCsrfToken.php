@@ -12,7 +12,8 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        'midtrans/callback', // ✅ Tambahkan ini
-        'midtrans/*',        // ✅ Atau ini untuk semua route midtrans
+        'midtrans/callback',
+        'midtrans/*',
+        'xendit/callback', // ✅ Tambahkan ini
     ];
 }

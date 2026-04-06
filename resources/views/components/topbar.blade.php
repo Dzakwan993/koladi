@@ -46,7 +46,8 @@
                         <template x-for="user in users.slice(0, 3)" :key="user.id">
                             <img :src="user.avatar" :alt="user.name"
                                 :title="user.name + ' (' + user.role + ')'"
-                                class="w-7 h-7 rounded-full border-2 border-white ring-1 ring-gray-200 hover:scale-110 transition-transform cursor-pointer object-cover">
+                                class="rounded-full border-2 border-white ring-1 ring-gray-200 hover:scale-110 transition-transform cursor-pointer object-cover"
+                                style="width: 28px; height: 28px; min-width: 28px; min-height: 28px; flex-shrink: 0;">
                         </template>
                     </div>
 
@@ -1324,9 +1325,10 @@
         <!-- Profile Dropdown -->
         <div class="relative" x-data="{ open: false }">
             <button @click="open = !open" @click.away="open = false"
-                class="rounded-full overflow-hidden border-2 border-gray-200 hover:border-[#225ad6] transition">
+                class="rounded-full overflow-hidden border-2 border-gray-200 hover:border-[#225ad6] transition"
+                style="width: 32px; height: 32px; min-width: 32px; min-height: 32px; flex-shrink: 0;">
                 <img src="{{ $avatar }}" alt="{{ $user->name }}"
-                    class="w-8 h-8 rounded-full object-cover border border-gray-300">
+                    style="width: 32px; height: 32px; object-fit: cover; display: block;">
             </button>
 
             <!-- Dropdown -->

@@ -117,7 +117,7 @@
                                 @else
                                     {{-- User aktif, tampilkan normal --}}
                                     <a href="{{ route('company.switch', $comp->id) }}"
-                                        class="flex items-center gap-3 p-3 rounded-lg border-2 transition-all 
+                                        class="flex items-center gap-3 p-3 rounded-lg border-2 transition-all
                 {{ $comp->id === $company->id
                     ? 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200'
                     : ($isCompanyExpired
@@ -188,7 +188,7 @@
                         <div class="bg-white rounded-xl shadow-md p-5 border border-gray-200">
                             <div class="flex justify-between items-start mb-4">
                                 <h3 class="text-sm font-bold text-gray-800 flex items-center gap-2">
-                                    <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor"
+                                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor"
                                         viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -234,7 +234,7 @@
 
                             <button onclick="openModal()"
                                 class="w-full bg-gradient-to-r from-[#5FD0AB] to-[#4dbf9a] hover:from-[#4dbf9a] hover:to-[#3aae87] text-white text-sm font-bold py-3 px-5 rounded-lg transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
-                                {{ $hasActiveSubscription ? '🔄 Ubah Paket' : '🚀 Pilih Paket' }}
+                                {{ $hasActiveSubscription ? 'Ubah Paket' : 'Pilih Paket' }}
                             </button>
                         </div>
 
@@ -278,8 +278,8 @@
                             {{-- 🔥 TAMBAHAN BARU: Tombol Kelola Status User (Hanya SuperAdmin) --}}
                             @if (isset($currentUserRole) && ($currentUserRole === 'SuperAdmin' || $currentUserRole === 'Super Admin'))
                                 <button onclick="openUserStatusModal()"
-                                    class="w-full bg-blue-600 text-white text-sm font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition shadow-md">
-                                    ⚙️ Kelola Status Anggota
+                                    class="w-full bg-gradient-to-r from-[#5FD0AB] to-[#4dbf9a] hover:from-[#4dbf9a] hover:to-[#3aae87] text-white text-sm font-bold py-2 px-4 rounded-lg transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                                    Kelola Status Anggota
                                 </button>
                             @endif
                         </div>
@@ -527,11 +527,11 @@
 
                 container.innerHTML = data.users.map(user => `
             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-2 border-gray-200 hover:border-blue-300 transition">
-                
+
                 {{-- Info User --}}
                 <div class="flex items-center gap-3 flex-1">
-                    <img src="${user.avatar}" 
-                         class="w-12 h-12 rounded-full border-2 border-white shadow-md" 
+                    <img src="${user.avatar}"
+                         class="w-12 h-12 rounded-full border-2 border-white shadow-md"
                          alt="${user.full_name}"
                          onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name)}'">
                     <div>
@@ -542,28 +542,28 @@
                         </span>
                     </div>
                 </div>
-                
+
                 {{-- Toggle Switch --}}
                 <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" 
+                    <input type="checkbox"
                            ${user.status_active ? 'checked' : ''}
                            onchange="toggleUserStatus('${user.user_company_id}', this.checked)"
                            class="sr-only peer">
-                    
+
                     {{-- Toggle Switch UI --}}
-                    <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer 
-                         peer-checked:after:translate-x-full peer-checked:after:border-white 
-                         after:content-[''] after:absolute after:top-0.5 after:left-[4px] 
-                         after:bg-white after:border-gray-300 after:border after:rounded-full 
-                         after:h-6 after:w-6 after:transition-all 
+                    <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer
+                         peer-checked:after:translate-x-full peer-checked:after:border-white
+                         after:content-[''] after:absolute after:top-0.5 after:left-[4px]
+                         after:bg-white after:border-gray-300 after:border after:rounded-full
+                         after:h-6 after:w-6 after:transition-all
                          peer-checked:bg-green-500"></div>
-                    
+
                     {{-- Label Status --}}
                     <span class="ml-3 text-sm font-bold whitespace-nowrap ${user.status_active ? 'text-green-600' : 'text-red-600'}">
                         ${user.status_active ? '✅ Aktif' : '❌ Nonaktif'}
                     </span>
                 </label>
-                
+
             </div>
         `).join('');
 

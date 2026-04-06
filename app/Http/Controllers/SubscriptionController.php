@@ -3,9 +3,7 @@
 namespace App\Http\Controllers;
 
 use Carbon\Carbon;
-use Midtrans\Snap;
 use App\Models\Plan;
-use Midtrans\Config;
 use App\Models\Addon;
 use App\Models\Company;
 use App\Models\UserCompany;
@@ -15,15 +13,14 @@ use Illuminate\Support\Facades\DB;
 use App\Models\SubscriptionInvoice;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage; // ✅ TAMBAHKAN untuk upload file
+use Xendit\Configuration;
+use Xendit\Invoice\InvoiceApi;
 
 class SubscriptionController extends Controller
 {
     public function __construct()
     {
-        // Config::$serverKey = config('midtrans.server_key');
-        // Config::$isProduction = config('midtrans.is_production');
-        // Config::$isSanitized = config('midtrans.is_sanitized');
-        // Config::$is3ds = config('midtrans.is_3ds');
+        Configuration::setXenditKey(config('xendit.secret_key'));
     }
 
     // // Tampilkan halaman payment dengan info trial
@@ -164,7 +161,7 @@ class SubscriptionController extends Controller
             ->where('status_active', true) // pastikan user masih aktif
             ->with('role') // eager load role
             ->first();
-            
+
         $currentUserRole = $userCompany->role->name;
 
         $company = Company::with(['subscription.plan', 'users'])->find($companyId);
@@ -243,7 +240,7 @@ class SubscriptionController extends Controller
             'plan_id' => 'required|exists:plans,id',
             'addon_user_count' => 'nullable|integer|min:0',
             'company_id' => 'required|exists:companies,id',
-            'payment_method' => 'required|in:midtrans,manual',
+            'payment_method' => 'required|in:xendit,manual',
         ]);
 
         DB::beginTransaction();
@@ -361,6 +358,14 @@ class SubscriptionController extends Controller
                 ]
             );
 
+
+            // 6.5 Hapus invoice pending lama yang belum ada bukti bayar
+            // =========================
+            SubscriptionInvoice::where('subscription_id', $subscription->id)
+                ->where('status', 'pending')
+                ->whereNull('proof_of_payment')
+                ->delete();
+
             // =========================
             // 7. Generate Invoice
             // =========================
@@ -408,6 +413,18 @@ class SubscriptionController extends Controller
                 ]);
             }
 
+            if ($request->payment_method === 'xendit') {
+                DB::commit();
+                $xenditInvoice = $this->createXenditInvoice($invoice, $company, $plan);
+                return response()->json([
+                    'success' => true,
+                    'payment_method' => 'xendit',
+                    'invoice_url' => $xenditInvoice['invoice_url'],
+                    'external_id' => $orderId,
+                    'amount' => $totalAmount,
+                ]);
+            }
+
             throw new \Exception('Metode pembayaran tidak didukung saat ini.');
 
         } catch (\Exception $e) {
@@ -423,9 +440,6 @@ class SubscriptionController extends Controller
             ], 500);
         }
     }
-
-
-
 
     public function toggleUserStatus(Request $request)
     {
@@ -816,100 +830,75 @@ class SubscriptionController extends Controller
         return view('access-blocked', compact('company'));
     }
 
-    // // Webhook callback dari Midtrans
-    // public function callback(Request $request)
-    // {
-    //     try {
-    //         Config::$serverKey = config('midtrans.server_key');
-    //         Config::$isProduction = config('midtrans.is_production');
-    //         Config::$isSanitized = config('midtrans.is_sanitized');
-    //         Config::$is3ds = config('midtrans.is_3ds');
-
-    //         $serverKey = config('midtrans.server_key');
-    //         $hashed = hash(
-    //             "sha512",
-    //             $request->order_id . $request->status_code . $request->gross_amount . $serverKey
-    //         );
-
-    //         if ($hashed !== $request->signature_key) {
-    //             Log::warning('Invalid Midtrans signature', ['order_id' => $request->order_id]);
-    //             return response()->json(['success' => false, 'message' => 'Invalid signature'], 403);
-    //         }
-
-    //         $invoice = SubscriptionInvoice::where('external_id', $request->order_id)->first();
-
-    //         if (!$invoice) {
-    //             Log::error('Invoice not found', ['order_id' => $request->order_id]);
-    //             return response()->json(['success' => false, 'message' => 'Invoice not found'], 404);
-    //         }
-
-    //         Log::info('Midtrans Callback Received', [
-    //             'order_id' => $request->order_id,
-    //             'transaction_status' => $request->transaction_status,
-    //             'payment_type' => $request->payment_type,
-    //         ]);
-
-    //         $transactionStatus = $request->transaction_status;
-
-    //         if (in_array($transactionStatus, ['settlement', 'capture'])) {
-    //             $invoice->update([
-    //                 'status' => 'paid',
-    //                 'paid_at' => now(),
-    //                 'payment_details' => $request->all()
-    //             ]);
-
-    //             $subscription = $invoice->subscription;
-    //             $subscription->update([
-    //                 'status' => 'active',
-    //                 'start_date' => now(),
-    //                 'end_date' => now()->addMonth()
-    //             ]);
-
-    //             $subscription->company->update([
-    //                 'status' => 'active',
-    //                 'is_on_trial' => false,
-    //                 'trial_end' => null
-    //             ]);
-
-    //             Log::info('Payment successful', ['order_id' => $request->order_id]);
-    //         } elseif ($transactionStatus === 'pending') {
-    //             $invoice->update([
-    //                 'status' => 'pending',
-    //                 'payment_details' => $request->all()
-    //             ]);
-
-    //             Log::info('Payment pending', ['order_id' => $request->order_id]);
-    //         } elseif (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
-    //             $invoice->update([
-    //                 'status' => 'expired',
-    //                 'payment_details' => $request->all()
-    //             ]);
-
-    //             Log::warning('Payment failed/expired', [
-    //                 'order_id' => $request->order_id,
-    //                 'status' => $transactionStatus
-    //             ]);
-    //         }
-
-    //         return response()->json(['success' => true]);
-    //     } catch (\Exception $e) {
-    //         Log::error('Midtrans callback error', [
-    //             'message' => $e->getMessage(),
-    //             'trace' => $e->getTraceAsString()
-    //         ]);
-
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Internal server error'
-    //         ], 500);
-    //     }
-    // }
-
-    // Midtrans Callback (keep untuk nanti)
-    public function callback(Request $request)
+    // Xendit Webhook Callback
+    public function xenditCallback(Request $request)
     {
-        // Comment dulu, akan digunakan nanti
-        return response()->json(['success' => true, 'message' => 'Callback diterima']);
+        try {
+            // Verifikasi token dari Xendit
+            $webhookToken = $request->header('x-callback-token');
+            if ($webhookToken !== config('xendit.webhook_token')) {
+                Log::warning('❌ Invalid Xendit webhook token');
+                return response()->json(['message' => 'Unauthorized'], 403);
+            }
+
+            $externalId = $request->input('external_id');
+            $status = $request->input('status');
+
+            $invoice = SubscriptionInvoice::where('external_id', $externalId)
+                ->with(['subscription.company', 'subscription.plan'])
+                ->first();
+
+            if (!$invoice) {
+                Log::error('❌ Invoice not found', ['external_id' => $externalId]);
+                return response()->json(['message' => 'Invoice not found'], 404);
+            }
+
+            Log::info('📥 Xendit webhook received', [
+                'external_id' => $externalId,
+                'status' => $status,
+            ]);
+
+            if ($status === 'PAID') {
+                DB::beginTransaction();
+
+                $paymentDetails = $invoice->payment_details;
+                $newPlanId = $paymentDetails['plan_id'] ?? null;
+                $newAddonCount = $paymentDetails['new_addon_count'] ?? 0;
+                $newTotalLimit = $paymentDetails['new_total_limit'] ?? 0;
+
+                $invoice->update([
+                    'status' => 'paid',
+                    'paid_at' => now(),
+                    'payment_details' => array_merge($paymentDetails, $request->all()),
+                ]);
+
+                $invoice->subscription->update([
+                    'plan_id' => $newPlanId,
+                    'addons_user_count' => $newAddonCount,
+                    'total_user_limit' => $newTotalLimit,
+                    'status' => 'active',
+                    'start_date' => now(),
+                    'end_date' => now()->addMonth(),
+                ]);
+
+                $invoice->subscription->company->update([
+                    'status' => 'active',
+                    'trial_end' => null,
+                ]);
+
+                DB::commit();
+                Log::info('✅ Xendit payment success', ['external_id' => $externalId]);
+            } elseif (in_array($status, ['EXPIRED', 'FAILED'])) {
+                $invoice->update(['status' => 'expired']);
+                Log::warning('⚠️ Xendit payment expired/failed', ['external_id' => $externalId]);
+            }
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('❌ Xendit callback error', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Server error'], 500);
+        }
     }
 
     // Check trial status
@@ -939,5 +928,56 @@ class SubscriptionController extends Controller
             'trial_ends_at' => $company->trial_end,
             'has_active_subscription' => $company->subscription && $company->subscription->status === 'active'
         ]);
+    }
+
+    public function cancelPending(Request $request)
+    {
+        try {
+            SubscriptionInvoice::where('external_id', $request->external_id)
+                ->where('status', 'pending')
+                ->whereNull('proof_of_payment')
+                ->delete();
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false], 500);
+        }
+    }
+
+    private function createXenditInvoice($invoice, $company, $plan)
+    {
+        $apiInstance = new InvoiceApi();
+
+        $createInvoiceRequest = new \Xendit\Invoice\CreateInvoiceRequest([
+            'external_id' => $invoice->external_id,
+            'amount' => $invoice->amount,
+            'description' => 'Koladi - ' . $plan->plan_name,
+            'invoice_duration' => 86400, // 24 jam
+            'currency' => 'IDR',
+            'reminder_time' => 1,
+            'success_redirect_url' => url('/pembayaran?status=success'),
+            'failure_redirect_url' => url('/pembayaran?status=failed'),
+            'items' => [
+                [
+                    'name' => $plan->plan_name,
+                    'quantity' => 1,
+                    'price' => $invoice->amount,
+                ]
+            ],
+        ]);
+
+        $result = $apiInstance->createInvoice($createInvoiceRequest);
+
+        // Simpan invoice URL ke database
+        $invoice->update([
+            'payment_url' => $result['invoice_url'],
+        ]);
+
+        Log::info('✅ Xendit invoice created', [
+            'external_id' => $invoice->external_id,
+            'invoice_url' => $result['invoice_url'],
+        ]);
+
+        return $result;
     }
 }

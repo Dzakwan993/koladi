@@ -707,9 +707,9 @@
                                             {{-- Bukti Transfer --}}
                                             <td class="p-4">
                                                 <button
-                                                    onclick="viewImage('{{ Storage::url($inv->proof_of_payment) }}')"
+                                                    onclick="viewImage('/storage/{{ $inv->proof_of_payment }}')"
                                                     class="group relative inline-block">
-                                                    <img src="{{ Storage::url($inv->proof_of_payment) }}"
+                                                    <img src="/storage/{{ $inv->proof_of_payment }}"
                                                         class="w-12 h-12 md:w-16 md:h-16 object-cover rounded-lg border-2 border-gray-200">
                                                     <div
                                                         class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 rounded-lg transition">
@@ -891,7 +891,7 @@
                                                 <div class="flex flex-col gap-1.5">
                                                     @if ($hist->proof_of_payment)
                                                         <button
-                                                            onclick="viewImage('{{ Storage::url($hist->proof_of_payment) }}')"
+                                                            onclick="viewImage('/storage/{{ $hist->proof_of_payment }}')"
                                                             class="text-xs bg-blue-50 text-blue-600 px-2 py-1.5 rounded-lg hover:bg-blue-100 transition font-medium inline-flex items-center justify-center gap-1 whitespace-nowrap">
                                                             <svg class="w-3 h-3" fill="none" stroke="currentColor"
                                                                 viewBox="0 0 24 24">

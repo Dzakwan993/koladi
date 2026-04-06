@@ -130,18 +130,18 @@ class DashboardController extends Controller
                 })
                     // 2️⃣ Workspace events: user adalah member workspace DAN (public ATAU participant)
                     ->orWhere(function ($q) use ($user) {
-                        $q->whereNotNull('workspace_id')
-                            ->whereHas('workspace.userWorkspaces', function ($q2) use ($user) {
-                                $q2->where('user_id', $user->id)
-                                    ->where('status_active', true);
-                            })
-                            ->where(function ($q3) use ($user) {
-                                $q3->where('is_private', false)
-                                    ->orWhereHas('participants', function ($q4) use ($user) {
-                                        $q4->where('user_id', $user->id);
-                                    });
-                            });
-                    });
+                    $q->whereNotNull('workspace_id')
+                        ->whereHas('workspace.userWorkspaces', function ($q2) use ($user) {
+                            $q2->where('user_id', $user->id)
+                                ->where('status_active', true);
+                        })
+                        ->where(function ($q3) use ($user) {
+                            $q3->where('is_private', false)
+                                ->orWhereHas('participants', function ($q4) use ($user) {
+                                    $q4->where('user_id', $user->id);
+                                });
+                        });
+                });
             })
             ->where(function ($q) use ($today, $todayEnd) {
                 $q->whereBetween('start_datetime', [$today, $todayEnd])
@@ -239,18 +239,18 @@ class DashboardController extends Controller
                 })
                     // 2️⃣ Workspace events: user adalah member workspace DAN (public ATAU participant)
                     ->orWhere(function ($q) use ($user) {
-                        $q->whereNotNull('workspace_id')
-                            ->whereHas('workspace.userWorkspaces', function ($q2) use ($user) {
-                                $q2->where('user_id', $user->id)
-                                    ->where('status_active', true);
-                            })
-                            ->where(function ($q3) use ($user) {
-                                $q3->where('is_private', false)
-                                    ->orWhereHas('participants', function ($q4) use ($user) {
-                                        $q4->where('user_id', $user->id);
-                                    });
-                            });
-                    });
+                    $q->whereNotNull('workspace_id')
+                        ->whereHas('workspace.userWorkspaces', function ($q2) use ($user) {
+                            $q2->where('user_id', $user->id)
+                                ->where('status_active', true);
+                        })
+                        ->where(function ($q3) use ($user) {
+                            $q3->where('is_private', false)
+                                ->orWhereHas('participants', function ($q4) use ($user) {
+                                    $q4->where('user_id', $user->id);
+                                });
+                        });
+                });
             })
             ->where(function ($q) use ($startDate, $endDate) {
                 $q->whereBetween('start_datetime', [$startDate, $endDate])

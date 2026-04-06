@@ -27,6 +27,8 @@ class CheckSubscription
             'pembayaran',
             'api.plans',
             'subscription.create',
+            'subscription.upload-proof',
+            'xendit.callback',
             'midtrans.callback',
             'logout',
             'profile.index',
@@ -35,8 +37,8 @@ class CheckSubscription
             'access.blocked',
             'buat-perusahaan.create',
             'buat-perusahaan',
-            'dashboard',
             'company.switch',
+            'tutorial.publik',
         ];
 
         if (in_array($request->route()->getName(), $excludedRoutes)) {

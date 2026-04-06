@@ -96,8 +96,8 @@ Route::middleware(['auth', 'check.system.admin'])->prefix('admin')->name('admin.
 });
 
 
-// Webhook Midtrans (tanpa auth)
-Route::post('/midtrans/callback', [SubscriptionController::class, 'callback'])->name('midtrans.callback');
+// Webhook Xendit (tanpa auth)
+Route::post('/xendit/callback', [SubscriptionController::class, 'xenditCallback'])->name('xendit.callback');
 
 // ============================================
 // 🔐 AUTHENTICATED ROUTES
@@ -108,12 +108,7 @@ Route::middleware(['auth'])->group(function () {
     // ✅ ROUTES TANPA CheckSubscription (Always Accessible)
     // ============================================
 
-    // Dashboard (Bisa diakses, tapi kasih warning kalau expired)
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    Route::post('/mark-onboarding-seen', [DashboardController::class, 'markOnboardingSeen'])->name('mark-onboarding-seen');
-    Route::post('/update-onboarding-step', [DashboardController::class, 'updateOnboardingStep'])->name('update-onboarding-step');
-    Route::post('/complete-onboarding', [DashboardController::class, 'completeOnboarding'])
-        ->name('complete-onboarding');
+
 
     // Company Creation Routes
     Route::get('/buat-perusahaan', [CompanyController::class, 'create'])->name('buat-perusahaan.create');
@@ -144,7 +139,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/api/company/{companyId}/users-status', [SubscriptionController::class, 'getUsersWithStatus'])
         ->name('api.company.users-status');
 
-
+    Route::post('/subscription/cancel-pending', [SubscriptionController::class, 'cancelPending']);
     // ========================================
     // 🔥 NEW: API ROUTES UNTUK DOKUMEN
     // (Letakkan DI AWAL setelah Route::middleware(['auth'])->group)
@@ -170,8 +165,7 @@ Route::middleware(['auth'])->group(function () {
     // Logout
     Route::post('/keluar', [AuthController::class, 'logout'])->name('logout');
 
-    // Tutorial
-    Route::get('/tutorial', [TutorialController::class, 'index'])->name('tutorial');
+
 
     // Get modal full data
     Route::get('/statistik/modal-data', [StatistikController::class, 'getModalData']);
@@ -180,6 +174,16 @@ Route::middleware(['auth'])->group(function () {
     // 🔒 ROUTES DENGAN CheckSubscription
     // ============================================
     Route::middleware(['check.subscription'])->group(function () {
+
+        // Dashboard & Onboarding
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::post('/mark-onboarding-seen', [DashboardController::class, 'markOnboardingSeen'])->name('mark-onboarding-seen');
+        Route::post('/update-onboarding-step', [DashboardController::class, 'updateOnboardingStep'])->name('update-onboarding-step');
+        Route::post('/complete-onboarding', [DashboardController::class, 'completeOnboarding'])
+            ->name('complete-onboarding');
+
+        // Tutorial
+        Route::get('/tutorial', [TutorialController::class, 'index'])->name('tutorial');
 
         // Router Statistik
         Route::get('/statistik', [StatistikController::class, 'index'])->name('statistik.index');
