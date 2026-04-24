@@ -4,10 +4,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Koladi - All in One Workspaces</title>
+
+    <!-- Google Search Console Verification -->
+    <meta name="google-site-verification" content="TnF-5P8FYe2o1GlNo3ZKb_PlGK08Y1Leaetj4IkFD_4" />
+
+    <!-- ================================================
+         SEO — ON-PAGE META TAGS
+         Ini yang dibaca Google saat mengindeks halaman
+         ================================================ -->
+
+    <!-- Title: muncul di tab browser & hasil pencarian Google -->
+    <!-- Panjang ideal: 50-60 karakter -->
+    <title>Koladi - Workspace Kolaborasi Tim All-in-One | Gratis 7 Hari</title>
+
+    <!-- Meta Description: teks deskripsi yang muncul di bawah judul di Google -->
+    <!-- Panjang ideal: 140-160 karakter -->
+    <meta name="description"
+        content="Koladi adalah platform workspace all-in-one untuk tim Indonesia. Kelola tugas, dokumen, chat, dan kalender dalam satu tempat. Coba gratis 7 hari, tanpa kartu kredit.">
+
+    <!-- Keywords: sudah kurang berpengaruh di Google, tapi tetap diisi -->
+    <meta name="keywords"
+        content="workspace kolaborasi tim, manajemen tugas online, platform kerja tim, koladi, project management Indonesia, kanban board, tool produktivitas tim">
+
+    <!-- Canonical URL: kasih tahu Google URL "resmi" halaman ini -->
+    <!-- Cegah duplicate content -->
+    <link rel="canonical" href="https://koladi.id/">
+
+    <!-- Robots: izinkan Google untuk baca & indeks halaman ini -->
+    <meta name="robots" content="index, follow">
+
+    <!-- Author -->
+    <meta name="author" content="Koladi">
+
+    <!-- ================================================
+         OPEN GRAPH — Tampilan saat di-share ke WhatsApp,
+         Facebook, LinkedIn, dll
+         ================================================ -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://koladi.id/">
+    <meta property="og:title" content="Koladi - Workspace All-in-One untuk Tim Indonesia">
+    <meta property="og:description"
+        content="Satu platform untuk semua kebutuhan kerja tim kamu: kanban tugas, chat, dokumen, pengumuman, dan AI Decision Support. Coba gratis 7 hari!">
+    <meta property="og:image" content="https://koladi.id/images/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="Koladi">
+    <meta property="og:locale" content="id_ID">
+
+    <!-- ================================================
+         TWITTER CARD — Tampilan saat di-share ke Twitter/X
+         ================================================ -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Koladi - Workspace All-in-One untuk Tim Indonesia">
+    <meta name="twitter:description"
+        content="Satu platform untuk semua kebutuhan kerja tim: kanban, chat, dokumen, AI Decision Support. Coba gratis 7 hari!">
+    <meta name="twitter:image" content="https://koladi.id/images/og-image.png">
+
+    <!-- ================================================
+         JSON-LD STRUCTURED DATA — "Kartu identitas" website
+         di mata Google. Bisa muncul sebagai rich snippet.
+         ================================================ -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Koladi",
+        "url": "https://koladi.id",
+        "logo": "https://koladi.id/images/LogoKoladi.svg",
+        "description": "Platform workspace all-in-one untuk kolaborasi tim Indonesia. Fitur kanban tugas, chat, dokumen, timeline, mindmap, dan AI Decision Support dalam satu platform.",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "IDR",
+            "description": "Trial gratis 7 hari"
+        },
+        "inLanguage": "id",
+        "featureList": [
+            "Kanban Tugas",
+            "Chat Tim Real-time",
+            "Manajemen Dokumen",
+            "Timeline Proyek",
+            "Mindmap",
+            "AI Decision Support",
+            "Pengumuman Tim"
+        ]
+    }
+    </script>
+
     <link rel="icon" type="image/png" href="/images/LogoAtas.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- ================================================
+         GOOGLE ANALYTICS 4 — KOLADI
+         Measurement ID: G-GENT8W6RPG
+         Tracking: page views, traffic source, device,
+                   bounce rate, new vs returning users
+         ================================================ -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GENT8W6RPG"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GENT8W6RPG', {
+            'send_page_view': true
+        });
+    </script>
 
     <style>
         * {
@@ -793,10 +897,12 @@
                             {{ number_format($basicPrice, 0, ',', '.') }}</span>
                         <span class="text-gray-600">/ bulan</span>
                     </div>
-                    <button
-                        class="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 mb-6">
-                        Coba versi trial dulu
-                    </button>
+                    <a href="{{ route('daftar') }}">
+                        <button
+                            class="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 mb-6">
+                            Coba versi trial dulu
+                        </button>
+                    </a>
                     <div class="space-y-3">
                         <p class="font-semibold text-gray-800 mb-4">Benefit:</p>
                         <p class="text-gray-700">✓ Dapat 5 pengguna</p>
@@ -819,10 +925,12 @@
                         <span class="text-3xl font-bold">Rp {{ number_format($standardPrice, 0, ',', '.') }}</span>
                         <span>/ bulan</span>
                     </div>
-                    <button
-                        class="w-full py-3 bg-white text-purple-600 rounded-full font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 mb-6">
-                        Coba versi trial dulu
-                    </button>
+                    <a href="{{ route('daftar') }}">
+                        <button
+                            class="w-full py-3 bg-white text-purple-600 rounded-full font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 mb-6">
+                            Coba versi trial dulu
+                        </button>
+                    </a>
                     <div class="space-y-3">
                         <p class="font-semibold mb-4">Benefit:</p>
                         <p>✓ Dapat 15 pengguna</p>
@@ -843,10 +951,12 @@
                             {{ number_format($businessPrice, 0, ',', '.') }}</span>
                         <span class="text-gray-600">/ bulan</span>
                     </div>
-                    <button
-                        class="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 mb-6">
-                        Coba versi trial dulu
-                    </button>
+                    <a href="{{ route('daftar') }}">
+                        <button
+                            class="w-full py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 mb-6">
+                            Coba versi trial dulu
+                        </button>
+                    </a>
                     <div class="space-y-3">
                         <p class="font-semibold text-gray-800 mb-4">Benefit:</p>
                         <p class="text-gray-700">✓ Dapat 50 pengguna</p>
@@ -1091,6 +1201,95 @@
             el.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
             observer.observe(el);
         });
+    </script>
+
+    <!-- ================================================
+         GOOGLE ANALYTICS 4 — KOLADI EVENT TRACKING
+         - CTA Button Click Tracking
+         - Pricing Plan Selection (Upgrade Conversion)
+         - Section Scroll Tracking
+         ================================================ -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        // ─── HELPER: Kirim event ke GA4 ───────────────────
+        function trackEvent(eventName, params) {
+            if (typeof gtag === 'undefined') return;
+            gtag('event', eventName, params);
+        }
+
+        // ─── 1. CTA BUTTON CLICK TRACKING ────────────────
+        // Track semua tombol CTA penting di landing page
+        document.querySelectorAll('a[href] button').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var text     = btn.textContent.trim().replace(/\s+/g, ' ').substring(0, 60);
+                var section  = btn.closest('section');
+                var sectionId = section ? (section.id || 'unknown') : 'outside_section';
+
+                trackEvent('cta_click', {
+                    'button_label': text,
+                    'section_id':   sectionId,
+                    'page_title':   document.title,
+                    'page_location': window.location.href,
+                });
+            });
+        });
+
+        // ─── 2. PRICING PLAN SELECTION TRACKING ──────────
+        // Track tombol "Coba versi trial dulu" per paket
+        // Otomatis deteksi nama paket dari heading h3 terdekat
+        var pricingSection = document.getElementById('paket');
+        if (pricingSection) {
+            pricingSection.querySelectorAll('button').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    // Cari nama paket dari h3 di card terdekat
+                    var card     = btn.closest('[class*="rounded-2xl"], [class*="rounded-3xl"]');
+                    var heading  = card ? card.querySelector('h3') : null;
+                    var planName = heading ? heading.textContent.trim() : 'Unknown Plan';
+
+                    // Event: user klik pilih paket
+                    trackEvent('select_plan', {
+                        'plan_name':    planName,
+                        'button_label': btn.textContent.trim(),
+                        'section_id':   'paket',
+                        'page_title':   document.title,
+                    });
+
+                    // Event standar GA4 untuk checkout/konversi
+                    trackEvent('begin_checkout', {
+                        'currency': 'IDR',
+                        'items': [{
+                            'item_name':     'Koladi ' + planName + ' Plan',
+                            'item_category': 'subscription',
+                            'quantity':      1,
+                        }],
+                    });
+                });
+            });
+        }
+
+        // ─── 3. SECTION SCROLL TRACKING ──────────────────
+        // Track setiap section yang masuk viewport (30% terlihat)
+        var viewedSections = new Set();
+
+        var sectionObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                var sectionId = entry.target.id;
+                if (entry.isIntersecting && sectionId && !viewedSections.has(sectionId)) {
+                    viewedSections.add(sectionId);
+                    trackEvent('section_view', {
+                        'section_id':  sectionId,
+                        'page_title':  document.title,
+                    });
+                }
+            });
+        }, { threshold: 0.3 });
+
+        document.querySelectorAll('section[id]').forEach(function (section) {
+            sectionObserver.observe(section);
+        });
+
+    });
     </script>
 </body>
 

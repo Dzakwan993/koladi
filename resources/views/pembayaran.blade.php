@@ -677,5 +677,59 @@
                 }
             }
         });
+
+        // ================================================
+        // GOOGLE ANALYTICS 4 — UPGRADE PAKET TRACKING
+        // Track: Pilih Paket, Ubah Paket, Bayar Sekarang
+        // ================================================
+        document.addEventListener('DOMContentLoaded', function () {
+
+            function trackEvent(eventName, params) {
+                if (typeof gtag === 'undefined') return;
+                gtag('event', eventName, params);
+            }
+
+            // ─── Track tombol "Pilih Paket" / "Ubah Paket" ───
+            // Tombol ini membuka modal pilihan paket (openModal())
+            document.querySelectorAll('button[onclick="openModal()"]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var label = btn.textContent.trim().replace(/\s+/g, ' ');
+
+                    // Deteksi apakah ini upgrade atau pilih baru
+                    var hasActiveSubscription = {{ $hasActiveSubscription ? 'true' : 'false' }};
+                    var action = hasActiveSubscription ? 'upgrade_plan' : 'select_plan_click';
+
+                    trackEvent(action, {
+                        'button_label':   label,
+                        'current_status': '{{ $trialStatus }}',
+                        'page_title':     document.title,
+                    });
+                });
+            });
+
+            // ─── Track klik "Bayar Sekarang" (Midtrans) ───
+            document.querySelectorAll('a[href*="payment_url"], a[target="_blank"]').forEach(function (link) {
+                if (link.textContent.includes('Bayar Sekarang')) {
+                    link.addEventListener('click', function () {
+                        trackEvent('payment_initiated', {
+                            'payment_method': 'midtrans',
+                            'page_title':     document.title,
+                        });
+                    });
+                }
+            });
+
+            // ─── Track klik "Upload Bukti" (Manual Transfer) ───
+            document.querySelectorAll('button[onclick*="openUploadModal"]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    trackEvent('payment_initiated', {
+                        'payment_method': 'manual_transfer',
+                        'page_title':     document.title,
+                    });
+                });
+            });
+
+        });
     </script>
 @endpush
+

@@ -7,6 +7,21 @@
     <link rel="icon" type="image/png" href="/images/LogoAtas.svg">
     <title>Masuk - Koladi</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <!-- ================================================
+         GOOGLE ANALYTICS 4 — KOLADI
+         Measurement ID: G-GENT8W6RPG
+         Tracking: page view halaman masuk / login
+         ================================================ -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GENT8W6RPG"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GENT8W6RPG', {
+            'send_page_view': true
+        });
+    </script>
 </head>
 
 <body>

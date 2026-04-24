@@ -7,6 +7,21 @@
     <link rel="icon" type="image/png" href="/images/LogoAtas.svg">
     <title>Daftar - Koladi</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <!-- ================================================
+         GOOGLE ANALYTICS 4 — KOLADI
+         Measurement ID: G-GENT8W6RPG
+         Tracking: form registration, page view halaman daftar
+         ================================================ -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-GENT8W6RPG"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-GENT8W6RPG', {
+            'send_page_view': true
+        });
+    </script>
 </head>
 
 <body class="min-h-screen bg-gradient-to-br from-gray-50 to-[#F9FAFB] flex items-center justify-center p-4">
@@ -234,6 +249,36 @@
 
         setupToggle("#togglePassword", "#password", "#eyeIcon");
         setupToggle("#togglePasswordConfirm", "#password_confirmation", "#eyeIconConfirm");
+    </script>
+
+    <!-- ================================================
+         GOOGLE ANALYTICS 4 — FORM REGISTRATION TRACKING
+         Event: form_registration_submit + sign_up
+         ================================================ -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        var form = document.querySelector('form[action*="daftar"]');
+        if (!form) return;
+
+        form.addEventListener('submit', function () {
+            if (typeof gtag === 'undefined') return;
+
+            // Event custom: bisa dilihat di GA4 > Events
+            gtag('event', 'form_registration_submit', {
+                'method':       'email',
+                'page_title':   document.title,
+                'page_location': window.location.href,
+            });
+
+            // Event STANDAR GA4 (sudah dikenali GA4 secara native)
+            // Muncul otomatis di laporan "Conversions"
+            gtag('event', 'sign_up', {
+                'method': 'email',
+            });
+        });
+
+    });
     </script>
 </body>
 

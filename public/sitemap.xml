@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    sitemap.xml — Koladi
+    "Peta halaman" untuk Google. Google baca ini untuk tahu
+    halaman apa saja yang ada di website kamu.
+
+    Ganti tanggal <lastmod> setiap kali ada perubahan besar.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+    <!-- Halaman Utama / Landing Page -->
+    <url>
+        <loc>https://koladi.id/</loc>
+        <lastmod>2025-04-25</lastmod>
+        <changefreq>weekly</changefreq>
+        <!-- priority 1.0 = paling penting -->
+        <priority>1.0</priority>
+    </url>
+
+    <!-- Halaman Daftar Akun -->
+    <url>
+        <loc>https://koladi.id/daftar</loc>
+        <lastmod>2025-04-25</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.8</priority>
+    </url>
+
+    <!-- Halaman Masuk / Login -->
+    <url>
+        <loc>https://koladi.id/masuk</loc>
+        <lastmod>2025-04-25</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+
+    <!-- Halaman Tutorial Publik -->
+    <url>
+        <loc>https://koladi.id/tutorial</loc>
+        <lastmod>2025-04-25</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+    </url>
+
+</urlset>

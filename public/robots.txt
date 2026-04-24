@@ -1,2 +1,26 @@
+# robots.txt — Koladi
+# Kasih tahu Google halaman mana yang boleh/tidak boleh diindeks
+
 User-agent: *
-Disallow:
+
+# Halaman PUBLIK — boleh diindeks Google
+Allow: /
+Allow: /daftar
+Allow: /masuk
+Allow: /tutorial
+
+# Halaman PRIVATE — jangan diindeks (isi dashboard, data user, dll)
+Disallow: /dashboard
+Disallow: /workspace
+Disallow: /kanban
+Disallow: /chat
+Disallow: /pengumuman
+Disallow: /statistik
+Disallow: /pembayaran
+Disallow: /profile
+Disallow: /buat-perusahaan
+Disallow: /api/
+Disallow: /storage/
+
+# Referensi ke Sitemap (peta halaman untuk Google)
+Sitemap: https://koladi.id/sitemap.xml
