@@ -1080,7 +1080,7 @@
                     </div>
 
                     <style>
-                        @keyframes pop {
+                        @@keyframes pop {
                             0% {
                                 opacity: 0;
                                 transform: translateY(8px) scale(.98);
