@@ -8,35 +8,41 @@
 
     {{-- ✅ Hanya aktifkan CSP di production --}}
     @unless (app()->environment('local'))
-        <meta http-equiv="Content-Security-Policy"
-            content="
-            default-src 'self';
-            script-src 'self' 'unsafe-inline' 'unsafe-eval'
-                https://app.midtrans.com
-                https://api.midtrans.com
-                https://cdn.jsdelivr.net
-                https://js.pusher.com
-                https://www.googletagmanager.com
-                https://www.google-analytics.com;
-            style-src 'self' 'unsafe-inline'
-                https://fonts.googleapis.com
-                https://cdn.jsdelivr.net;
-            font-src 'self'
-                https://fonts.gstatic.com;
-            img-src 'self' data: https:
-                https://www.googletagmanager.com
-                https://www.google-analytics.com;
-            connect-src 'self'
-                https://app.midtrans.com
-                https://api.midtrans.com
-                wss://ws-ap1.pusher.com
-                https://sockjs-ap1.pusher.com
-                https://www.google-analytics.com
-                https://analytics.google.com
-                https://region1.google-analytics.com;
-            frame-src 'self'
-                https://app.midtrans.com;
-        ">
+        <meta http-equiv="Content-Security-Policy" content="
+                default-src 'self';
+                script-src 'self' 'unsafe-inline' 'unsafe-eval'
+                    https://app.midtrans.com
+                    https://app.sandbox.midtrans.com
+                    https://api.midtrans.com
+                    https://cdn.jsdelivr.net
+                    https://cdn.tailwindcss.com
+                    https://js.pusher.com
+                    https://www.googletagmanager.com
+                    https://www.google-analytics.com;
+                style-src 'self' 'unsafe-inline'
+                    https://fonts.googleapis.com
+                    https://cdn.jsdelivr.net
+                    https://cdn.tailwindcss.com;
+                font-src 'self'
+                    https://fonts.gstatic.com
+                    https://cdn.jsdelivr.net;
+                img-src 'self' data: https:
+                    https://www.googletagmanager.com
+                    https://www.google-analytics.com;
+                connect-src 'self'
+                    https://app.midtrans.com
+                    https://app.sandbox.midtrans.com
+                    https://api.midtrans.com
+                    wss://ws-ap1.pusher.com
+                    https://sockjs-ap1.pusher.com
+                    https://js.pusher.com
+                    https://www.google-analytics.com
+                    https://analytics.google.com
+                    https://region1.google-analytics.com;
+                frame-src 'self'
+                    https://app.midtrans.com
+                    https://app.sandbox.midtrans.com;
+            ">
     @endunless
 
     <title>Koladi - @yield('title')</title>
@@ -48,7 +54,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -61,7 +67,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-GENT8W6RPG"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
+        function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
         gtag('config', 'G-GENT8W6RPG', {
             'send_page_view': true,
@@ -92,7 +98,7 @@
 
     @if (session('alert_type'))
         <script>
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('DOMContentLoaded', function () {
                 Swal.fire({
                     icon: '{{ session('alert_type') }}', // warning, error, success, info
                     title: '{{ session('alert_title') }}',
@@ -108,7 +114,7 @@
                             window.location.href = '{{ session('alert_url') }}';
                         }
                     @endif
-                });
+                    });
             });
         </script>
     @endif
@@ -166,7 +172,7 @@
 
             let shouldShowToast = !isBackButton;
 
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('DOMContentLoaded', function () {
 
                 if (!shouldShowToast) {
                     const toast = document.getElementById('error-toast');
@@ -240,7 +246,7 @@
             workspaceId: null
         };
 
-        window.setRoleContext = function(ctx) {
+        window.setRoleContext = function (ctx) {
             window.roleContext = {
                 type: ctx?.type || 'company',
                 workspaceId: ctx?.workspaceId || null,

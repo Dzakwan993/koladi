@@ -12,6 +12,7 @@ use App\Models\Role;
 use App\Services\NotificationService;
 use App\Observers\UserCompanyObserver;
 use App\Models\UserCompany;
+use Illuminate\Support\Facades\URL;
 
 
 class AppServiceProvider extends ServiceProvider
@@ -34,6 +35,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+            // ✅ Force HTTPS di production (penting untuk hosting di belakang reverse proxy)
+            if (app()->environment('production')) {
+                URL::forceScheme('https');
+            }
+
             UserCompany::observe(UserCompanyObserver::class);
 
 

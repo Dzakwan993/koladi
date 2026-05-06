@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
 
+        // ✅ Trust reverse proxy (Docker nginx SSL termination)
+        // Tanpa ini, Laravel tidak tahu request masuk via HTTPS dan generate asset URL dengan http://
+        $middleware->trustProxies(at: '*');
+
         // ✅ Alias middleware custom
         $middleware->alias([
             'check.subscription' => CheckSubscription::class,
