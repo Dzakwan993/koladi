@@ -122,7 +122,7 @@
                 </div>
 
                 <div class="hidden md:flex items-center space-x-4">
-                    <a href="{{ route('masuk') }}">
+                    <a href="<?php echo e(route('masuk')); ?>">
                         <button
                             class="px-6 py-2.5 bg-blue-600 text-white font-bold text-[13px] rounded-full
                hover:bg-blue-700 hover:-translate-y-0.5 active:scale-95
@@ -132,7 +132,7 @@
                     </a>
 
                     <!-- Button Daftar -->
-                    <a href="{{ route('daftar') }}">
+                    <a href="<?php echo e(route('daftar')); ?>">
                         <button
                             class="px-6 py-2.5 bg-gray-200 text-black font-bold text-[13px] rounded-full
                hover:bg-gray-300 hover:-translate-y-0.5 active:scale-95
@@ -161,7 +161,7 @@
                 <a href="#tentang" class="block hover:text-purple-600 transition-colors">Tentang</a>
                 <a href="#paket" class="block hover:text-purple-600 transition-colors">Paket</a>
                 <div class="flex flex-col space-y-2 pt-4">
-                    <a href="{{ route('masuk') }}">
+                    <a href="<?php echo e(route('masuk')); ?>">
                         <button
                             class="px-6 py-2.5 bg-blue-600 text-white font-bold text-[13px] rounded-full
                hover:bg-blue-700 hover:-translate-y-0.5 active:scale-95
@@ -171,7 +171,7 @@
                     </a>
 
                     <!-- Button Daftar -->
-                    <a href="{{ route('daftar') }}">
+                    <a href="<?php echo e(route('daftar')); ?>">
                         <button
                             class="px-6 py-2.5 bg-gray-200 text-black font-bold text-[13px] rounded-full
                hover:bg-gray-300 hover:-translate-y-0.5 active:scale-95
@@ -205,7 +205,7 @@
                     <p class="text-xl md:text-2xl font-bold text-blue-800 mb-8">
                         WORKSPACES LOKAL HARGA MASUK AKAL
                     </p>
-                    <a href="{{ route('daftar') }}">
+                    <a href="<?php echo e(route('daftar')); ?>">
                         <button
                             class="px-3 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg text-lg font-bold hover:shadow-2xl transform hover:scale-105 transition-all duration-300 hover:-translate-y-1">
                             <p class="">COBA GRATIS -></p>
@@ -241,12 +241,7 @@
         </div>
 
         <!-- Scroll Indicator -->
-        {{-- <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3">
-                </path>
-            </svg>
-        </div> --}}
+        
     </section>
 
     <!-- Problem Section -->
@@ -290,7 +285,7 @@
                     <p class="text-2xl md:text-3xl font-black text-white mb-6">
                         Hasilnya? Waktu habis cuma buat sinkronisasi, bukan kerja penting.
                     </p>
-                    <a href="{{ route('daftar') }}">
+                    <a href="<?php echo e(route('daftar')); ?>">
                         <button
                             class="px-8 py-4 bg-white text-blue-600 rounded-full text-lg font-bold hover:shadow-2xl transform hover:scale-110 transition-all duration-300 animate-bounce">
                             COBA SOLUSINYA GRATIS! →
@@ -353,7 +348,7 @@
                     semua permasalahan tersebut!
                 </p>
                 <div class="space-y-4">
-                    <a href="{{ route('daftar') }}">
+                    <a href="<?php echo e(route('daftar')); ?>">
                         <button
                             class="px-4 py-3 bg-white text-blue-600 rounded-full text-[14px] font-bold hover:shadow-2xl transform hover:scale-110 transition-all duration-300 animate-bounce">
                             COBA SOLUSINYA GRATIS! →
@@ -625,14 +620,8 @@
                             class="w-full h-auto max-h-[700px] object-contain scale-110 md:scale-125 drop-shadow-[0_30px_80px_rgba(15,23,42,0.20)]" />
                     </div>
                 </div>
-                {{-- end foto ai --}}
-                {{-- <!-- CTA row -->
-                        <div class="mt-10 flex justify-center">
-                            <p class="text-lg md:text-xl text-slate-700 font-semibold text-center">
-                                Semua solusi ini <span class="font-extrabold text-slate-900">terintegrasi dalam
-                                    Koladi</span>
-                            </p>
-                        </div> --}}
+                
+                
             </div>
         </div>
     </section>
@@ -743,7 +732,7 @@
                     Dapatkan Semua Fitur Ini GRATIS!
                 </h3>
                 <p class=" text-white mb-6 font-bold text[16px]">Coba selama 7 hari tanpa biaya apapun</p>
-                <a href="{{ route('daftar') }}">
+                <a href="<?php echo e(route('daftar')); ?>">
                     <button
                         class="px-4 py-3 bg-white text-blue-600 rounded-full text-[13px] font-black hover:bg-gray-100 shadow-2xl transform hover:scale-110 transition-all duration-300 animate-pulse">
                         MULAI GRATIS SEKARANG! →
@@ -786,9 +775,9 @@
                     <h3 class="text-2xl font-bold mb-4 text-gray-800">Basic</h3>
                     <div class="mb-6">
                         <div class="text-gray-500 line-through text-lg leading-none mb-1">Rp
-                            {{ number_format($basicPrice * 2, 0, ',', '.') }}</div>
+                            <?php echo e(number_format($basicPrice * 2, 0, ',', '.')); ?></div>
                         <span class="text-3xl font-bold text-purple-600">Rp
-                            {{ number_format($basicPrice, 0, ',', '.') }}</span>
+                            <?php echo e(number_format($basicPrice, 0, ',', '.')); ?></span>
                         <span class="text-gray-600">/ bulan</span>
                     </div>
                     <button
@@ -813,8 +802,8 @@
                     <h3 class="text-2xl font-bold mb-4">Standard</h3>
                     <div class="mb-6">
                         <div class="text-white line-through text-lg leading-none mb-1">Rp
-                            {{ number_format($standardPrice * 2, 0, ',', '.') }}</div>
-                        <span class="text-3xl font-bold">Rp {{ number_format($standardPrice, 0, ',', '.') }}</span>
+                            <?php echo e(number_format($standardPrice * 2, 0, ',', '.')); ?></div>
+                        <span class="text-3xl font-bold">Rp <?php echo e(number_format($standardPrice, 0, ',', '.')); ?></span>
                         <span>/ bulan</span>
                     </div>
                     <button
@@ -836,9 +825,9 @@
                     <h3 class="text-2xl font-bold mb-4 text-gray-800">Premium</h3>
                     <div class="mb-6">
                         <div class="text-gray-500 line-through text-lg leading-none mb-1">Rp
-                            {{ number_format($businessPrice * 2, 0, ',', '.') }}</div>
+                            <?php echo e(number_format($businessPrice * 2, 0, ',', '.')); ?></div>
                         <span class="text-3xl font-bold text-purple-600">Rp
-                            {{ number_format($businessPrice, 0, ',', '.') }}</span>
+                            <?php echo e(number_format($businessPrice, 0, ',', '.')); ?></span>
                         <span class="text-gray-600">/ bulan</span>
                     </div>
                     <button
@@ -884,8 +873,8 @@
                 </div>
 
                 <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 md:p-12 shadow-2xl border-2 border-white/20">
-                    <form action="{{ route('feedback.store') }}" method="POST" class="space-y-6">
-                        @csrf
+                    <form action="<?php echo e(route('feedback.store')); ?>" method="POST" class="space-y-6">
+                        <?php echo csrf_field(); ?>
                         <div>
                             <label class="block text-white font-bold mb-3 text-lg">Nama Anda (Opsional)</label>
                             <input type="text" name="name" placeholder="Masukkan nama Anda..."
@@ -913,7 +902,7 @@
 
                     </form>
                 </div>
-                @if (session('success'))
+                <?php if(session('success')): ?>
                     <div id="successPopup"
                         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" role="dialog"
                         aria-modal="true" aria-labelledby="successTitle" aria-describedby="successDesc">
@@ -936,7 +925,8 @@
                                         Berhasil
                                     </h3>
                                     <p id="successDesc" class="mt-1 text-sm text-gray-600 leading-relaxed">
-                                        {{ session('success') }}
+                                        <?php echo e(session('success')); ?>
+
                                     </p>
                                 </div>
 
@@ -1011,12 +1001,12 @@
                             }, 3000);
                         })();
                     </script>
-                @endif
+                <?php endif; ?>
 
 
                 <div class="mt-12 text-center bg-white/10 backdrop-blur-lg rounded-2xl p-8 border-2 border-white/20">
                     <p class="text-white text-lg font-bold mb-4">Atau langsung coba Koladi GRATIS!</p>
-                    <a href="{{ route('daftar') }}">
+                    <a href="<?php echo e(route('daftar')); ?>">
                         <button
                             class="px-7 py-3 bg-white text-purple-600 rounded-full text-[13px] font-black hover:bg-gray-100 shadow-xl transform hover:scale-110 transition-all duration-300 animate-pulse">
                             MULAI TRIAL 7 HARI GRATIS →
@@ -1093,3 +1083,4 @@
 </body>
 
 </html>
+<?php /**PATH C:\xampp\htdocs\koladi\resources\views/landingpage.blade.php ENDPATH**/ ?>

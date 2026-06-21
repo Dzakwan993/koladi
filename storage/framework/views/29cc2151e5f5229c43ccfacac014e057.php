@@ -1,0 +1,394 @@
+<style>
+    [x-cloak] {
+        display: none !important;
+    }
+
+    .filter-blue {
+        filter: brightness(0) saturate(100%) invert(30%) sepia(91%) saturate(1539%) hue-rotate(213deg) brightness(90%) contrast(96%);
+    }
+</style>
+
+
+<div x-data="{ openSidebar: window.innerWidth >= 992 }" x-init="const handleResize = () => {
+    if (window.innerWidth < 992 && openSidebar) openSidebar = false;
+    else if (window.innerWidth >= 992 && !openSidebar) openSidebar = true;
+};
+window.addEventListener('resize', handleResize);" class="flex h-screen relative">
+
+    
+    <button @click="openSidebar = !openSidebar"
+        class="absolute top-4 left-4 z-10 bg-white border border-gray-200 shadow-md rounded-lg p-2 hover:bg-gray-100 transition">
+        <template x-if="!openSidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                stroke="currentColor" class="w-5 h-5 text-gray-700">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+        </template>
+        <template x-if="openSidebar">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                stroke="currentColor" class="w-5 h-5 text-gray-700">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </template>
+    </button>
+
+    
+    <div x-show="openSidebar"
+        class="w-64 bg-white shadow-sm border-r border-gray-200 h-screen transition-all duration-300 fixed md:relative"
+        x-transition:enter="transform transition ease-in-out duration-300" x-transition:enter-start="-translate-x-full"
+        x-transition:enter-end="translate-x-0" x-transition:leave="transform transition ease-in-out duration-300"
+        x-transition:leave-start="translate-x-0" x-transition:leave-end="-translate-x-full">
+        
+        <div class="h-16 flex items-center justify-center px-4 border-b border-gray-200">
+            <img src="<?php echo e(asset('images/logo-koladi.svg')); ?>" class="h-9 object-cover object-center" alt="Logo Koladi">
+        </div>
+
+        
+        <?php
+            $user = Auth::user();
+            $activeCompanyId = session('active_company_id');
+
+            // Ambil workspace berdasarkan role user
+            if ($activeCompanyId) {
+                $userCompany = $user->userCompanies()->where('company_id', $activeCompanyId)->with('role')->first();
+                $userRole = $userCompany?->role?->name ?? 'Member';
+
+                // Jika SuperAdmin/Admin/Manager, tampilkan semua workspace
+                if (in_array($userRole, ['SuperAdmin', 'Administrator', 'Admin', 'Manager'])) {
+                    $timWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
+                        ->where('type', 'Tim')
+                        ->orderBy('name')
+                        ->get();
+
+                    $proyekWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
+                        ->where('type', 'Proyek')
+                        ->orderBy('name')
+                        ->get();
+                } else {
+                    // Jika Member, hanya tampilkan workspace yang diikuti
+                    $timWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
+                        ->where('type', 'Tim')
+                        ->whereHas('userWorkspaces', function ($query) use ($user) {
+                            $query->where('user_id', $user->id)->where('status_active', true);
+                        })
+                        ->orderBy('name')
+                        ->get();
+
+                    $proyekWorkspaces = \App\Models\Workspace::where('company_id', $activeCompanyId)
+                        ->where('type', 'Proyek')
+                        ->whereHas('userWorkspaces', function ($query) use ($user) {
+                            $query->where('user_id', $user->id)->where('status_active', true);
+                        })
+                        ->orderBy('name')
+                        ->get();
+                }
+            } else {
+                $timWorkspaces = collect();
+                $proyekWorkspaces = collect();
+            }
+
+            // Warna dot untuk workspace
+            $colors = ['blue-600', 'green-500', 'purple-500', 'yellow-500', 'red-500', 'pink-500', 'indigo-500'];
+        ?>
+
+        
+        
+        <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto" x-data="workspaceFilter()" x-init="init(<?php echo \Illuminate\Support\Js::from($timWorkspaces->toArray())->toHtml() ?>, <?php echo \Illuminate\Support\Js::from($proyekWorkspaces->toArray())->toHtml() ?>)">
+
+            
+            <a href="<?php echo e(url('/dashboard')); ?>"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                      <?php echo e(Request::is('dashboard*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50'); ?>">
+                <img src="<?php echo e(asset('images/icons/sidebar_dashboard.svg')); ?>" alt="Dashboard"
+                    class="w-5 h-5 <?php echo e(Request::is('dashboard*') ? 'filter-blue' : ''); ?>">
+                <span class="text-sm">Dashboard</span>
+            </a>
+
+            
+            
+            <a href="<?php echo e(url('/kelola-workspace')); ?>"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+          <?php echo e(Request::is('kelola-workspace*') || Request::is('workspace/*') || Request::is('kanban-tugas/*') || Request::is('workspace/*/pengumuman*') || Request::is('workspace/*/jadwal*') || Request::is('chat/*') || Request::is('workspace/*/mindmap*') || Request::is('dokumen-dan-file/*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50'); ?>">
+                <img src="<?php echo e(asset('images/icons/sidebar_ruang-kerja.svg')); ?>" alt="Ruang Kerja"
+                    class="w-5 h-5 <?php echo e(Request::is('kelola-workspace*') || Request::is('workspace/*') || Request::is('kanban-tugas/*') || Request::is('workspace/*/pengumuman*') || Request::is('workspace/*/jadwal*') || Request::is('chat/*') || Request::is('workspace/*/mindmap*') || Request::is('dokumen-dan-file/*') ? 'filter-blue' : ''); ?>">
+                <span class="text-sm">Ruang Kerja</span>
+            </a>
+
+            <?php
+                $company_id = session('active_company_id');
+            ?>
+
+            <?php if($company_id): ?>
+                <a href="<?php echo e(route('pengumuman-perusahaan.index', ['company_id' => $company_id])); ?>"
+                    class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+   <?php echo e(Request::is('companies/*/pengumuman-perusahaan*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50'); ?>">
+                    <img src="<?php echo e(Request::is('companies/*/pengumuman-perusahaan*') ? asset('images/icons/workspace_pengumuman1.svg') : asset('images/icons/workspace_pengumuman.svg')); ?>"
+                        class="w-5 h-5">
+                    <span class="text-sm">Pengumuman</span>
+                </a>
+            <?php endif; ?>
+
+            
+            <?php if(auth()->guard()->check()): ?>
+                <?php
+                    $activeCompany = $activeCompanyId ? \App\Models\Company::find($activeCompanyId) : null;
+                ?>
+
+                <?php if($activeCompany): ?>
+                    <a href="<?php echo e(route('company.chat', $activeCompany)); ?>"
+                        class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                  <?php echo e(Request::is('company/*/chat*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50'); ?>">
+                        <img src="<?php echo e(asset('images/icons/sidebar_chat.svg')); ?>" alt="Chat Perusahaan"
+                            class="w-5 h-5 <?php echo e(Request::is('company/*/chat*') ? 'filter-blue' : ''); ?>">
+                        <span class="text-sm">Chat</span>
+                    </a>
+                <?php else: ?>
+                    <div class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 cursor-not-allowed"
+                        title="Pilih perusahaan terlebih dahulu">
+                        <img src="<?php echo e(asset('images/icons/sidebar_chat.svg')); ?>" alt="Chat Perusahaan" class="w-5 h-5">
+                        <span class="text-sm">Chat</span>
+                    </div>
+                <?php endif; ?>
+            <?php endif; ?>
+
+            
+            <a href="<?php echo e(route('jadwal-umum')); ?>"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                <?php echo e(Request::is('jadwal-umum*') || Request::is('notulensi-umum*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50'); ?>">
+                <img src="<?php echo e(asset('images/icons/workspace_kalender.svg')); ?>" alt="Jadwal"
+                    class="w-5 h-5 <?php echo e(Request::is('jadwal-umum*') || Request::is('notulensi-umum*') ? 'filter-blue' : ''); ?>">
+                <span class="text-sm">Jadwal</span>
+            </a>
+
+            
+            <a href="<?php echo e(route('company-documents.index')); ?>"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+            <?php echo e(Request::is('company-documents*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50'); ?>">
+                <img src="<?php echo e(asset('images/icons/workspace_dokumen&file.svg')); ?>" alt="Dokumen"
+                    class="w-5 h-5 <?php echo e(Request::is('company-documents*') ? 'filter-blue' : ''); ?>">
+                <span class="text-sm">Dokumen</span>
+            </a>
+
+            
+            <a href="<?php echo e(url('/statistik')); ?>"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                      <?php echo e(Request::is('statistik*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50'); ?>">
+                <img src="<?php echo e(asset('images/icons/sidebar_laporan-kinerja.svg')); ?>" alt="Laporan Kinerja"
+                    class="w-5 h-5 <?php echo e(Request::is('statistik*') ? 'filter-blue' : ''); ?>">
+                <span class="text-sm">Laporan Kinerja</span>
+            </a>
+
+            
+            <a href="<?php echo e(route('tutorial')); ?>"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                      <?php echo e(Request::is('tutorial*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50'); ?>">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
+                    stroke="<?php echo e(Request::is('tutorial*') ? '#225ad6' : 'currentColor'); ?>"
+                    class="w-5 h-5 flex-shrink-0">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z" />
+                </svg>
+                <span class="text-sm">Video Tutorial</span>
+            </a>
+
+            
+            <div class="pt-3 mt-3 border-t border-gray-200">
+                <div class="flex items-center gap-1.5 relative">
+                    
+                    <div
+                        class="flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-gray-50 text-gray-400 text-xs flex-1 hover:bg-gray-100 transition">
+                        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input type="text" x-model="searchQuery" placeholder="Cari Ruang Kerja"
+                            class="flex-1 bg-transparent outline-none border-none focus:ring-0 text-gray-700 text-[11px] p-0">
+                    </div>
+
+                    
+                    <div class="relative flex-shrink-0">
+                        <button @click="showFilterMenu = !showFilterMenu"
+                            class="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
+                            title="Filter">
+                            <img src="<?php echo e(asset('images/icons/sidebar_filter.svg')); ?>" alt="Filter"
+                                class="w-3.5 h-3.5">
+                        </button>
+
+                        
+                        <div x-show="showFilterMenu" x-cloak @click.away="showFilterMenu = false" x-transition
+                            class="absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                            <button @click="sortOrder = 'asc'; showFilterMenu = false"
+                                class="w-full px-3 py-2 text-left text-xs hover:bg-gray-50 transition flex items-center justify-between"
+                                :class="{ 'bg-blue-50 text-blue-600 font-medium': sortOrder === 'asc' }">
+                                <span>A → Z</span>
+                                <svg x-show="sortOrder === 'asc'" class="w-3 h-3" fill="currentColor"
+                                    viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button @click="sortOrder = 'desc'; showFilterMenu = false"
+                                class="w-full px-3 py-2 text-left text-xs hover:bg-gray-50 transition flex items-center justify-between"
+                                :class="{ 'bg-blue-50 text-blue-600 font-medium': sortOrder === 'desc' }">
+                                <span>Z → A</span>
+                                <svg x-show="sortOrder === 'desc'" class="w-3 h-3" fill="currentColor"
+                                    viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd"
+                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    
+                    <a href="<?php echo e(url('/kelola-workspace')); ?>"
+                        class="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
+                        title="Tambah Workspace">
+                        <img src="<?php echo e(asset('images/icons/sidebar_tambah.svg')); ?>" alt="Tambah"
+                            class="w-3.5 h-3.5 pointer-events-none">
+                    </a>
+                </div>
+            </div>
+
+            <div class="mt-3 space-y-1">
+                
+                <div>
+                    <button @click="openTim = !openTim"
+                        class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-lg transition">
+                        <div class="flex items-center gap-2">
+                            <img src="<?php echo e(asset('images/icons/sidebar_tim.svg')); ?>" alt="Tim" class="w-4 h-4">
+                            <span>Tim</span>
+                        </div>
+                        <svg class="w-3 h-3 transition-transform" :class="{ 'rotate-90': openTim }" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+                            </path>
+                        </svg>
+                    </button>
+
+                    <div x-show="openTim" x-transition class="mt-1 space-y-0.5">
+                        <template x-if="filteredTimWorkspaces.length > 0">
+                            <div>
+                                <template x-for="(workspace, index) in filteredTimWorkspaces" :key="workspace.id">
+                                    <a :href="`<?php echo e(url('workspace')); ?>/${workspace.id}`"
+                                        class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition text-gray-600 hover:bg-gray-50">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                        <span class="truncate" x-text="workspace.name"></span>
+                                    </a>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="filteredTimWorkspaces.length === 0">
+                            <div class="px-6 py-2">
+                                <p class="text-xs text-gray-400 text-center"
+                                    x-text="searchQuery.length >= 2 ? 'Tidak ada hasil' : 'Belum ada workspace Tim'">
+                                </p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                
+                <div>
+                    <button @click="openProyek = !openProyek"
+                        class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider hover:bg-gray-50 rounded-lg transition">
+                        <div class="flex items-center gap-2">
+                            <img src="<?php echo e(asset('images/icons/sidebar_proyek.svg')); ?>" alt="Proyek"
+                                class="w-4 h-4">
+                            <span>Proyek</span>
+                        </div>
+                        <svg class="w-3 h-3 transition-transform" :class="{ 'rotate-90': openProyek }" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7">
+                            </path>
+                        </svg>
+                    </button>
+
+                    <div x-show="openProyek" x-transition class="mt-1 space-y-0.5">
+                        <template x-if="filteredProyekWorkspaces.length > 0">
+                            <div>
+                                <template x-for="(workspace, index) in filteredProyekWorkspaces"
+                                    :key="workspace.id">
+                                    <a :href="`<?php echo e(url('workspace')); ?>/${workspace.id}`"
+                                        class="flex items-center gap-2 px-6 py-1.5 text-sm rounded transition text-gray-600 hover:bg-gray-50">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-purple-600"></span>
+                                        <span class="truncate" x-text="workspace.name"></span>
+                                    </a>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="filteredProyekWorkspaces.length === 0">
+                            <div class="px-6 py-2">
+                                <p class="text-xs text-gray-400 text-center"
+                                    x-text="searchQuery.length >= 2 ? 'Tidak ada hasil' : 'Belum ada workspace Proyek'">
+                                </p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    
+    <div x-show="openSidebar && window.innerWidth < 768" x-transition.opacity @click="openSidebar = false"
+        class="fixed inset-0 bg-black bg-opacity-30 z-10 md:hidden">
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('workspaceFilter', () => ({
+            openTim: true,
+            openProyek: true,
+            searchQuery: '',
+            sortOrder: 'asc',
+            showFilterMenu: false,
+            timWorkspaces: [],
+            proyekWorkspaces: [],
+
+            init(tim, proyek) {
+                this.timWorkspaces = tim || [];
+                this.proyekWorkspaces = proyek || [];
+            },
+
+            get filteredTimWorkspaces() {
+                let workspaces = [...this.timWorkspaces];
+
+                if (this.searchQuery.length > 0) {
+                    workspaces = workspaces.filter(w =>
+                        w.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+                    );
+                }
+
+                return workspaces.sort((a, b) => {
+                    return this.sortOrder === 'asc' ?
+                        a.name.localeCompare(b.name) :
+                        b.name.localeCompare(a.name);
+                });
+            },
+
+            get filteredProyekWorkspaces() {
+                let workspaces = [...this.proyekWorkspaces];
+
+                if (this.searchQuery.length > 0) {
+                    workspaces = workspaces.filter(w =>
+                        w.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+                    );
+                }
+
+                return workspaces.sort((a, b) => {
+                    return this.sortOrder === 'asc' ?
+                        a.name.localeCompare(b.name) :
+                        b.name.localeCompare(a.name);
+                });
+            }
+        }));
+    });
+</script>
+<?php /**PATH C:\xampp\htdocs\koladi\resources\views/components/sidebar.blade.php ENDPATH**/ ?>
