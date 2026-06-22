@@ -769,11 +769,11 @@
                         <button type="button" @click="openAddLabelModal = false; openLabelModal = true"
                             class="px-4 py-2 rounded-lg border text-sm hover:bg-gray-50">Batal</button>
                         <button type="button"
-                            @click="createNewLabel().then(id => { 
-                    if(id) { 
-                        openAddLabelModal = false; 
-                        openLabelModal = true; 
-                    } 
+                            @click="createNewLabel().then(id => {
+                    if(id) {
+                        openAddLabelModal = false;
+                        openLabelModal = true;
+                    }
                 })"
                             :disabled="!labelData.newLabelName.trim() || !labelData.newLabelColor"
                             class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -1066,7 +1066,7 @@
         <!-- Scrollable Content -->
         <div class="overflow-y-auto flex-1 px-6 py-4">
             <!-- Tombol Pindahkan -->
-            {{-- <div class="mb-4">    
+            {{-- <div class="mb-4">
                  <label class="block text-sm font-medium text-gray-700 mb-2">Pindahkan</label>
                  <button
                      class="border border-gray-300 rounded-md px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
@@ -1366,11 +1366,11 @@
                         <button type="button" @click="openAddLabelModal = false; openLabelModal = true"
                             class="px-4 py-2 rounded-lg border text-sm hover:bg-gray-50">Batal</button>
                         <button type="button"
-                            @click="createNewLabel().then(id => { 
-                    if(id) { 
-                        openAddLabelModal = false; 
-                        openLabelModal = true; 
-                    } 
+                            @click="createNewLabel().then(id => {
+                    if(id) {
+                        openAddLabelModal = false;
+                        openLabelModal = true;
+                    }
                 })"
                             :disabled="!labelData.newLabelName.trim() || !labelData.newLabelColor"
                             class="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -1808,7 +1808,7 @@
              initializeReplyEditor(commentId) {
                  const editorId = `task-reply-editor-${commentId}`;
                  const editorElement = document.getElementById(editorId);
-                 
+
                  if (editorElement && !editorElement._editor) {
                      ClassicEditor
                          .create(editorElement, {
@@ -1932,7 +1932,7 @@
                  } else {
                      this.replyView.active = true;
                      this.replyView.parentComment = comment;
-                     
+
                      this.$nextTick(() => {
                          this.initializeReplyEditor(comment.id);
                      });
@@ -1960,10 +1960,10 @@
                              createdAt: new Date(),
                              replies: []
                          };
-                         
+
                          this.comments.unshift(newComment);
                          editorElement._editor.setData('');
-                         
+
                          // Tampilkan notifikasi atau lakukan API call
                          console.log('Komentar utama dikirim:', content);
                      }
@@ -1975,7 +1975,7 @@
 
                  const editorId = `task-reply-editor-${this.replyView.parentComment.id}`;
                  const editorElement = document.getElementById(editorId);
-                 
+
                  if (editorElement && editorElement._editor) {
                      const content = editorElement._editor.getData();
                      if (content.trim()) {
@@ -1993,11 +1993,11 @@
                          if (!this.replyView.parentComment.replies) {
                              this.replyView.parentComment.replies = [];
                          }
-                         
+
                          this.replyView.parentComment.replies.push(newReply);
                          editorElement._editor.setData('');
                          this.closeReplyView();
-                         
+
                          // Tampilkan notifikasi atau lakukan API call
                          console.log('Balasan dikirim:', content);
                      }
