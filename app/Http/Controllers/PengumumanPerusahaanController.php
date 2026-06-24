@@ -70,7 +70,6 @@ class PengumumanPerusahaanController extends Controller
     }
 
 
-
     /**
      * Cegah member melakukan aksi kelola pengumuman
      */
