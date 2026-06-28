@@ -11,6 +11,7 @@ class Role extends Model
 
     public $incrementing = false;
     protected $keyType = 'uuid';
+    public $timestamps = false;
     protected $fillable = ['name'];
 
     // relasi ke userCompanies

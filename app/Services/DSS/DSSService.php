@@ -170,7 +170,8 @@ class DSSService
             'metrics' => $data['metrics'],
             'suggestions' => $data['suggestions'],
             'trends' => $data['trends'],
-            'generated_at' => $data['generated_at']
+            'generated_at' => $data['generated_at'],
+            'cached' => $data['cached'] ?? false
         ];
     }
 

@@ -2,5 +2,6 @@
 
 return [
     App\Providers\AppServiceProvider::class,
-    App\Providers\ViewServiceProvider::class, // ← TAMBAHKAN
+    App\Providers\TelescopeServiceProvider::class,
+    App\Providers\ViewServiceProvider::class,
 ];

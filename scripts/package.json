@@ -1,0 +1,15 @@
+{
+  "name": "koladi-benchmark",
+  "version": "1.0.0",
+  "description": "DSS benchmark script untuk penelitian Koladi",
+  "type": "commonjs",
+  "scripts": {
+    "benchmark:baseline":  "node benchmark-dss.js --configuration=baseline",
+    "benchmark:optimized": "node benchmark-dss.js --configuration=optimized",
+    "benchmark:dry":       "node benchmark-dss.js --configuration=baseline --dry-run"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "node-fetch": "^2.7.0"
+  }
+}

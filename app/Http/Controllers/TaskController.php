@@ -444,9 +444,11 @@ class TaskController extends Controller
                 ], 400);
             }
 
+            // ✅ FIX: Eloquent delete (bukan query builder) agar TaskAssignmentObserver terpanggil
             TaskAssignment::where('task_id', $taskId)
                 ->whereNotIn('user_id', $request->user_ids)
-                ->delete();
+                ->get()
+                ->each(fn($assignment) => $assignment->delete());
 
             foreach ($request->user_ids as $userId) {
                 TaskAssignment::updateOrCreate(
@@ -1913,14 +1915,25 @@ if ($existingLabel) {
 
             // Update assignments jika ada
             if ($request->has('user_ids')) {
-                $task->assignments()->delete();
+                // ✅ FIX: Eloquent delete per model agar TaskAssignmentObserver terpanggil
+                // Hapus hanya member yang TIDAK ada di user_ids baru (yang di-unassign)
+                $task->assignments()
+                    ->whereNotIn('user_id', $request->user_ids)
+                    ->get()
+                    ->each(fn($assignment) => $assignment->delete());
+
+                // Tambah assignment baru yang belum ada
                 foreach ($request->user_ids as $userId) {
-                    TaskAssignment::create([
-                        'id' => Str::uuid()->toString(),
-                        'task_id' => $task->id,
-                        'user_id' => $userId,
-                        'assigned_at' => now()
-                    ]);
+                    TaskAssignment::updateOrCreate(
+                        [
+                            'task_id' => $task->id,
+                            'user_id' => $userId,
+                        ],
+                        [
+                            'id' => Str::uuid()->toString(),
+                            'assigned_at' => now()
+                        ]
+                    );
                 }
             }
 

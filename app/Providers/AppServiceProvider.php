@@ -11,7 +11,11 @@ use App\Http\View\Composers\UserRoleComposer;
 use App\Models\Role;
 use App\Services\NotificationService;
 use App\Observers\UserCompanyObserver;
+use App\Observers\TaskObserver;             // [Langkah 1] Verifikasi Task lifecycle
+use App\Observers\TaskAssignmentObserver;  // [Langkah 2] Verifikasi A3 blind spot
 use App\Models\UserCompany;
+use App\Models\Task;
+use App\Models\TaskAssignment;
 use Illuminate\Support\Facades\URL;
 
 
@@ -41,6 +45,16 @@ class AppServiceProvider extends ServiceProvider
             }
 
             UserCompany::observe(UserCompanyObserver::class);
+
+            // ===================================================
+            // [PRE-EKSPERIMEN] Observer Verification
+            // Langkah 1: Verifikasi Task Observer lifecycle hooks
+            Task::observe(TaskObserver::class);
+
+            // Langkah 2: Verifikasi A3 - TaskAssignment Observer
+            // Membuktikan Skenario X (Eloquent delete) vs Skenario Y (query builder delete)
+            TaskAssignment::observe(TaskAssignmentObserver::class);
+            // ===================================================
 
 
 

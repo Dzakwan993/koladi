@@ -8,6 +8,7 @@ use App\Http\Middleware\CheckWorkspaceAccess;
 use App\Http\Middleware\CheckSystemAdmin;
 use App\Http\Middleware\CheckUserCompanyStatus; // 🔥 TAMBAHAN BARU
 use App\Http\Middleware\CheckSuperAdmin;
+use App\Http\Middleware\BenchmarkInstrumentation;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -29,7 +30,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'check.system.admin' => CheckSystemAdmin::class,
             'check.user.status' => CheckUserCompanyStatus::class, // 🔥 TAMBAHAN BARU
             'superadmin' => CheckSuperAdmin::class,
+            'benchmark' => BenchmarkInstrumentation::class, // 📊 Research instrumentation
         ]);
+
+        // 📊 Benchmark instrumentation: aktif di semua route (hanya merespons jika X-Benchmark-Mode: 1)
+        $middleware->appendToGroup('web', BenchmarkInstrumentation::class);
 
         // 🔥 TAMBAHAN: Terapkan middleware ke semua route web yang authenticated
         // Ini akan otomatis cek status user setiap kali ada request

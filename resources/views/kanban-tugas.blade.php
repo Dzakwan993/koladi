@@ -4707,9 +4707,11 @@ if (formData.phase) {
                             // ✅ Method untuk remove assigned member
                             removeAssignedMember(memberId) {
                                 if (this.currentTask && this.isEditMode) {
-                                    // Remove dari current task
+                                    // Remove dari currentTask.members (untuk update UI avatar)
                                     this.currentTask.members = this.currentTask.members.filter(m => m.id !== memberId);
-                                    // Juga update selectedMemberIds
+                                    // ✅ FIX: Juga update assignedMembers — ini yang dipakai saveTaskEdit()
+                                    this.assignedMembers = this.assignedMembers.filter(m => m.id !== memberId);
+                                    // Update selectedMemberIds
                                     this.selectedMemberIds = this.selectedMemberIds.filter(id => id !== memberId);
                                 } else {
                                     // Remove dari task form (new task)
