@@ -78,7 +78,10 @@ class MetricsCalculator
     private function getTasksInPeriod($workspaceId, $periodStart, $periodEnd)
     {
         return Task::where('workspace_id', $workspaceId)
-            ->with(['assignedUsers'])
+            ->with([
+                'assignedUsers:id',
+                'checklists:id,task_id,is_done'
+            ])
             ->where(function ($q) use ($periodStart, $periodEnd) {
                 // Task yang start/due di periode ini
                 $q->where(function ($sub) use ($periodStart, $periodEnd) {

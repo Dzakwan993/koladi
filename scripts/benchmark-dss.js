@@ -184,10 +184,13 @@ $periodStart = '${PERIOD_START}';
 $periodEnd   = '${PERIOD_END}';
 
 if ('${config}' === 'optimized') {
-    $keys = Cache::getRedis()->keys("*{$workspaceId}*");
+    $redis = app('redis')->connection('default');
+    $keys = $redis->keys("*{$workspaceId}*");
+    $prefix = config('database.redis.options.prefix', 'laravel-database-');
     $count = 0;
     foreach ($keys as $k) {
-        Cache::getRedis()->del($k);
+        $unprefixed = str_replace($prefix, '', $k);
+        $redis->del($unprefixed);
         $count++;
     }
     DB::table('workspace_performance_snapshots')

@@ -348,30 +348,18 @@ class StatistikController extends Controller
                 $periodEnd = $period['end'];
             }
 
-            // 3. Get modal data
+            // 3. Get full modal data from DSSService (Redis Cache-Aside)
+            //    Returns complete response including urgent_tasks, workload,
+            //    and workload_recommendations from cache or computed fresh.
             $modalData = $dssService->getModalData(
                 $workspaceId,
                 $periodStart,
                 $periodEnd
             );
 
-            // 4. Get urgent tasks (deadline < 3 days)
-            $urgentTasks = $this->getUrgentTasks($workspaceId, $periodStart, $periodEnd);
-
-            // 5. Get workload distribution
-            $workloadData = $this->getWorkloadDistribution($workspaceId, $periodStart, $periodEnd);
-
-            // ✅ TAMBAHKAN INI: Generate workload recommendations
-            $workloadRecommendations = app(\App\Services\DSS\RecommendationEngine::class)
-                ->generateWorkloadRecommendations($workloadData);
-
-            $modalData['urgent_tasks'] = $urgentTasks;
-            $modalData['workload'] = $workloadData;
-            $modalData['workload_recommendations'] = $workloadRecommendations; // ✅ Sudah ada
-
             return response()->json([
                 'success' => true,
-                'data' => $modalData
+                'data'    => $modalData,
             ]);
 
         } catch (\Exception $e) {
@@ -382,6 +370,7 @@ class StatistikController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * POST /api/statistik/refresh-snapshot
@@ -623,25 +612,22 @@ class StatistikController extends Controller
         $workspace = Workspace::findOrFail($workspaceId);
         $members = $workspace->activeMembers;
 
-        // ✅ TAMBAHKAN: Hitung total task di workspace
-        $totalWorkspaceTasks = Task::where('workspace_id', $workspaceId)
+        // Fetch all tasks for the workspace within the period with eager loaded assigned users
+        $allTasks = Task::where('workspace_id', $workspaceId)
+            ->with(['assignedUsers:id'])
             ->where(function ($q) use ($periodStart, $periodEnd) {
                 $q->whereBetween('start_datetime', [$periodStart, $periodEnd])
                     ->orWhereBetween('due_datetime', [$periodStart, $periodEnd]);
             })
-            ->count();
+            ->get();
+
+        $totalWorkspaceTasks = $allTasks->count();
 
         $distribution = [];
         foreach ($members as $member) {
-            $tasks = Task::where('workspace_id', $workspaceId)
-                ->whereHas('assignedUsers', function ($q) use ($member) {
-                    $q->where('users.id', $member->id);
-                })
-                ->where(function ($q) use ($periodStart, $periodEnd) {
-                    $q->whereBetween('start_datetime', [$periodStart, $periodEnd])
-                        ->orWhereBetween('due_datetime', [$periodStart, $periodEnd]);
-                })
-                ->get();
+            $tasks = $allTasks->filter(function ($task) use ($member) {
+                return $task->assignedUsers->contains('id', $member->id);
+            });
 
             $total = $tasks->count();
             $done = $tasks->where('status', 'done')->count();

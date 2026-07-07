@@ -3,16 +3,14 @@
 namespace App\Observers;
 
 use App\Models\Task;
+use App\Services\DSS\DSSService;
 use Illuminate\Support\Facades\Log;
 
 /**
- * TaskObserver — Langkah 1 Verifikasi Pre-Eksperimen
+ * TaskObserver — Event-Driven Cache Invalidation
  *
- * Saat ini hanya Log::info untuk memverifikasi bahwa lifecycle hooks
- * Observer berjalan normal pada model Task.
- *
- * Setelah verifikasi berhasil, method ini akan diisi dengan:
- *   Cache::store('redis')->forget("dss:{$task->workspace_id}:*");
+ * Menginvalidasi cache DSS Redis pada event created, updated, deleted
+ * sehingga data DSS selalu fresh setelah ada perubahan pada Task.
  */
 class TaskObserver
 {
@@ -27,6 +25,8 @@ class TaskObserver
             'workspace_id' => $task->workspace_id,
             'status'       => $task->status,
         ]);
+
+        $this->invalidateWorkspaceCache($task->workspace_id);
     }
 
     /**
@@ -38,8 +38,10 @@ class TaskObserver
             'task_id'      => $task->id,
             'title'        => $task->title,
             'workspace_id' => $task->workspace_id,
-            'dirty_fields' => array_keys($task->getDirty()), // Kolom yang berubah
+            'dirty_fields' => array_keys($task->getDirty()),
         ]);
+
+        $this->invalidateWorkspaceCache($task->workspace_id);
     }
 
     /**
@@ -52,5 +54,22 @@ class TaskObserver
             'title'        => $task->title,
             'workspace_id' => $task->workspace_id,
         ]);
+
+        $this->invalidateWorkspaceCache($task->workspace_id);
+    }
+
+    /**
+     * Invalidasi cache DSS Redis untuk workspace yang terpengaruh.
+     */
+    private function invalidateWorkspaceCache(string $workspaceId): void
+    {
+        try {
+            app(DSSService::class)->invalidateCacheForWorkspace($workspaceId);
+        } catch (\Throwable $e) {
+            Log::warning('[TaskObserver] Cache invalidation failed', [
+                'workspace_id' => $workspaceId,
+                'error'        => $e->getMessage(),
+            ]);
+        }
     }
 }

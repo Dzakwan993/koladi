@@ -6,7 +6,8 @@
   "scripts": {
     "benchmark:baseline":  "node benchmark-dss.js --configuration=baseline",
     "benchmark:optimized": "node benchmark-dss.js --configuration=optimized",
-    "benchmark:dry":       "node benchmark-dss.js --configuration=baseline --dry-run"
+    "benchmark:dry":       "node benchmark-dss.js --configuration=baseline --dry-run",
+    "benchmark:stats":     "node analyze-statistics.js"
   },
   "dependencies": {
     "commander": "^12.1.0",

@@ -13,6 +13,7 @@ services:
     entrypoint: ["/var/www/docker/entrypoint.local.sh"]
     depends_on:
       - db
+      - redis
     networks:
       - koladi_net
 
@@ -47,8 +48,21 @@ services:
       - pgdata_local:/var/lib/postgresql/data
     networks:
       - koladi_net
-    healthcheck:  # ← TAMBAH DI SINI
+    healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: koladi_redis_local
+    ports:
+      - "6379:6379"
+    networks:
+      - koladi_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -58,3 +72,4 @@ networks:
 
 volumes:
   pgdata_local:
+
