@@ -193,6 +193,34 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 <span class="text-sm">Video Tutorial</span>
             </a>
 
+            <a href="{{ route('ai-brief') }}"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                      {{ Request::is('tutorial*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
+                    stroke="{{ Request::is('tutorial*') ? '#225ad6' : 'currentColor' }}"
+                    class="w-5 h-5 flex-shrink-0">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z" />
+                </svg>
+                <span class="text-sm">Ai Brief</span>
+            </a>
+
+            <a href="{{ route('upload-brief') }}"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                      {{ Request::is('tutorial*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
+                    stroke="{{ Request::is('tutorial*') ? '#225ad6' : 'currentColor' }}"
+                    class="w-5 h-5 flex-shrink-0">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z" />
+                </svg>
+                <span class="text-sm">Upload Brief</span>
+            </a>
+
             {{-- Search & Actions --}}
             <div class="pt-3 mt-3 border-t border-gray-200">
                 <div class="flex items-center gap-1.5 relative">
