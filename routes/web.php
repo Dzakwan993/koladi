@@ -33,6 +33,7 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TutorialController;
+use App\Http\Controllers\ActivityLogController;
 
 // 🔥 Broadcasting Routes
 Broadcast::routes(['middleware' => ['web', 'auth']]);
@@ -599,4 +600,8 @@ Route::middleware(['auth'])->group(function () {
         // Clear all read notifications
         Route::post('/clear-read', [NotificationController::class, 'clearRead']);
     });
+
+
+    Route::get('/activity-log/{workspace}', [ActivityLogController::class, 'index'])
+    ->name('activity-log');
 });
