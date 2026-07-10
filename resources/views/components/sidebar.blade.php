@@ -193,7 +193,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 <span class="text-sm">Video Tutorial</span>
             </a>
 
-            <a href="{{ route('ai-brief') }}"
+            <a href="{{ route('upload-brief') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
                       {{ Request::is('tutorial*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
