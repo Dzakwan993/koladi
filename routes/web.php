@@ -26,6 +26,7 @@ use App\Http\Controllers\CompanyChatController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\DocumentCommentController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\BriefController;
 use App\Http\Controllers\CompanyDokumenController;
 use App\Http\Controllers\CompanyDocumentCommentController;
 use App\Http\Controllers\StatistikController;
@@ -37,6 +38,12 @@ use App\Http\Controllers\ActivityLogController;
 
 // 🔥 Broadcasting Routes
 Broadcast::routes(['middleware' => ['web', 'auth']]);
+
+Route::get('/workspace/{workspace}/upload-brief', [BriefController::class, 'uploadbrief'])
+    ->name('upload-brief');
+
+Route::get('/workspace/{workspace}/ai-brief', [BriefController::class, 'brief'])
+    ->name('ai-brief');
 
 
 // Route::get('/', [LandingPageController::class, 'index'])->name('landingpage');
