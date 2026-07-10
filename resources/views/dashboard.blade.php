@@ -59,70 +59,125 @@
             </div>
 
             {{-- Grid Project versi 3 card --}}
-            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-7">
-
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
 
                 {{-- Grid Project versi 5 card --}}
 
                 {{-- <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"> --}}
 
-                @forelse ($workspaces ?? [] as $workspace)
-    <a href="{{ route('kanban-tugas', $workspace->id) }}"
-        class="group bg-white rounded-2xl shadow-sm hover:shadow-lg transition p-6 flex flex-col relative">
+                @forelse ($workspaces as $workspace)
 
-                        <div class="flex justify-between items-start mb-6">
+                    @php
+                        $totalTask = $workspace->tasks->count();
+                        $doneTask = $workspace->tasks->where('status', 'Done')->count();
+
+                        $progress = $totalTask > 0 ? round(($doneTask / $totalTask) * 100) : 0;
+
+                        $status = $progress == 100 ? 'Selesai' : 'Berlangsung';
+                    @endphp
+
+                    <a href="{{ route('kanban-tugas', $workspace->id) }}"
+                      class="group bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition duration-300 border border-gray-100">
+
+                        {{-- Header --}}
+                        <div class="flex justify-between items-start">
+
+<div class="w-8 h-8 rounded-full border-2 border-white object-cover">
+    <i class="fa-solid fa-globe text-[#225AD6] text-base"></i>
+</div>
+
                             <span
-                                class="px-3 py-1 rounded-full text-xs font-semibold
-                                {{ $workspace->type === 'Tim' ? 'bg-blue-100 text-blue-600' : 'bg-purple-100 text-purple-700' }}">
-                                {{ $workspace->type }}
-                            </span>
+    class="px-3 py-1.5 rounded-full text-[11px] font-semibold uppercase tracking-wide
+    {{ $status == 'Berlangsung' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600' }}">
+    {{ $status }}
+</span>
 
-                            <button type="button"
-                                @click.stop.prevent="openWorkspaceMenu($event, {{ Illuminate\Support\Js::from($workspace->toArray()) }})"
-                                class="text-slate-400 hover:text-blue-600">
-                                <i class="fa-solid fa-ellipsis"></i>
-                            </button>
                         </div>
 
-                        <h3 class="text-xl font-bold text-slate-800">{{ $workspace->name }}</h3>
-                        <p class="text-slate-500 mt-1">{{ $workspace->description ?? 'Tidak ada deskripsi' }}</p>
+                        {{-- Title --}}
+                        <div class="mt-5">
 
-                        <div class="flex justify-between items-center mt-7">
+<h3 class="text-lg font-semibold text-slate-700 truncate">                                {{ $workspace->name }}
+                            </h3>
+
+                       <p class="text-slate-500 mt-1 text-xs leading-5 line-clamp-2">
+                                {{ $workspace->description ?: 'Belum ada deskripsi workspace.' }}
+                            </p>
+
+                        </div>
+
+                        {{-- Progress --}}
+                        <div class="mt-5">
+
+                            <div class="flex justify-between text-sm font-semibold mb-2">
+
+                                <span class="text-slate-700">
+                                    Progress
+                                </span>
+
+                                <span class="text-[#225AD6]">
+                                    {{ $progress }}%
+                                </span>
+
+                            </div>
+
+<div class="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-[#225AD6] rounded-full" style="width:{{ $progress }}%">
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        {{-- Member + Deadline --}}
+                        <div class="mt-5">
+
                             <div class="flex -space-x-3">
-                                @foreach ($workspace->userWorkspaces->take(4) as $uw)
+
+                                @foreach ($workspace->userWorkspaces->take(3) as $uw)
                                     @php
-                                        $member = $uw->user ?? null;
+                                        $member = $uw->user;
+
                                         $avatar = $member
                                             ? ($member->avatar
                                                 ? (Str::startsWith($member->avatar, ['http://', 'https://'])
                                                     ? $member->avatar
                                                     : asset('storage/' . $member->avatar))
-                                                : 'https://ui-avatars.com/api/?name=' .
-                                                    urlencode($member->full_name ?? 'User') .
-                                                    '&background=4F46E5&color=fff&bold=true')
-                                            : 'https://ui-avatars.com/api/?name=User&background=4F46E5&color=fff&bold=true';
+                                                : 'https://ui-avatars.com/api/?name=' . urlencode($member->full_name))
+                                            : '';
                                     @endphp
-                                    <img src="{{ $avatar }}" title="{{ $member->full_name ?? 'User' }}"
-                                        class="w-10 h-10 rounded-full border-2 border-white object-cover">
+
+                                    <img src="{{ $avatar }}"
+                                        class="w-8 h-8" rounded-full border-2 border-white object-cover">
                                 @endforeach
 
-                                @if ($workspace->userWorkspaces->count() > 4)
+                                @if ($workspace->userWorkspaces->count() > 3)
                                     <div
-                                        class="w-10 h-10 rounded-full bg-slate-200 border-2 border-white flex items-center justify-center">
-                                        <span
-                                            class="text-xs text-slate-600">+{{ $workspace->userWorkspaces->count() - 4 }}</span>
+                                        class="w-9 h-9 text-xs rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-sm font-semibold text-blue-700">
+                                        +{{ $workspace->userWorkspaces->count() - 3 }}
                                     </div>
                                 @endif
                             </div>
+                        </div>
+
+                        {{-- Footer --}}
+<div class="mt-3 pt-3 border-t border-gray-200 flex justify-between items-center text-sm">
+                            <div class="flex items-center gap-2 text-slate-600">
+                                <i class="fa-regular fa-circle-check text-[#225AD6]"></i>
+                                <span>{{ $totalTask }} Task Aktif</span>
+                            </div>
 
                             <div
-                                class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:scale-110 transition">
+                                class="w-9 h-9 rounded-full bg-[#F5F8FF] flex items-center justify-center text-slate-500 group-hover:bg-[#225AD6] group-hover:text-white transition">
                                 <i class="fa-solid fa-arrow-right"></i>
                             </div>
+
                         </div>
+
                     </a>
+
                 @empty
-                    {{-- Empty state --}}
+
                 @endforelse
 
                 {{-- New Project Card --}}
@@ -220,7 +275,7 @@
                     </button>
                 </template>
 
-                <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
+                {{-- <button class="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3"
                     @click="showMenuModal = false;
                     window.openAccessModal && window.openAccessModal({
                     type: 'workspace',
@@ -229,7 +284,7 @@
                     });">
                     <i class="fa-solid fa-gear text-gray-500 w-4"></i>
                     Atur Hak Akses
-                </button>
+                </button> --}}
 
                 <template x-if="canEditDelete">
                     <button
