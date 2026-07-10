@@ -64,9 +64,16 @@
 
         {{-- ✅ AMBIL DATA WORKSPACE AKTIF --}}
         @php
-            $currentWorkspaceId = session('current_workspace_id');
-            $currentWorkspace = $currentWorkspaceId ? \App\Models\Workspace::find($currentWorkspaceId) : null;
-        @endphp
+    $workspaceParam = request()->route('workspace');
+
+    if ($workspaceParam instanceof \App\Models\Workspace) {
+        $currentWorkspace = $workspaceParam;
+    } elseif ($workspaceParam) {
+        $currentWorkspace = \App\Models\Workspace::find($workspaceParam);
+    } else {
+        $currentWorkspace = null;
+    }
+@endphp
 
         {{-- Navigation --}}
         <nav class="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
