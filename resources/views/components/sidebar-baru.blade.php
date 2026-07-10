@@ -59,7 +59,12 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
 
         {{-- ✅ AMBIL DATA WORKSPACE AKTIF --}}
         @php
+            // Mendukung route yang memakai {workspace} maupun {workspaceId}
             $workspaceParam = request()->route('workspace');
+
+            if (!$workspaceParam) {
+                $workspaceParam = request()->route('workspaceId');
+            }
 
             if ($workspaceParam instanceof \App\Models\Workspace) {
                 $currentWorkspace = $workspaceParam;
@@ -133,6 +138,31 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                     <img src="{{ asset('images/icons/workspace_pengumuman.svg') }}" alt="Pengumuman"
                         class="w-5 h-5 opacity-50">
                     <span class="text-sm">Pengumuman</span>
+                </div>
+            @endif
+
+
+            {{-- ✅ Jadwal --}}
+            @if ($currentWorkspace)
+                <a href="{{ route('jadwal', ['workspaceId' => $currentWorkspace->id]) }}"
+                    class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+        {{ Request::is('workspace/*/jadwal*')
+            ? 'bg-[#e9effd] text-[#225ad6] font-medium active'
+            : 'text-gray-600 hover:bg-gray-50' }}">
+
+                    <img src="{{ asset('images/icons/workspace_kalender.svg') }}" alt="Jadwal"
+                        class="w-5 h-5 sidebar-icon">
+
+                    <span class="text-sm">Jadwal</span>
+                </a>
+            @else
+                <div class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 cursor-not-allowed"
+                    title="Pilih workspace terlebih dahulu">
+
+                    <img src="{{ asset('images/icons/workspace_kalender.svg') }}" alt="Jadwal"
+                        class="w-5 h-5 opacity-50">
+
+                    <span class="text-sm">Jadwal</span>
                 </div>
             @endif
 
