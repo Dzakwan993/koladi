@@ -84,11 +84,18 @@
                     </div>
 
                     {{-- Upload button --}}
-                    <input type="file" id="dokumen-brief" class="hidden" accept=".pdf,.docx,.txt">
+                    {{-- ini nanti untuk upload dokumenya button uploadnya ini  --}}
+                    {{-- <input type="file" id="dokumen-brief" class="hidden" accept=".pdf,.docx,.txt">
                     <button type="button" onclick="document.getElementById('dokumen-brief').click()"
                         class="mt-5 w-full max-w-xs bg-blue-700 hover:bg-blue-800 transition-colors text-white font-semibold text-sm rounded-xl py-3">
                         Pilih File Dokumen
-                    </button>
+                    </button> --}}
+
+                    <input type="file" id="dokumen-brief" class="hidden" accept=".pdf,.docx,.txt">
+                    <a href="{{ route('ai-brief') }}"
+                        class="mt-5 w-full max-w-xs bg-blue-700 hover:bg-blue-800 transition-colors text-white font-semibold text-sm rounded-xl py-3 flex items-center justify-center">
+                        Pilih File Dokumen
+                    </a>
 
                     <div class="w-full border-t border-slate-200 mt-7"></div>
                     <p class="text-[11px] font-medium text-slate-400 tracking-wide mt-4">ATAU IMPOR DARI</p>
@@ -96,59 +103,36 @@
                     {{-- Import sources --}}
                     <div class="grid grid-cols-5 gap-3 w-full max-w-lg mx-auto mt-4">
                         <div class="text-center">
-                            <div class="w-10 h-10 mx-auto rounded-full bg-purple-100 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <path
-                                        d="M17 20h5v-2a3 3 0 00-5.196-2.121M9 20H4v-2a3 3 0 015.196-2.121m0 0a4 4 0 105.607 0M15 7a4 4 0 11-8 0 4 4 0 018 0z"
-                                        stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
+                            <div class="w-12 h-12 mx-auto rounded-full bg-purple-100 flex items-center justify-center">
+                                <img src="{{ asset('images/icons/Meet.svg') }}" alt="Meeting Icon" class="w-8 h-8">
                             </div>
                             <p class="text-xs font-semibold text-slate-700 mt-2">Meeting</p>
                             <p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Hasil transkrip meeting</p>
                         </div>
                         <div class="text-center">
-                            <div class="w-10 h-10 mx-auto rounded-full bg-blue-100 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <path d="M7 18a4 4 0 01-.6-7.96A5 5 0 0116.9 8.02 4.5 4.5 0 0117.5 18H7z"
-                                        stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
+                            <div class="w-12 h-12 mx-auto rounded-full bg-purple-100 flex items-center justify-center">
+                                <img src="{{ asset('images/icons/Drive.svg') }}" alt="Drive Icon" class="w-8 h-8">
                             </div>
                             <p class="text-xs font-semibold text-slate-700 mt-2">Drive</p>
                             <p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Dokumen brief proyek</p>
                         </div>
                         <div class="text-center">
-                            <div class="w-10 h-10 mx-auto rounded-full bg-slate-100 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" stroke-width="2"
-                                    viewBox="0 0 24 24">
-                                    <rect x="4" y="4" width="16" height="16" rx="2" stroke-linecap="round"
-                                        stroke-linejoin="round" />
-                                    <path d="M7 9h10M7 13h6" stroke-linecap="round" />
-                                </svg>
+                            <div class="w-12 h-12 mx-auto rounded-full bg-purple-100 flex items-center justify-center">
+                                <img src="{{ asset('images/icons/Notion.svg') }}" alt="Notion Icon" class="w-8 h-8">
                             </div>
                             <p class="text-xs font-semibold text-slate-700 mt-2">Notion</p>
                             <p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Catatan & brief proyek</p>
                         </div>
                         <div class="text-center">
-                            <div class="w-10 h-10 mx-auto rounded-full bg-emerald-100 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor"
-                                    stroke-width="2" viewBox="0 0 24 24">
-                                    <path
-                                        d="M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4-.8L3 20l1.3-3.9A7.93 7.93 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                                        stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
+                            <div class="w-12 h-12 mx-auto rounded-full bg-purple-100 flex items-center justify-center">
+                                <img src="{{ asset('images/icons/Wa.svg') }}" alt="Wa Icon" class="w-8 h-8">
                             </div>
                             <p class="text-xs font-semibold text-slate-700 mt-2">WA</p>
                             <p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Ringkasan chat sama brief</p>
                         </div>
                         <div class="text-center">
-                            <div class="w-10 h-10 mx-auto rounded-full bg-amber-100 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor"
-                                    stroke-width="2" viewBox="0 0 24 24">
-                                    <path d="M3 8l9 6 9-6M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z"
-                                        stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
+                            <div class="w-12 h-12 mx-auto rounded-full bg-purple-100 flex items-center justify-center">
+                                <img src="{{ asset('images/icons/Gmail.svg') }}" alt="Gmail Icon" class="w-8 h-8">
                             </div>
                             <p class="text-xs font-semibold text-slate-700 mt-2">Email</p>
                             <p class="text-[10px] text-slate-400 mt-0.5 leading-tight">Brief dari email klien / tim</p>
@@ -159,13 +143,15 @@
 
                     <div class="relative w-full mt-8">
                         <p class="text-xs text-slate-500">Maksimal ukuran file 25MB</p>
-                        <div
-                            class="bg-gradient-to-r from-purple-50 via-pink-50 to-blue-50 rounded-2xl px-6 py-4 text-center">
-                            <p class="text-xs text-slate-600 mt-1 flex items-center justify-center gap-1.5">
-                                <span>
-                                    <span class="font-semibold text-purple-600">Penting:</span>
-                                    Pastikan dokumen sudah di-export ke format PDF, DOCX, atau TXT terlebih dahulu.
+                        <div class="bg-gradient-to-r from-purple-50 via-pink-50 to-blue-50 rounded-2xl px-6 py-4">
+                            <p
+                                class="text-xs text-slate-600 flex items-center justify-center gap-1.5 flex-wrap text-center">
+                                <span class="inline-flex items-center gap-1 font-semibold text-red-500 shrink-0">
+                                    <img src="{{ asset('images/icons/Warning.svg') }}" alt="Warning Icon"
+                                        class="w-4 h-4">
+                                    Penting:
                                 </span>
+                                <span>Pastikan dokumen sudah di-export ke format PDF, DOCX, atau TXT terlebih dahulu.</span>
                             </p>
                         </div>
                     </div>

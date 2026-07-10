@@ -20,7 +20,7 @@
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-2">
-                        <svg class="w-4 h-4 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
+                        <svg class="w-6 h-6 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10 2l1.6 4.6L16 8l-4.4 1.4L10 14l-1.6-4.6L4 8l4.4-1.4L10 2z" />
                         </svg>
                         <h2 class="font-semibold text-slate-800">Ringkasan AI</h2>
@@ -62,9 +62,6 @@
                             <path d="M11 2L3 12h6l-1 6 8-10h-6l1-6z" />
                         </svg>
                         <h2 class="font-semibold text-slate-800">Keputusan Kunci</h2>
-                    </div>
-                    <div
-                        class="w-8 h-8 rounded-full bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center ring-2 ring-white shadow">
                     </div>
                 </div>
 
@@ -215,9 +212,8 @@
                     </svg>
                     Proses dengan AI
                 </span>
-                <span class="text-xs text-blue-100 font-normal max-w-md">
-                    Biarkan AI menyusun strategi awal, ringkasan eksekutif, serta daftar tugas yang terstruktur secara
-                    otomatis.
+                <span class="text-xs text-blue-100 font-normal ">
+                    Biarkan AI menyusun strategi awal, ringkasan eksekutif, serta daftar tugas yang terstruktur secara otomatis.
                 </span>
             </button>
 
