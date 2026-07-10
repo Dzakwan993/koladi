@@ -26,6 +26,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(NotificationService::class, function ($app) {
             return new NotificationService();
         });
+
+        $this->app->bind(
+            \App\Services\AI\AIProvider::class,
+            \App\Services\AI\GeminiProvider::class
+        );
     }
 
     /**

@@ -24,8 +24,6 @@ use App\Services\NotificationService;
 
 class TaskController extends Controller
 {
-
-
     // ✅ TAMBAH INI
     protected $notificationService;
 
@@ -834,24 +832,24 @@ class TaskController extends Controller
 
 
     // untuk label dan warna pada tugas
-   public function getLabels($workspaceId)
-{
-    try {
-        if (!$this->canAccessWorkspace($workspaceId)) {
-            return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
+    public function getLabels($workspaceId)
+    {
+        try {
+            if (!$this->canAccessWorkspace($workspaceId)) {
+                return response()->json(['success' => false, 'message' => 'Akses ditolak'], 403);
+            }
+
+            // ← Sebelumnya Label::with('color')->get() — tidak filter workspace!
+            $labels = Label::with('color')
+                ->where('workspace_id', $workspaceId)
+                ->get();
+
+            return response()->json(['success' => true, 'labels' => $labels]);
+        } catch (\Exception $e) {
+            Log::error('Error getting labels: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Gagal mengambil data label'], 500);
         }
-
-        // ← Sebelumnya Label::with('color')->get() — tidak filter workspace!
-        $labels = Label::with('color')
-            ->where('workspace_id', $workspaceId)
-            ->get();
-
-        return response()->json(['success' => true, 'labels' => $labels]);
-    } catch (\Exception $e) {
-        Log::error('Error getting labels: ' . $e->getMessage());
-        return response()->json(['success' => false, 'message' => 'Gagal mengambil data label'], 500);
     }
-}
 
 
     // ✅ NEW: Create new label
@@ -893,23 +891,23 @@ class TaskController extends Controller
             }
 
             // Cek apakah label dengan nama yang sama sudah ada
-$existingLabel = Label::where('name', $request->name)
-    ->where('workspace_id', $request->workspace_id)
-    ->first();
+            $existingLabel = Label::where('name', $request->name)
+                ->where('workspace_id', $request->workspace_id)
+                ->first();
 
-if ($existingLabel) {
-    return response()->json([
-        'success' => false,
-        'message' => 'Label dengan nama ini sudah ada'
-    ], 400);
-}
+            if ($existingLabel) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Label dengan nama ini sudah ada'
+                ], 400);
+            }
 
             $label = Label::create([
-    'id' => Str::uuid()->toString(),
-    'name' => $request->name,
-    'color_id' => $request->color_id,
-    'workspace_id' => $request->workspace_id // ← tambahkan ini
-]);
+                'id' => Str::uuid()->toString(),
+                'name' => $request->name,
+                'color_id' => $request->color_id,
+                'workspace_id' => $request->workspace_id // ← tambahkan ini
+            ]);
             // Load relation color untuk response
             $label->load('color');
 
@@ -1545,7 +1543,155 @@ if ($existingLabel) {
         }
     }
 
+    // ============================================================
+    // === EDF SCHEDULE — untuk evaluasi algoritma penjadwalan
+    // ============================================================
+    public function getEdfSchedule($workspaceId)
+    {
+        try {
+            $user = Auth::user();
 
+            if (!$this->canAccessWorkspace($workspaceId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki akses ke workspace ini'
+                ], 403);
+            }
+
+            // Ambil semua task yang belum selesai
+            $tasks = Task::where('workspace_id', $workspaceId)
+                ->whereNotIn('status', ['done', 'cancel'])
+                ->whereNotNull('due_datetime')
+                ->get();
+
+            $now = now();
+            $currentTime = $now->copy();
+            $edfOrder = [];
+            $fcfsOrder = [];
+            $remainingTasks = $tasks->toArray();
+
+            // ✅ Simulasi FCFS — urutkan by created_at
+            $fcfsSorted = $tasks->sortBy('created_at')->values();
+            $fcfsTime = $now->copy();
+            foreach ($fcfsSorted as $task) {
+                $duration = $task->processing_time_hours
+                    ?? ($task->start_datetime && $task->due_datetime
+                        ? \Carbon\Carbon::parse($task->start_datetime)
+                        ->diffInHours(\Carbon\Carbon::parse($task->due_datetime))
+                        : 2);
+                $completionTime = $fcfsTime->copy()->addHours($duration);
+                $dueTime = \Carbon\Carbon::parse($task->due_datetime);
+                $tardiness = max(0, $completionTime->diffInHours($dueTime, false) * -1);
+
+                $fcfsOrder[] = [
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'due_datetime' => $task->due_datetime,
+                    'completion_time' => $completionTime->toDateTimeString(),
+                    'tardiness_hours' => round($tardiness, 2),
+                    'is_late' => $completionTime->gt($dueTime),
+                ];
+                $fcfsTime = $completionTime;
+            }
+
+            // ✅ Simulasi Non-Preemptive EDF — urutkan by due_datetime
+            $edfSorted = $tasks->sortBy('due_datetime')->values();
+            $edfTime = $now->copy();
+            foreach ($edfSorted as $task) {
+                $duration = $task->processing_time_hours
+                    ?? ($task->start_datetime && $task->due_datetime
+                        ? \Carbon\Carbon::parse($task->start_datetime)
+                        ->diffInHours(\Carbon\Carbon::parse($task->due_datetime))
+                        : 2);
+
+                // Jangan mulai sebelum start_datetime task
+                $earliestStart = $task->start_datetime
+                    ? max($edfTime->timestamp, \Carbon\Carbon::parse($task->start_datetime)->timestamp)
+                    : $edfTime->timestamp;
+                $actualStart = \Carbon\Carbon::createFromTimestamp($earliestStart);
+                $completionTime = $actualStart->copy()->addHours($duration);
+                $dueTime = \Carbon\Carbon::parse($task->due_datetime);
+                $tardiness = max(0, $completionTime->diffInHours($dueTime, false) * -1);
+
+                $edfOrder[] = [
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'due_datetime' => $task->due_datetime,
+                    'completion_time' => $completionTime->toDateTimeString(),
+                    'tardiness_hours' => round($tardiness, 2),
+                    'is_late' => $completionTime->gt($dueTime),
+                ];
+                $edfTime = $completionTime;
+            }
+
+            // ✅ Hitung MT dan NLT untuk keduanya
+            $fcfsMT = count($fcfsOrder) > 0
+                ? round(array_sum(array_column($fcfsOrder, 'tardiness_hours')) / count($fcfsOrder), 2)
+                : 0;
+            $fcfsNLT = count(array_filter($fcfsOrder, fn($t) => $t['is_late']));
+
+            $edfMT = count($edfOrder) > 0
+                ? round(array_sum(array_column($edfOrder, 'tardiness_hours')) / count($edfOrder), 2)
+                : 0;
+            $edfNLT = count(array_filter($edfOrder, fn($t) => $t['is_late']));
+
+            return response()->json([
+                'success' => true,
+                'workspace_id' => $workspaceId,
+                'total_tasks' => $tasks->count(),
+                'evaluation_time' => $now->toDateTimeString(),
+
+                'fcfs' => [
+                    'schedule' => $fcfsOrder,
+                    'mean_tardiness_hours' => $fcfsMT,
+                    'number_of_late_tasks' => $fcfsNLT,
+                ],
+
+                'edf' => [
+                    'schedule' => $edfOrder,
+                    'mean_tardiness_hours' => $edfMT,
+                    'number_of_late_tasks' => $edfNLT,
+                ],
+
+                'comparison' => [
+                    'mt_reduction_hours' => round($fcfsMT - $edfMT, 2),
+                    'mt_reduction_percent' => $fcfsMT > 0
+                        ? round((($fcfsMT - $edfMT) / $fcfsMT) * 100, 1)
+                        : 0,
+                    'nlt_reduction' => $fcfsNLT - $edfNLT,
+                    'edf_wins_mt' => $edfMT < $fcfsMT,
+                    'edf_wins_nlt' => $edfNLT < $fcfsNLT,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting EDF schedule: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil jadwal EDF: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function getEdfPriority($task): bool
+    {
+        if (!$task->due_datetime || in_array($task->status, ['done', 'cancel'])) {
+            return false;
+        }
+        $hours = now()->diffInHours(\Carbon\Carbon::parse($task->due_datetime), false);
+        return $hours < 72; // warning, critical, atau overdue
+    }
+
+    private function getEdfUrgencyLevel($task): string
+    {
+        if (!$task->due_datetime || in_array($task->status, ['done', 'cancel'])) {
+            return 'normal';
+        }
+        $hours = now()->diffInHours(\Carbon\Carbon::parse($task->due_datetime), false);
+        if ($hours < 0)  return 'overdue';
+        if ($hours <= 24) return 'critical';
+        if ($hours <= 72) return 'warning';
+        return 'normal';
+    }
     public function getKanbanTasks($workspaceId)
     {
         try {
@@ -1584,54 +1730,96 @@ if ($existingLabel) {
                 });
             }
 
-            $tasks = $query->get()->map(function ($task) {
-                return [
-                    'id' => $task->id,
-                    'title' => $task->title,
-                    'phase' => $task->phase,
-                    'status' => $task->board_column_id,
-                    'board_column_id' => $task->board_column_id,
-                    'is_secret' => $task->is_secret,
-                    'description' => $task->description,
-                    'priority' => $task->priority,
-                    'start_datetime' => $task->start_datetime,
-                    'due_datetime' => $task->due_datetime,
+            // ✅ EDF: Urutkan task berdasarkan due_datetime (ascending)
+            // Task yang sudah selesai/batal tetap di posisi semula
+            $tasks = $query->get()
+                ->sortBy(function ($task) {
+                    // Task done/cancel tidak ikut prioritas EDF, taruh di akhir
+                    if (in_array($task->status, ['done', 'cancel'])) {
+                        return PHP_INT_MAX;
+                    }
+                    // Task tanpa due_datetime taruh setelah yang punya deadline
+                    if (!$task->due_datetime) {
+                        return PHP_INT_MAX - 1;
+                    }
+                    // EDF: urutkan by due_datetime ascending
+                    return \Carbon\Carbon::parse($task->due_datetime)->timestamp;
+                })
+                ->values()
+                ->map(function ($task) {
+                    // Hitung EDF priority flag
+                    $isEdfPriority = false;
+                    $edfUrgencyLevel = 'normal'; // normal, warning, critical
 
-                    'assignees' => $task->assignments->map(function ($assignment) {
-                        return [
-                            'id' => $assignment->user->id,
-                            'name' => $assignment->user->full_name,
-                            'email' => $assignment->user->email,
-                            'avatar' => $this->getAvatarUrl($assignment->user) // ✅ Gunakan helper
-                        ];
-                    }),
+                    if ($task->due_datetime && !in_array($task->status, ['done', 'cancel'])) {
+                        $hoursUntilDeadline = now()->diffInHours(
+                            \Carbon\Carbon::parse($task->due_datetime),
+                            false // false = bisa negatif jika sudah lewat
+                        );
 
-                    'labels' => $task->labels->map(function ($label) {
-                        return [
-                            'id' => $label->id,
-                            'name' => $label->name,
-                            'color' => $label->color->rgb
-                        ];
-                    }),
+                        if ($hoursUntilDeadline < 0) {
+                            $isEdfPriority = true;
+                            $edfUrgencyLevel = 'overdue'; // sudah lewat deadline
+                        } elseif ($hoursUntilDeadline <= 24) {
+                            $isEdfPriority = true;
+                            $edfUrgencyLevel = 'critical'; // kurang dari 24 jam
+                        } elseif ($hoursUntilDeadline <= 72) {
+                            $isEdfPriority = true;
+                            $edfUrgencyLevel = 'warning'; // kurang dari 3 hari
+                        }
+                    }
 
-                    'checklists' => $task->checklists->map(function ($checklist) {
-                        return [
-                            'id' => $checklist->id,
-                            'title' => $checklist->title,
-                            'is_done' => $checklist->is_done,
-                            'position' => $checklist->position
-                        ];
-                    }),
+                    return [
+                        'id' => $task->id,
+                        'title' => $task->title,
+                        'phase' => $task->phase,
+                        'status' => $task->status,
+                        'board_column_id' => $task->board_column_id,
+                        'is_secret' => $task->is_secret,
+                        'description' => $task->description,
+                        'priority' => $task->priority,
+                        'start_datetime' => $task->start_datetime,
+                        'due_datetime' => $task->due_datetime,
 
-                    'progress_percentage' => $this->calculateTaskProgress($task),
-                    'is_overdue' => $task->isOverdue()
-                ];
-            });
+                        'assignees' => $task->assignments->map(function ($assignment) {
+                            return [
+                                'id' => $assignment->user->id,
+                                'name' => $assignment->user->full_name,
+                                'email' => $assignment->user->email,
+                                'avatar' => $this->getAvatarUrl($assignment->user) // ✅ Gunakan helper
+                            ];
+                        }),
 
+                        'labels' => $task->labels->map(function ($label) {
+                            return [
+                                'id' => $label->id,
+                                'name' => $label->name,
+                                'color' => $label->color->rgb
+                            ];
+                        }),
+
+                        'checklists' => $task->checklists->map(function ($checklist) {
+                            return [
+                                'id' => $checklist->id,
+                                'title' => $checklist->title,
+                                'is_done' => $checklist->is_done,
+                                'position' => $checklist->position
+                            ];
+                        }),
+
+                        'progress_percentage' => $this->calculateTaskProgress($task),
+                        'is_overdue' => $task->isOverdue(),
+                        // ✅ EDF fields baru
+                        'edf_priority' => $isEdfPriority,
+                        'edf_urgency_level' => $edfUrgencyLevel,
+                    ];
+                });
+
+            // ✅ Perbaikan — kirim juga versi grouped
             return response()->json([
                 'success' => true,
                 'tasks' => $tasks,
-                'user_role' => $userRole
+                'tasks_by_column' => $tasks->groupBy('board_column_id'),
             ]);
         } catch (\Exception $e) {
             Log::error('Error getting kanban tasks: ' . $e->getMessage());

@@ -65,10 +65,12 @@
                                     class="task-card bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm select-none"
                                     :class="{
                                         'task-card-secret border-l-4 border-purple-500 bg-purple-50': task.is_secret,
-                                        'border-l-4 border-red-500': task.is_overdue
+                                        'border-l-4 border-red-500': task.is_overdue,
+                                        'border-l-4 border-red-600': task.edf_urgency_level === 'overdue',
+                                        'border-l-4 border-orange-500': task.edf_urgency_level === 'critical',
+                                        'border-l-4 border-yellow-400': task.edf_urgency_level === 'warning'
                                     }"
-                                    draggable="true"
-                                    @dragstart="onDragStart($event, task.id)"
+                                    draggable="true" @dragstart="onDragStart($event, task.id)"
                                     @dragend="onDragEnd($event)">
 
                                     {{-- HEADER: Phase + Badges --}}
@@ -91,6 +93,33 @@
                                                         d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" />
                                                 </svg>
                                                 Rahasia
+                                            </span>
+                                        </div>
+                                        {{-- EDF Priority Badge --}}
+                                        <div x-show="task.edf_priority" class="mt-1">
+                                            <span
+                                                :class="{
+                                                    'bg-red-100 text-red-700 border border-red-300': task
+                                                        .edf_urgency_level === 'overdue',
+                                                    'bg-orange-100 text-orange-700 border border-orange-300': task
+                                                        .edf_urgency_level === 'critical',
+                                                    'bg-yellow-100 text-yellow-700 border border-yellow-300': task
+                                                        .edf_urgency_level === 'warning',
+                                                    'bg-green-100 text-green-700 border border-green-300': task
+                                                        .edf_urgency_level === 'normal'
+                                                }"
+                                                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold">
+                                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd"
+                                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                                                        clip-rule="evenodd" />
+                                                </svg>
+                                                <span
+                                                    x-text="
+                                                task.edf_urgency_level === 'overdue'  ? '⚠ Overdue' :
+                                                task.edf_urgency_level === 'critical' ? '🔴 Critical' :
+                                                task.edf_urgency_level === 'warning'  ? '🟡 Warning' : 'EDF'
+                                            "></span>
                                             </span>
                                         </div>
                                     </div>
@@ -136,7 +165,8 @@
                                     {{-- PARTICIPANTS (paling bawah) --}}
                                     <div x-show="task.members?.length > 0" class="mt-1">
                                         <div class="flex items-center gap-1">
-                                            <template x-for="member in task.members.slice(0, 3)" :key="member.id">
+                                            <template x-for="member in task.members.slice(0, 3)"
+                                                :key="member.id">
                                                 <img :src="member.avatar"
                                                     class="w-5 h-5 rounded-full border border-gray-300"
                                                     :alt="member.name" :title="member.name">
@@ -218,147 +248,151 @@
 
 
     /* Tambahkan di style section */
-.drag-ghost {
-    opacity: 0.5;
-    transform: rotate(5deg);
-}
-
-.drag-chosen {
-    background-color: #dbeafe !important;
-    border-color: #3b82f6 !important;
-}
-
-.drag-over {
-    background-color: #eff6ff !important;
-    border: 2px dashed #3b82f6 !important;
-}
-
-/* Style untuk placeholder drag & drop */
-.sortable-ghost {
-    opacity: 0.4;
-    background-color: #93c5fd !important;
-}
-
-.sortable-chosen {
-    background-color: #dbeafe !important;
-}
-
-.sortable-drag {
-    transform: rotate(5deg);
-    z-index: 9999 !important;
-}
-
-
-/* Tambahkan di style section */
-.task-card {
-    user-select: none;
-    -webkit-user-drag: element;
-    backface-visibility: hidden;
-    transform: translateZ(0);
-    will-change: transform;
-}
-
-.task-card.dragging {
-    opacity: 0.5 !important;
-    transform: scale(0.95) rotate(2deg);
-    transition: all 0.2s ease;
-}
-
-.task-card.dragging-active {
-    z-index: 9999 !important;
-    position: relative;
-}
-
-/* Sortable.js styles */
-.sortable-ghost {
-    opacity: 0.3;
-    background: linear-gradient(135deg, #667eea, #764ba2) !important;
-}
-
-.sortable-chosen {
-    background-color: #dbeafe !important;
-    border: 2px solid #3b82f6 !important;
-    transform: rotate(3deg);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-}
-
-.sortable-drag {
-    opacity: 0.8;
-    transform: rotate(5deg) scale(1.02);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-    z-index: 10000 !important;
-}
-
-.drag-over {
-    background: linear-gradient(135deg, #eff6ff, #dbeafe) !important;
-    border: 2px dashed #3b82f6 !important;
-    border-radius: 8px;
-    animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% {
-        border-color: #3b82f6;
+    .drag-ghost {
+        opacity: 0.5;
+        transform: rotate(5deg);
     }
-    50% {
-        border-color: #60a5fa;
+
+    .drag-chosen {
+        background-color: #dbeafe !important;
+        border-color: #3b82f6 !important;
     }
-}
 
-/* Fix untuk text blur saat drag */
-.sortable-drag *,
-.sortable-chosen *,
-.sortable-ghost * {
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-}
+    .drag-over {
+        background-color: #eff6ff !important;
+        border: 2px dashed #3b82f6 !important;
+    }
 
-/* Firefox specific fix */
-@@supports (-moz-appearance: none) {
-    .sortable-drag,
+    /* Style untuk placeholder drag & drop */
+    .sortable-ghost {
+        opacity: 0.4;
+        background-color: #93c5fd !important;
+    }
+
     .sortable-chosen {
-        filter: none !important;
+        background-color: #dbeafe !important;
     }
-}
 
-/* Fix untuk Chrome blur issue */
-@media (-webkit-min-device-pixel-ratio: 0) {
     .sortable-drag {
-        -webkit-backface-visibility: hidden;
-        -webkit-transform: translate3d(0, 0, 0);
+        transform: rotate(5deg);
+        z-index: 9999 !important;
     }
-}
 
-/* Scrollbar Modern for Kanban */
-#kanban-board::-webkit-scrollbar,
-[id^="column-"]::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
 
-#kanban-board::-webkit-scrollbar-track,
-[id^="column-"]::-webkit-scrollbar-track {
-    background: transparent;
-}
+    /* Tambahkan di style section */
+    .task-card {
+        user-select: none;
+        -webkit-user-drag: element;
+        backface-visibility: hidden;
+        transform: translateZ(0);
+        will-change: transform;
+    }
 
-#kanban-board::-webkit-scrollbar-thumb,
-[id^="column-"]::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #3b82f6, #2563eb);
-    border-radius: 10px;
-}
+    .task-card.dragging {
+        opacity: 0.5 !important;
+        transform: scale(0.95) rotate(2deg);
+        transition: all 0.2s ease;
+    }
 
-#kanban-board::-webkit-scrollbar-thumb:hover,
-[id^="column-"]::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, #2563eb, #1d4ed8);
-}
+    .task-card.dragging-active {
+        z-index: 9999 !important;
+        position: relative;
+    }
 
-/* Firefox Support */
-#kanban-board,
-[id^="column-"] {
-    scrollbar-width: thin;
-    scrollbar-color: #3b82f6 transparent;
-}
+    /* Sortable.js styles */
+    .sortable-ghost {
+        opacity: 0.3;
+        background: linear-gradient(135deg, #667eea, #764ba2) !important;
+    }
+
+    .sortable-chosen {
+        background-color: #dbeafe !important;
+        border: 2px solid #3b82f6 !important;
+        transform: rotate(3deg);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .sortable-drag {
+        opacity: 0.8;
+        transform: rotate(5deg) scale(1.02);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+        z-index: 10000 !important;
+    }
+
+    .drag-over {
+        background: linear-gradient(135deg, #eff6ff, #dbeafe) !important;
+        border: 2px dashed #3b82f6 !important;
+        border-radius: 8px;
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            border-color: #3b82f6;
+        }
+
+        50% {
+            border-color: #60a5fa;
+        }
+    }
+
+    /* Fix untuk text blur saat drag */
+    .sortable-drag *,
+    .sortable-chosen *,
+    .sortable-ghost * {
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+
+    /* Firefox specific fix */
+    @@supports (-moz-appearance: none) {
+
+        .sortable-drag,
+        .sortable-chosen {
+            filter: none !important;
+        }
+    }
+
+    /* Fix untuk Chrome blur issue */
+    @media (-webkit-min-device-pixel-ratio: 0) {
+        .sortable-drag {
+            -webkit-backface-visibility: hidden;
+            -webkit-transform: translate3d(0, 0, 0);
+        }
+    }
+
+    /* Scrollbar Modern for Kanban */
+    #kanban-board::-webkit-scrollbar,
+    [id^="column-"]::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    #kanban-board::-webkit-scrollbar-track,
+    [id^="column-"]::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    #kanban-board::-webkit-scrollbar-thumb,
+    [id^="column-"]::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #3b82f6, #2563eb);
+        border-radius: 10px;
+    }
+
+    #kanban-board::-webkit-scrollbar-thumb:hover,
+    [id^="column-"]::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, #2563eb, #1d4ed8);
+    }
+
+    /* Firefox Support */
+    #kanban-board,
+    [id^="column-"] {
+        scrollbar-width: thin;
+        scrollbar-color: #3b82f6 transparent;
+    }
 </style>

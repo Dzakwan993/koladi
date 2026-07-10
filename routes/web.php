@@ -338,7 +338,8 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('brief')->name('brief.')->group(function () {
             Route::get('/', [BriefController::class, 'index'])->name('index');
             Route::post('/upload', [BriefController::class, 'upload'])->name('upload');
-
+            Route::get('/review', [BriefController::class, 'review'])->name('review');
+            Route::post('/approve', [BriefController::class, 'approve'])->name('approve');
         });
 
         // ========================================

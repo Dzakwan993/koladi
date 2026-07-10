@@ -31,7 +31,7 @@ class PromptBuilderService
     protected function loadPrompt(string $name):string
     {
         return file_get_contents(
-            resource_path("prompts/{$name}.md")
+            resource_path("prompts/brief-parser/{$name}.md")
         );
     }
 

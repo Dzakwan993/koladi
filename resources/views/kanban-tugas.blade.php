@@ -5,7 +5,6 @@
         @section('content')
             <div class="bg-gray-50 min-h-screen flex flex-col" x-data="kanbanApp()">
 
-
                 {{-- Debug Info
         <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-4" x-data="{ showDebug: true }">
             <div class="flex justify-between items-center">
@@ -981,6 +980,18 @@
                         background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
                     }
 
+                    /* EDF Priority border */
+                    .edf-overdue {
+                        border-left: 4px solid #ef4444 !important;
+                    }
+
+                    .edf-critical {
+                        border-left: 4px solid #f97316 !important;
+                    }
+
+                    .edf-warning {
+                        border-left: 4px solid #eab308 !important;
+                    }
 
                     /* Drag & Drop Styles */
                     .drag-over {
@@ -3027,13 +3038,13 @@
                                             this.openTaskModal = false;
 
                                             // ✅ RELOAD KANBAN DATA UNTUK SINKRONISASI
-                                           // ✅ RELOAD KANBAN DATA UNTUK SINKRONISASI
-await this.loadKanbanTasks();
+                                            // ✅ RELOAD KANBAN DATA UNTUK SINKRONISASI
+                                            await this.loadKanbanTasks();
 
-// ✅ RELOAD TIMELINE jika task punya phase
-if (formData.phase) {
-    await this.loadTimelineData();
-}
+                                            // ✅ RELOAD TIMELINE jika task punya phase
+                                            if (formData.phase) {
+                                                await this.loadTimelineData();
+                                            }
 
                                         } else {
                                             throw new Error(data.message || 'Gagal membuat tugas');
@@ -4347,10 +4358,22 @@ if (formData.phase) {
                                 return this.tasks.filter(task => task.board_column_id === columnId);
                             },
 
-                            // ✅ NEW: Method untuk filter tasks di kolom tertentu
+
+                            // ✅ Perbaikan — pastikan urutan EDF tetap terjaga
                             getFilteredTasksByColumn(columnId) {
                                 const columnTasks = this.tasks.filter(task => task.board_column_id === columnId);
-                                return this.filterTasks(columnTasks);
+                                const filtered = this.filterTasks(columnTasks);
+                                // Jaga urutan EDF: done/cancel ke bawah, lalu sort by due_datetime
+                                return filtered.sort((a, b) => {
+                                    const doneStatus = ['done', 'cancel'];
+                                    const aIsDone = doneStatus.includes(a.status);
+                                    const bIsDone = doneStatus.includes(b.status);
+                                    if (aIsDone && !bIsDone) return 1;
+                                    if (!aIsDone && bIsDone) return -1;
+                                    if (!a.dueDate) return 1;
+                                    if (!b.dueDate) return -1;
+                                    return new Date(a.dueDate) - new Date(b.dueDate);
+                                });
                             },
 
                             // ✅ NEW: Helper untuk notification
@@ -5472,7 +5495,9 @@ if (formData.phase) {
                                             progress_percentage: task.progress_percentage,
                                             is_overdue: task.is_overdue,
                                             created_at: task.created_at,
-                                            updated_at: task.updated_at
+                                            updated_at: task.updated_at,
+                                            edf_priority: task.edf_priority, // ← TAMBAH INI
+                                            edf_urgency_level: task.edf_urgency_level, // ← TAMBAH INI
                                         }));
 
                                         console.log('✅ Tasks loaded from database:', this.tasks.length);

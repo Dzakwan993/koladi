@@ -999,9 +999,6 @@
     </div>
 </div>
 
-
-
-
 <!-- Modal Detail Tugas -->
 <div x-show="openTaskDetail && !replyView.active" x-cloak
     class="fixed inset-0 modal-layer-2 flex items-center justify-center bg-black bg-opacity-50 p-4"
