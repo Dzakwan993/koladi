@@ -32,6 +32,7 @@ use App\Http\Controllers\StatistikController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\BriefController;
 use App\Http\Controllers\TutorialController;
 
 // 🔥 Broadcasting Routes
@@ -327,6 +328,17 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/chat/create', [CompanyChatController::class, 'createConversation']);
                 Route::post('/chat/{conversationId}/mark-as-read', [CompanyChatController::class, 'markAsRead']);
             });
+        });
+
+
+        // ========================================
+        // 🔥 Document AI Brief Routes
+        // ========================================
+        
+        Route::prefix('brief')->name('brief.')->group(function () {
+            Route::get('/', [BriefController::class, 'index'])->name('index');
+            Route::post('/upload', [BriefController::class, 'upload'])->name('upload');
+
         });
 
         // ========================================
