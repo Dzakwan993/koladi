@@ -34,7 +34,21 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-            UserCompany::observe(UserCompanyObserver::class);
+        if (!\Illuminate\Support\Facades\Schema::hasTable('task_activities')) {
+            \Illuminate\Support\Facades\Schema::create('task_activities', function (\Illuminate\Database\Schema\Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('workspace_id');
+                $table->uuid('task_id');
+                $table->uuid('user_id');
+                $table->string('task_title');
+                $table->string('action_type');
+                $table->string('old_column')->nullable();
+                $table->string('new_column')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        UserCompany::observe(UserCompanyObserver::class);
 
 
 

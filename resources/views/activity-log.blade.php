@@ -5,6 +5,10 @@
 
 @section('content')
 
+<script>
+    window.__activities = @json($sortedActivities);
+</script>
+
 <div
     x-data="{
         tab: 'decision',
@@ -30,40 +34,7 @@
             }
         ],
 
-        activities:[
-            {
-                side:'right',
-                color:'blue',
-                icon:'check',
-                title:'Update Status Proyek',
-                desc:'Budi Santoso mengubah status Sprint 4 dari <span class=\'inline-flex items-center px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 text-xs font-medium mx-1\'>In Progress</span> ke <span class=\'inline-flex items-center px-2 py-0.5 rounded-md bg-green-100 text-green-700 text-xs font-medium mx-1\'>Completed</span>.',
-                time:'Baru saja'
-            },
-            {
-                side:'left',
-                color:'purple',
-                icon:'upload',
-                title:'Unggah Dokumen Baru',
-                desc:'Dewi A. mengunggah <span class=\'font-medium text-slate-700\'>Brand-Guidelines-V1.2.zip</span> ke Evidence Log.',
-                time:'2 jam yang lalu'
-            },
-            {
-                side:'right',
-                color:'red',
-                icon:'calendar',
-                title:'Perubahan Deadline',
-                desc:'Deadline untuk Migrasi Database diundur menjadi <span class=\'font-semibold text-red-600\'>25 April 2024</span> atas permintaan CTO.',
-                time:'Kemarin, 14:20'
-            },
-            {
-                side:'left',
-                color:'green',
-                icon:'check',
-                title:'Keputusan Divalidasi',
-                desc:'Keputusan <span class=\'italic font-medium text-slate-700\'>&quot;Pemilihan Cloud Provider&quot;</span> telah ditandai sebagai final setelah persetujuan Stakeholder.',
-                time:'12 Apr 2024'
-            }
-        ]
+        activities: window.__activities || []
     }"
     class="bg-[#f3f6fc] min-h-screen">
 
@@ -74,8 +45,8 @@
 
         <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
 
-            {{-- Sticky Header + Tabs --}}
-            <div class="sticky top-0 z-30 bg-white rounded-t-xl">
+            {{-- Header + Tabs --}}
+            <div class="bg-white rounded-t-xl">
 
             {{-- Header --}}
             <div class="px-8 py-6 border-b border-gray-200">
@@ -142,8 +113,8 @@
 
             </div>
 
-            {{-- Tabs --}}
-            <div class="border-b border-gray-200">
+            {{-- Sticky Tabs --}}
+            <div class="sticky top-0 z-30 bg-white border-b border-gray-200">
 
                 <div class="flex">
 
@@ -280,7 +251,7 @@
 
                     {{-- Garis Timeline --}}
                     <div
-                        class="hidden md:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-200 -translate-x-1/2">
+                        class="hidden md:block absolute left-1/2 top-0 bottom-0 w-[2px] bg-slate-200 -translate-x-1/2">
                     </div>
 
                     <template x-for="(item, index) in activities" :key="index">
@@ -297,21 +268,40 @@
                                         x-show="item.side=='left'"
                                         class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition p-5">
 
-                                        <h3
-                                            class="font-semibold text-slate-800"
-                                            x-text="item.title">
-                                        </h3>
-
-                                        <p
-                                            class="text-sm text-gray-500 mt-2 leading-relaxed"
-                                            x-html="item.desc">
-                                        </p>
-
-                                        <div class="mt-4 text-xs text-gray-400">
-
-                                            <span x-text="item.time"></span>
-
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h3 class="font-semibold text-slate-800 text-sm md:text-base" x-text="item.title"></h3>
+                                            <span class="text-xs text-gray-400 font-medium" x-text="item.time"></span>
                                         </div>
+
+                                        {{-- Task description --}}
+                                        <template x-if="item.type=='task'">
+                                            <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                                <span x-text="item.creator"></span> membuat tugas baru:
+                                                <span class="font-medium text-slate-700" x-text="item.task_title"></span>.
+                                            </p>
+                                        </template>
+                                        {{-- Task moved description --}}
+                                        <template x-if="item.type=='task_moved'">
+                                            <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                                <span x-text="item.creator"></span> memindahkan tugas <span class="font-medium text-slate-700" x-text="item.task_title"></span>
+                                                <span x-show="item.old_column">dari kolom <span class="font-medium text-slate-700" x-text="item.old_column"></span></span>
+                                                ke kolom <span class="font-medium text-slate-700" x-text="item.new_column"></span>.
+                                            </p>
+                                        </template>
+                                        {{-- File description --}}
+                                        <template x-if="item.type=='file'">
+                                            <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                                <span x-text="item.creator"></span> mengupload file:
+                                                <span class="font-medium text-slate-700" x-text="item.file_name"></span>
+                                                <span x-show="item.folder_name">di folder <span class="font-medium text-slate-700" x-text="item.folder_name"></span></span>
+                                            </p>
+                                        </template>
+                                        {{-- Member description --}}
+                                        <template x-if="item.type=='member'">
+                                            <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                                <span class="font-medium text-slate-700" x-text="item.creator"></span> bergabung ke workspace.
+                                            </p>
+                                        </template>
 
                                     </div>
 
@@ -359,6 +349,16 @@
                                             </svg>
                                         </template>
 
+                                        {{-- User --}}
+                                        <template x-if="item.icon=='user'">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                            </svg>
+                                        </template>
+
                                     </div>
 
                                 </div>
@@ -370,21 +370,40 @@
                                         x-show="item.side=='right'"
                                         class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition p-5">
 
-                                        <h3
-                                            class="font-semibold text-slate-800"
-                                            x-text="item.title">
-                                        </h3>
-
-                                        <p
-                                            class="text-sm text-gray-500 mt-2 leading-relaxed"
-                                            x-html="item.desc">
-                                        </p>
-
-                                        <div class="mt-4 text-xs text-gray-400">
-
-                                            <span x-text="item.time"></span>
-
+                                        <div class="flex items-center justify-between mb-2">
+                                            <h3 class="font-semibold text-slate-800 text-sm md:text-base" x-text="item.title"></h3>
+                                            <span class="text-xs text-gray-400 font-medium" x-text="item.time"></span>
                                         </div>
+
+                                        {{-- Task description --}}
+                                        <template x-if="item.type=='task'">
+                                            <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                                <span x-text="item.creator"></span> membuat tugas baru:
+                                                <span class="font-medium text-slate-700" x-text="item.task_title"></span>.
+                                            </p>
+                                        </template>
+                                        {{-- Task moved description --}}
+                                        <template x-if="item.type=='task_moved'">
+                                            <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                                <span x-text="item.creator"></span> memindahkan tugas <span class="font-medium text-slate-700" x-text="item.task_title"></span>
+                                                <span x-show="item.old_column">dari kolom <span class="font-medium text-slate-700" x-text="item.old_column"></span></span>
+                                                ke kolom <span class="font-medium text-slate-700" x-text="item.new_column"></span>.
+                                            </p>
+                                        </template>
+                                        {{-- File description --}}
+                                        <template x-if="item.type=='file'">
+                                            <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                                <span x-text="item.creator"></span> mengupload file:
+                                                <span class="font-medium text-slate-700" x-text="item.file_name"></span>
+                                                <span x-show="item.folder_name">di folder <span class="font-medium text-slate-700" x-text="item.folder_name"></span></span>
+                                            </p>
+                                        </template>
+                                        {{-- Member description --}}
+                                        <template x-if="item.type=='member'">
+                                            <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                                <span class="font-medium text-slate-700" x-text="item.creator"></span> bergabung ke workspace.
+                                            </p>
+                                        </template>
 
                                     </div>
 
@@ -433,32 +452,60 @@
                                             </svg>
                                         </template>
 
+                                        <template x-if="item.icon=='user'">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                            </svg>
+                                        </template>
+
                                     </div>
 
                                     <div
                                         x-show="index < activities.length - 1"
-                                        class="w-0.5 flex-1 bg-gray-200 mt-2">
+                                        class="w-[2px] flex-1 bg-slate-200 mt-2">
                                     </div>
 
                                 </div>
 
                                 <div class="flex-1 bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-2">
 
-                                    <h3
-                                        class="font-semibold text-slate-800"
-                                        x-text="item.title">
-                                    </h3>
-
-                                    <p
-                                        class="text-sm text-gray-500 mt-2 leading-relaxed"
-                                        x-html="item.desc">
-                                    </p>
-
-                                    <div class="mt-4 text-xs text-gray-400">
-
-                                        <span x-text="item.time"></span>
-
+                                    <div class="flex items-center justify-between mb-2">
+                                        <h3 class="font-semibold text-slate-800 text-sm" x-text="item.title"></h3>
+                                        <span class="text-xs text-gray-400 font-medium" x-text="item.time"></span>
                                     </div>
+
+                                    {{-- Task description --}}
+                                    <template x-if="item.type=='task'">
+                                        <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                            <span x-text="item.creator"></span> membuat tugas baru:
+                                            <span class="font-medium text-slate-700" x-text="item.task_title"></span>.
+                                        </p>
+                                    </template>
+                                    {{-- Task moved description --}}
+                                    <template x-if="item.type=='task_moved'">
+                                        <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                            <span x-text="item.creator"></span> memindahkan tugas <span class="font-medium text-slate-700" x-text="item.task_title"></span>
+                                            <span x-show="item.old_column">dari kolom <span class="font-medium text-slate-700" x-text="item.old_column"></span></span>
+                                            ke kolom <span class="font-medium text-slate-700" x-text="item.new_column"></span>.
+                                        </p>
+                                    </template>
+                                    {{-- File description --}}
+                                    <template x-if="item.type=='file'">
+                                        <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                            <span x-text="item.creator"></span> mengupload file:
+                                            <span class="font-medium text-slate-700" x-text="item.file_name"></span>
+                                            <span x-show="item.folder_name">di folder <span class="font-medium text-slate-700" x-text="item.folder_name"></span></span>
+                                        </p>
+                                    </template>
+                                    {{-- Member description --}}
+                                    <template x-if="item.type=='member'">
+                                        <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                            <span class="font-medium text-slate-700" x-text="item.creator"></span> bergabung ke workspace.
+                                        </p>
+                                    </template>
 
                                 </div>
 

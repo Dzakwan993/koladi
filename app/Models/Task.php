@@ -77,6 +77,31 @@ class Task extends Model
 
         static::updated(function ($model) {
             Log::info("Task updated: {$model->id} - {$model->title}");
+
+            if ($model->isDirty('board_column_id')) {
+                $oldColumnId = $model->getOriginal('board_column_id');
+                $newColumnId = $model->board_column_id;
+
+                $oldColumn = \App\Models\BoardColumn::find($oldColumnId);
+                $newColumn = \App\Models\BoardColumn::find($newColumnId);
+
+                if ($newColumn) {
+                    try {
+                        \App\Models\TaskActivity::create([
+                            'id' => \Illuminate\Support\Str::uuid()->toString(),
+                            'workspace_id' => $model->workspace_id,
+                            'task_id' => $model->id,
+                            'user_id' => \Illuminate\Support\Facades\Auth::id() ?? $model->created_by,
+                            'task_title' => $model->title,
+                            'action_type' => 'moved',
+                            'old_column' => $oldColumn ? $oldColumn->name : null,
+                            'new_column' => $newColumn->name,
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::error('Failed to log task movement: ' . $e->getMessage());
+                    }
+                }
+            }
         });
 
         static::deleted(function ($model) {
