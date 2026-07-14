@@ -59,7 +59,7 @@
             </div>
 
             {{-- Grid Project versi 3 card --}}
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
 
                 {{-- Grid Project versi 5 card --}}
 
@@ -77,30 +77,45 @@
                     @endphp
 
                     <a href="{{ route('kanban-tugas', $workspace->id) }}"
-                      class="group bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition duration-300 border border-gray-100">
+                        class="group bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition duration-300 border border-gray-100">
 
                         {{-- Header --}}
-                        <div class="flex justify-between items-start">
+                       <div class="flex justify-between items-start">
 
-<div class="w-8 h-8 rounded-full border-2 border-white object-cover">
-    <i class="fa-solid fa-globe text-[#225AD6] text-base"></i>
+    <div class="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
+        <i class="fa-solid fa-globe text-[#225AD6] text-lg"></i>
+    </div>
+
+    <div class="flex items-center gap-2">
+
+        <span
+            class="px-3 py-1 rounded-full text-[11px] font-medium
+            {{ $status == 'Berlangsung'
+                ? 'bg-green-100 text-green-600'
+                : 'bg-blue-100 text-blue-600' }}">
+            {{ strtoupper($status) }}
+        </span>
+
+        <button
+            type="button"
+            @click.stop.prevent="openWorkspaceMenu($event, {{ Illuminate\Support\Js::from($workspace->toArray()) }})"
+            class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#225AD6] hover:bg-blue-50 transition">
+
+            <i class="fa-solid fa-ellipsis"></i>
+
+        </button>
+
+    </div>
+
 </div>
-
-                            <span
-    class="px-3 py-1.5 rounded-full text-[11px] font-semibold uppercase tracking-wide
-    {{ $status == 'Berlangsung' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600' }}">
-    {{ $status }}
-</span>
-
-                        </div>
 
                         {{-- Title --}}
                         <div class="mt-5">
 
-<h3 class="text-lg font-semibold text-slate-700 truncate">                                {{ $workspace->name }}
+                            <h3 class="text-lg font-semibold text-slate-700 truncate"> {{ $workspace->name }}
                             </h3>
 
-                       <p class="text-slate-500 mt-1 text-xs leading-5 line-clamp-2">
+                            <p class="text-slate-500 mt-1 text-xs leading-5 line-clamp-2">
                                 {{ $workspace->description ?: 'Belum ada deskripsi workspace.' }}
                             </p>
 
@@ -121,7 +136,7 @@
 
                             </div>
 
-<div class="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
+                            <div class="w-full h-2 bg-blue-100 rounded-full overflow-hidden">
                                 <div class="h-full bg-[#225AD6] rounded-full" style="width:{{ $progress }}%">
                                 </div>
 
@@ -147,8 +162,8 @@
                                             : '';
                                     @endphp
 
-                                    <img src="{{ $avatar }}"
-                                        class="w-8 h-8" rounded-full border-2 border-white object-cover">
+                                    <img src="{{ $avatar }}" class="w-8 h-8" rounded-full border-2 border-white
+                                        object-cover">
                                 @endforeach
 
                                 @if ($workspace->userWorkspaces->count() > 3)
@@ -161,7 +176,7 @@
                         </div>
 
                         {{-- Footer --}}
-<div class="mt-3 pt-3 border-t border-gray-200 flex justify-between items-center text-sm">
+                        <div class="mt-3 pt-3 border-t border-gray-200 flex justify-between items-center text-sm">
                             <div class="flex items-center gap-2 text-slate-600">
                                 <i class="fa-regular fa-circle-check text-[#225AD6]"></i>
                                 <span>{{ $totalTask }} Task Aktif</span>
