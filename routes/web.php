@@ -35,7 +35,6 @@ use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\TutorialController;
 use App\Http\Controllers\ActivityLogController;
-use App\Http\Controllers\DecisionController;
 
 // 🔥 Broadcasting Routes
 Broadcast::routes(['middleware' => ['web', 'auth']]);
@@ -611,8 +610,5 @@ Route::middleware(['auth'])->group(function () {
 
 
     Route::get('/activity-log/{workspace}', [ActivityLogController::class, 'index'])
-    ->name('activity-log');
-
-    Route::get('/activity-log/{workspace}', [DecisionController::class, 'index'])
     ->name('activity-log');
 });

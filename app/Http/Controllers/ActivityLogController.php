@@ -6,6 +6,8 @@ use App\Models\Workspace;
 use App\Models\Task;
 use App\Models\File;
 use App\Models\UserWorkspace;
+use App\Models\Decision;
+
 
 class ActivityLogController extends Controller
 {
@@ -129,6 +131,12 @@ class ActivityLogController extends Controller
                 return $item;
             });
 
-        return view('activity-log', compact('workspace', 'sortedActivities'));
+        // ===== 6. DECISIONS =====
+        $decisions = Decision::with('evidenceFile')
+            ->where('workspace_id', $workspace->id)
+            ->orderByDesc('decision_date')
+            ->get();
+
+        return view('activity-log', compact('workspace', 'sortedActivities', 'decisions'));
     }
 }
