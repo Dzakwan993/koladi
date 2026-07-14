@@ -1,0 +1,484 @@
+@vite(['resources/css/app.css', 'resources/js/app.js'])
+@extends('layouts.app')
+
+@section('title', 'Log Aktivitas')
+
+@section('content')
+
+<div
+    x-data="{
+        tab: 'decision',
+
+        decisions: [
+            {
+                title:'Penetapan Budget Marketing Q3',
+                desc:'Disepakati untuk menggunakan gRPC untuk komunikasi internal.',
+                date:'12 Apr 2024',
+                evidence:'Dokumen xyz'
+            },
+            {
+                title:'Penetapan Budget Marketing Q3',
+                desc:'Disepakati untuk menggunakan gRPC untuk komunikasi internal.',
+                date:'12 Apr 2024',
+                evidence:'Dokumen xyz'
+            },
+            {
+                title:'Penetapan Budget Marketing Q3',
+                desc:'Disepakati untuk menggunakan gRPC untuk komunikasi internal.',
+                date:'12 Apr 2024',
+                evidence:'Dokumen xyz'
+            }
+        ],
+
+        activities:[
+            {
+                side:'right',
+                color:'blue',
+                icon:'check',
+                title:'Update Status Proyek',
+                desc:'Budi Santoso mengubah status Sprint 4 dari <span class=\'inline-flex items-center px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 text-xs font-medium mx-1\'>In Progress</span> ke <span class=\'inline-flex items-center px-2 py-0.5 rounded-md bg-green-100 text-green-700 text-xs font-medium mx-1\'>Completed</span>.',
+                time:'Baru saja'
+            },
+            {
+                side:'left',
+                color:'purple',
+                icon:'upload',
+                title:'Unggah Dokumen Baru',
+                desc:'Dewi A. mengunggah <span class=\'font-medium text-slate-700\'>Brand-Guidelines-V1.2.zip</span> ke Evidence Log.',
+                time:'2 jam yang lalu'
+            },
+            {
+                side:'right',
+                color:'red',
+                icon:'calendar',
+                title:'Perubahan Deadline',
+                desc:'Deadline untuk Migrasi Database diundur menjadi <span class=\'font-semibold text-red-600\'>25 April 2024</span> atas permintaan CTO.',
+                time:'Kemarin, 14:20'
+            },
+            {
+                side:'left',
+                color:'green',
+                icon:'check',
+                title:'Keputusan Divalidasi',
+                desc:'Keputusan <span class=\'italic font-medium text-slate-700\'>&quot;Pemilihan Cloud Provider&quot;</span> telah ditandai sebagai final setelah persetujuan Stakeholder.',
+                time:'12 Apr 2024'
+            }
+        ]
+    }"
+    class="bg-[#f3f6fc] min-h-screen">
+
+    {{-- Workspace Navigation --}}
+    @include('components.workspace-nav', ['active'=>'activity-log'])
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+
+            {{-- Sticky Header + Tabs --}}
+            <div class="sticky top-0 z-30 bg-white rounded-t-xl">
+
+            {{-- Header --}}
+            <div class="px-8 py-6 border-b border-gray-200">
+
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+
+                    <div>
+
+                        <h1 class="text-2xl font-bold text-slate-800">
+                            Log Aktivitas & Keputusan 👋
+                        </h1>
+
+                        <p class="text-gray-500 mt-1 text-sm">
+                            Pantau semua jejak langkah proyek dalam satu pusat kendali.
+                        </p>
+
+                    </div>
+
+                    {{-- <div class="flex items-center gap-3">
+
+                        <button
+                            class="px-4 py-2 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 text-sm flex items-center gap-2">
+
+                            <svg class="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24">
+
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M3 5h18M6 12h12M10 19h4"/>
+
+                            </svg>
+
+                            Filter
+
+                        </button>
+
+                        <button
+                            class="px-4 py-2 rounded-lg bg-[#225ad6] hover:bg-[#1b4ec0] text-white text-sm flex items-center gap-2">
+
+                            <svg class="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24">
+
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 5v14m0 0l5-5m-5 5l-5-5"/>
+
+                            </svg>
+
+                            Export Laporan
+
+                        </button>
+
+                    </div> --}}
+
+                </div>
+
+            </div>
+
+            {{-- Tabs --}}
+            <div class="border-b border-gray-200">
+
+                <div class="flex">
+
+                    <button
+                        @click="tab='decision'"
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition"
+                        :class="tab=='decision'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'">
+
+                        Decision Log
+
+                    </button>
+
+                    <button
+                        @click="tab='activity'"
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition"
+                        :class="tab=='activity'
+                            ? 'border-blue-600 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700'">
+
+                        Activity Log
+
+                    </button>
+
+                </div>
+
+            </div>
+
+            </div>
+            {{-- /Sticky Header + Tabs --}}
+
+            <div class="rounded-b-xl overflow-hidden">
+
+            {{-- ========================= --}}
+            {{-- DECISION LOG --}}
+            {{-- ========================= --}}
+
+            <div
+                x-show="tab=='decision'"
+                x-transition>
+
+                <div class="overflow-x-auto">
+
+                    <table class="w-full">
+
+                        <thead>
+
+                            <tr class="bg-gray-50 text-left text-gray-600 text-sm">
+
+                                <th class="px-8 py-4 font-semibold">
+                                    Keputusan
+                                </th>
+
+                                <th class="px-8 py-4 font-semibold w-48">
+                                    Tanggal
+                                </th>
+
+                                <th class="px-8 py-4 font-semibold w-48">
+                                    Evidence
+                                </th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            <template x-for="(item, index) in decisions" :key="index">
+
+                                <tr class="border-t hover:bg-gray-50 transition">
+
+                                    <td class="px-8 py-6">
+
+                                        <h3
+                                            class="font-semibold text-slate-800"
+                                            x-text="item.title">
+                                        </h3>
+
+                                        <p
+                                            class="text-sm text-gray-500 mt-2"
+                                            x-text="item.desc">
+                                        </p>
+
+                                    </td>
+
+                                    <td
+                                        class="px-8 py-6 text-gray-500 text-sm"
+                                        x-text="item.date">
+                                    </td>
+
+                                    <td class="px-8 py-6">
+
+                                        <button
+                                            type="button"
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-xs text-gray-700 border border-gray-200 transition">
+
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                            </svg>
+
+                                            <span x-text="item.evidence"></span>
+
+                                        </button>
+
+                                    </td>
+
+                                </tr>
+
+                            </template>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+            {{-- ========================= --}}
+            {{-- ACTIVITY LOG --}}
+            {{-- ========================= --}}
+
+            <div
+                x-show="tab=='activity'"
+                x-transition
+                class="py-10 px-4 md:px-10">
+
+                <div class="relative">
+
+                    {{-- Garis Timeline --}}
+                    <div
+                        class="hidden md:block absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-200 -translate-x-1/2">
+                    </div>
+
+                    <template x-for="(item, index) in activities" :key="index">
+
+                        <div class="relative mb-10 last:mb-0">
+
+                            {{-- Desktop --}}
+                            <div class="hidden md:flex items-center">
+
+                                {{-- Card Kiri --}}
+                                <div class="w-1/2 pr-12">
+
+                                    <div
+                                        x-show="item.side=='left'"
+                                        class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition p-5">
+
+                                        <h3
+                                            class="font-semibold text-slate-800"
+                                            x-text="item.title">
+                                        </h3>
+
+                                        <p
+                                            class="text-sm text-gray-500 mt-2 leading-relaxed"
+                                            x-html="item.desc">
+                                        </p>
+
+                                        <div class="mt-4 text-xs text-gray-400">
+
+                                            <span x-text="item.time"></span>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                                {{-- Icon Tengah --}}
+                                <div class="absolute left-1/2 -translate-x-1/2 z-20">
+
+                                    <div
+                                        class="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg ring-4 ring-[#f3f6fc]"
+                                        :class="{
+                                            'bg-blue-600': item.color=='blue',
+                                            'bg-green-600': item.color=='green',
+                                            'bg-red-500': item.color=='red',
+                                            'bg-purple-600': item.color=='purple'
+                                        }">
+
+                                        {{-- Upload --}}
+                                        <template x-if="item.icon=='upload'">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/>
+                                            </svg>
+                                        </template>
+
+                                        {{-- Check --}}
+                                        <template x-if="item.icon=='check'">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                        </template>
+
+                                        {{-- Calendar --}}
+                                        <template x-if="item.icon=='calendar'">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                        </template>
+
+                                    </div>
+
+                                </div>
+
+                                {{-- Card Kanan --}}
+                                <div class="w-1/2 pl-12">
+
+                                    <div
+                                        x-show="item.side=='right'"
+                                        class="bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition p-5">
+
+                                        <h3
+                                            class="font-semibold text-slate-800"
+                                            x-text="item.title">
+                                        </h3>
+
+                                        <p
+                                            class="text-sm text-gray-500 mt-2 leading-relaxed"
+                                            x-html="item.desc">
+                                        </p>
+
+                                        <div class="mt-4 text-xs text-gray-400">
+
+                                            <span x-text="item.time"></span>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            {{-- Mobile --}}
+                            <div class="md:hidden flex gap-4">
+
+                                <div class="w-10 flex flex-col items-center">
+
+                                    <div
+                                        class="w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0"
+                                        :class="{
+                                            'bg-blue-600': item.color=='blue',
+                                            'bg-green-600': item.color=='green',
+                                            'bg-red-500': item.color=='red',
+                                            'bg-purple-600': item.color=='purple'
+                                        }">
+
+                                        <template x-if="item.icon=='upload'">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M12 16V4m0 0l-4 4m4-4l4 4M4 20h16"/>
+                                            </svg>
+                                        </template>
+
+                                        <template x-if="item.icon=='check'">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                        </template>
+
+                                        <template x-if="item.icon=='calendar'">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-width="2"
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                            </svg>
+                                        </template>
+
+                                    </div>
+
+                                    <div
+                                        x-show="index < activities.length - 1"
+                                        class="w-0.5 flex-1 bg-gray-200 mt-2">
+                                    </div>
+
+                                </div>
+
+                                <div class="flex-1 bg-white border border-gray-200 rounded-xl shadow-sm p-5 mb-2">
+
+                                    <h3
+                                        class="font-semibold text-slate-800"
+                                        x-text="item.title">
+                                    </h3>
+
+                                    <p
+                                        class="text-sm text-gray-500 mt-2 leading-relaxed"
+                                        x-html="item.desc">
+                                    </p>
+
+                                    <div class="mt-4 text-xs text-gray-400">
+
+                                        <span x-text="item.time"></span>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </template>
+
+                </div>
+
+            </div>
+
+            </div>
+            {{-- /Tab Panels --}}
+
+        </div>
+
+    </div>
+
+</div>
+
+@endsection

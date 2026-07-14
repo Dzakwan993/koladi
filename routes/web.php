@@ -26,17 +26,24 @@ use App\Http\Controllers\CompanyChatController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\DocumentCommentController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\BriefController;
 use App\Http\Controllers\CompanyDokumenController;
 use App\Http\Controllers\CompanyDocumentCommentController;
 use App\Http\Controllers\StatistikController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\BriefController;
 use App\Http\Controllers\TutorialController;
+use App\Http\Controllers\ActivityLogController;
 
 // 🔥 Broadcasting Routes
 Broadcast::routes(['middleware' => ['web', 'auth']]);
+
+Route::get('/workspace/{workspace}/upload-brief', [BriefController::class, 'uploadbrief'])
+    ->name('upload-brief');
+
+Route::get('/workspace/{workspace}/ai-brief', [BriefController::class, 'brief'])
+    ->name('ai-brief');
 
 
 // Route::get('/', [LandingPageController::class, 'index'])->name('landingpage');
@@ -612,4 +619,8 @@ Route::middleware(['auth'])->group(function () {
         // Clear all read notifications
         Route::post('/clear-read', [NotificationController::class, 'clearRead']);
     });
+
+
+    Route::get('/activity-log/{workspace}', [ActivityLogController::class, 'index'])
+    ->name('activity-log');
 });

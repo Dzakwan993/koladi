@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+
 use App\Services\Document\DocumentParserService;
 use App\Services\AI\AIService;
 use App\Models\Company;
@@ -216,5 +217,15 @@ class BriefController extends Controller
                 'text' => 'Gagal membuat proyek: ' . $e->getMessage(),
             ])->withInput();
         }
+    }
+       
+    public function brief(Workspace $workspace)
+    {
+        return view('ai-brief', compact('workspace'));
+    }
+
+    public function uploadbrief(Workspace $workspace)
+    {
+        return view('upload-brief', compact('workspace'));
     }
 }

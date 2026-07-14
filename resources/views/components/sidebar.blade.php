@@ -193,6 +193,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 <span class="text-sm">Video Tutorial</span>
             </a>
 
+<<<<<<< HEAD
             {{-- Analisis Brief --}}
             <a href="{{ route('brief.index') }}"
                 class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
@@ -204,6 +205,20 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                         d="M9.813 15.904 9 21l8.982-8.982m-9 9 1.17-4.679m-1.17 4.679L4 20l.812-4.813m5.17-1.171L20 5.018a1.5 1.5 0 1 1 2.122 2.122L12.018 17.22l-4.679 1.171m0 0 1.17-4.679m9.022-3.13 1.591 1.59m-6.818-3.181 1.59 1.591" />
                 </svg>
                 <span class="text-sm">Analisis Brief</span>
+=======
+            <a href="{{ route('upload-brief') }}"
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                      {{ Request::is('tutorial*') ? 'bg-[#e9effd] text-[#225ad6] font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
+                    stroke="{{ Request::is('tutorial*') ? '#225ad6' : 'currentColor' }}"
+                    class="w-5 h-5 flex-shrink-0">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z" />
+                </svg>
+                <span class="text-sm">Ai Brief</span>
+>>>>>>> origin/ui-koladi-baru
             </a>
 
             {{-- Search & Actions --}}

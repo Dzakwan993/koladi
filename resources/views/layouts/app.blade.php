@@ -204,8 +204,17 @@
         </script>
     @endif
 
-    {{-- Sidebar --}}
-    <x-sidebar />
+    {{-- ✅ SIDEBAR BARU - Hanya tampil di halaman selain dashboard & tambah-anggota --}}
+    @php
+        $hideSidebarRoutes = [
+            'dashboard',
+            'tambah-anggota',
+        ];
+    @endphp
+
+    @if (!request()->routeIs($hideSidebarRoutes))
+        @include('components.sidebar-baru')
+    @endif
 
     <div class="flex-1 flex flex-col min-w-0">
         {{-- Topbar --}}
