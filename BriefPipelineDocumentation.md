@@ -1,5 +1,18 @@
 # **Koladi AI Brief Parser - Pipeline Documentation**
 
+## **Context & Purpose**
+
+Koladi AI Brief Parser merupakan fondasi dari fitur **AI Brief** pada Koladi, yang bertujuan membantu Project Manager mengubah berbagai dokumen brief proyek menjadi draft project yang terstruktur dan siap ditinjau. Dalam praktiknya, informasi proyek sering tersebar di berbagai sumber seperti dokumen brief, notulen meeting, email, maupun catatan diskusi, sehingga proses memahami kebutuhan proyek dan menyusun rencana awal membutuhkan waktu yang lama serta rentan terjadi informasi yang terlewat.
+
+Pipeline ini dibangun untuk mengotomatisasi proses tersebut dengan cara mengekstrak isi dokumen, membersihkan dan menormalisasi teks, kemudian memanfaatkan Large Language Model (LLM) untuk menghasilkan draft brief proyek dalam format JSON yang terstruktur. Hasil tersebut **bukan keputusan akhir**, melainkan rekomendasi awal yang akan melalui tahap **Human Review** sebelum digunakan sebagai dasar pembuatan Project, Task, maupun Decision Log di Koladi.
+
+Arsitektur AI pada Koladi dirancang dengan prinsip **modular, provider-agnostic, dan maintainable**. Setiap tahapan dipisahkan menjadi service dengan tanggung jawab yang jelas (Single Responsibility Principle), sehingga perubahan pada prompt, model AI, maupun provider (misalnya Gemini, OpenAI, atau Claude) dapat dilakukan tanpa memengaruhi keseluruhan pipeline. Selain itu, penerapan proses cleaning, normalization, prompt guardrails, validasi JSON, dan human review bertujuan meningkatkan konsistensi hasil AI serta meminimalkan risiko seperti prompt injection, hallucination, maupun output yang tidak sesuai format.
+
+Dokumen ini menjelaskan keseluruhan alur (pipeline) AI Brief, mulai dari pengguna mengunggah dokumen hingga dihasilkan draft brief yang siap ditinjau sebelum diproses lebih lanjut di dalam Koladi.
+
+---
+
+## **1. Gambaran Umum Alur (Pipeline Flow)**
 Dokumen ini menjelaskan alur lengkap (*pipeline*) pengolahan dokumen brief proyek, mulai dari unggahan berkas oleh pengguna hingga persiapan integrasi dengan model bahasa besar (Large Language Model/LLM).
 
 ---

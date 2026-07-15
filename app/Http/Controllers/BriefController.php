@@ -30,6 +30,16 @@ class BriefController extends Controller
     {
         return view('upload-brief');
     }
+
+       public function brief(Workspace $workspace)
+    {
+        return view('ai-brief', compact('workspace'));
+    }
+
+    public function uploadbrief(Workspace $workspace)
+    {
+        return view('upload-brief', compact('workspace'));
+    }
     
     public function upload(Request $request) 
     {
@@ -47,8 +57,13 @@ class BriefController extends Controller
             // 2. Generate Brief using AI
             $briefData = $this->aiService->generateBrief($documents);
 
-            // Save brief draft to session
+            // Save brief draft to session, termasuk workspace_id jika ada
             session(['brief_draft' => $briefData]);
+            if ($request->filled('workspace_id')) {
+                session(['brief_workspace_id' => $request->workspace_id]);
+            } else {
+                session()->forget('brief_workspace_id');
+            }
 
             return redirect()->route('brief.review');
 
@@ -78,24 +93,26 @@ class BriefController extends Controller
         $company = Company::find($activeCompanyId);
         $members = $company ? $company->users()->where('user_companies.status_active', true)->get() : collect();
 
-        return view('brief-review', [
+        return view('ai-brief', [
             'brief' => $briefData,
             'members' => $members,
+            'briefWorkspaceId' => session('brief_workspace_id'),
         ]);
     }
 
     public function approve(Request $request)
     {
         $request->validate([
+            'workspace_id' => ['nullable', 'exists:workspaces,id'],
             'project_name' => ['required', 'string', 'max:255'],
             'project_goal' => ['nullable', 'string'],
             'deliverables' => ['nullable', 'string'],
-            'deadline' => ['nullable', 'date'],
+            'deadline' => ['nullable', 'string', 'max:255'],
             'tasks' => ['nullable', 'array'],
             'tasks.*.title' => ['required', 'string', 'max:255'],
             'tasks.*.description' => ['nullable', 'string'],
             'tasks.*.priority' => ['required', 'in:low,medium,high,urgent'],
-            'tasks.*.deadline' => ['nullable', 'date'],
+            'tasks.*.deadline' => ['nullable', 'string', 'max:255'],
             'tasks.*.assignee_id' => ['nullable', 'exists:users,id'],
             'clarification_questions' => ['nullable', 'array'],
         ]);
@@ -105,37 +122,44 @@ class BriefController extends Controller
             return redirect()->back()->with('error', 'Tidak ada perusahaan yang aktif.');
         }
 
+        Log::info('[APPROVE DEBUG] workspace_id dari request: ' . ($request->workspace_id ?? 'null/kosong') . ' | filled: ' . ($request->filled('workspace_id') ? 'true' : 'false'));
+
         try {
             DB::beginTransaction();
 
-            // 1. Create the Workspace representing the Project
-            $workspace = Workspace::create([
-                'company_id' => $activeCompanyId,
-                'type' => 'Proyek',
-                'name' => $request->project_name,
-                'description' => $request->project_goal,
-                'created_by' => Auth::id()
-            ]);
+            if ($request->filled('workspace_id')) {
+                // JIKA WORKSPACE SUDAH ADA, GUNAKAN WORKSPACE INI TANPA MENGUBAH DETAILNYA
+                $workspace = Workspace::findOrFail($request->workspace_id);
+            } else {
+                // JIKA WORKSPACE BELUM ADA, BUAT WORKSPACE BARU SEBAGAI PROYEK
+                $workspace = Workspace::create([
+                    'company_id' => $activeCompanyId,
+                    'type' => 'Proyek',
+                    'name' => $request->project_name,
+                    'description' => $request->project_goal,
+                    'created_by' => Auth::id()
+                ]);
 
-            // Set current workspace in session
-            session([
-                'current_workspace_id' => $workspace->id,
-                'current_workspace_name' => $workspace->name
-            ]);
+                // Set current workspace in session
+                session([
+                    'current_workspace_id' => $workspace->id,
+                    'current_workspace_name' => $workspace->name
+                ]);
 
-            // 2. Add the Creator to the Workspace as Manager
-            $managerRole = Role::where('name', 'Manager')->first();
-            $managerRoleId = $managerRole ? $managerRole->id : 'a688ef38-3030-45cb-9a4d-0407605bc322';
+                // Add the Creator to the Workspace as Manager
+                $managerRole = Role::where('name', 'Manager')->first();
+                $managerRoleId = $managerRole ? $managerRole->id : 'a688ef38-3030-45cb-9a4d-0407605bc322';
 
-            UserWorkspace::create([
-                'user_id' => Auth::id(),
-                'workspace_id' => $workspace->id,
-                'roles_id' => $managerRoleId,
-                'status_active' => true,
-                'join_date' => now(),
-            ]);
+                UserWorkspace::create([
+                    'user_id' => Auth::id(),
+                    'workspace_id' => $workspace->id,
+                    'roles_id' => $managerRoleId,
+                    'status_active' => true,
+                    'join_date' => now(),
+                ]);
+            }
 
-            // 3. Find default board column (e.g. To Do List)
+            // Find default board column (e.g. To Do List)
             $defaultColumn = BoardColumn::where('workspace_id', $workspace->id)
                 ->where('name', 'like', '%To Do%')
                 ->first();
@@ -146,9 +170,10 @@ class BriefController extends Controller
 
             $defaultColumnId = $defaultColumn ? $defaultColumn->id : null;
 
-            // 4. Create tasks and assignments
+            // Create tasks and assignments
             $memberRole = Role::where('name', 'Member')->first();
             $memberRoleId = $memberRole ? $memberRole->id : 'ed81bd39-9041-43b8-a504-bf743b5c2919';
+            $newCreatedTaskIds = [];
 
             if ($request->has('tasks')) {
                 foreach ($request->tasks as $taskData) {
@@ -169,6 +194,9 @@ class BriefController extends Controller
                         }
                     }
 
+                    // Parse deadline string to a valid ISO date for database compatibility
+                    $parsedDate = $this->parseDateToIso($taskData['deadline'] ?? null);
+
                     // Create task
                     $task = Task::create([
                         'id' => Str::uuid()->toString(),
@@ -179,8 +207,10 @@ class BriefController extends Controller
                         'status' => 'todo',
                         'board_column_id' => $defaultColumnId,
                         'priority' => $taskData['priority'],
-                        'due_datetime' => $taskData['deadline'] ? Carbon::parse($taskData['deadline'])->endOfDay() : null,
+                        'due_datetime' => $parsedDate ? Carbon::parse($parsedDate)->endOfDay() : null,
                     ]);
+
+                    $newCreatedTaskIds[] = $task->id;
 
                     // Assign user
                     if (!empty($taskData['assignee_id'])) {
@@ -193,20 +223,12 @@ class BriefController extends Controller
                 }
             }
 
-            // Create clarification questions as a comments or mindmap? Or just log them.
-            // Let's create an initial post or comment on the workspace if possible, or add it to workspace description
-            if ($request->has('clarification_questions') && is_array($request->clarification_questions)) {
-                $questionsText = "\n\n**AI Clarification Questions to Client:**\n";
-                foreach ($request->clarification_questions as $index => $question) {
-                    $questionsText .= ($index + 1) . ". " . $question . "\n";
-                }
-                $workspace->description .= $questionsText;
-                $workspace->save();
-            }
-
             DB::commit();
+            Log::info('DB Dipanggil cuk');
 
-            return redirect()->route('workspace.show', $workspace->id)->with('success', 'Proyek berhasil dibuat dari brief!');
+            return redirect()->route('kanban-tugas', $workspace->id)
+                ->with('success', 'Proyek berhasil dibuat dari brief!')
+                ->with('new_task_ids', $newCreatedTaskIds);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -218,14 +240,45 @@ class BriefController extends Controller
             ])->withInput();
         }
     }
-       
-    public function brief(Workspace $workspace)
-    {
-        return view('ai-brief', compact('workspace'));
-    }
 
-    public function uploadbrief(Workspace $workspace)
+    /**
+     * Funsi helper mengubah tanggal menjadi format yang diterima php
+     */
+    private function parseDateToIso(?string $dateString): ?string
     {
-        return view('upload-brief', compact('workspace'));
+        if (empty($dateString)) {
+            return null;
+        }
+
+        // Try standard parsing first
+        try {
+            return Carbon::parse($dateString)->toDateString();
+        } catch (\Exception $e) {
+            // Proceed to Indonesian localization parsing
+        }
+
+        $months = [
+            'januari' => 'january', 'februari' => 'february', 'maret' => 'march',
+            'april' => 'april', 'mei' => 'may', 'juni' => 'june',
+            'juli' => 'july', 'agustus' => 'august', 'september' => 'september',
+            'oktober' => 'october', 'november' => 'november', 'desember' => 'december'
+        ];
+
+        $cleanedString = strtolower($dateString);
+        foreach ($months as $id => $en) {
+            if (str_contains($cleanedString, $id)) {
+                $cleanedString = str_replace($id, $en, $cleanedString);
+                break;
+            }
+        }
+
+        try {
+            return Carbon::parse($cleanedString)->toDateString();
+        } catch (\Exception $e) {
+            Log::warning("Failed to parse deadline string: " . $dateString);
+            return null;
+        }
     }
+       
+ 
 }

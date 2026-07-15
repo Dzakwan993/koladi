@@ -7,7 +7,7 @@
     @include('components.sweet-alert')
     <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <div class="min-h-screen bg-[#e9effd] py-8 px-4">
+    <div x-data="aiBriefComponent()" class="min-h-screen bg-[#e9effd] py-8 px-4">
         <div class="max-w-full mx-auto space-y-3">
 
             {{-- Header --}}
@@ -25,20 +25,28 @@
                         </svg>
                         <h2 class="font-semibold text-slate-800">Ringkasan AI</h2>
                     </div>
+                    @php
+                        $confidence = $brief['summary']['confidence'] ?? null;
+                        $confidencePct = $confidence !== null ? (int)($confidence * 100) . '%' : '—';
+                    @endphp
                     <span
                         class="text-xs font-medium bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full whitespace-nowrap">
-                        Tingkat Keyakinan: 84%
+                        Tingkat Keyakinan: {{ $confidencePct }}
                     </span>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div class="bg-slate-50 rounded-lg p-8">
                         <p class="text-xs text-slate-400 mb-1">Tujuan Utama</p>
-                        <p class="text-sm text-slate-700 font-medium">Modernisasi branding & Website Revamp</p>
+                        <p class="text-sm text-slate-700 font-medium">{{ $brief['summary']['project_description'] ?? '—' }}</p>
                     </div>
                     <div class="bg-slate-50 rounded-lg p-8">
                         <p class="text-xs text-slate-400 mb-1">Deliverables</p>
-                        <p class="text-sm text-slate-700 font-medium">5 Halaman Utama, Styleguide Baru</p>
+                        @php
+                            $deliverables = $brief['summary']['deliverables'] ?? [];
+                            $deliverablesLabel = is_array($deliverables) ? implode(', ', $deliverables) : $deliverables;
+                        @endphp
+                        <p class="text-sm text-slate-700 font-medium">{{ $deliverablesLabel ?: '—' }}</p>
                     </div>
                     <div class="bg-slate-50 rounded-lg p-8">
                         <p class="text-xs text-slate-400 mb-1">Deadline Utama</p>
@@ -48,13 +56,14 @@
                                 <rect x="3" y="4" width="18" height="18" rx="2" />
                                 <path d="M16 2v4M8 2v4M3 10h18" />
                             </svg>
-                            20 Juni 2024
+                            {{ $brief['summary']['main_deadline'] ?? '—' }}
                         </p>
                     </div>
                 </div>
             </div>
 
             {{-- Keputusan Kunci --}}
+            @if(!empty($brief['decisions']))
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 relative">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-2">
@@ -66,7 +75,7 @@
                 </div>
 
                 <ul class="space-y-3">
-                    @foreach (['Kenaikan budget marketing sebesar 15% untuk kampanye Q3 disetujui.', 'Pemindahan infrastruktur server ke region Asia-Southeast pada bulan depan.', 'Pemindahan infrastruktur server ke region Asia-Southeast pada bulan depan.', 'Pemindahan infrastruktur server ke region Asia-Southeast pada bulan depan.'] as $decision)
+                    @foreach ($brief['decisions'] as $decision)
                         <li class="flex items-start justify-between gap-2 text-sm text-slate-600">
                             <div class="flex items-start gap-2">
                                 <svg class="w-4 h-4 mt-0.5 text-emerald-500 flex-shrink-0" fill="currentColor"
@@ -97,8 +106,34 @@
                     @endforeach
                 </ul>
             </div>
+            @endif
+
+            {{-- Informasi yang Belum Tersedia --}}
+            @if(!empty($brief['missing_information']))
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="w-5 h-5 rounded-full bg-rose-100 text-rose-500 flex items-center justify-center">
+                        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd"
+                                d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                clip-rule="evenodd" />
+                        </svg>
+                    </span>
+                    <h2 class="font-semibold text-rose-600">Informasi yang Belum Tersedia</h2>
+                </div>
+                <ul class="space-y-2">
+                    @foreach ($brief['missing_information'] as $item)
+                        <li class="flex items-center gap-2 text-sm text-slate-600">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-400 flex-shrink-0"></span>
+                            {{ $item }}
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+            @endif
 
             {{-- Klarifikasi Tim ke Klien --}}
+            @if(!empty($brief['clarification_questions']))
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
                 <div class="flex items-center gap-2 mb-4">
                     <span class="w-5 h-5 rounded-full bg-amber-100 text-amber-500 flex items-center justify-center">
@@ -112,7 +147,7 @@
                 </div>
 
                 <div class="space-y-3">
-                    @foreach (['Apakah aset ilustrasi 3D dari vendor lama sudah ada atau perlu tim kami buat dari nol?', 'Target audiens global atau spesifik pasar Indonesia saja (terkait lokalisasi bahasa)?', 'Target audiens global atau spesifik pasar Indonesia saja (terkait lokalisasi bahasa)?'] as $i => $question)
+                    @foreach ($brief['clarification_questions'] as $i => $question)
                         <div
                             class="flex items-start gap-3 bg-amber-50/50 border-l-4 border-amber-400 rounded-r-lg px-3 py-2.5">
                             <span class="text-xs font-semibold text-amber-500 mt-0.5">{{ $i + 1 }}.</span>
@@ -121,6 +156,7 @@
                     @endforeach
                 </div>
             </div>
+            @endif
 
             {{-- Draft Daftar Tugas --}}
             <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
@@ -133,7 +169,7 @@
                         </svg>
                         <h2 class="font-semibold text-slate-800">Draft Daftar Tugas</h2>
                     </div>
-                    <button type="button"
+                    <button type="button" @click="addTask()"
                         class="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path d="M12 4v16m8-8H4" />
@@ -153,31 +189,38 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ([['task' => 'Audit Branding & Logo Lama', 'sub' => 'Review visual aset existing', 'init' => 'AP', 'name' => 'Aditya', 'color' => 'purple', 'priority' => 'HIGH', 'date' => '12 Mei'], ['task' => 'Wireframing 5 Halaman', 'sub' => 'Desktop & Mobile version', 'init' => 'SW', 'name' => 'Sinta', 'color' => 'pink', 'priority' => 'MED', 'date' => '18 Mei'], ['task' => 'Integrasi CMS Headless', 'sub' => 'Setup backend & API', 'init' => 'BK', 'name' => 'Budi', 'color' => 'teal', 'priority' => 'HIGH', 'date' => '25 Mei']] as $t)
+                        <template x-for="(task, index) in tasks" :key="index">
                             <tr class="border-b border-slate-50 last:border-0">
                                 <td class="py-3 pr-2">
-                                    <p class="font-medium text-slate-700">{{ $t['task'] }}</p>
-                                    <p class="text-xs text-slate-400">{{ $t['sub'] }}</p>
+                                    <p class="font-medium text-slate-700" x-text="task.title"></p>
+                                    <p class="text-xs text-slate-400" x-text="task.description"></p>
                                 </td>
                                 <td class="py-3 pr-2">
                                     <span class="inline-flex items-center gap-1.5">
-                                        <span
-                                            class="w-6 h-6 rounded-full bg-{{ $t['color'] }}-100 text-{{ $t['color'] }}-600 text-[10px] font-semibold flex items-center justify-center">
-                                            {{ $t['init'] }}
-                                        </span>
-                                        <span class="text-slate-600 text-xs">{{ $t['name'] }}</span>
+                                        <select
+                                            :name="'tasks['+index+'][assignee_id]'"
+                                            x-model="task.assignee_id"
+                                            class="text-xs text-slate-600 border-slate-200 rounded-lg focus:border-indigo-400 focus:ring-0">
+                                            <option value="">Pilih Anggota</option>
+                                            @foreach($members as $member)
+                                                <option value="{{ $member->id }}">{{ $member->full_name ?? $member->name }}</option>
+                                            @endforeach
+                                        </select>
                                     </span>
                                 </td>
                                 <td class="py-3 pr-2">
-                                    <span @class([
-                                        'text-[10px] font-semibold px-2 py-1 rounded-md',
-                                        'bg-rose-50 text-rose-500' => $t['priority'] === 'HIGH',
-                                        'bg-blue-50 text-blue-500' => $t['priority'] === 'MED',
-                                    ])>
-                                        {{ $t['priority'] }}
+                                    <span
+                                        :class="{
+                                            'bg-rose-50 text-rose-500': task.priority === 'high' || task.priority === 'urgent',
+                                            'bg-blue-50 text-blue-500': task.priority === 'medium',
+                                            'bg-slate-50 text-slate-500': task.priority === 'low'
+                                        }"
+                                        class="text-[10px] font-semibold px-2 py-1 rounded-md"
+                                        x-text="task.priority ? task.priority.toUpperCase() : 'MED'">
                                     </span>
+                                    <input type="hidden" :name="'tasks['+index+'][priority]'" :value="task.priority">
                                 </td>
-                                <td class="py-3 pr-2 text-slate-500 text-xs whitespace-nowrap">{{ $t['date'] }}</td>
+                                <td class="py-3 pr-2 text-slate-500 text-xs whitespace-nowrap" x-text="task.deadline"></td>
                                 <td class="py-3 text-right">
                                     <div class="flex items-center justify-end gap-2">
                                         <button type="button" class="text-slate-400 hover:text-blue-600" title="Edit">
@@ -187,7 +230,7 @@
                                                     d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                                             </svg>
                                         </button>
-                                        <button type="button" class="text-slate-400 hover:text-rose-600" title="Hapus">
+                                        <button type="button" @click="removeTask(index)" class="text-slate-400 hover:text-rose-600" title="Hapus">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
                                                 viewBox="0 0 24 24">
                                                 <path
@@ -197,13 +240,28 @@
                                     </div>
                                 </td>
                             </tr>
-                        @endforeach
+                        </template>
                     </tbody>
                 </table>
             </div>
 
+            {{-- Hidden form for approve submission (submitted programmatically on CTA click) --}}
+            <form id="approve-form" action="{{ route('brief.approve') }}" method="POST" class="hidden">
+                @csrf
+                <input type="hidden" name="workspace_id" value="{{ $briefWorkspaceId ?? '' }}">
+                <input type="hidden" name="project_name" value="{{ $brief['summary']['project_name'] ?? '' }}">
+                <input type="hidden" name="project_goal" value="{{ $brief['summary']['executive_summary'] ?? '' }}">
+                <input type="hidden" name="deliverables" value="{{ $deliverablesLabel ?? '' }}">
+                <input type="hidden" name="deadline" value="{{ $brief['summary']['main_deadline'] ?? '' }}">
+                @foreach($brief['clarification_questions'] ?? [] as $q)
+                    <input type="hidden" name="clarification_questions[]" value="{{ $q }}">
+                @endforeach
+                {{-- Tasks injected via JS before submit --}}
+                <div id="task-inputs"></div>
+            </form>
+
             {{-- CTA --}}
-            <button type="button" id="proses-ai-btn"
+            <button type="button" id="proses-ai-btn" @click="submitApprove()"
                 class="w-full bg-blue-700 hover:bg-blue-800 transition-colors text-white rounded-2xl py-4 flex flex-col items-center gap-1 text-center">
                 <span class="flex items-center gap-2 font-semibold text-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -219,4 +277,56 @@
 
         </div>
     </div>
+
+@php
+    $taskData = collect($brief['tasks'] ?? [])->map(fn($t) => [
+        'title'       => $t['title'] ?? '',
+        'description' => $t['description'] ?? '',
+        'priority'    => $t['priority'] ?? 'medium',
+        'deadline'    => $t['deadline'] ?? '',
+        'assignee_id' => $t['assignee_id'] ?? '',
+    ])->values()->all();
+@endphp
+
+@push('scripts')
+<script>
+    function aiBriefComponent() {
+        return {
+            tasks: @json($taskData),
+
+            addTask() {
+                this.tasks.push({
+                    title: 'Tugas Baru',
+                    description: '',
+                    priority: 'medium',
+                    deadline: '',
+                    assignee_id: '',
+                });
+            },
+
+            removeTask(index) {
+                this.tasks.splice(index, 1);
+            },
+
+            submitApprove() {
+                const container = document.getElementById('task-inputs');
+                container.innerHTML = '';
+
+                this.tasks.forEach((task, i) => {
+                    const fields = ['title', 'description', 'priority', 'deadline', 'assignee_id'];
+                    fields.forEach(field => {
+                        const input = document.createElement('input');
+                        input.type  = 'hidden';
+                        input.name  = `tasks[${i}][${field}]`;
+                        input.value = task[field] ?? '';
+                        container.appendChild(input);
+                    });
+                });
+
+                document.getElementById('approve-form').submit();
+            },
+        };
+    }
+</script>
+@endpush
 @endsection

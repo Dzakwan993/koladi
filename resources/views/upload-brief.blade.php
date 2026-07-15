@@ -28,6 +28,8 @@
                 class="space-y-4"
             >
                 @csrf
+                {{-- Kirim workspace_id jika brief diakses dari workspace tertentu --}}
+                <input type="hidden" name="workspace_id" value="{{ $workspace->id ?? '' }}">
 
                 {{-- Dropzone Card --}}
                 <div

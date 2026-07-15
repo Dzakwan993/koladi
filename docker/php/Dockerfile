@@ -19,6 +19,10 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 COPY . /var/www
 
+# Configure PHP upload limits
+RUN echo "upload_max_filesize = 50M" > /usr/local/etc/php/conf.d/uploads.ini \
+ && echo "post_max_size = 50M" >> /usr/local/etc/php/conf.d/uploads.ini
+
 
 # Permission
 RUN chown -R www-data:www-data storage bootstrap/cache public \

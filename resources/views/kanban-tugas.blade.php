@@ -1,4 +1,4 @@
-        @extends('layouts.app')
+k        @extends('layouts.app')
 
         @section('title', 'Kanban Tugas')
 
@@ -1318,6 +1318,7 @@
 
                             uploading: false,
                             uploadProgress: 0,
+                            newCreatedTaskIds: @json(session('new_task_ids') ?? []),
                             previewModal: {
                                 open: false,
                                 url: '',

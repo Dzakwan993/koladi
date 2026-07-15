@@ -68,7 +68,8 @@
                                         'border-l-4 border-red-500': task.is_overdue,
                                         'border-l-4 border-red-600': task.edf_urgency_level === 'overdue',
                                         'border-l-4 border-orange-500': task.edf_urgency_level === 'critical',
-                                        'border-l-4 border-yellow-400': task.edf_urgency_level === 'warning'
+                                        'border-l-4 border-yellow-400': task.edf_urgency_level === 'warning',
+                                        'border-2 border-indigo-500 ring-4 ring-indigo-100 animate-pulse': newCreatedTaskIds.includes(task.id)
                                     }"
                                     draggable="true" @dragstart="onDragStart($event, task.id)"
                                     @dragend="onDragEnd($event)">

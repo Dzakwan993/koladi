@@ -8,7 +8,9 @@ class AIService
         private AIProvider $provider,
         private PromptBuilderService $promptBuilder,
         private JsonValidatorService $validator,
-        private BriefMapperService $mapper,
+        
+        // Fungsi beriktu belum jadi digunakan pada MVP
+        // private BriefMapperService $mapper,
     ) {
 
     }
@@ -19,8 +21,7 @@ class AIService
 
         $response = $this->provider->generate($prompt);
 
-        $validated = $this->validator->validate($response);
+        return $this->validator->validate($response);
 
-        return $this->mapper->map($validated);
     }
 }

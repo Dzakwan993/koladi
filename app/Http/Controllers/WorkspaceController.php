@@ -442,6 +442,7 @@ class WorkspaceController extends Controller
 
     public function show(Workspace $workspace)
     {
+        Log::info('Dipanggil cuk');
         $user = Auth::user();
         $activeCompanyId = session('active_company_id');
 

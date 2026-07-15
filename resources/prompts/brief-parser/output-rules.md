@@ -1,11 +1,15 @@
+# OUTPUT
+
 Return ONLY valid JSON.
 
-Do not return Markdown.
+Do NOT wrap JSON inside Markdown.
 
-Do not explain your reasoning.
+Do NOT explain anything.
 
-Do not wrap the JSON inside code fences.
+Do NOT include additional text.
 
-Do not add any text before or after the JSON.
+The JSON must exactly follow the specified schema.
 
-The response must be parseable using a standard JSON parser.
+All text values inside the JSON MUST be written in Bahasa Indonesia (e.g. project_description, tasks title/description, deliverables, clarification_questions, missing_information). Even if the source document is in English, you must translate all descriptions, task titles, task descriptions, and deliverables into Bahasa Indonesia. No English sentences are allowed for those fields, except for official project/publication titles.
+
+Ensure the JSON structure is complete and properly closed with the final closing brace } at the very end. Never truncate or cut off the JSON output. Every opened bracket and brace must be closed.

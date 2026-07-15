@@ -14,6 +14,14 @@ return [
     |
     */
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+        'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+        'temperature' => (float) env('GEMINI_TEMPERATURE', 0.2),
+        'timeout' => (int) env('GEMINI_TIMEOUT', 120),
+    ],
+    
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],
