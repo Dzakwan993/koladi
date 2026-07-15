@@ -1495,7 +1495,7 @@
 </div>
 
 <script>
-    window.currentUser = @json(auth() - > user());
+    window.currentUser = @json(auth()->user());
 </script>
 
 <script>

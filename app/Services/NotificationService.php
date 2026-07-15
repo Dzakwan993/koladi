@@ -479,6 +479,53 @@ class NotificationService
     }
 
     /**
+     * Decision Notification
+     */
+    public function notifyDecisionCreated($decision)
+    {
+        $creator = $decision->creator;
+        $workspace = $decision->workspace;
+
+        if (!$workspace) {
+            return [];
+        }
+
+        // Get company admins (excluding creator)
+        $companyAdmins = $this->getCompanyAdmins($workspace->company_id, $creator ? $creator->id : null);
+
+        // Get workspace members
+        $workspaceMembers = $this->getWorkspaceMembers($workspace->id);
+
+        // Merge and remove duplicates
+        $recipients = array_unique(array_merge($companyAdmins, $workspaceMembers));
+
+        // Ensure creator is not in recipients
+        if ($creator) {
+            $recipients = array_filter($recipients, fn($id) => $id !== $creator->id);
+        }
+        $recipients = array_values($recipients);
+
+        if (empty($recipients)) {
+            return [];
+        }
+
+        $notificationData = [
+            'company_id' => $workspace->company_id,
+            'workspace_id' => $workspace->id,
+            'type' => 'decision',
+            'title' => 'Keputusan baru ditetapkan',
+            'message' => $decision->title,
+            'context' => $workspace->name,
+            'notifiable_type' => get_class($decision),
+            'notifiable_id' => $decision->id,
+            'actor_id' => $creator ? $creator->id : null,
+            'action_url' => route('activity-log', ['workspace' => $workspace->id]),
+        ];
+
+        return $this->sendBulk($recipients, $notificationData);
+    }
+
+    /**
      * Helper: Truncate message
      */
     private function truncateMessage($message, $length = 100)

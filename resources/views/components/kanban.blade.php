@@ -1,18 +1,38 @@
 {{-- 🎯 KANBAN BOARD --}}
-<div x-show="viewMode === 'kanban'" class="h-full">
+<div x-show="viewMode === 'kanban'" x-cloak class="h-full">
 
-    {{-- Loading --}}
-    <div x-show="loadingColumns" class="flex justify-center items-center h-32">
-        <div class="text-center">
-            <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none"
-                viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke-width="4" />
-                <path class="opacity-75" fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.3 0 0 5.3 0 12h4zm2 5.3A8 8 0 014 12H0c0 3 1.1 5.8 3 7.9l3-2.6z" />
-            </svg>
-            <p class="text-gray-600">Memuat kolom...</p>
+    {{-- Loading (Bouncing Wave Dots) --}}
+    <div x-show="loadingColumns" class="flex flex-col justify-center items-center h-96 select-none">
+        <div class="flex space-x-2.5 justify-center items-center mb-4">
+            <div class="h-3.5 w-3.5 bg-blue-600 rounded-full bounce-dot-1"></div>
+            <div class="h-3.5 w-3.5 bg-blue-600 rounded-full bounce-dot-2"></div>
+            <div class="h-3.5 w-3.5 bg-blue-600 rounded-full bounce-dot-3"></div>
         </div>
+        <p class="text-sm font-semibold text-gray-500 tracking-wide animate-pulse">Sedang memuat tugas Anda...</p>
     </div>
+
+    <style>
+        @keyframes bounceWave {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+        .bounce-dot-1 {
+            animation: bounceWave 0.6s infinite ease-in-out;
+            animation-delay: 0s;
+        }
+        .bounce-dot-2 {
+            animation: bounceWave 0.6s infinite ease-in-out;
+            animation-delay: 0.15s;
+        }
+        .bounce-dot-3 {
+            animation: bounceWave 0.6s infinite ease-in-out;
+            animation-delay: 0.3s;
+        }
+    </style>
 
     <div x-show="!loadingColumns" class="flex-1 overflow-x-auto" @click.outside="openListMenu = null">
         <div id="kanban-board" class="flex kanban-gap-medium p-5 xs:p-4 min-w-max">

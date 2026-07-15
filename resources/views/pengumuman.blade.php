@@ -843,7 +843,7 @@
 </script>
 
 <script>
-    window.currentUser = @json(auth() - > user());
+    window.currentUser = @json(auth()->user());
 </script>
 
 <script>
@@ -965,7 +965,7 @@
     });
 
     // Inisialisasi currentUser global
-    window.currentUser = @json(auth() - > user());
+    window.currentUser = @json(auth()->user());
     console.log('👤 Current user:', window.currentUser);
 </script>
 

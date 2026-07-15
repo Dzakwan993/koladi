@@ -1,5 +1,5 @@
 {{-- 🎯 Gantt Chart Timeline View --}}
-<div x-show="viewMode === 'timeline'" class="h-full p-4">
+<div x-show="viewMode === 'timeline'" x-cloak class="h-full p-4">
     <div class="max-w-7xl mx-auto bg-white rounded-xl border shadow-sm">
 
         <!-- Header -->

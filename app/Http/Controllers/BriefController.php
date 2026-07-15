@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 
 use App\Services\Document\DocumentParserService;
 use App\Services\AI\AIService;
+use App\Services\NotificationService;
 use App\Models\Company;
 use App\Models\Workspace;
 use App\Models\BoardColumn;
@@ -25,7 +26,8 @@ class BriefController extends Controller
 {
     public function __construct(
         protected DocumentParserService $documentParser,
-        protected AIService $aiService
+        protected AIService $aiService,
+        protected NotificationService $notificationService
     ) {}
 
     public function index() 
@@ -238,7 +240,7 @@ class BriefController extends Controller
                         }
                     }
 
-                    Decision::create([
+                    $decision = Decision::create([
                         'workspace_id' => $workspace->id,
                         'created_by' => Auth::id(),
                         'title' => $decisionData['title'],
@@ -246,6 +248,8 @@ class BriefController extends Controller
                         'evidence_file_id' => $evidenceFileId,
                         'is_validated' => false,
                     ]);
+
+                    $this->notificationService->notifyDecisionCreated($decision);
                 }
             }
 

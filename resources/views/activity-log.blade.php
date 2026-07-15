@@ -275,6 +275,15 @@
                                                 </p>
                                             </template>
 
+                                            {{-- Decision description --}}
+                                            <template x-if="item.type=='decision'">
+                                                <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                                    <span x-text="item.creator"></span> menetapkan keputusan:
+                                                    <span class="font-semibold text-indigo-600 block mt-1" x-text="item.task_title"></span>
+                                                    <span x-show="item.desc" class="text-xs text-gray-400 italic block mt-1" x-text="item.desc"></span>
+                                                </p>
+                                            </template>
+
                                         </div>
 
                                     </div>
@@ -287,7 +296,8 @@
                                                     'bg-blue-600': item.color=='blue',
                                                     'bg-green-600': item.color=='green',
                                                     'bg-red-500': item.color=='red',
-                                                    'bg-purple-600': item.color=='purple'
+                                                    'bg-purple-600': item.color=='purple',
+                                                    'bg-indigo-600': item.color=='indigo'
                                                 }">
 
                                             {{-- Upload --}}
@@ -325,6 +335,13 @@
                                                         stroke-linecap="round"
                                                         stroke-linejoin="round"
                                                         d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
+                                            </template>
+
+                                            {{-- Gavel (Decision) --}}
+                                            <template x-if="item.icon=='gavel'">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                                 </svg>
                                             </template>
 
@@ -379,6 +396,15 @@
                                                 </p>
                                             </template>
 
+                                            {{-- Decision description --}}
+                                            <template x-if="item.type=='decision'">
+                                                <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                                    <span x-text="item.creator"></span> menetapkan keputusan:
+                                                    <span class="font-semibold text-indigo-600 block mt-1" x-text="item.task_title"></span>
+                                                    <span x-show="item.desc" class="text-xs text-gray-400 italic block mt-1" x-text="item.desc"></span>
+                                                </p>
+                                            </template>
+
                                         </div>
 
                                     </div>
@@ -395,7 +421,8 @@
                                                     'bg-blue-600': item.color=='blue',
                                                     'bg-green-600': item.color=='green',
                                                     'bg-red-500': item.color=='red',
-                                                    'bg-purple-600': item.color=='purple'
+                                                    'bg-purple-600': item.color=='purple',
+                                                    'bg-indigo-600': item.color=='indigo'
                                                 }">
 
                                             <template x-if="item.icon=='upload'">
@@ -430,6 +457,12 @@
                                                         stroke-linecap="round"
                                                         stroke-linejoin="round"
                                                         d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
+                                            </template>
+
+                                            <template x-if="item.icon=='gavel'">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                                                 </svg>
                                             </template>
 
@@ -476,6 +509,15 @@
                                         <template x-if="item.type=='member'">
                                             <p class="text-sm text-gray-500 mt-2 leading-relaxed">
                                                 <span class="font-medium text-slate-700" x-text="item.creator"></span> bergabung ke workspace.
+                                            </p>
+                                        </template>
+
+                                        {{-- Decision description --}}
+                                        <template x-if="item.type=='decision'">
+                                            <p class="text-sm text-gray-500 mt-2 leading-relaxed">
+                                                <span x-text="item.creator"></span> menetapkan keputusan:
+                                                <span class="font-semibold text-indigo-600 block mt-1" x-text="item.task_title"></span>
+                                                <span x-show="item.desc" class="text-xs text-gray-400 italic block mt-1" x-text="item.desc"></span>
                                             </p>
                                         </template>
                                         {{-- Custom/Fallback description --}}

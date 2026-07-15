@@ -59,7 +59,6 @@ Route::get('/tutorial-publik', [TutorialController::class, 'publik'])->name('tut
 Route::post('/feedback', [FeedbackController::class, 'store'])
     ->name('feedback.store');
 
-// ✅ Authentication Routes
 Route::get('/daftar', [AuthController::class, 'showRegister'])->name('daftar');
 Route::post('/daftar', [AuthController::class, 'register'])->name('daftar.store');
 Route::get('/masuk', [AuthController::class, 'showLogin'])->name('masuk');

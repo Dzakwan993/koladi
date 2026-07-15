@@ -119,23 +119,46 @@ class ActivityLogController extends Controller
             ];
         });
 
-        // ===== 5. MERGE & SORT =====
+        // ===== 5. DECISION ACTIVITIES =====
+        $decisions = Decision::with('evidenceFile', 'creator')
+            ->where('workspace_id', $workspace->id)
+            ->orderByDesc('decision_date')
+            ->get();
+
+        $decisionActivities = $decisions->map(function ($decision) {
+            $creatorName = $decision->creator ? $decision->creator->full_name : 'Seseorang';
+            $time = $decision->created_at ? $decision->created_at->diffForHumans() : 'Baru-baru ini';
+            $timestamp = $decision->created_at ? $decision->created_at->timestamp : 0;
+
+            return [
+                'type' => 'decision',
+                'color' => 'indigo',
+                'icon' => 'gavel',
+                'title' => 'Keputusan Baru Dibuat',
+                'creator' => $creatorName,
+                'task_title' => $decision->title,
+                'priority' => null,
+                'file_name' => null,
+                'file_type' => null,
+                'folder_name' => null,
+                'time' => $time,
+                'timestamp' => $timestamp,
+                'desc' => $decision->description,
+            ];
+        });
+
+        // ===== 6. MERGE & SORT =====
         $sortedActivities = $taskActivities
             ->concat($fileActivities)
             ->concat($memberActivities)
             ->concat($movementActivities)
+            ->concat($decisionActivities)
             ->sortByDesc('timestamp')
             ->values()
             ->map(function ($item, $index) {
                 $item['side'] = $index % 2 === 0 ? 'right' : 'left';
                 return $item;
             });
-
-        // ===== 6. DECISIONS =====
-        $decisions = Decision::with('evidenceFile')
-            ->where('workspace_id', $workspace->id)
-            ->orderByDesc('decision_date')
-            ->get();
 
         return view('activity-log', compact('workspace', 'sortedActivities', 'decisions'));
     }

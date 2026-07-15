@@ -47,7 +47,7 @@
 </style>
 
 {{-- Halaman Balas Komentar --}}
-<div x-show="replyView.active" class="m-6 flex-shrink-0" x-init="$nextTick(() => {
+<div x-show="replyView.active" x-cloak class="m-6 flex-shrink-0" x-init="$nextTick(() => {
     setTimeout(() => {
         if (typeof initReplyEditor === 'function') {
             initReplyEditor();

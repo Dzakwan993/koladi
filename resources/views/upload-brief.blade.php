@@ -260,6 +260,17 @@
                 `;
                 list.appendChild(item);
             });
+
+            // Otomatis scroll ke bawah secara smooth agar user langsung melihat preview file dan tombol submit
+            setTimeout(() => {
+                const mainElement = document.querySelector('main');
+                if (mainElement) {
+                    mainElement.scrollTo({
+                        top: mainElement.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 100);
         } else {
             container.classList.add('hidden');
         }
