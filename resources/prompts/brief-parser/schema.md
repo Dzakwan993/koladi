@@ -7,7 +7,12 @@
     "main_deadline": "Project main deadline, keeping relative dates exactly as written, or null if not found (string/null)",  
     "confidence": "Confidence score between 0.0 and 1.0 based on completeness, consistency, and clarity (float)"  
   },  
-  "decisions": ["Array of key decisions, strategic approvals, budget allocations, or business agreement points extracted from the brief, or empty array if none (array of strings)"],
+  "decisions": [
+    {
+      "title": "Decision title (string)",
+      "sources": ["Array of source document names supporting this decision, e.g. 'Client Brief.pdf' (array of strings)"]
+    }
+  ],
   "tasks": [  
     {  
       "title": "Task title (string)",  

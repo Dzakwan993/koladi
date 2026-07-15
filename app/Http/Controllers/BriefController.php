@@ -12,6 +12,8 @@ use App\Models\UserWorkspace;
 use App\Models\Task;
 use App\Models\TaskAssignment;
 use App\Models\Role;
+use App\Models\File;
+use App\Models\Decision;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -48,19 +50,71 @@ class BriefController extends Controller
             'documents.*' => ['required', 'file'],
         ]);
 
+        $activeCompanyId = session('active_company_id');
+        $workspaceId = $request->input('workspace_id');
+
         try {
-            // 1. Parse & Normalize documents
+            // 1. Simpan file ke Storage dan Database (tabel files)
+            $uploadedFilesMapping = [];
+            foreach ($request->file('documents') as $file) {
+                $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                $extension = $file->getClientOriginalExtension();
+                $uploadedBy = auth()->id();
+
+                // Dapatkan nama unik agar tidak bentrok
+                $newName = $originalName;
+                $counter = 1;
+
+                // Setup query scope untuk mencari kecocokan nama file yang bertabrakan
+                $query = File::query();
+                if ($workspaceId) {
+                    $query->where('workspace_id', $workspaceId);
+                } else {
+                    $query->whereNull('workspace_id')
+                          ->where('company_id', $activeCompanyId);
+                }
+
+                while ((clone $query)->where('file_name', $newName . '.' . $extension)->exists()) {
+                    $newName = $originalName . '(' . $counter . ')';
+                    $counter++;
+                }
+
+                $finalName = $newName . '.' . $extension;
+                
+                // Simpan fisik
+                $path = $file->storeAs('files', $finalName, 'public');
+
+                // Simpan DB
+                $fileModel = File::create([
+                    'workspace_id' => $workspaceId ?: null,
+                    'company_id' => $activeCompanyId ?: null,
+                    'uploaded_by' => $uploadedBy,
+                    'file_name' => $finalName,
+                    'file_path' => $path,
+                    'file_size' => $file->getSize(),
+                    'file_type' => $extension,
+                    'file_url' => asset('storage/' . $path),
+                    'is_private' => false,
+                    'uploaded_at' => now(),
+                ]);
+
+                // Simpan mapping nama asli file -> file id
+                $uploadedFilesMapping[$file->getClientOriginalName()] = $fileModel->id;
+            }
+
+            // 2. Parse & Normalize documents
             $documents = $this->documentParser->parse(
                 $request->file('documents')
             );
 
-            // 2. Generate Brief using AI
+            // 3. Generate Brief using AI
             $briefData = $this->aiService->generateBrief($documents);
 
-            // Save brief draft to session, termasuk workspace_id jika ada
+            // Save brief draft & files mapping to session
             session(['brief_draft' => $briefData]);
-            if ($request->filled('workspace_id')) {
-                session(['brief_workspace_id' => $request->workspace_id]);
+            session(['brief_files_mapping' => $uploadedFilesMapping]);
+            if ($workspaceId) {
+                session(['brief_workspace_id' => $workspaceId]);
             } else {
                 session()->forget('brief_workspace_id');
             }
@@ -115,6 +169,9 @@ class BriefController extends Controller
             'tasks.*.deadline' => ['nullable', 'string', 'max:255'],
             'tasks.*.assignee_id' => ['nullable', 'exists:users,id'],
             'clarification_questions' => ['nullable', 'array'],
+            'decisions' => ['nullable', 'array'],
+            'decisions.*.title' => ['required', 'string', 'max:255'],
+            'decisions.*.sources' => ['nullable', 'array'],
         ]);
 
         $activeCompanyId = session('active_company_id');
@@ -157,6 +214,39 @@ class BriefController extends Controller
                     'status_active' => true,
                     'join_date' => now(),
                 ]);
+            }
+
+            // Update workspace_id untuk file-file yang baru diunggah dalam sesi upload ini
+            $filesMapping = session('brief_files_mapping') ?? [];
+            if (!empty($filesMapping)) {
+                File::whereIn('id', array_values($filesMapping))
+                    ->update(['workspace_id' => $workspace->id]);
+            }
+
+            // Create Decisions
+            if ($request->has('decisions')) {
+                foreach ($request->decisions as $decisionData) {
+                    $evidenceFileId = null;
+
+                    // Cari file_id berdasarkan sources nama file yang cocok
+                    if (!empty($decisionData['sources'])) {
+                        foreach ($decisionData['sources'] as $sourceFilename) {
+                            if (isset($filesMapping[$sourceFilename])) {
+                                $evidenceFileId = $filesMapping[$sourceFilename];
+                                break; // Ambil file pertama yang cocok
+                            }
+                        }
+                    }
+
+                    Decision::create([
+                        'workspace_id' => $workspace->id,
+                        'created_by' => Auth::id(),
+                        'title' => $decisionData['title'],
+                        'decision_date' => now(),
+                        'evidence_file_id' => $evidenceFileId,
+                        'is_validated' => false,
+                    ]);
+                }
             }
 
             // Find default board column (e.g. To Do List)

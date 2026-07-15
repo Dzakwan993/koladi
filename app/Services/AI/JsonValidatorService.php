@@ -13,6 +13,7 @@ class JsonValidatorService
         'tasks' => 'array',
         'missing_information' => 'array',
         'clarification_questions' => 'array',
+        'decisions' => 'array',
     ];
 
     public function validate(string $response): array
