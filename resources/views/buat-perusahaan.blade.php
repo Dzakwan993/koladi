@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Halaman buat perusahaan - Koladi</title>
     <link rel="icon" type="image/png" href="/images/LogoAtas.svg">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+     <script src="https://cdn.tailwindcss.com"></script>
+     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
             background: linear-gradient(135deg, #a8c5ff 0%, #7ea5f5 100%);

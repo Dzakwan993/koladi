@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="/images/LogoAtas.svg">
     <title>Masuk - Koladi</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- ================================================
          GOOGLE ANALYTICS 4 — KOLADI

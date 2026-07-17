@@ -8,7 +8,7 @@
     <link rel="icon" type="image/png" href="/images/LogoAtas.svg">
     <title>Dashboard Admin - Koladi</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    @vite('resources/css/app.css')
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 @php

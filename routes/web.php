@@ -48,9 +48,11 @@ Route::get('/workspace/{workspace}/ai-brief', [BriefController::class, 'brief'])
 
 // Route::get('/', [LandingPageController::class, 'index'])->name('landingpage');
 
-Route::get('/', [LandingPageController::class, 'index'])
-    ->middleware('guest')
-    ->name('landingpage');
+Route::get('/', [LandingPageController::class, 'index'])->name('landingpage');
+
+// Route::get('/', [LandingPageController::class, 'index'])
+//     ->middleware('guest')
+//     ->name('landingpage');
 
 // Halaman Tutorial Publik (bisa diakses tanpa login)
 Route::get('/tutorial-publik', [TutorialController::class, 'publik'])->name('tutorial.publik');

@@ -12,6 +12,7 @@ use App\Models\Role;
 use App\Services\NotificationService;
 use App\Observers\UserCompanyObserver;
 use App\Models\UserCompany;
+use Illuminate\Support\Facades\URL;
 
 
 class AppServiceProvider extends ServiceProvider
