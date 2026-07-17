@@ -15,11 +15,13 @@ return [
     */
 
     'gemini' => [
-        'api_key' => env('GEMINI_API_KEY'),
-        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
-        'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+        'api_key'     => env('GEMINI_API_KEY'),
+        'api_key_2'   => env('GEMINI_API_KEY_2'),
+        'api_key_3'   => env('GEMINI_API_KEY_3'),
+        'api_key_4'   => env('GEMINI_API_KEY_4'),
+        'base_url'    => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
         'temperature' => (float) env('GEMINI_TEMPERATURE', 0.2),
-        'timeout' => (int) env('GEMINI_TIMEOUT', 120),
+        'timeout'     => (int) env('GEMINI_TIMEOUT', 120),
     ],
     
     'postmark' => [
@@ -48,11 +50,5 @@ return [
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
-
-    'gemini' => [
-        'api_key' => env('GEMINI_API_KEY'),
-        'model' => env('GEMINI_MODEL', 'gemini-3.5-flash'),
-    ],
-
 
 ];

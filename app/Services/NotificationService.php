@@ -512,7 +512,7 @@ class NotificationService
         $notificationData = [
             'company_id' => $workspace->company_id,
             'workspace_id' => $workspace->id,
-            'type' => 'decision',
+            'type' => 'announcement',
             'title' => 'Keputusan baru ditetapkan',
             'message' => $decision->title,
             'context' => $workspace->name,

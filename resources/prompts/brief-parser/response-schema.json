@@ -1,0 +1,75 @@
+{
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "object",
+      "properties": {
+        "project_name": {
+          "type": "string",
+          "nullable": true
+        },
+        "project_description": {
+          "type": "string"
+        },
+        "deliverables": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "main_deadline": {
+          "type": "string",
+          "nullable": true
+        }
+      },
+      "required": [
+        "project_name",
+        "project_description",
+        "deliverables",
+        "main_deadline"
+      ]
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "sources": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["title", "sources"]
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "priority": { "type": "string", "nullable": true },
+          "deadline": { "type": "string", "nullable": true }
+        },
+        "required": ["title", "description", "priority", "deadline"]
+      }
+    },
+    "missing_information": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "clarification_questions": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "required": [
+    "summary",
+    "decisions",
+    "tasks",
+    "missing_information",
+    "clarification_questions"
+  ]
+}

@@ -221,7 +221,7 @@ Each task must contain:
 \- description  
 \- priority  
 \- deadline  
-\- estimated\_hours  
+\- estimated_hours  
 \- sources
 
 Do not split tasks excessively.
@@ -286,7 +286,7 @@ return null.
 
 Do NOT estimate working hours.
 
-Only return estimated\_hours when the document explicitly provides an estimation.
+Only return estimated_hours when the document explicitly provides an estimation.
 
 Otherwise
 
@@ -303,8 +303,8 @@ Only include document names.
 Example
 
 "sources": \[  
-    "Client Brief.pdf",  
-    "Meeting Notes.docx"  
+ "Client Brief.pdf",  
+ "Meeting Notes.docx"  
 \]
 
 Do not include page numbers.
@@ -379,25 +379,24 @@ Do NOT include additional text.
 The JSON must exactly follow this schema.
 
 {  
-  "summary": {  
-    "project\_name": "",  
-    "project\_description": "",  
-    "executive\_summary": "",  
-    "deliverables": \[\],  
-    "main\_deadline": null,  
-    "confidence": 0.0  
-  },  
-  "tasks": \[  
-    {  
-      "title": "",  
-      "description": "",  
-      "priority": null,  
-      "deadline": null,  
-      "estimated\_hours": null,  
-      "sources": \[\]  
-    }  
-  \],  
-  "missing\_information": \[\],  
-  "clarification\_questions": \[\]  
+ "summary": {  
+ "project_name": "",  
+ "project_description": "",  
+ "executive_summary": "",  
+ "deliverables": \[\],  
+ "main_deadline": null,  
+ "confidence": 0.0  
+ },  
+ "tasks": \[  
+ {  
+ "title": "",  
+ "description": "",  
+ "priority": null,  
+ "deadline": null,  
+ "estimated_hours": null,  
+ "sources": \[\]  
+ }  
+ \],  
+ "missing_information": \[\],  
+ "clarification_questions": \[\]  
 }
-

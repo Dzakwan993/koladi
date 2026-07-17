@@ -266,7 +266,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
 
         {{-- ✅ FOOTER SIDEBAR (Opsional) --}}
         <div class="px-3 py-3 border-t border-gray-200">
-            <p class="text-[10px] text-gray-400 text-center">Koladi v1.0</p>
+            <p class="text-[10px] text-gray-400 text-center">Koladi v1.1</p>
         </div>
     </div>
 
