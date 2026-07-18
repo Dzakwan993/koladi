@@ -116,10 +116,10 @@
                             {{-- Description --}}
                             <div class="text-sm text-gray-600 line-clamp-2 mb-3 ck-content">
                                 {!! preg_replace(
-                                ['/<img[^>]+>/i', '/<figure[^>]*>.*?<\ /figure>/is', '/<p>\s*<\ /p>/i', '/<br\s*\ /?>/i'],
-                                                        '',
-                                                        $p->description,
-                                                        ) !!}
+                                    ['/<img[^>]+>/i', '/<figure[^>]*>.*?<\/figure>/is', '/<p>\s*<\/p>/i', '/<br\s*\/?>/i'],
+                                    '',
+                                    $p->description,
+                                ) !!}
                             </div>
 
                             {{-- Tags: Due Date & Auto Due --}}
