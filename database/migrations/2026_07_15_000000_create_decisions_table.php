@@ -10,7 +10,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('decisions', function (Blueprint $table) {
-            $table->uuid('id')->primary()->default(DB::raw('public.uuid_generate_v4()'));
+            $table->uuid('id')->primary()->default(DB::raw('gen_random_uuid()'));
             $table->uuid('workspace_id')->nullable();
             $table->uuid('created_by')->nullable();
             $table->string('title');
