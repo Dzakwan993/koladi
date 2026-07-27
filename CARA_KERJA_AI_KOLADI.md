@@ -1,22 +1,25 @@
 # CARA KERJA LENGKAP ENGINE AI (AI BRIEF PARSER) - KOLADI
 
-Dokumen ini menjelaskan **secara menyeluruh dan detail** bagaimana fitur AI pada proyek Koladi bekerja: mulai dari proses konseptual di balik Machine Learning / Large Language Model (LLM), pemrosesan data teknis (Input-Process-Output), teknik *Prompt Engineering*, penanganan *Failover/Resilience*, hingga bagaimana hasil AI diubah menjadi data nyata di database Koladi.
+Dokumen ini menjelaskan **secara menyeluruh, detail, dan komprehensif** tentang logika inti, algoritma, model, aturan rekayasa, pemrosesan **Input-Process-Output (IPO)**, hingga **Kondisi Pengecualian (Exception Handling)** pada engine AI di aplikasi Koladi.
 
 ---
 
 ## 📄 DAFTAR ISI
 1. [Konsep Dasar & Filosofi AI di Koladi](#1-konsep-dasar--filosofi-ai-di-koladi)
-2. [Arsitektur Sistem & Alur Pemrosesan (IPO)](#2-arsitektur-sistem--alur-pemrosesan-ipo)
-3. [Proses di Balik Layar: Langkah demi Langkah](#3-proses-di-balik-layar-langkah-demi-langkah)
-   - [Langkah 1: Document Parsing & Text Extraction](#langkah-1-document-parsing--text-extraction)
-   - [Langkah 2: Context Building & Multi-Document Stacking](#langkah-2-context-building--multi-document-stacking)
-   - [Langkah 3: Prompt Engineering & Guardrails](#langkah-3-prompt-engineering--guardrails)
-   - [Langkah 4: Structured Output (JSON Schema Enforcement)](#langkah-4-structured-output-json-schema-enforcement)
-   - [Langkah 5: Algoritma Ketahanan API (Rotasi Key & Fallback Model)](#langkah-5-algoritma-ketahanan-api-rotasi-key--fallback-model)
-4. [Bagaimana LLM "Berpikir" (Tokenisasi & Inferensi Teks)](#4-bagaimana-llm-berpikir-tokenisasi--inferensi-teks)
-5. [Mekanisme Human-in-the-Loop & Integrasi Database](#5-mekanisme-human-in-the-loop--integrasi-database)
-6. [Fitur Keselamatan & Anti-Halusinasi](#6-fitur-keselamatan--anti-halusinasi)
-7. [Ringkasan Nilai Manfaat](#7-ringkasan-nilai-manfaat)
+2. [Logika Inti Solusi (Algoritma, Model, Rumus & Aturan)](#2-logika-inti-solusi-algoritma-model-rumus--aturan)
+   - [2.1 Spesifikasi Model AI & Hyperparameter](#21-spesifikasi-model-ai--hyperparameter)
+   - [2.2 Algoritma Inti & Heuristik](#22-algoritma-inti--heuristik)
+   - [2.3 Aturan Rekayasa (Guardrails & Constraints)](#23-aturan-rekayasa-guardrails--constraints)
+3. [Detail Pemrosesan Input, Proses, dan Output (IPO)](#3-detail-pemrosesan-input-proses-dan-output-ipo)
+   - [3.1 Matriks Input](#31-matriks-input)
+   - [3.2 Alur Pemrosesan (Pipeline Process)](#32-alur-pemrosesan-pipeline-process)
+   - [3.3 Matriks Output (Structured JSON Schema)](#33-matriks-output-structured-json-schema)
+4. [Kondisi Pengecualian & Penanganan Error (Exception Handling)](#4-kondisi-pengecualian--penanganan-error-exception-handling)
+5. [Proses di Balik Layar: Langkah demi Langkah](#5-proses-di-balik-layar-langkah-demi-langkah)
+6. [Bagaimana LLM "Berpikir" (Tokenisasi & Inferensi Teks)](#6-bagaimana-llm-berpikir-tokenisasi--inferensi-teks)
+7. [Mekanisme Human-in-the-Loop & Integrasi Database](#7-mekanisme-human-in-the-loop--integrasi-database)
+8. [Matriks Keamanan & Anti-Halusinasi](#8-matriks-keamanan--anti-halusinasi)
+9. [Ringkasan Nilai Manfaat](#9-ringkasan-nilai-manfaat)
 
 ---
 
@@ -27,193 +30,249 @@ AI di Koladi berfungsi sebagai **AI Project Planning Assistant** (Asisten Perenc
 
 > **Prinsip Utama:** 
 > * AI **BUKAN** chatbot umum (seperti ChatGPT interaktif).
-> * AI **BUKAN** pengambil keputusan akhir (Human-in-the-loop).
-> * AI bertugas mengubah dokumen acak (PDF, Word, TXT, Transkrip Meeting) menjadi **Draft Project & Task** yang terstruktur secara otomatis.
-
-### Masalah yang Diselesaikan AI
-Dalam manajemen proyek, dokumen awal (*project brief*) seringkali:
-- Tidak terstruktur dan tersebar di banyak dokumen.
-- Memiliki campuran bahasa (Indonesia & Inggris / Bahasa Gaul/Istilah Istilah Teknis).
-- Berisi banyak detail tersembunyi yang rentan terlewatkan jika dibaca manual.
-
-AI bertugas membaca seluruh dokumen tersebut dalam hitungan detik, mengekstrak poin penting, lalu menyajikannya dalam format siap pakai.
+> * AI **BUKAN** pengambil keputusan akhir (mengusung konsep *Human-in-the-Loop*).
+> * AI bertugas mengubah dokumen acak (PDF, Word, TXT, Transkrip Meeting) menjadi **Draft Project, Deliverables, & Tasks** yang terstruktur secara otomatis.
 
 ---
 
-## 2. ARSITEKTUR SISTEM & ALUR PEMROSESAN (IPO)
+## 2. LOGIKA INTI SOLUSI (ALGORITMA, MODEL, RUMUS & ATURAN)
 
-Secara garis besar, alur kerja AI mengikuti prinsip **Input → Process → Output (IPO)**:
+### 2.1 Spesifikasi Model AI & Hyperparameter
+
+Engine AI Koladi dikonfigurasi secara presisi melalui `GeminiProvider` untuk menghasilkan luaran yang deterministik dan konsisten:
+
+| Parameter | Setting / Nilai | Alasan Rekayasa |
+| :--- | :--- | :--- |
+| **Model Utama (*Primary*)** | `gemini-3.5-flash` | Memiliki pemahaman konteks tinggi (*high-context window*) dan kecepatan inferensi yang sangat tinggi. |
+| **Model Cadangan (*Fallback*)** | `gemini-3.1-flash-lite` | Digunakan jika model utama mengalami kehabisan kuota atau downtime total. |
+| **Temperature** | `0.2` | Nilai rendah untuk menekan kreativitas liar AI dan memaksa luaran konsisten (*deterministic/factual*). |
+| **Max Output Tokens** | `6144` | Memberikan ruang yang cukup untuk mengekstrak puluhan task dan keputusan tanpa terpotong (*truncated*). |
+| **Response MIME Type** | `application/json` | Mengunci respons API agar wajib berupa format JSON murni. |
+| **Response Schema** | `response-schema.json` | Penegakan skema ketat di tingkat API Gemini. |
+
+---
+
+### 2.2 Algoritma Inti & Heuristik
+
+Engine AI menerapkan 4 algoritma/heuristik inti dalam memproses brief proyek:
+
+#### 1. Algoritma Ketahanan API (Multi-Tier Failover & Key Rotation)
+Algoritma ini menjamin ketersediaan layanan (*High Availability*) dengan matriks keputusan berikut:
+- **HTTP 429 (Rate Limit):** Rotasi *instant* ke API Key berikutnya ($Key_{n+1}$).
+- **HTTP 503 (Server Overloaded):** Terapkan *Fixed Delay Backoff* (tunggu 2 detik), lalu melakukan *retry* 1x pada key yang sama. Jika masih gagal, beralih ke key berikutnya.
+- **Model Exhaustion:** Jika seluruh API Key ($Key_1 \dots Key_4$) pada model utama gagal, algoritma otomatis menurunkan permintaan (*graceful degradation*) ke model cadangan.
+
+#### 2. Heuristik Klasifikasi Prioritas Tugas (Priority Rules)
+AI mengelompokkan setiap tugas (`tasks[].priority`) menggunakan aturan semantik:
+- **`HIGH`**: Tugas yang merupakan *blocker*, arsitektur inti, keamanan, integrasi payment gateway, atau memiliki batas waktu mendesak.
+- **`MEDIUM`**: Tugas pengembangan fitur utama (CRUD, UI/UX halaman utama, manajemen user).
+- **`LOW`**: Tugas dokumentasi, polishing UI, optimasi opsional, atau fitur tambahan pendukung.
+
+#### 3. Heuristik Estimasi Beban Kerja (Estimated Hours Rules)
+AI memperkirakan `estimated_hours` per tugas berdasarkan standar pengembangan software:
+- Tugas kecil (misal: penyiapan DB / setup repo): $2 - 4$ jam.
+- Tugas sedang (misal: pembuatan form / API endpoint): $4 - 8$ jam.
+- Tugas kompleks (misal: integrasi Payment Gateway / UI/UX multi-screen): $8 - 16+$ jam.
+
+#### 4. Algoritma Pelacakan Sumber (Multi-Document Traceability Matching)
+Setiap entitas yang diekstrak wajib menyertakan atribut `sources: ["NamaFile.pdf"]`. Algoritma memetakan klausa teks pada dokumen asal dengan potongan tugas/keputusan yang dihasilkan sehingga pengguna dapat memverifikasi kebenaran data (*fact-checking*).
+
+---
+
+### 2.3 Aturan Rekayasa (Guardrails & Constraints)
+
+1. **Zero Assumption / Strict Anti-Hallucination Rule:**
+   - AI **dilarang keras** mengarang tanggal, nama klien, atau anggaran yang tidak tertulis eksplisit dalam dokumen.
+   - Informasi yang ambigu atau tidak ditemukan wajib dimasukkan ke dalam atribut `missing_information` atau `clarification_questions`.
+2. **Deterministic Output Enforcement:**
+   - Menyertakan contoh format JSON target pada *System Prompt* serta melampirkan skema resmi untuk mencegah pengembalian teks percakapan pembuka/penutup.
+
+---
+
+## 3. DETAIL PEMROSESAN INPUT, PROSES, DAN OUTPUT (IPO)
 
 ```mermaid
 graph TD
-    subgraph Input [1. INPUT STAGE - Pengumpulan Dokumen]
-        A1[Client Brief .pdf / .docx] --> B[Text Parsing & Cleaner]
-        A2[Transkrip Meeting .txt] --> B
-        A3[Catatan/Proposal .docx] --> B
+    subgraph INPUT [1. INPUT STAGE]
+        A1[Client Brief .pdf]
+        A2[Meeting Notes .docx]
+        A3[Raw Text .txt]
     end
 
-    subgraph Process [2. PROCESS STAGE - Pemrosesan Engine AI]
-        B --> C[PromptBuilderService]
-        C -->|Teks Clean + Instructions + JSON Schema| D[GeminiProvider]
-        D -->|Rotasi Key & Multi-Model Fallback| E[Google Gemini API LLM]
+    subgraph PROCESS [2. PROCESS STAGE]
+        B[Text Extraction & Normalization] --> C[PromptBuilderService Stacking]
+        C --> D[GeminiProvider Dispatch]
+        D --> E{API Check}
+        E -- 429 Rate Limit --> F[Rotate Key]
+        E -- 503 Overloaded --> G[Sleep 2s & Retry]
+        E -- Total Fail --> H[Fallback Model: flash-lite]
+        E -- Success 200 --> I[JsonValidatorService]
     end
 
-    subgraph Output [3. OUTPUT STAGE - Validasi & Penyimpanan]
-        E -->|Strict JSON Response| F[Response Validator / Parser]
-        F --> G[Draf Interaktif Dashboard]
-        G -->|Disetujui oleh User/PM| H[Laravel Database Engine]
-        H --> I[Kanban Board / Tasks]
-        H --> J[Tabel Keputusan Kunci]
+    subgraph OUTPUT [3. OUTPUT STAGE]
+        I --> J[JSON Response Object]
+        J --> K[Interactive Dashboard Review]
+        K -->|Approved| L[Database: projects, tasks, decisions]
     end
 
-    style Input fill:#eef2ff,stroke:#6366f1,stroke-width:2px
-    style Process fill:#fffbeb,stroke:#f59e0b,stroke-width:2px
-    style Output fill:#f0fdf4,stroke:#22c55e,stroke-width:2px
+    INPUT --> PROCESS --> OUTPUT
 ```
 
----
+### 3.1 Matriks Input
 
-## 3. PROSES DI BALIK LAYAR: LANGKAH DEMI LANGKAH
-
-### Langkah 1: Document Parsing & Text Extraction
-Saat pengguna mengunggah berkas (*Client Brief.pdf*, *Meeting Transcript.docx*, atau file `.txt`):
-1. **File Handler** menerima berkas di backend Laravel.
-2. Library ekstraksi teks (misal: PDF Parser / Docx Parser) mengekstrak seluruh teks mentah dari dokumen.
-3. **Text Normalization**: Menghilangkan karakter anomali, merapikan spasi berlebih, dan memastikan encoding teks menggunakan UTF-8.
-
----
-
-### Langkah 2: Context Building & Multi-Document Stacking
-Jika pengguna mengunggah **lebih dari satu dokumen** sekaligus (misal: *Brief.pdf* + *Notes.txt*):
-1. Teks dari setiap dokumen digabungkan menjadi **satu kesatuan konteks**.
-2. Setiap dokumen diberi penanda sumber (*Source Identifier*) agar AI dapat melakukan **Traceability** (mencatat tugas ini berasal dari dokumen mana).
+| Parameter Input | Tipe Data | Deskripsi / Batasan |
+| :--- | :--- | :--- |
+| **Uploaded Files** | File Binary (`.pdf`, `.docx`, `.txt`) | Dokumen brief, proposal, atau transkrip percakapan proyek. |
+| **Max File Size** | Numeric | Maksimal 10 MB per file. |
+| **Text Content** | String (UTF-8) | Hasil ekstraksi teks bersih tanpa karakter anomali/binary. |
+| **System Prompt & Schema** | Structured JSON | Instruksi guardrails dan skema struktur JSON target. |
 
 ---
 
-### Langkah 3: Prompt Engineering & Guardrails
-Backend Laravel (`PromptBuilderService`) menyusun instruksi khusus yang dikirimkan ke model AI. Prompt ini tidak hanya berisi teks dokumen pengguna, tetapi juga **4 Komponen Utama**:
+### 3.2 Alur Pemrosesan (Pipeline Process)
 
-1. **SYSTEM INSTRUCTION (Peran AI)**
-   > *"Anda adalah seorang Senior Project Manager profesional. Tugas Anda adalah menganalisis dokumen proyek dan mengekstrak informasi menjadi rencana kerja yang rapi."*
-
-2. **GUARDRAILS (Aturan Keselamatan & Anti-Halusinasi)**
-   > *"DILARANG mengarang atau berasumsi informasi yang tidak tertulis pada dokumen. Jika informasi seperti deadline atau budget tidak ada, set nilainya menjadi null atau masukkan ke daftar missing_information."*
-
-3. **TRACEABILITY RULE**
-   > *"Setiap task atau deliverable wajib menyertakan nama dokumen sumber dari mana informasi tersebut diambil."*
-
-4. **OUTPUT FORMAT RULE**
-   > *"Output WAJIB dalam bentuk JSON murni tanpa ada teks pembuka, penutup, atau format markdown pembungkus."*
+1. **Extraction Phase:** File diurai oleh PDF/Docx parser di backend Laravel untuk mengambil string mentahnya.
+2. **Context Stacking Phase:** Jika terdapat lebih dari 1 file, teks digabung menjadi satu blok dokumen terintegrasi dengan header pemisah `--- File: [Nama_File] ---`.
+3. **Prompt Injection Phase:** `PromptBuilderService` menggabungkan konteks dokumen dengan aturan *System Instruction*, *Guardrails*, dan *Response Schema*.
+4. **API Execution Phase:** `GeminiProvider` melakukan HTTP POST request ke API Google Gemini.
+5. **Validation Phase:** `JsonValidatorService` membersihkan pembungkus markdown (seperti ` ```json `), mem-parse JSON, dan memastikan atribut wajib tidak `null`.
 
 ---
 
-### Langkah 4: Structured Output (JSON Schema Enforcement)
-Untuk memastikan AI tidak membalas dengan teks biasa ("Halo, berikut hasil analisis saya..."), sistem Koladi melampirkan **JSON Schema Definition** (`response-schema.json`) ke API Gemini.
+### 3.3 Matriks Output (Structured JSON Schema)
 
-Skema JSON memaksa AI mengembalikan data dalam format struktur berikut:
+Hasil eksekusi dikembalikan dalam bentuk **JSON Terstruktur** murni:
 
 ```json
 {
   "project_name": "Pengembangan E-Commerce Batik",
-  "summary": "Ringkasan proyek pengembangan aplikasi web batik...",
-  "objective": "Tujuan utama proyek...",
-  "deliverables": ["Web Customer", "Admin Panel", "Payment Gateway Integration"],
+  "summary": "Ringkasan proyek pengembangan aplikasi web batik berbasis Laravel...",
+  "objective": "Meningkatkan penjualan batik secara online dengan sistem pembayaran otomatis.",
+  "deliverables": [
+    "Aplikasi Web Customer",
+    "Admin Panel Dashboard",
+    "Integrasi Payment Gateway Midtrans"
+  ],
   "tasks": [
     {
-      "title": "Desain UI/UX Wireframe",
-      "description": "Membuat wireframe 5 halaman utama...",
+      "title": "Desain UI/UX Wireframe Dashboard",
+      "description": "Membuat wireframe 5 halaman utama aplikasi.",
       "priority": "HIGH",
       "estimated_hours": 16,
-      "sources": ["Client Brief.pdf"]
+      "sources": ["Client Brief Batik.pdf"]
+    },
+    {
+      "title": "Integrasi API Midtrans",
+      "description": "Mengimplementasikan webhook payment notification.",
+      "priority": "HIGH",
+      "estimated_hours": 12,
+      "sources": ["Meeting Transcript.docx"]
     }
   ],
   "decisions": [
     {
-      "decision": "Menggunakan Midtrans sebagai Payment Gateway",
-      "rationale": "Disepakati saat meeting karena biaya transaksi lebih rendah.",
+      "decision": "Menggunakan Midtrans sebagai Payment Gateway utama",
+      "rationale": "Disepakati karena mendukung metode QRIS dan Transfer Bank lokal.",
       "sources": ["Meeting Transcript.docx"]
     }
   ],
-  "missing_information": ["Dokumen Brand Guideline", "Akses API Hosting"],
-  "clarification_questions": ["Apakah metode pembayaran COD perlu disediakan?"]
+  "missing_information": [
+    "Brand Guideline (Palet Warna & Logo)",
+    "Akses Server Hosting / Domain Client"
+  ],
+  "clarification_questions": [
+    "Apakah metode pembayaran Cash on Delivery (COD) perlu disediakan pada fase 1?"
+  ]
 }
 ```
 
 ---
 
-### Langkah 5: Algoritma Ketahanan API (Rotasi Key & Fallback Model)
-Proses pemrosesan AI membutuhkan koneksi API ke Google Gemini. Untuk menjamin sistem **tidak pernah down** akibat limit kuota (HTTP 429) atau kendala server (HTTP 503), `GeminiProvider` menerapkan algoritma ketahanan otomatis:
+## 4. KONDISI PENGECUALIAN & PENANGANAN ERROR (EXCEPTION HANDLING)
 
-```mermaid
-flowchart TD
-    Start([Mulai Permintaan ke AI Engine]) --> SelectModel[Model Utama: gemini-3.5-flash]
-    SelectModel --> Key1[Coba API Key #1]
-    
-    Key1 -- Sukses --> ReturnData[Kembalikan JSON Hasil Analisis]
-    Key1 -- Error 429 / Rate Limit --> Key2[Rotasi ke API Key #2]
-    Key2 -- Sukses --> ReturnData
-    Key2 -- Error 429 / Rate Limit --> Key3[Rotasi ke API Key #3]
-    Key3 -- Sukses --> ReturnData
-    Key3 -- Error 429 / Rate Limit --> Key4[Rotasi ke API Key #4]
-    
-    Key4 -- Semua Key Utama Habib/Limit --> SwitchModel[Switch ke Model Cadangan: gemini-3.1-flash-lite]
-    SwitchModel --> Key1_Lite[Rotasi Ulang Key #1 s/d #4 di Model Cadangan]
-    Key1_Lite -- Sukses --> ReturnData
-    Key1_Lite -- Gagal Semuanya --> ErrorHandler[Kembalikan Pesan Error User-Friendly]
-```
+Untuk menjamin keandalan sistem (*reliability*), berikut adalah matriks kondisi pengecualian (*edge cases*) dan mitigasi otomatis yang diterapkan oleh Koladi:
 
-- **Exponential Backoff**: Jika terjadi error server sementara (HTTP 503), sistem secara otomatis melakukan jeda (*sleep*) selama 2 detik sebelum mencoba ulang (*retry*) pada API Key yang sama.
+| # | Kondisi Pengecualian / Error | Penyebeb | Deteksi / Indikator | Tindakan Mitigasi Otomatis |
+| :-: | :--- | :--- | :--- | :--- |
+| **1** | **Dokumen Kosong / Binary Unreadable** | File PDF terenkripsi, corrupt, atau berupa hasil scan gambar tanpa teks (OCR needed). | Teks hasil ekstraksi berukuran 0 byte atau hanya berisi karakter anomali. | Semburkan `RuntimeException` dengan pesan: *"Dokumen tidak berisi teks yang dapat dibaca."* Minta pengguna mengunggah file valid. |
+| **2** | **HTTP 429 Rate Limit Exceeded** | API Key mencapai kuota batas transaksi per menit (TPM/RPM). | Response status HTTP = `429`. | `GeminiProvider` menangkap status 429 dan secara instant merotasi panggilan ke **API Key #2 / #3 / #4**. |
+| **3** | **HTTP 503 Server Overloaded** | Server Google Gemini mengalami lonjakan beban sementara. | Response status HTTP = `503`. | `GeminiProvider` mengeksekusi `sleep(2)` (delay 2 detik) lalu mencoba **retry 1x** pada key yang sama. |
+| **4** | **Semua Key & Model Utama Fail** | Seluruh kuota API key habis dan model utama bermasalah. | Loop API Key pada model utama habis (`RuntimeException`). | Sistem melakukan *Graceful Degradation* dengan beralih ke model cadangan `gemini-3.1-flash-lite`. |
+| **5** | **JSON Response Rusak / Truncated** | AI terputus di tengah jalan karena kehabisan token (`maxOutputTokens`). | `json_decode()` mengembalikan error `JSON_ERROR_SYNTAX` atau `finishReason` = `MAX_TOKENS`. | `JsonValidatorService` mencoba melakukan pembersihan regex/repair. Jika gagal total, sistem meminta AI melakukan regenerasi ulang. |
+| **6** | **Dokumen Tidak Relevan** | User mengunggah file yang bukan brief proyek (misal: resep makanan, cerpen). | AI tidak menemukan entitas proyek / `tasks` kosong. | Engine tetap mengembalikan JSON valid, namun `project_name` diset *"Unidentified Project"* dan daftar `missing_information` diisi penjelasan ketidaksesuaian dokumen. |
 
 ---
 
-## 4. BAGAIMANA LLM "BERPIKIR" (TOKENISASI & INFERENSI TEKS)
+## 5. PROSES DI BALIK LAYAR: LANGKAH DEMI LANGKAH
 
-Di tingkat terdasar (di server Google Gemini):
-1. **Tokenisasi**: Dokumen teks dipecah menjadi unit terpecah yang disebut **token** (1 token ≈ 4 karakter atau 0.75 kata).
-2. **Context Window Processing**: Seluruh token diproses dalam *Neural Network Transformer*. Model mengukur hubungan antarkata (menggunakan mekanisme *Attention Mechanism*).
-3. **Pattern Matching & Semantic Extraction**: Model mengenali bahwa kata-kata seperti *"harus selesai tanggal 15"* mengindikasikan **Deadline**, sedangkan *"akan dibuat sistem pembayaran"* mengindikasikan **Deliverable**.
-4. **JSON Output Generation**: Model menyusun kata per kata (*token by token*) mengikuti batasan JSON Schema yang dikirimkan oleh sistem Laravel Koladi.
+### Langkah 1: Document Parsing & Text Extraction
+1. Backend Laravel menerima berkas unggahan pengguna.
+2. Library ekstraksi mengekstrak teks mentah.
+3. **Text Normalization**: Menghilangkan karakter anomali, merapikan spasi berlebih, dan memastikan encoding UTF-8.
+
+### Langkah 2: Context Building & Multi-Document Stacking
+1. Teks dari setiap dokumen digabungkan menjadi **satu kesatuan konteks**.
+2. Setiap dokumen diberi penanda sumber (*Source Identifier*) untuk mendukung **Traceability**.
+
+### Langkah 3: Prompt Engineering & Guardrails
+Backend Laravel ([PromptBuilderService.php](file:///Users/pinkman/Documents/project/koladi-laravel/app/Services/AI/PromptBuilderService.php)) menyusun instruksi khusus berisi 4 komponen utama:
+1. **SYSTEM INSTRUCTION**: Penetapan peran AI sebagai Senior PM.
+2. **GUARDRAILS**: Larangan keras berasumsi atau mengarang data.
+3. **TRACEABILITY RULE**: Kewajiban menyertakan nama dokumen sumber.
+4. **OUTPUT FORMAT RULE**: Penegakan JSON murni.
+
+### Langkah 4: Structured Output (JSON Schema Enforcement)
+Melampirkan `response-schema.json` ke API Gemini untuk mengunci atribut wajib secara ketat.
+
+### Langkah 5: Execution via GeminiProvider
+Melakukan eksekusi HTTP dengan rotasi key & fallback model otomatis jika terjadi kendala jaringan/limit.
 
 ---
 
-## 5. MEKANISME HUMAN-IN-THE-LOOP & INTEGRASI DATABASE
+## 6. BAGAIMANA LLM "BERPIKIR" (TOKENISASI & INFERENSI TEKS)
 
-Hasil AI **tidak langsung dimasukkan ke database utama secara otomatis**. Sistem Koladi menerapkan mekanisme **Human-in-the-Loop** untuk mencegah kesalahan:
+Di tingkat terdasar (di infrastruktur Google Gemini):
+1. **Tokenisasi**: Teks dokumen dipecah menjadi unit **token** (1 token ≈ 4 karakter atau 0.75 kata).
+2. **Context Window Processing**: Seluruh token diproses dalam *Neural Network Transformer* menggunakan *Self-Attention Mechanism*.
+3. **Pattern Matching & Semantic Extraction**: Model menghubungkan frasa seperti *"harus selesai tanggal 15"* sebagai **Deadline**, dan *"membuat halaman login"* sebagai **Task**.
+4. **JSON Output Generation**: Model menyusun token demi token sesuai dengan JSON Schema yang dikunci oleh Laravel.
+
+---
+
+## 7. MEKANISME HUMAN-IN-THE-LOOP & INTEGRASI DATABASE
+
+Hasil keluaran AI **tidak langsung disimpan ke database produksi secara permanen**, melainkan melewati tahap verifikasi manusia:
 
 ```
 [Hasil AI (Draf JSON)] 
         ↓
-[Tampilan Draf Interaktif di UI Dashboard (ai-brief.blade.php)]
+[Tampilan Draf Interaktif di Dashboard (ai-brief.blade.php)]
         ↓
-[Project Manager Melakukan Edit / Review Manual]
-   - Menghapus task yang tidak relevan
-   - Mengubah estimasi jam / priority
-   - Mengubah nama project
+[Project Manager Review & Edit Manual]
+   - Menghapus task yang tidak sesuai
+   - Mengubah durasi / priority task
+   - Mengedit nama project
         ↓
 [User Klik Tombol "Approve & Create Project"]
         ↓
-[Laravel Backend Menyimpan ke Database (Tabel projects, tasks, decisions)]
+[Laravel Backend Menyimpan ke DB (Tabel projects, tasks, decisions)]
 ```
-
-### Manfaat Approach Ini:
-- **Kontrol Penuh di Tangan Manusia**: Pengguna memiliki kata terakhir.
-- **Keamanan Data**: Mencegah data sampah masuk ke database produksi.
 
 ---
 
-## 6. FITUR KESELAMATAN & ANTI-HALUSINASI
+## 8. MATRIKS KEAMANAN & ANTI-HALUSINASI
 
 | Potensi Masalah AI | Cara Koladi Mengatasinya |
 | :--- | :--- |
-| **Halusinasi** (AI mengarang info yang tidak ada) | **System Guardrails**: AI dilarang berasumsi. Info tidak lengkap wajib dimasukkan ke `missing_information`. |
-| **Format Rusak** (JSON tidak valid) | **Structured JSON Schema**: API Gemini dikunci menggunakan instruksi skema data ketat. |
-| **API Limit / Sever Error** | **Rotasi Multi-API Key & Multi-Model Fallback** (Auto failover dari Flash ke Flash-Lite). |
-| **Kesalahan Identifikasi Sumber** | **Traceability System**: AI mencantumkan nama dokumen asal untuk setiap tugas/keputusan. |
+| **Halusinasi Data** | **Guardrails Ketat**: AI dilarang berasumsi. Data tidak jelas wajib masuk ke `missing_information`. |
+| **Format Rusak** | **Structured JSON Schema**: Dikunci langsung di API Gemini via `responseSchema`. |
+| **Downtime / API Limit** | **Multi-API Key Rotation & Multi-Model Fallback** (Auto failover dari Flash ke Flash-Lite). |
+| **Penelusuran Sumber** | **Traceability System**: Setiap task mencantumkan `sources: ["file_asal.pdf"]`. |
 
 ---
 
-## 7. RINGKASAN NILAI MANFAAT
+## 9. RINGKASAN NILAI MANFAAT
 
-1. **Efisiensi Waktu (Up to 90%)**: Memangkas waktu pembuatan perencanaan proyek dari 1–2 jam analisis manual menjadi kurang dari **10 detik**.
-2. **Standardisasi Perencanaan**: Semua draf proyek memiliki struktur yang rapi (Objective, Deliverables, Tasks, Decisions, Missing Info).
-3. **Kolaborasi Lebih Cepat**: Tim langsung mengetahui apa saja info yang masih kurang (*missing information*) untuk ditanyakan kembali ke klien.
+1. **Efisiensi Waktu (Hingga 90%)**: Memangkas waktu analisis brief proyek dari 1–2 jam manual menjadi kurang dari **10 detik**.
+2. **Standardisasi Output**: Semua draf proyek memiliki format konsisten (Summary, Tasks, Priority, Decisions, Missing Info).
+3. **Akurasi & Keamanan Tinggi**: Didukung penanganan error lengkap dan persetujuan manusia (*Human-in-the-Loop*).
