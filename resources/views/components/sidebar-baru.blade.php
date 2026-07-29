@@ -87,6 +87,40 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 <span class="text-sm">Dashboard</span>
             </a>
 
+            {{-- ✅ 7. AI Brief --}}
+            @if ($currentWorkspace)
+                <a href="{{ route('upload-brief', $currentWorkspace->id) }}"
+                    class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+            {{ Request::is('workspace/*/upload-brief*') || Request::is('workspace/*/ai-brief*')
+                ? 'bg-[#e9effd] text-[#225ad6] font-medium active'
+                : 'text-gray-600 hover:bg-gray-50' }}">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
+                        stroke="currentColor" class="w-5 h-5 sidebar-icon">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z" />
+                    </svg>
+
+                    <span class="text-sm">AI Brief</span>
+                </a>
+            @else
+                <div class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 cursor-not-allowed"
+                    title="Pilih workspace terlebih dahulu">
+
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
+                        stroke="currentColor" class="w-5 h-5 opacity-50">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z" />
+                    </svg>
+
+                    <span class="text-sm">AI Brief</span>
+                </div>
+            @endif
+
             {{-- ✅ 2. Semua Tugas --}}
             @if ($currentWorkspace)
                 <a href="{{ route('kanban-tugas', $currentWorkspace->id) }}"
@@ -202,39 +236,6 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
                 </div>
             @endif
 
-            {{-- ✅ 7. AI Brief --}}
-            @if ($currentWorkspace)
-                <a href="{{ route('upload-brief', $currentWorkspace->id) }}"
-                    class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg transition
-            {{ Request::is('workspace/*/upload-brief*') || Request::is('workspace/*/ai-brief*')
-                ? 'bg-[#e9effd] text-[#225ad6] font-medium active'
-                : 'text-gray-600 hover:bg-gray-50' }}">
-
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
-                        stroke="currentColor" class="w-5 h-5 sidebar-icon">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z" />
-                    </svg>
-
-                    <span class="text-sm">AI Brief</span>
-                </a>
-            @else
-                <div class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 cursor-not-allowed"
-                    title="Pilih workspace terlebih dahulu">
-
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.7"
-                        stroke="currentColor" class="w-5 h-5 opacity-50">
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                        <path stroke-linecap="round" stroke-linejoin="round"
-                            d="M15.91 11.672a.375.375 0 0 1 0 .656l-5.603 3.113a.375.375 0 0 1-.557-.328V8.887c0-.286.307-.466.557-.327l5.603 3.112Z" />
-                    </svg>
-
-                    <span class="text-sm">AI Brief</span>
-                </div>
-            @endif
 
             {{-- ✅ 8. Log Aktivitas --}}
             @if ($currentWorkspace)

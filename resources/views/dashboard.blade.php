@@ -76,7 +76,9 @@
                         $status = $progress == 100 ? 'Selesai' : 'Berlangsung';
                     @endphp
 
-                    <a href="{{ route('kanban-tugas', $workspace->id) }}"
+                    <a href="{{ $totalTask > 0
+                        ? route('kanban-tugas', $workspace->id)
+                        : route('upload-brief', $workspace->id) }}"
                         class="group bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition duration-300 border border-gray-100">
 
                         {{-- Header --}}
