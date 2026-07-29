@@ -43,7 +43,7 @@
                     </div>
 
                     <div class="relative flex flex-col items-center text-center">
-                        {{-- File Input (Invisible but fills dropzone) --}}
+                        {{-- File Input (Invisible - triggered only after modal consent) --}}
                         <input
                             type="file"
                             name="documents[]"
@@ -53,6 +53,7 @@
                             required
                             accept=".pdf,.docx,.txt"
                             onchange="updateFileList()"
+                            onclick="handleFileInputClick(event)"
                         >
 
                         {{-- Icon --}}
@@ -221,6 +222,118 @@
         </div>
     </div>
 
+    {{-- Modal Persetujuan Pemrosesan Dokumen dengan AI --}}
+    <div id="aiConsentModal" class="fixed inset-0 z-[9998] flex items-center justify-center p-4" style="display: none !important;">
+        {{-- Backdrop --}}
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" id="aiConsentBackdrop"></div>
+
+        {{-- Modal Card --}}
+        <div class="relative bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md mx-auto overflow-hidden" style="animation: modalSlideIn 0.2s ease-out;">
+
+            {{-- Header --}}
+            <div class="px-6 pt-6 pb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3 mb-1">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.955 11.955 0 003 12c0 2.458.728 4.745 1.98 6.65l.01.015M17.25 6.003A11.95 11.95 0 0121 12c0 2.264-.6 4.39-1.651 6.22M7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 leading-tight">Persetujuan Pemrosesan Dokumen dengan AI</h3>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Body --}}
+            <div class="px-6 py-5 space-y-4">
+
+                {{-- Info utama --}}
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10 2l1.6 4.6L16 8l-4.4 1.4L10 14l-1.6-4.6L4 8l4.4-1.4L10 2z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-800 mb-0.5">Dokumen Anda akan diproses oleh AI</p>
+                        <p class="text-xs text-slate-500 leading-relaxed">Koladi akan menganalisis dokumen untuk membantu membuat draft project, seperti ringkasan, deliverable, task, deadline, dan pertanyaan klarifikasi.</p>
+                    </div>
+                </div>
+
+                {{-- Sebelum melanjutkan --}}
+                <div class="bg-slate-50 border border-slate-100 rounded-xl p-4">
+                    <p class="text-xs font-bold text-slate-700 uppercase tracking-wide mb-3">Sebelum melanjutkan</p>
+                    <ul class="space-y-2.5">
+                        <li class="flex items-start gap-2">
+                            <svg class="w-3.5 h-3.5 text-indigo-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6 7.7 9.3a1 1 0 00-1.4 1.4l2 2a1 1 0 001.4 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-xs text-slate-600 leading-relaxed">Dokumen hanya diproses untuk menghasilkan draft project pada workspace ini.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <svg class="w-3.5 h-3.5 text-indigo-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6 7.7 9.3a1 1 0 00-1.4 1.4l2 2a1 1 0 001.4 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-xs text-slate-600 leading-relaxed">Hasil AI dapat mengandung kesalahan sehingga perlu ditinjau, diedit, atau ditolak sebelum disimpan.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <svg class="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-xs text-slate-600 leading-relaxed">Hindari mengunggah data yang tidak diperlukan, seperti <strong class="text-slate-700">password, nomor kartu pembayaran, data kesehatan</strong>, atau informasi sangat sensitif lainnya.</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <svg class="w-3.5 h-3.5 text-emerald-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                            </svg>
+                            <span class="text-xs text-slate-600 leading-relaxed">Data Anda diproses secara aman hanya untuk menghasilkan analisis yang Anda minta dan tidak digunakan untuk melatih model AI, sesuai dengan ketentuan privasi Google.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                {{-- Checkbox Persetujuan --}}
+                <label id="aiConsentLabel" class="flex items-start gap-3 cursor-pointer select-none group">
+                    <div class="relative mt-0.5 flex-shrink-0">
+                        <input
+                            type="checkbox"
+                            id="aiConsentCheckbox"
+                            class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                            onchange="handleConsentCheckbox()"
+                        >
+                    </div>
+                    <span class="text-xs text-slate-600 leading-relaxed group-hover:text-slate-800 transition-colors">
+                        Saya memahami informasi di atas dan menyetujui pemrosesan dokumen menggunakan AI.
+                    </span>
+                </label>
+
+            </div>
+
+            {{-- Footer --}}
+            <div class="px-6 py-4 bg-slate-50 rounded-b-2xl flex justify-end gap-2">
+                <button
+                    type="button"
+                    id="aiConsentCancelBtn"
+                    onclick="closeAiConsentModal()"
+                    class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors"
+                >
+                    Batal
+                </button>
+                <button
+                    type="button"
+                    id="aiConsentAgreeBtn"
+                    onclick="agreeAndOpenFilePicker()"
+                    disabled
+                    class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-indigo-700 flex items-center gap-2"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Setuju &amp; Proses
+                </button>
+            </div>
+        </div>
+    </div>
+
     {{-- Premium Loading Overlay --}}
     <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center hidden">
         <div class="bg-white p-8 rounded-3xl shadow-xl flex flex-col items-center max-w-sm w-full mx-4 border border-slate-100">
@@ -233,8 +346,71 @@
         </div>
     </div>
 
+    <style>
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: translateY(-12px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0)  scale(1); }
+        }
+    </style>
+
 @push('scripts')
 <script>
+    // ── AI Consent Modal Logic ─────────────────────────────────────────────────
+
+    let _consentGiven = false; // tracks whether user has agreed in this session
+
+    /**
+     * Intercept the native file picker click.
+     * If consent has already been given, allow normally.
+     * Otherwise, show the consent modal and block the click.
+     */
+    function handleFileInputClick(event) {
+        if (_consentGiven) {
+            // Consent already given — let the click proceed normally
+            return true;
+        }
+        // Block the native file picker
+        event.preventDefault();
+        openAiConsentModal();
+        return false;
+    }
+
+    function openAiConsentModal() {
+        const modal = document.getElementById('aiConsentModal');
+        // Reset checkbox state every time the modal opens
+        document.getElementById('aiConsentCheckbox').checked = false;
+        document.getElementById('aiConsentAgreeBtn').disabled = true;
+        modal.style.removeProperty('display');
+        modal.style.display = 'flex';
+    }
+
+    function closeAiConsentModal() {
+        const modal = document.getElementById('aiConsentModal');
+        modal.style.display = 'none';
+    }
+
+    function handleConsentCheckbox() {
+        const checked = document.getElementById('aiConsentCheckbox').checked;
+        document.getElementById('aiConsentAgreeBtn').disabled = !checked;
+    }
+
+    function agreeAndOpenFilePicker() {
+        if (!document.getElementById('aiConsentCheckbox').checked) return;
+        _consentGiven = true;          // remember consent for subsequent clicks
+        closeAiConsentModal();
+        // Programmatically trigger the file picker
+        document.getElementById('fileInput').click();
+    }
+
+    // Close modal when clicking the backdrop
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('aiConsentBackdrop').addEventListener('click', function () {
+            closeAiConsentModal();
+        });
+    });
+
+    // ── File List Preview ─────────────────────────────────────────────────────
+
     function updateFileList() {
         const input = document.getElementById('fileInput');
         const container = document.getElementById('fileListContainer');
@@ -276,7 +452,8 @@
         }
     }
 
-    // Handle Drag & Drop styling
+    // ── Drag & Drop Styling ───────────────────────────────────────────────────
+
     const dropzone = document.getElementById('dropzone');
 
     ['dragenter', 'dragover'].forEach(eventName => {
