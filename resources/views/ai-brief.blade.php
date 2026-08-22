@@ -3,6 +3,29 @@
 @section('title', 'Pengumuman')
 
 @section('content')
+@php
+$deliverablesLabel = is_array($brief['summary']['deliverables'] ?? null)
+    ? implode(', ', $brief['summary']['deliverables'])
+    : ($brief['summary']['deliverables'] ?? '');
+
+$taskData = collect($brief['tasks'] ?? [])->map(fn($t) => [
+    'title' => $t['title'] ?? '',
+    'description' => $t['description'] ?? '',
+    'priority' => $t['priority'] ?? 'medium',
+    'deadline' => $t['deadline'] ?? '',
+    'assignee_id' => $t['assignee_id'] ?? '',
+    '_editing' => false,
+])->values()->all();
+
+$decisionsData = collect($brief['decisions'] ?? [])->map(fn($d) => [
+    'title' => is_array($d) ? ($d['title'] ?? '') : $d,
+    'sources' => is_array($d) ? ($d['sources'] ?? []) : [],
+])->values()->all();
+
+$availableFiles = isset($isHistory) && $isHistory
+    ? array_keys($brief['files_mapping'] ?? [])
+    : array_keys(session('brief_files_mapping') ?? []);
+@endphp
 <meta name="csrf-token" content="{{ csrf_token() }}">
 @include('components.sweet-alert')
 <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -13,7 +36,15 @@
         {{-- Header --}}
         <div class="flex flex-col gap-3">
             <div class="flex">
-                @if ($briefWorkspaceId)
+                @if (isset($isHistory) && $isHistory)
+                    <a href="{{ route('activity-log', $briefWorkspaceId) }}"
+                        class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl transition duration-200 shadow-sm hover:shadow group">
+                        <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform text-slate-500 group-hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                        </svg>
+                        <span>Kembali ke Log Aktivitas</span>
+                    </a>
+                @elseif ($briefWorkspaceId)
                     <a href="{{ route('upload-brief', $briefWorkspaceId) }}"
                         class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl transition duration-200 shadow-sm hover:shadow group">
                         <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform text-slate-500 group-hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,8 +64,12 @@
             </div>
 
             <div>
-                <h1 class="text-2xl font-semibold text-slate-800">Analisis Brief Proyek</h1>
-                <p class="text-sm text-slate-500 mt-1">Unggah dokumen proyek Anda dan biarkan AI menyusun strategi awal.</p>
+                <h1 class="text-2xl font-semibold text-slate-800">
+                    {{ (isset($isHistory) && $isHistory) ? 'Detail AI Processing Log' : 'Analisis Brief Proyek' }}
+                </h1>
+                <p class="text-sm text-slate-500 mt-1">
+                    {{ (isset($isHistory) && $isHistory) ? 'Riwayat strategi proyek dan daftar tugas yang terstruktur dari hasil pemrosesan AI.' : 'Unggah dokumen proyek Anda dan biarkan AI menyusun strategi awal.' }}
+                </p>
             </div>
         </div>
 
@@ -53,22 +88,26 @@
                 <div class="bg-slate-50 rounded-lg p-8 relative group">
                     <div class="flex items-center justify-between mb-1">
                         <p class="text-xs text-slate-400">Tujuan Utama</p>
+                        @if(!($isHistory ?? false))
                         <button type="button" @click="editGoal()" class="text-slate-400 hover:text-blue-600 focus:outline-none" title="Edit Tujuan Utama">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                             </svg>
                         </button>
+                        @endif
                     </div>
                     <p class="text-sm text-slate-700 font-medium" x-text="projectGoal || '—'"></p>
                 </div>
                 <div class="bg-slate-50 rounded-lg p-8 relative group">
                     <div class="flex items-center justify-between mb-1">
                         <p class="text-xs text-slate-400">Deliverables</p>
+                        @if(!($isHistory ?? false))
                         <button type="button" @click="editDeliverables()" class="text-slate-400 hover:text-blue-600 focus:outline-none" title="Edit Deliverables">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                             </svg>
                         </button>
+                        @endif
                     </div>
                     <p class="text-sm text-slate-700 font-medium" x-text="deliverables || '—'"></p>
                 </div>
@@ -83,11 +122,13 @@
                         <template x-if="!isEditingDeadline">
                             <span class="flex items-center gap-2">
                                 <span x-text="formatDisplayDate(mainDeadline)"></span>
+                                @if(!($isHistory ?? false))
                                 <button type="button" @click="isEditingDeadline = true" class="text-slate-400 hover:text-blue-600 focus:outline-none" title="Edit Deadline">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                         <path d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                                     </svg>
                                 </button>
+                                @endif
                             </span>
                         </template>
                         <template x-if="isEditingDeadline">
@@ -114,6 +155,7 @@
                     </svg>
                     <h2 class="font-semibold text-slate-800">Keputusan Kunci</h2>
                 </div>
+                @if(!($isHistory ?? false))
                 <button type="button" @click="addDecision()"
                     class="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -121,6 +163,7 @@
                     </svg>
                     Tambah Keputusan
                 </button>
+                @endif
             </div>
 
             <ul class="space-y-3">
@@ -142,6 +185,7 @@
                                 </div>
                             </div>
                         </div>
+                        @if(!($isHistory ?? false))
                         <div class="flex items-center gap-2 flex-shrink-0">
                             <button type="button" @click="editDecision(index)" class="text-slate-400 hover:text-blue-600" title="Edit">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
@@ -158,6 +202,7 @@
                                 </svg>
                             </button>
                         </div>
+                        @endif
                     </li>
                 </template>
             </ul>
@@ -225,6 +270,7 @@
                     </svg>
                     <h2 class="font-semibold text-slate-800">Draft Daftar Tugas</h2>
                 </div>
+                @if(!($isHistory ?? false))
                 <button type="button" @click="addTask()"
                     class="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -232,6 +278,7 @@
                     </svg>
                     Tambah Tugas
                 </button>
+                @endif
             </div>
 
             <table class="w-full text-sm">
@@ -241,7 +288,9 @@
                         <th class="text-left font-medium py-2">Pemilik</th>
                         <th class="text-left font-medium py-2">Priority</th>
                         <th class="text-left font-medium py-2">Tanggal</th>
+                        @if(!($isHistory ?? false))
                         <th class="py-2"></th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody>
@@ -266,6 +315,7 @@
                                 </span>
                             </td>
                             <td class="py-3 pr-2 text-slate-500 text-xs whitespace-nowrap" x-text="task.deadline || '—'"></td>
+                            @if(!($isHistory ?? false))
                             <td class="py-3 text-right">
                                 <div class="flex items-center justify-end gap-2">
                                     <button type="button" @click="editTask(index)" class="text-slate-400 hover:text-blue-600" title="Edit">
@@ -280,6 +330,7 @@
                                     </button>
                                 </div>
                             </td>
+                            @endif
                         </tr>
                     </template>
                 </tbody>
@@ -301,6 +352,7 @@
             <div id="task-inputs"></div>
         </form>
 
+        @if(!($isHistory ?? false))
         {{-- CTA --}}
         <button type="button" id="proses-ai-btn" @click="submitApprove()"
             class="w-full bg-blue-700 hover:bg-blue-800 transition-colors text-white rounded-2xl py-4 flex flex-col items-center gap-1 text-center">
@@ -315,6 +367,19 @@
                 Biarkan AI menyusun strategi awal, ringkasan eksekutif, serta daftar tugas yang terstruktur secara otomatis.
             </span>
         </button>
+        @else
+        <div class="w-full bg-emerald-50 border border-emerald-200 rounded-2xl py-5 flex flex-col items-center gap-1 text-center">
+            <span class="flex items-center gap-2 font-semibold text-emerald-800 text-sm">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Brief Telah Diproses
+            </span>
+            <span class="text-xs text-emerald-600 font-medium">
+                Log AI Processing ini telah disetujui dan diterapkan sebagai proyek/tugas aktif.
+            </span>
+        </div>
+        @endif
 
     </div>
 
@@ -500,21 +565,7 @@
 </div>
 
 @php
-$taskData = collect($brief['tasks'] ?? [])->map(fn($t) => [
-'title' => $t['title'] ?? '',
-'description' => $t['description'] ?? '',
-'priority' => $t['priority'] ?? 'medium',
-'deadline' => $t['deadline'] ?? '',
-'assignee_id' => $t['assignee_id'] ?? '',
-'_editing' => false,
-])->values()->all();
-
-$decisionsData = collect($brief['decisions'] ?? [])->map(fn($d) => [
-'title' => is_array($d) ? ($d['title'] ?? '') : $d,
-'sources' => is_array($d) ? ($d['sources'] ?? []) : [],
-])->values()->all();
-
-$availableFiles = array_keys(session('brief_files_mapping') ?? []);
+// Variables defined at the top of the file
 @endphp
 
 @push('scripts')

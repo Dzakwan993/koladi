@@ -317,6 +317,26 @@ class BriefController extends Controller
                 }
             }
 
+            // Simpan log AI Processing
+            \App\Models\AIProcessingLog::create([
+                'user_id' => Auth::id(),
+                'workspace_id' => $workspace->id,
+                'project_name' => $request->project_name,
+                'payload' => [
+                    'summary' => [
+                        'project_name' => $request->project_name,
+                        'project_description' => $request->project_goal,
+                        'deliverables' => is_string($request->deliverables) ? array_map('trim', explode(',', $request->deliverables)) : [],
+                        'main_deadline' => $request->deadline,
+                    ],
+                    'tasks' => $request->tasks ?? [],
+                    'decisions' => $request->decisions ?? [],
+                    'missing_information' => session('brief_draft')['missing_information'] ?? [],
+                    'clarification_questions' => $request->clarification_questions ?? [],
+                    'files_mapping' => $filesMapping,
+                ],
+            ]);
+
             DB::commit();
             Log::info('DB Dipanggil cuk');
 
@@ -333,6 +353,26 @@ class BriefController extends Controller
                 'text' => 'Gagal membuat proyek: ' . $e->getMessage(),
             ])->withInput();
         }
+    }
+
+    public function showLog(Workspace $workspace, $logId)
+    {
+        $log = \App\Models\AIProcessingLog::where('workspace_id', $workspace->id)
+            ->findOrFail($logId);
+
+        // Fetch company members to populate owner selection dropdown (just like in review())
+        $activeCompanyId = session('active_company_id');
+        $company = Company::find($activeCompanyId);
+        $members = $company ? $company->users()->where('user_companies.status_active', true)->get() : collect();
+
+        // Pass isHistory => true to view
+        return view('ai-brief', [
+            'brief' => $log->payload,
+            'members' => $members,
+            'briefWorkspaceId' => $workspace->id,
+            'isHistory' => true,
+            'logId' => $log->id,
+        ]);
     }
 
     /**
