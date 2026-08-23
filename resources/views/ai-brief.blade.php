@@ -14,21 +14,21 @@
         <div class="flex flex-col gap-3">
             <div class="flex">
                 @if ($briefWorkspaceId)
-                    <a href="{{ route('upload-brief', $briefWorkspaceId) }}"
-                        class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl transition duration-200 shadow-sm hover:shadow group">
-                        <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform text-slate-500 group-hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-                        </svg>
-                        <span>Kembali ke Unggah Dokumen</span>
-                    </a>
+                <a href="{{ route('upload-brief', $briefWorkspaceId) }}"
+                    class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl transition duration-200 shadow-sm hover:shadow group">
+                    <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform text-slate-500 group-hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span>Kembali ke Unggah Dokumen</span>
+                </a>
                 @else
-                    <a href="{{ route('brief.index') }}"
-                        class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl transition duration-200 shadow-sm hover:shadow group">
-                        <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform text-slate-500 group-hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
-                        </svg>
-                        <span>Kembali ke Unggah Dokumen</span>
-                    </a>
+                <a href="{{ route('brief.index') }}"
+                    class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl transition duration-200 shadow-sm hover:shadow group">
+                    <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform text-slate-500 group-hover:text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                    </svg>
+                    <span>Kembali ke Unggah Dokumen</span>
+                </a>
                 @endif
             </div>
 

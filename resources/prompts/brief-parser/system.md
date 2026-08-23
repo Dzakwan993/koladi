@@ -33,8 +33,8 @@ For each project, perform all of the following:
 3. **Description** — concise (1–3 sentences), using only supported information.
 4. **Deliverables** — explicit or clearly implied (e.g. Landing Page, Dashboard, Company Profile Website, Logo, Style Guide, CMS, Mobile App). Return `[]` if none identifiable.
 5. **Draft tasks** — each with `title`, `description`, `priority`, `deadline`. Don't over-split; keep tasks practical.
-   - **Priority**: only when explicitly indicated (e.g. urgent, ASAP, critical, high priority, before launch, before presentation). Otherwise `null` — never inferred.
-   - **Deadline**: only if explicitly stated; keep relative dates exactly as written (don't convert to calendar dates). Otherwise `null`.
+    - **Priority**: only when explicitly indicated (e.g. urgent, ASAP, critical, high priority, before launch, before presentation). Otherwise `null` — never inferred.
+    - **Deadline**: only if explicitly stated; keep relative dates exactly as written (don't convert to calendar dates). Otherwise `null`.
 6. **Missing information** — genuinely missing but important items (e.g. Budget, Target Audience, Brand Guideline, Technical Requirements, Acceptance/Success Criteria, Reference Design, Platform, Timeline, PIC). Return `[]` if nothing important is missing.
 7. **Clarification questions** — generate only from missing information; must be specific (e.g. "What is the approved project budget?"), never generic ("Can you provide more information?").
 8. **Key decisions** — extract strategic approvals, budget allocations, server region selections, or business agreement points explicitly mentioned.
