@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class BriefController extends Controller
@@ -47,27 +48,54 @@ class BriefController extends Controller
     
     public function upload(Request $request) 
     {
-        $request->validate([ 
-            'documents' => ['required', 'array'],
-            'documents.*' => ['required', 'file'],
-        ]);
+        $isTemplate = $request->boolean('is_template');
+
+        if ($isTemplate) {
+            $request->validate([
+                'template_name' => ['required', 'string', 'max:255'],
+                'template_goal' => ['required', 'string'],
+                'template_period' => ['nullable', 'string', 'max:255'],
+                'template_deliverables' => ['nullable', 'string'],
+                'template_scope' => ['nullable', 'string'],
+            ]);
+        } else {
+            $request->validate([ 
+                'documents' => ['required', 'array'],
+                'documents.*' => ['required', 'file'],
+            ]);
+        }
 
         $activeCompanyId = session('active_company_id');
         $workspaceId = $request->input('workspace_id');
 
         try {
-            // 1. Simpan file ke Storage dan Database (tabel files)
             $uploadedFilesMapping = [];
-            foreach ($request->file('documents') as $file) {
-                $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                $extension = $file->getClientOriginalExtension();
+            $documents = [];
+
+            if ($isTemplate) {
+                // 1. Format konten teks template proyek
+                $templateName = $request->input('template_name', 'Template Proyek');
+                $templateGoal = $request->input('template_goal', '');
+                $templatePeriod = $request->input('template_period', '');
+                $templateDeliverables = $request->input('template_deliverables', '');
+                $templateScope = $request->input('template_scope', '');
+
+                $textContent = "===== DOKUMEN KONTEKS BRIEF PROYEK =====\n\n"
+                    . "NAMA / TIPE PROYEK: {$templateName}\n\n"
+                    . "TUJUAN UTAMA PROYEK:\n{$templateGoal}\n\n"
+                    . "PERIODE / DEADLINE PROYEK:\n{$templatePeriod}\n\n"
+                    . "OUTPUT AKHIR / DELIVERABLES:\n{$templateDeliverables}\n\n"
+                    . "RUANG LINGKUP & DETAIL PEKERJAAN:\n{$templateScope}\n\n"
+                    . "========================================\n";
+
+                $originalName = "Template Konteks - " . Str::slug($templateName, ' ');
+                $extension = 'txt';
                 $uploadedBy = auth()->id();
 
                 // Dapatkan nama unik agar tidak bentrok
                 $newName = $originalName;
                 $counter = 1;
 
-                // Setup query scope untuk mencari kecocokan nama file yang bertabrakan
                 $query = File::query();
                 if ($workspaceId) {
                     $query->where('workspace_id', $workspaceId);
@@ -82,9 +110,10 @@ class BriefController extends Controller
                 }
 
                 $finalName = $newName . '.' . $extension;
-                
-                // Simpan fisik
-                $path = $file->storeAs('files', $finalName, 'public');
+                $storagePath = 'files/' . Str::slug($newName, '_') . '_' . time() . '.' . $extension;
+
+                // Simpan fisik file ke storage
+                Storage::disk('public')->put($storagePath, $textContent);
 
                 // Simpan DB
                 $fileModel = File::create([
@@ -92,22 +121,77 @@ class BriefController extends Controller
                     'company_id' => $activeCompanyId ?: null,
                     'uploaded_by' => $uploadedBy,
                     'file_name' => $finalName,
-                    'file_path' => $path,
-                    'file_size' => $file->getSize(),
+                    'file_path' => $storagePath,
+                    'file_size' => strlen($textContent),
                     'file_type' => $extension,
-                    'file_url' => asset('storage/' . $path),
+                    'file_url' => asset('storage/' . $storagePath),
                     'is_private' => false,
                     'uploaded_at' => now(),
                 ]);
 
-                // Simpan mapping nama asli file -> file id
-                $uploadedFilesMapping[$file->getClientOriginalName()] = $fileModel->id;
-            }
+                $uploadedFilesMapping[$finalName] = $fileModel->id;
 
-            // 2. Parse & Normalize documents
-            $documents = $this->documentParser->parse(
-                $request->file('documents')
-            );
+                $documents = [
+                    [
+                        'filename' => $finalName,
+                        'extension' => 'txt',
+                        'mime_type' => 'text/plain',
+                        'content' => $textContent,
+                    ]
+                ];
+            } else {
+                // 1. Simpan file ke Storage dan Database (tabel files)
+                foreach ($request->file('documents') as $file) {
+                    $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                    $extension = $file->getClientOriginalExtension();
+                    $uploadedBy = auth()->id();
+
+                    // Dapatkan nama unik agar tidak bentrok
+                    $newName = $originalName;
+                    $counter = 1;
+
+                    // Setup query scope untuk mencari kecocokan nama file yang bertabrakan
+                    $query = File::query();
+                    if ($workspaceId) {
+                        $query->where('workspace_id', $workspaceId);
+                    } else {
+                        $query->whereNull('workspace_id')
+                              ->where('company_id', $activeCompanyId);
+                    }
+
+                    while ((clone $query)->where('file_name', $newName . '.' . $extension)->exists()) {
+                        $newName = $originalName . '(' . $counter . ')';
+                        $counter++;
+                    }
+
+                    $finalName = $newName . '.' . $extension;
+                    
+                    // Simpan fisik
+                    $path = $file->storeAs('files', $finalName, 'public');
+
+                    // Simpan DB
+                    $fileModel = File::create([
+                        'workspace_id' => $workspaceId ?: null,
+                        'company_id' => $activeCompanyId ?: null,
+                        'uploaded_by' => $uploadedBy,
+                        'file_name' => $finalName,
+                        'file_path' => $path,
+                        'file_size' => $file->getSize(),
+                        'file_type' => $extension,
+                        'file_url' => asset('storage/' . $path),
+                        'is_private' => false,
+                        'uploaded_at' => now(),
+                    ]);
+
+                    // Simpan mapping nama asli file -> file id
+                    $uploadedFilesMapping[$file->getClientOriginalName()] = $fileModel->id;
+                }
+
+                // 2. Parse & Normalize documents
+                $documents = $this->documentParser->parse(
+                    $request->file('documents')
+                );
+            }
 
             // 3. Generate Brief using AI
             $briefData = $this->aiService->generateBrief($documents);
