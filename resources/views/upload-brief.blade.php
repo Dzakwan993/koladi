@@ -304,8 +304,8 @@
                         <p class="text-slate-700" x-text="selectedTemplate.period || '—'"></p>
                     </div>
                     <div class="sm:col-span-2 border-t border-slate-200/60 pt-2.5 mt-0.5" x-show="selectedTemplate.phases">
-                        <p class="font-bold text-slate-400 uppercase text-[10px] tracking-wider mb-0.5">Tahapan / Fase Projek</p>
-                        <p class="text-slate-700 whitespace-pre-line line-clamp-2" x-text="selectedTemplate.phases || '—'"></p>
+                        <p class="font-bold text-slate-400 uppercase text-[10px] tracking-wider mb-0.5">Tahapan / Fase &amp; Daftar Tugas</p>
+                        <p class="text-slate-700 whitespace-pre-line line-clamp-4" x-text="selectedTemplate.phases || '—'"></p>
                     </div>
                     <div class="sm:col-span-2 border-t border-slate-200/60 pt-2.5 mt-0.5">
                         <p class="font-bold text-slate-400 uppercase text-[10px] tracking-wider mb-0.5">Output Akhir Projek (Deliverables)</p>
@@ -373,286 +373,90 @@
 
     </div>
 
-    {{-- ─── MODAL TEMPLATE PROJEK ────────────────────────────────────────── --}}
+    {{-- ─── MODAL TEMPLATE PROJEK (WIDE 2-COLUMN MODAL) ────────────────────── --}}
     <div
         x-show="showTemplateModal"
         x-cloak
-        class="fixed inset-0 z-[9990] flex items-center justify-center p-4 overflow-y-auto"
+        class="fixed inset-0 z-[9990] flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
         style="display: none;">
         {{-- Backdrop --}}
         <div
             class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
             @click="closeTemplateModal()"></div>
 
-        {{-- Modal Content Card --}}
+        {{-- Modal Content Card (Wide max-w-5xl) --}}
         <div
-            class="relative bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-2xl my-8 overflow-hidden z-10 transform transition-all"
+            class="relative bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-5xl my-4 sm:my-8 overflow-hidden z-10 transform transition-all"
             style="animation: modalSlideIn 0.25s ease-out;">
-            {{-- STEP 1: Pilihan Template Proyek --}}
-            <template x-if="templateStep === 1">
-                <div>
-                    {{-- Modal Header --}}
-                    <div class="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center flex-shrink-0 text-indigo-600">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h2 class="text-lg font-bold text-slate-800 leading-tight">Template Projek</h2>
-                                <p class="text-xs text-slate-500 mt-0.5">Pilih salah satu template untuk melihat struktur dan rincian isinya.</p>
-                            </div>
-                        </div>
 
-                        <button
-                            type="button"
-                            @click="closeTemplateModal()"
-                            class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            {{-- STEP 1: Pilihan Preset Template Proyek (Redirects to Dedicated Page on Click) --}}
+            <div>
+                {{-- Modal Header --}}
+                <div class="px-6 sm:px-8 pt-6 pb-5 border-b border-slate-100 flex items-center justify-between">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-11 h-11 rounded-2xl bg-indigo-50 flex items-center justify-center flex-shrink-0 text-indigo-600 shadow-sm border border-indigo-100/60">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                             </svg>
-                        </button>
+                        </div>
+                        <div>
+                            <h2 class="text-lg sm:text-xl font-bold text-slate-800 leading-tight">Pilih Panduan &amp; Template Projek</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Pilih salah satu template siap pakai untuk membuka formulir rencana kerja terstruktur di halaman baru.</p>
+                        </div>
                     </div>
 
-                    {{-- Modal Body: Template Cards Grid --}}
-                    <div class="p-6 max-h-[70vh] overflow-y-auto space-y-3">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                            <template x-for="(tmpl, idx) in availableTemplates" :key="idx">
-                                <div
-                                    @click="selectTemplatePreset(tmpl)"
-                                    class="group text-left border border-slate-200 hover:border-indigo-400 hover:shadow-md rounded-2xl p-4 bg-white hover:bg-indigo-50/20 transition-all cursor-pointer flex flex-col justify-between">
-                                    <div>
-                                        <div class="flex items-center justify-between mb-2.5">
-                                            <span
-                                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
-                                                :class="tmpl.badgeClass"
-                                                x-text="tmpl.category"></span>
-                                            <svg class="w-4 h-4 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <button
+                        type="button"
+                        @click="closeTemplateModal()"
+                        class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100 transition-colors"
+                        title="Tutup">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Modal Body: Template Cards Grid (3 Columns on Large Screens) --}}
+                <div class="p-6 sm:p-8 max-h-[72vh] overflow-y-auto space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <template x-for="(tmpl, idx) in availableTemplates" :key="idx">
+                            <div
+                                @click="selectTemplatePreset(tmpl, idx)"
+                                class="group text-left border border-slate-200 hover:border-indigo-400 hover:shadow-lg rounded-2xl p-5 bg-white hover:bg-indigo-50/20 transition-all duration-200 cursor-pointer flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span
+                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider"
+                                            :class="tmpl.badgeClass"
+                                            x-text="tmpl.category"></span>
+                                        <div class="w-7 h-7 rounded-lg bg-slate-100 group-hover:bg-indigo-600 group-hover:text-white text-slate-400 flex items-center justify-center transition-colors">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                                             </svg>
                                         </div>
-                                        <h4 class="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors" x-text="tmpl.name"></h4>
-                                        <p class="text-xs text-slate-500 mt-1 leading-relaxed" x-text="tmpl.description"></p>
                                     </div>
-
-                                    <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                                        <span class="flex items-center gap-1">
-                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <circle cx="12" cy="12" r="10" stroke-width="2" />
-                                                <path stroke-linecap="round" stroke-width="2" d="M12 6v6l4 2" />
-                                            </svg>
-                                            <span x-text="tmpl.period"></span>
-                                        </span>
-                                        <span class="font-semibold text-indigo-600 group-hover:underline">Pilih &rarr;</span>
-                                    </div>
+                                    <h4 class="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors" x-text="tmpl.name"></h4>
+                                    <p class="text-xs text-slate-500 mt-1.5 leading-relaxed line-clamp-3" x-text="tmpl.description"></p>
                                 </div>
-                            </template>
-                        </div>
+
+                                <div class="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                                    <span class="flex items-center gap-1.5 font-medium text-slate-600">
+                                        <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <circle cx="12" cy="12" r="10" stroke-width="2" />
+                                            <path stroke-linecap="round" stroke-width="2" d="M12 6v6l4 2" />
+                                        </svg>
+                                        <span x-text="tmpl.period"></span>
+                                    </span>
+                                    <span class="font-bold text-indigo-600 group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                                        <span>Gunakan</span>
+                                        <span>&rarr;</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </template>
                     </div>
                 </div>
-            </template>
-
-            {{-- STEP 2: Form Kustomisasi Isi Template --}}
-            <template x-if="templateStep === 2">
-                <div>
-                    {{-- Modal Header --}}
-                    <div class="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <button
-                                type="button"
-                                @click="templateStep = 1"
-                                class="p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-                                title="Kembali ke Daftar Template">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                                </svg>
-                            </button>
-                            <div>
-                                <h3 class="text-base font-bold text-slate-800 leading-tight" x-text="'Kustomisasi: ' + formTemplate.name"></h3>
-                                <p class="text-xs text-slate-500 mt-0.5">Tinjau dan sesuaikan isi field template di bawah ini.</p>
-                            </div>
-                        </div>
-
-                        <button
-                            type="button"
-                            @click="closeTemplateModal()"
-                            class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-colors">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    {{-- Modal Body: Form Fields --}}
-                    <div class="p-6 max-h-[65vh] overflow-y-auto space-y-4">
-                        {{-- Field 1: Nama Proyek --}}
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                                Nama / Tipe Proyek <span class="text-rose-500">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                x-model="formTemplate.name"
-                                placeholder="Misal: Pengembangan Website Perusahaan, Proyek Gedung..."
-                                class="w-full text-sm font-medium border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none bg-white text-slate-800">
-                        </div>
-
-                        {{-- Field 2: Tujuan Projek --}}
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                                Tujuan Projek <span class="text-rose-500">*</span>
-                            </label>
-                            <textarea
-                                x-model="formTemplate.goal"
-                                rows="3"
-                                placeholder="Jelaskan apa yang ingin dicapai melalui proyek ini..."
-                                class="w-full text-sm border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none resize-y text-slate-800"></textarea>
-                        </div>
-
-                        {{-- Field 3: Periode & Kalender Tanggal Proyek --}}
-                        <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
-                            <div class="flex items-center justify-between">
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                                    Periode / Jadwal Proyek (Kalender)
-                                </label>
-                                <span class="text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100/60 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                    <svg class="w-3 h-3 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    Pilih Rentang Tanggal
-                                </span>
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">
-                                        Tanggal Mulai Proyek
-                                    </label>
-                                    <input
-                                        type="date"
-                                        x-model="formTemplate.start_date"
-                                        @change="onDateChange()"
-                                        class="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-white text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">
-                                        Target Selesai / Deadline
-                                    </label>
-                                    <input
-                                        type="date"
-                                        x-model="formTemplate.end_date"
-                                        @change="onDateChange()"
-                                        class="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-white text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none shadow-sm">
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">
-                                    Keterangan Periode / Estimasi Durasi
-                                </label>
-                                <input
-                                    type="text"
-                                    x-model="formTemplate.period"
-                                    placeholder="Otomatis terisi dari kalender atau ketik manual (misal: 3 Bulan)"
-                                    class="w-full text-sm border border-slate-200 rounded-xl px-3.5 py-2 bg-white text-slate-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
-                            </div>
-                        </div>
-
-                        {{-- Field: Fase & Tahapan Proyek --}}
-                        <div>
-                            <div class="flex items-center justify-between mb-1.5">
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide">
-                                    Fase / Tahapan Proyek (Milestones)
-                                </label>
-                                <span class="text-[10px] text-indigo-600 font-semibold bg-indigo-50 px-2 py-0.5 rounded-md">Penting untuk Timeline</span>
-                            </div>
-                            <textarea
-                                x-model="formTemplate.phases"
-                                rows="3"
-                                placeholder="Contoh:&#10;Fase 1 (Bulan 1): Riset & Perancangan Desain UI/UX&#10;Fase 2 (Bulan 2): Pengembangan Fitur & Integrasi API&#10;Fase 3 (Bulan 3): QA Testing, UAT, & Peluncuran"
-                                class="w-full text-sm border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none resize-y text-slate-800"></textarea>
-                            <p class="text-[11px] text-slate-400 mt-1">💡 Catat tahapan kerja utama per fase agar timeline proyek mudah dipetakan.</p>
-                        </div>
-
-                        {{-- Field 4: Output Akhir Projek --}}
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                                Output Akhir Projek (Deliverables)
-                            </label>
-                            <textarea
-                                x-model="formTemplate.deliverables"
-                                rows="3"
-                                placeholder="Sebutkan hasil akhir nyata (contoh: Source code web, Dokumen SRS, Bangunan fisik BAST...)"
-                                class="w-full text-sm border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none resize-y text-slate-800"></textarea>
-                        </div>
-
-                        {{-- Field 5: Ruang Lingkup --}}
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                                Ruang Lingkup &amp; Detail Pekerjaan
-                            </label>
-                            <textarea
-                                x-model="formTemplate.scope"
-                                rows="3"
-                                placeholder="Rincian modul, batasan pekerjaan, dan batasan teknis..."
-                                class="w-full text-sm border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none resize-y text-slate-800"></textarea>
-                        </div>
-
-                        {{-- Field 6: Tim / Role yang Terlibat (Opsional) --}}
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                                Tim / Role yang Terlibat <span class="text-slate-400 font-normal normal-case">(Opsional)</span>
-                            </label>
-                            <input
-                                type="text"
-                                x-model="formTemplate.roles"
-                                placeholder="Contoh: Project Manager, UI/UX Designer, Frontend Developer, Backend Developer, QA"
-                                class="w-full text-sm border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none text-slate-800">
-                        </div>
-
-                        {{-- Field 7: Estimasi Anggaran & Kebutuhan Khusus (Opsional) --}}
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
-                                Estimasi Anggaran &amp; Kebutuhan Khusus <span class="text-slate-400 font-normal normal-case">(Opsional)</span>
-                            </label>
-                            <textarea
-                                x-model="formTemplate.budget"
-                                rows="2"
-                                placeholder="Contoh: Estimasi budget Rp 50.000.000, kebutuhan akun iklan Meta/Google, lisensi software..."
-                                class="w-full text-sm border border-slate-200 rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:outline-none resize-y text-slate-800"></textarea>
-                        </div>
-                    </div>
-
-                    {{-- Modal Footer --}}
-                    <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-                        <button
-                            type="button"
-                            @click="templateStep = 1"
-                            class="px-4 py-2 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
-                            &larr; Kembali
-                        </button>
-
-                        <div class="flex items-center gap-2">
-                            <button
-                                type="button"
-                                @click="closeTemplateModal()"
-                                class="px-4 py-2 text-xs font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
-                                Batal
-                            </button>
-                            <button
-                                type="button"
-                                @click="applyTemplate()"
-                                class="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md shadow-indigo-500/20 flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                </svg>
-                                <span>Terapkan Template Ini</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </template>
+            </div>
         </div>
     </div>
 
@@ -851,10 +655,10 @@
                     period: '3 Bulan',
                     description: 'Pengembangan sistem web responsif, aplikasi e-commerce, portal perusahaan, atau platform SaaS terintegrasi.',
                     goal: 'Membangun aplikasi web dan mobile yang responsif, aman, skalabel, dengan arsitektur modern dan antarmuka intuitif untuk meningkatkan efisiensi operasional dan kepuasan pengguna.',
-                    phases: 'Fase 1 (Bulan 1): Perancangan database, arsitektur sistem, dan desain antarmuka pengguna (UI/UX Figma)\nFase 2 (Bulan 2): Pengembangan frontend, backend API, integrasi payment gateway, dan autentikasi pengguna\nFase 3 (Bulan 3): QA testing, security & performance audit, perbaikan bug, dan deployment cloud production',
+                    phases: '• Fase Persiapan & Perancangan:\n  - Wawancara kebutuhan pengguna & penyusunan dokumen SRS (PIC: Dzakwan Pratama)\n  - Perancangan arsitektur database & sistem (PIC: Budi Santoso)\n  - Pembuatan User Flow & Wireframe (PIC: Sarah Amanda)\n  - Desain High-Fidelity UI & Design System Figma (PIC: Sarah Amanda)\n\n• Fase Pengembangan & Integrasi:\n  - Setup repository & environment server cloud (PIC: Kevin Wijaya)\n  - Pembuatan REST API, database & autentikasi pengguna (PIC: Budi Santoso)\n  - Slicing antarmuka responsif & integrasi frontend (PIC: Rizky Ramadhan)\n  - Integrasi Payment Gateway & notifikasi sistem (PIC: Budi Santoso)\n\n• Fase Pengujian & Peluncuran:\n  - QA testing fungsional & audit keamanan (PIC: Dewi Lestari)\n  - Pelaksanaan UAT bersama klien & perbaikan bug (PIC: Dzakwan Pratama)\n  - Deployment ke server production & serah terima manual (PIC: Kevin Wijaya)',
                     deliverables: '1. Source code aplikasi siap produksi di repository GitHub\n2. Dokumen Software Requirements Specification (SRS) & Dokumentasi API\n3. Desain UI/UX High-Fidelity Figma & Design System\n4. Panduan Penggunaan (User Manual) & Panduan Setup Deployment',
                     scope: 'Perancangan database & arsitektur sistem, desain antarmuka pengguna (UI/UX), pengembangan frontend & backend, integrasi API & payment gateway, QA testing, dan deployment cloud.',
-                    roles: 'Project Manager, UI/UX Designer, Frontend Developer, Backend Developer, QA Engineer',
+                    roles: '',
                     budget: 'Sesuai kesepakatan kontrak, penyediaan server VPS/Cloud dan domain aktif.'
                 },
                 {
@@ -866,10 +670,10 @@
                     period: '6 Bulan',
                     description: 'Pembangunan gedung, renovasi kantor, instalasi fasilitas fisik, dan pekerjaan sipil terstandarisasi.',
                     goal: 'Melaksanakan pembangunan fisik dan renovasi fasilitas gedung sesuai standar spesifikasi teknis arsitektur, RAB yang telah disetujui, dan target keselamatan kerja (K3).',
-                    phases: 'Fase 1 (Bulan 1-2): Pembersihan lahan, pekerjaan tanah, dan struktur fondasi bawah\nFase 2 (Bulan 3-4): Pekerjaan struktur atas, arsitektur dinding, dan instalasi Mekanikal Elektrikal Plumbing (MEP)\nFase 3 (Bulan 5-6): Finishing interior/eksterior, uji fungsi kelayakan fasilitas, audit kepatuhan K3, dan serah terima BAST',
+                    phases: '• Fase Persiapan & Struktur Bawah:\n  - Pembersihan lahan, pengukuran elevasi & perizinan PBG (PIC: Ir. Hendra Setiawan)\n  - Pengujian sondir tanah & pekerjaan galian fondasi (PIC: Andi Saputra)\n  - Pengecoran fondasi tiang & sloof struktur bawah (PIC: Andi Saputra)\n  - Inspeksi keselamatan kerja (K3) & kepatuhan mutu awal (PIC: Rian Firmansyah)\n\n• Fase Pekerjaan Struktur Atas & MEP:\n  - Pemasangan kolom beton, balok, dan plat lantai (PIC: Andi Saputra)\n  - Pemasangan dinding bata & plesteran acian (PIC: Pak Slamet)\n  - Instalasi pipa air & kelistrikan MEP gedung (PIC: Agus Wahyudi)\n  - Pembuatan draft gambar kerja As-Built Drawing (PIC: Maya Anggraini)\n\n• Fase Finishing & Serah Terima:\n  - Pemasangan lantai keramik, plafon & pengecatan (PIC: Pak Slamet)\n  - Uji fungsi beban listrik, tekanan air & sanitasi (PIC: Agus Wahyudi)\n  - Audit akhir keselamatan K3 & uji kelayakan gedung (PIC: Rian Firmansyah)\n  - Penyusunan BAST & serah terima fisik bangunan (PIC: Ir. Hendra Setiawan)',
                     deliverables: '1. Bangunan fisik selesai 100% siap operasional\n2. Dokumen As-Built Drawing & Dokumen Teknis\n3. Berita Acara Serah Terima (BAST) Pekerjaan\n4. Laporan Kepatuhan Mutu & Keselamatan Kerja (K3)',
                     scope: 'Pekerjaan persiapan & pembersihan lahan, pekerjaan struktur bawah & atas, pekerjaan arsitektur & finishing, instalasi Mekanikal Elektrikal Plumbing (MEP), uji fungsi, dan serah terima.',
-                    roles: 'Site Manager, Pelaksana Lapangan, Ahli K3 Konstruksi, Drafter Arsitek, Mandor & Tukang',
+                    roles: '',
                     budget: 'Sesuai Rencana Anggaran Biaya (RAB) yang telah disepakati dan jadwal termin pencairan.'
                 },
                 {
@@ -881,10 +685,10 @@
                     period: '1 Bulan',
                     description: 'Peluncuran produk baru, kampanye multi-channel media sosial, akuisisi leads, dan periklanan digital.',
                     goal: 'Meluncurkan kampanye pemasaran digital multi-channel untuk meningkatkan brand awareness sebesar 40% dan mengakuisisi minimal 500 prospek/leads berkualitas.',
-                    phases: 'Fase 1 (Minggu 1): Riset target audiens, analisis benchmark kompetitor, dan formulasi materi kampanye promosi\nFase 2 (Minggu 2-3): Pembuatan materi konten promosi (copywriting & visual/video ads), optimasi landing page, dan setup akun Meta/Google Ads\nFase 3 (Minggu 4): Peluncuran iklan digital, monitoring performa harian, A/B testing materi, dan penyusunan laporan analitik performa',
+                    phases: '• Fase Riset & Perencanaan Strategi:\n  - Riset persona audiens & analisis kompetitor (PIC: Nadia Putri)\n  - Perumusan key message & konsep angle promosi (PIC: Dimas Wicaksono)\n  - Alokasi anggaran iklan per channel & media plan (PIC: Fajar Nugraha)\n\n• Fase Produksi Konten & Setup Iklan:\n  - Penulisan copy iklan feed, story & search ads (PIC: Dimas Wicaksono)\n  - Desain aset banner visual & carousel grafis (PIC: Tiara Larasati)\n  - Produksi & editing video reels / short ads (PIC: Bagus Kurnia)\n  - Setup landing page konversi & pixel tracking (PIC: Nadia Putri)\n  - Setup kampanye & targeting Meta & Google Ads (PIC: Fajar Nugraha)\n\n• Fase Peluncuran & Optimasi Kampanye:\n  - Peluncuran kampanye iklan serentak multi-channel (PIC: Fajar Nugraha)\n  - Monitoring performa harian & A/B testing materi iklan (PIC: Nadia Putri)\n  - Optimasi bid & scale up ad set berkinerja terbaik (PIC: Fajar Nugraha)\n  - Penyusunan laporan analitik performa akhir & ROAS (PIC: Nadia Putri)',
                     deliverables: '1. Paket aset konten promosi visual & video siap tayang\n2. Landing Page konversi dengan integrasi tracking analitik\n3. Akun iklan aktif (Meta Ads & Google Ads) dengan materi kampanye\n4. Laporan performa mingguan dan analitik ROAS/CPA',
                     scope: 'Riset target audiens & benchmark kompetitor, pembuatan materi konten promosi (copywriting & visual), optimasi landing page, setup kampanye periklanan digital, dan evaluasi hasil harian.',
-                    roles: 'Digital Marketer, Copywriter, Graphic Designer, Video Editor, Media Buyer',
+                    roles: '',
                     budget: 'Alokasi ad spend Meta Ads & Google Ads disiapkan oleh klien, akses akun Business Manager.'
                 },
                 {
@@ -896,10 +700,10 @@
                     period: '6 Minggu',
                     description: 'Perencanaan dan eksekusi seminar hybrid, konferensi bisnis, workshop, atau pameran eksibisi.',
                     goal: 'Mengorganisir dan mengeksekusi seminar hybrid berkapasitas 500+ peserta dengan tingkat kepuasan peserta minimal 90% secara tepat waktu dan sesuai anggaran.',
-                    phases: 'Fase 1 (Minggu 1-2): Booking venue, perizinan, kurasi pembicara, pencarian sponsor, dan publikasi sistem registrasi tiket\nFase 2 (Minggu 3-4): Pengadaan konsumsi & souvenir, penataan panggung/AV, gladi resik teknis, dan briefing panitia\nFase 3 (Minggu 5-6): Manajemen operasional hari-H, dokumentasi foto/video, serta evaluasi kepuasan peserta dan pelaporan sponsor',
+                    phases: '• Fase Perencanaan & Pra-Acara:\n  - Pembentukan panitia & penyusunan rundown acara (PIC: Dzakwan Pratama)\n  - Pemilihan & booking venue acara serta perizinan (PIC: Radit Pratama)\n  - Kurasi & konfirmasi pembicara tamu (PIC: Annisa Maharani)\n  - Pembuatan proposal sponsorship & kontak mitra (PIC: Farhan Maulana)\n  - Setup landing page registrasi & tiket online (PIC: Sinta Bella)\n\n• Fase Promosi & Persiapan Teknis:\n  - Publikasi media sosial & kampanye tiket peserta (PIC: Sinta Bella)\n  - Pengadaan konsumsi, suvenir & perlengkapan acara (PIC: Radit Pratama)\n  - Setup panggung, tata suara, lighting & live streaming (PIC: Eko Prasetyo)\n  - Briefing seluruh panitia & gladi resik teknis (PIC: Annisa Maharani)\n\n• Fase Eksekusi Hari-H & Evaluasi:\n  - Manajemen registrasi tiket & alur peserta hari-H (PIC: Seluruh Tim)\n  - Pengawalan rundown panggung & pembicara (PIC: Annisa Maharani)\n  - Dokumentasi foto & rekaman video profesional (PIC: Gilang Ramadhan)\n  - Rekap kuesioner kepuasan & penyusunan LPJ sponsor (PIC: Dzakwan Pratama)',
                     deliverables: '1. Pelaksanaan acara seminar hybrid yang sukses dan tertib\n2. Dokumentasi foto & video profesional pasca acara\n3. Laporan evaluasi kepuasan peserta & feedback sponsor\n4. Laporan pertanggungjawaban keuangan & sponsorship',
                     scope: 'Booking venue & pengurusan izin, kurasi pembicara & sponsorship, publikasi & sistem registrasi tiket, penyediaan konsumsi & souvenir, gladi resik, dan manajemen operasional hari-H.',
-                    roles: 'Ketua Panitia, Divisi Acara, Divisi Logistik/Venue, Divisi Sponsorship, Divisi Publikasi & Dokumentasi',
+                    roles: '',
                     budget: 'Target sponsorship dan penerimaan registrasi tiket seminar.'
                 },
                 {
@@ -911,10 +715,10 @@
                     period: '4 Minggu',
                     description: 'User research, wireframing, high-fidelity design system Figma, dan usability testing produk.',
                     goal: 'Melakukan riset pengalaman pengguna dan merancang ulang antarmuka aplikasi guna menurunkan bounce rate dan mempermudah onboarding pengguna baru.',
-                    phases: 'Fase 1 (Minggu 1): Wawancara pengguna target, audit heuristik UX aplikasi saat ini, pembuatan User Flow, dan Low-Fidelity Wireframes\nFase 2 (Minggu 2-3): Perancangan High-Fidelity UI Mockups di Figma, Design System komponen, dan pembuatan Interactive Prototype\nFase 3 (Minggu 4): Usability testing dengan 10 pengguna target, iterasi perbaikan desain, dan handoff asset ke tim pengembang',
+                    phases: '• Fase Riset Pengguna & Wireframing:\n  - Wawancara pengguna target & audit UX aplikasi saat ini (PIC: Gita Savitri)\n  - Pembuatan User Persona & Journey Mapping (PIC: Sarah Amanda)\n  - Perancangan arsitektur informasi & Low-Fi Wireframe (PIC: Sarah Amanda)\n  - Review konsep alur wireframe bersama PM (PIC: Dzakwan Pratama)\n\n• Fase UI Design & Interactive Prototyping:\n  - Pembuatan Design System token & komponen UI (PIC: Sarah Amanda)\n  - Perancangan High-Fidelity UI mockups seluruh flow (PIC: Sarah Amanda)\n  - Pembuatan Interactive Prototype di Figma (PIC: Sarah Amanda)\n  - Review kelayakan teknis bersama tech lead (PIC: Kevin Wijaya)\n\n• Fase Usability Testing & Design Handoff:\n  - Pelaksanaan sesi Usability Testing dengan 10 user (PIC: Gita Savitri)\n  - Analisis feedback UX & iterasi perbaikan desain (PIC: Sarah Amanda)\n  - Finalisasi aset ekspor & sesi Design Handoff (PIC: Kevin Wijaya)',
                     deliverables: '1. File Master Figma Design System & Komponen Lengkap\n2. High-Fidelity Interactive Prototype yang siap diuji\n3. Laporan Hasil Usability Testing & Rekomendasi UX\n4. Asset export & Design Handoff untuk developer',
                     scope: 'Wawancara pengguna & audit heuristik UX, perancangan User Flow & Wireframe, High-Fidelity UI Mockups, pembuatan Prototype interaktif, dan pengujian dengan 10 pengguna target.',
-                    roles: 'Lead UI/UX Designer, UX Researcher, Product Manager',
+                    roles: '',
                     budget: 'Akses Figma Professional dan tools testing pengguna.'
                 },
                 {
@@ -924,7 +728,7 @@
                     start_date: '',
                     end_date: '',
                     period: 'Sesuai Kebutuhan',
-                    description: 'Mulai dari formulir kosong dengan struktur brief standar untuk kebutuhan proyek spesifik Anda.',
+                    description: 'Mulai dari formulir kosong dengan struktur fase dan daftar tugas standar untuk kebutuhan proyek spesifik Anda.',
                     goal: '',
                     phases: '',
                     deliverables: '',
@@ -947,7 +751,7 @@
                 if (this.formTemplate.start_date && this.formTemplate.end_date) {
                     const start = new Date(this.formTemplate.start_date);
                     const end = new Date(this.formTemplate.end_date);
-                    
+
                     const formatIndo = (d) => {
                         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
                         return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
@@ -975,20 +779,10 @@
                 }
             },
 
-            selectTemplatePreset(tmpl) {
-                this.formTemplate = {
-                    name: tmpl.name === 'Template Kustom (Blank Form)' ? 'Proyek Baru' : tmpl.name,
-                    goal: tmpl.goal || '',
-                    start_date: tmpl.start_date || '',
-                    end_date: tmpl.end_date || '',
-                    period: tmpl.period === 'Sesuai Kebutuhan' ? '' : (tmpl.period || ''),
-                    phases: tmpl.phases || '',
-                    deliverables: tmpl.deliverables || '',
-                    scope: tmpl.scope || '',
-                    roles: tmpl.roles || '',
-                    budget: tmpl.budget || '',
-                };
-                this.templateStep = 2;
+            selectTemplatePreset(tmpl, idx) {
+                const workspaceId = '{{ $workspace->id ?? '' }}';
+                const baseUrl = workspaceId ? `/workspace/${workspaceId}/brief/template` : `{{ route('brief.template') }}`;
+                window.location.href = `${baseUrl}?preset=${idx}`;
             },
 
             editCurrentTemplate() {

@@ -46,6 +46,16 @@ class BriefController extends Controller
         return view('upload-brief', compact('workspace'));
     }
 
+    public function workspaceTemplate(Workspace $workspace)
+    {
+        return view('template-brief', compact('workspace'));
+    }
+
+    public function template()
+    {
+        return view('template-brief');
+    }
+
     public function upload(Request $request)
     {
         $isTemplate = $request->boolean('is_template');
@@ -58,10 +68,13 @@ class BriefController extends Controller
                 'template_end_date' => ['nullable', 'string', 'max:255'],
                 'template_period' => ['nullable', 'string', 'max:255'],
                 'template_phases' => ['nullable', 'string'],
+                'template_tasks' => ['nullable', 'string'],
                 'template_deliverables' => ['nullable', 'string'],
                 'template_scope' => ['nullable', 'string'],
                 'template_roles' => ['nullable', 'string'],
                 'template_budget' => ['nullable', 'string'],
+                'documents' => ['nullable', 'array'],
+                'documents.*' => ['nullable', 'file'],
             ]);
         } else {
             $request->validate([
@@ -85,6 +98,7 @@ class BriefController extends Controller
                 $templateEndDate = $request->input('template_end_date', '');
                 $templatePeriod = $request->input('template_period', '');
                 $templatePhases = $request->input('template_phases', '');
+                $templateTasks = $request->input('template_tasks', '');
                 $templateDeliverables = $request->input('template_deliverables', '');
                 $templateScope = $request->input('template_scope', '');
                 $templateRoles = $request->input('template_roles', '');
@@ -103,8 +117,9 @@ class BriefController extends Controller
                     . "TUJUAN UTAMA PROYEK:\n{$templateGoal}\n\n"
                     . "PERIODE / DEADLINE PROYEK:\n{$periodInfo}\n\n"
                     . (!empty($templatePhases) ? "TAHAPAN / FASE PROYEK:\n{$templatePhases}\n\n" : "")
+                    . (!empty($templateTasks) ? "RINCIAN TUGAS PER FASE:\n{$templateTasks}\n\n" : "")
                     . "OUTPUT AKHIR / DELIVERABLES:\n{$templateDeliverables}\n\n"
-                    . "RUANG LINGKUP & DETAIL PEKERJAAN:\n{$templateScope}\n\n"
+                    . (!empty($templateScope) ? "RUANG LINGKUP & DETAIL PEKERJAAN:\n{$templateScope}\n\n" : "")
                     . (!empty($templateRoles) ? "ROLE / ANGGOTA TIM TERLIBAT:\n{$templateRoles}\n\n" : "")
                     . (!empty($templateBudget) ? "CATATAN ANGGARAN & KEBUTUHAN KHUSUS:\n{$templateBudget}\n\n" : "")
                     . "========================================\n";
@@ -160,6 +175,48 @@ class BriefController extends Controller
                         'content' => $textContent,
                     ]
                 ];
+
+                // Jika pengguna juga mengunggah dokumen fisik pendukung (PDF, DOCX, TXT)
+                if ($request->hasFile('documents')) {
+                    foreach ($request->file('documents') as $file) {
+                        $docOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                        $docExtension = $file->getClientOriginalExtension();
+
+                        $docNewName = $docOriginalName;
+                        $docCounter = 1;
+                        $docQuery = File::query();
+                        if ($workspaceId) {
+                            $docQuery->where('workspace_id', $workspaceId);
+                        } else {
+                            $docQuery->whereNull('workspace_id')->where('company_id', $activeCompanyId);
+                        }
+                        while ((clone $docQuery)->where('file_name', $docNewName . '.' . $docExtension)->exists()) {
+                            $docNewName = $docOriginalName . '(' . $docCounter . ')';
+                            $docCounter++;
+                        }
+                        $docFinalName = $docNewName . '.' . $docExtension;
+                        $docPath = $file->storeAs('files', $docFinalName, 'public');
+
+                        $docModel = File::create([
+                            'workspace_id' => $workspaceId ?: null,
+                            'company_id' => $activeCompanyId ?: null,
+                            'uploaded_by' => $uploadedBy,
+                            'file_name' => $docFinalName,
+                            'file_path' => $docPath,
+                            'file_size' => $file->getSize(),
+                            'file_type' => $docExtension,
+                            'file_url' => asset('storage/' . $docPath),
+                            'is_private' => false,
+                            'uploaded_at' => now(),
+                        ]);
+
+                        $uploadedFilesMapping[$file->getClientOriginalName()] = $docModel->id;
+                    }
+
+                    // Parse dokumen pendukung dan gabungkan ke array $documents
+                    $parsedUploadedDocs = $this->documentParser->parse($request->file('documents'));
+                    $documents = array_merge($documents, $parsedUploadedDocs);
+                }
             } else {
                 // 1. Simpan file ke Storage dan Database (tabel files)
                 foreach ($request->file('documents') as $file) {
