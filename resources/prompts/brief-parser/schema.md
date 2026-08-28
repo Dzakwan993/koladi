@@ -16,7 +16,8 @@
       "title": "Task title (string)",  
       "description": "Short task description (string)",  
       "priority": "low, medium, high, urgent, or null if no urgency evidence exists (string/null)",  
-      "deadline": "Deadline, keeping relative dates exactly as written, or null if not found (string/null)"  
+      "deadline": "Deadline, keeping relative dates exactly as written, or null if not found (string/null)",
+      "phase": "MANDATORY: 'Klarifikasi' for clarification/missing info tasks, otherwise null (string/null)"
     }  
   ],  
   "missing_information": ["Array of genuinely missing and important information categories/items, or empty array (array of strings)"],  

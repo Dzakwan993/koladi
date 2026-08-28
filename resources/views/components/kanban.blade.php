@@ -13,21 +13,27 @@
 
     <style>
         @keyframes bounceWave {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translateY(0);
             }
+
             50% {
                 transform: translateY(-8px);
             }
         }
+
         .bounce-dot-1 {
             animation: bounceWave 0.6s infinite ease-in-out;
             animation-delay: 0s;
         }
+
         .bounce-dot-2 {
             animation: bounceWave 0.6s infinite ease-in-out;
             animation-delay: 0.15s;
         }
+
         .bounce-dot-3 {
             animation: bounceWave 0.6s infinite ease-in-out;
             animation-delay: 0.3s;
@@ -47,7 +53,8 @@
                         <div class="flex items-center gap-2">
                             <h2 class="font-semibold text-gray-700 text-xs xs:text-sm sm:text-base"
                                 x-text="column.name"></h2>
-                            {{-- <span class="bg-blue-500 text-white text-xs rounded-full px-2 py-1" x-text="column.tasks_count || 0"></span> --}}
+                            {{-- <span class="bg-blue-500 text-white text-xs rounded-full px-2 py-1"
+                                x-text="column.tasks_count || 0"></span> --}}
                         </div>
 
                         {{-- Menu hanya untuk kolom custom --}}
@@ -82,16 +89,17 @@
                             {{-- TASK CARD --}}
                             <template x-for="task in getFilteredTasksByColumn(column.id)" :key="task.id">
                                 <div @click="openDetail(task.id)" :data-task-id="task.id"
-                                    class="task-card bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border border-gray-200 transition-all duration-200 text-xs xs:text-sm select-none"
+                                    class="task-card bg-white p-2 xs:p-3 rounded shadow hover:shadow-md cursor-move border transition-all duration-200 text-xs xs:text-sm select-none"
                                     :class="{
+                                        'border-2 border-red-500 ring-2 ring-red-200 bg-red-50/20': task.phase === 'Klarifikasi' || task.phase === 'Clarification',
+                                        'border-gray-200': !(task.phase === 'Klarifikasi' || task.phase === 'Clarification'),
                                         'task-card-secret border-l-4 border-purple-500 bg-purple-50': task.is_secret,
-                                        'border-l-4 border-red-500': task.is_overdue,
-                                        'border-l-4 border-red-600': task.edf_urgency_level === 'overdue',
-                                        'border-l-4 border-orange-500': task.edf_urgency_level === 'critical',
-                                        'border-l-4 border-yellow-400': task.edf_urgency_level === 'warning',
-                                        'border-2 border-indigo-500 ring-4 ring-indigo-100 animate-pulse': newCreatedTaskIds.includes(task.id)
-                                    }"
-                                    draggable="true" @dragstart="onDragStart($event, task.id)"
+                                        'border-l-4 border-red-500': task.is_overdue && !(task.phase === 'Klarifikasi' || task.phase === 'Clarification'),
+                                        'border-l-4 border-red-600': task.edf_urgency_level === 'overdue' && !(task.phase === 'Klarifikasi' || task.phase === 'Clarification'),
+                                        'border-l-4 border-orange-500': task.edf_urgency_level === 'critical' && !(task.phase === 'Klarifikasi' || task.phase === 'Clarification'),
+                                        'border-l-4 border-yellow-400': task.edf_urgency_level === 'warning' && !(task.phase === 'Klarifikasi' || task.phase === 'Clarification'),
+                                        'border-2 border-indigo-500 ring-4 ring-indigo-100 animate-pulse': newCreatedTaskIds.includes(task.id) && !(task.phase === 'Klarifikasi' || task.phase === 'Clarification')
+                                    }" draggable="true" @dragstart="onDragStart($event, task.id)"
                                     @dragend="onDragEnd($event)">
 
                                     {{-- HEADER: Phase + Badges --}}
@@ -99,10 +107,16 @@
 
                                         {{-- PHASE (baru, di paling atas) --}}
                                         <div class="flex flex-wrap gap-1 flex-1">
-                                            <span x-show="task.phase"
-                                                class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
-                                                x-text="task.phase">
-                                            </span>
+                                            <template x-if="task.phase === 'Klarifikasi' || task.phase === 'Clarification'">
+                                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 shadow-sm">
+                                                    ⏱️ 🔴 Klarifikasi
+                                                </span>
+                                            </template>
+                                            <template x-if="task.phase && task.phase !== 'Klarifikasi' && task.phase !== 'Clarification'">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                                                    x-text="task.phase">
+                                                </span>
+                                            </template>
                                         </div>
 
                                         {{-- Badge Rahasia --}}
@@ -118,8 +132,7 @@
                                         </div>
                                         {{-- EDF Priority Badge --}}
                                         <div x-show="task.edf_priority" class="mt-1">
-                                            <span
-                                                :class="{
+                                            <span :class="{
                                                     'bg-red-100 text-red-700 border border-red-300': task
                                                         .edf_urgency_level === 'overdue',
                                                     'bg-orange-100 text-orange-700 border border-orange-300': task
@@ -135,8 +148,7 @@
                                                         d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
                                                         clip-rule="evenodd" />
                                                 </svg>
-                                                <span
-                                                    x-text="
+                                                <span x-text="
                                                 task.edf_urgency_level === 'overdue'  ? '⚠ Overdue' :
                                                 task.edf_urgency_level === 'critical' ? '🔴 Critical' :
                                                 task.edf_urgency_level === 'warning'  ? '🟡 Warning' : 'EDF'
@@ -186,8 +198,7 @@
                                     {{-- PARTICIPANTS (paling bawah) --}}
                                     <div x-show="task.members?.length > 0" class="mt-1">
                                         <div class="flex items-center gap-1">
-                                            <template x-for="member in task.members.slice(0, 3)"
-                                                :key="member.id">
+                                            <template x-for="member in task.members.slice(0, 3)" :key="member.id">
                                                 <img :src="member.avatar"
                                                     class="w-5 h-5 rounded-full border border-gray-300"
                                                     :alt="member.name" :title="member.name">

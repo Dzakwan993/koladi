@@ -57,6 +57,7 @@ class GeminiProvider implements AIProvider
                     'api_key_index'   => $result['api_key_index'],
                 ]);
 
+                Log::info('Gemini Raw Response Text: ' . $result['text']);
                 return $result['text'];
 
             } catch (RuntimeException $e) {

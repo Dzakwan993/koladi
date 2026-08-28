@@ -170,6 +170,7 @@ class BriefController extends Controller
             'tasks.*.priority' => ['required', 'in:low,medium,high,urgent'],
             'tasks.*.deadline' => ['nullable', 'string', 'max:255'],
             'tasks.*.assignee_id' => ['nullable', 'exists:users,id'],
+            'tasks.*.phase' => ['nullable', 'string', 'max:100'],
             'clarification_questions' => ['nullable', 'array'],
             'decisions' => ['nullable', 'array'],
             'decisions.*.title' => ['required', 'string', 'max:255'],
@@ -249,7 +250,11 @@ class BriefController extends Controller
                         'is_validated' => false,
                     ]);
 
-                    $this->notificationService->notifyDecisionCreated($decision);
+                    try {
+                        $this->notificationService->notifyDecisionCreated($decision);
+                    } catch (\Exception $e) {
+                        Log::warning('Notification dispatch skipped (offline/broadcast unavailable): ' . $e->getMessage());
+                    }
                 }
             }
 
@@ -291,6 +296,17 @@ class BriefController extends Controller
                     // Parse deadline string to a valid ISO date for database compatibility
                     $parsedDate = $this->parseDateToIso($taskData['deadline'] ?? null);
 
+                    // Determine phase
+                    $taskPhase = !empty($taskData['phase']) ? $taskData['phase'] : null;
+                    if ($taskPhase) {
+                        Log::info("[PHASE TRACKER] Task '{$taskData['title']}' memiliki phase DARI GEMINI / FRONTEND: '{$taskPhase}'");
+                    } elseif (!empty($taskData['title']) && (str_starts_with($taskData['title'], 'Klarifikasi') || str_starts_with($taskData['title'], 'Info Belum Ada'))) {
+                        $taskPhase = 'Klarifikasi';
+                        Log::info("[PHASE TRACKER] Task '{$taskData['title']}' disuntik phase DARI LOGIKA CONTROLLER FALLBACK: '{$taskPhase}'");
+                    } else {
+                        Log::info("[PHASE TRACKER] Task '{$taskData['title']}' tidak memiliki phase (NULL)");
+                    }
+
                     // Create task
                     $task = Task::create([
                         'id' => Str::uuid()->toString(),
@@ -302,6 +318,7 @@ class BriefController extends Controller
                         'board_column_id' => $defaultColumnId,
                         'priority' => $taskData['priority'],
                         'due_datetime' => $parsedDate ? Carbon::parse($parsedDate)->endOfDay() : null,
+                        'phase' => $taskPhase,
                     ]);
 
                     $newCreatedTaskIds[] = $task->id;
