@@ -108,6 +108,12 @@ Route::middleware(['auth', 'check.system.admin'])->prefix('admin')->name('admin.
 // Webhook Xendit (tanpa auth)
 Route::post('/xendit/callback', [SubscriptionController::class, 'xenditCallback'])->name('xendit.callback');
 
+// 🔥 Webhook Tactiq / Make.com untuk AI Brief Meeting (lama, biarkan tetap ada)
+Route::post('/api/webhooks/tactiq-meeting', [\App\Http\Controllers\Api\MeetingWebhookController::class, 'handleWebhook']);
+
+// 🔥 BARU: Webhook native Fireflies.ai
+Route::post('/api/webhooks/fireflies-meeting', [\App\Http\Controllers\Api\FirefliesWebhookController::class, 'handleWebhook']);
+
 // ============================================
 // 🔐 AUTHENTICATED ROUTES
 // ============================================
@@ -342,7 +348,7 @@ Route::middleware(['auth'])->group(function () {
         // ========================================
         // 🔥 Document AI Brief Routes
         // ========================================
-        
+
         Route::prefix('brief')->name('brief.')->group(function () {
             Route::get('/', [BriefController::class, 'index'])->name('index');
             Route::post('/upload', [BriefController::class, 'upload'])->name('upload');
