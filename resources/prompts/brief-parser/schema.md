@@ -16,8 +16,9 @@
       "title": "Task title (string)",  
       "description": "Short task description (string)",  
       "priority": "low, medium, high, urgent, or null if no urgency evidence exists (string/null)",  
-      "deadline": "Deadline, keeping relative dates exactly as written, or null if not found (string/null)",
-      "phase": "MANDATORY: 'Klarifikasi' for clarification/missing info tasks, otherwise null (string/null)"
+      "start_date": "Task start date in YYYY-MM-DD format (e.g. '2026-09-15'), or null if not found. Convert relative or human-readable dates to ISO format. (string/null)",
+      "deadline": "Task deadline in YYYY-MM-DD format (e.g. '2026-09-30'), or null if not found. Convert relative or human-readable dates to ISO format. (string/null)",
+      "phase": "Phase/milestone name if explicitly stated or inferred from document structure (e.g. 'Fase 1: Desain', 'PHASE 01 - Manufacturing'), 'Klarifikasi' for clarification/missing info tasks, or null (string/null)"
     }  
   ],  
   "missing_information": ["Array of genuinely missing and important information categories/items, or empty array (array of strings)"],  

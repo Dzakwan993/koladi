@@ -51,10 +51,11 @@
           "title": { "type": "string" },
           "description": { "type": "string" },
           "priority": { "type": "string", "nullable": true },
+          "start_date": { "type": "string", "nullable": true },
           "deadline": { "type": "string", "nullable": true },
           "phase": { "type": "string", "nullable": true }
         },
-        "required": ["title", "description", "priority", "deadline", "phase"]
+        "required": ["title", "description", "priority", "start_date", "deadline", "phase"]
       }
     },
     "missing_information": {

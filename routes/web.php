@@ -42,6 +42,12 @@ Broadcast::routes(['middleware' => ['web', 'auth']]);
 Route::get('/workspace/{workspace}/upload-brief', [BriefController::class, 'uploadbrief'])
     ->name('upload-brief');
 
+Route::get('/workspace/{workspace}/brief/template', [BriefController::class, 'workspaceTemplate'])
+    ->name('workspace.brief.template');
+
+Route::get('/brief/template', [BriefController::class, 'template'])
+    ->name('brief.template');
+
 Route::get('/workspace/{workspace}/ai-brief', [BriefController::class, 'brief'])
     ->name('ai-brief');
 
@@ -342,10 +348,12 @@ Route::middleware(['auth'])->group(function () {
         // ========================================
         // 🔥 Document AI Brief Routes
         // ========================================
-        
+
         Route::prefix('brief')->name('brief.')->group(function () {
             Route::get('/', [BriefController::class, 'index'])->name('index');
             Route::post('/upload', [BriefController::class, 'upload'])->name('upload');
+            Route::post('/template/save', [BriefController::class, 'saveTemplate'])->name('template.save');
+            Route::post('/template/clear', [BriefController::class, 'clearTemplate'])->name('template.clear');
             Route::get('/review', [BriefController::class, 'review'])->name('review');
             Route::post('/approve', [BriefController::class, 'approve'])->name('approve');
         });
@@ -623,5 +631,5 @@ Route::middleware(['auth'])->group(function () {
 
 
     Route::get('/activity-log/{workspace}', [ActivityLogController::class, 'index'])
-    ->name('activity-log');
+        ->name('activity-log');
 });

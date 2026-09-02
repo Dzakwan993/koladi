@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class BriefController extends Controller
@@ -30,12 +31,12 @@ class BriefController extends Controller
         protected NotificationService $notificationService
     ) {}
 
-    public function index() 
+    public function index()
     {
         return view('upload-brief');
     }
 
-       public function brief(Workspace $workspace)
+    public function brief(Workspace $workspace)
     {
         return view('ai-brief', compact('workspace'));
     }
@@ -44,36 +45,141 @@ class BriefController extends Controller
     {
         return view('upload-brief', compact('workspace'));
     }
-    
-    public function upload(Request $request) 
+
+    public function workspaceTemplate(Workspace $workspace)
     {
-        $request->validate([ 
-            'documents' => ['required', 'array'],
-            'documents.*' => ['required', 'file'],
+        return view('template-brief', compact('workspace'));
+    }
+
+    public function template()
+    {
+        return view('template-brief');
+    }
+
+    public function saveTemplate(Request $request)
+    {
+        $request->validate([
+            'template_name' => ['required', 'string', 'max:255'],
+            'template_goal' => ['required', 'string'],
+            'template_start_date' => ['nullable', 'string', 'max:255'],
+            'template_end_date' => ['nullable', 'string', 'max:255'],
+            'template_period' => ['nullable', 'string', 'max:255'],
+            'template_phases' => ['nullable', 'string'],
+            'template_tasks' => ['nullable', 'string'],
+            'template_phase_rows' => ['nullable', 'string'],
+            'template_deliverables' => ['nullable', 'string'],
+            'template_scope' => ['nullable', 'string'],
+            'template_roles' => ['nullable', 'string'],
+            'template_budget' => ['nullable', 'string'],
         ]);
+
+        $workspaceId = $request->input('workspace_id');
+
+        session([
+            'pending_template_brief' => [
+                'name' => $request->input('template_name', 'Template Proyek'),
+                'goal' => $request->input('template_goal', ''),
+                'start_date' => $request->input('template_start_date', ''),
+                'end_date' => $request->input('template_end_date', ''),
+                'period' => $request->input('template_period', ''),
+                'phases' => $request->input('template_phases', ''),
+                'tasks' => $request->input('template_tasks', ''),
+                'phase_rows' => $request->input('template_phase_rows', ''),
+                'deliverables' => $request->input('template_deliverables', ''),
+                'scope' => $request->input('template_scope', ''),
+                'roles' => $request->input('template_roles', ''),
+                'budget' => $request->input('template_budget', ''),
+            ]
+        ]);
+
+        if ($workspaceId) {
+            return redirect()->route('upload-brief', $workspaceId)->with('success', 'Template rencana kerja berhasil disimpan sebagai sumber konteks.');
+        }
+
+        return redirect()->route('brief.index')->with('success', 'Template rencana kerja berhasil disimpan sebagai sumber konteks.');
+    }
+
+    public function clearTemplate(Request $request)
+    {
+        session()->forget('pending_template_brief');
+        $workspaceId = $request->input('workspace_id');
+
+        if ($workspaceId) {
+            return redirect()->route('upload-brief', $workspaceId);
+        }
+
+        return redirect()->route('brief.index');
+    }
+
+    public function upload(Request $request)
+    {
+        $hasPendingTemplate = session()->has('pending_template_brief');
+        $isTemplate = $request->boolean('is_template') || $hasPendingTemplate;
+
+        if (!$isTemplate && !$request->hasFile('documents')) {
+            return redirect()->back()->with('alert', [
+                'icon' => 'warning',
+                'title' => 'Perhatian',
+                'text' => 'Silakan pilih minimal satu berkas dokumen atau gunakan Template Rencana Kerja.',
+            ]);
+        }
 
         $activeCompanyId = session('active_company_id');
         $workspaceId = $request->input('workspace_id');
 
         try {
-            // 1. Simpan file ke Storage dan Database (tabel files)
             $uploadedFilesMapping = [];
-            foreach ($request->file('documents') as $file) {
-                $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                $extension = $file->getClientOriginalExtension();
+            $documents = [];
+
+            if ($isTemplate) {
+                // 1. Format konten teks template proyek
+                $pending = session('pending_template_brief', []);
+                $templateName = $request->filled('template_name') ? $request->input('template_name') : ($pending['name'] ?? 'Template Proyek');
+                $templateGoal = $request->filled('template_goal') ? $request->input('template_goal') : ($pending['goal'] ?? '');
+                $templateStartDate = $request->filled('template_start_date') ? $request->input('template_start_date') : ($pending['start_date'] ?? '');
+                $templateEndDate = $request->filled('template_end_date') ? $request->input('template_end_date') : ($pending['end_date'] ?? '');
+                $templatePeriod = $request->filled('template_period') ? $request->input('template_period') : ($pending['period'] ?? '');
+                $templatePhases = $request->filled('template_phases') ? $request->input('template_phases') : ($pending['phases'] ?? '');
+                $templateTasks = $request->filled('template_tasks') ? $request->input('template_tasks') : ($pending['tasks'] ?? '');
+                $templateDeliverables = $request->filled('template_deliverables') ? $request->input('template_deliverables') : ($pending['deliverables'] ?? '');
+                $templateScope = $request->filled('template_scope') ? $request->input('template_scope') : ($pending['scope'] ?? '');
+                $templateRoles = $request->filled('template_roles') ? $request->input('template_roles') : ($pending['roles'] ?? '');
+                $templateBudget = $request->filled('template_budget') ? $request->input('template_budget') : ($pending['budget'] ?? '');
+
+                $periodInfo = !empty($templatePeriod) ? $templatePeriod : '';
+                if (!empty($templateStartDate) || !empty($templateEndDate)) {
+                    $dateDetails = [];
+                    if (!empty($templateStartDate)) $dateDetails[] = "Tanggal Mulai: {$templateStartDate}";
+                    if (!empty($templateEndDate)) $dateDetails[] = "Target Selesai: {$templateEndDate}";
+                    $periodInfo .= (!empty($periodInfo) ? " (" . implode(', ', $dateDetails) . ")" : implode(', ', $dateDetails));
+                }
+
+                $textContent = "===== DOKUMEN KONTEKS BRIEF PROYEK =====\n\n"
+                    . "NAMA / TIPE PROYEK: {$templateName}\n\n"
+                    . "TUJUAN UTAMA PROYEK:\n{$templateGoal}\n\n"
+                    . "PERIODE / DEADLINE PROYEK:\n{$periodInfo}\n\n"
+                    . (!empty($templatePhases) ? "TAHAPAN / FASE PROYEK:\n{$templatePhases}\n\n" : "")
+                    . (!empty($templateTasks) ? "RINCIAN TUGAS PER FASE:\n{$templateTasks}\n\n" : "")
+                    . "OUTPUT AKHIR / DELIVERABLES:\n{$templateDeliverables}\n\n"
+                    . (!empty($templateScope) ? "RUANG LINGKUP & DETAIL PEKERJAAN:\n{$templateScope}\n\n" : "")
+                    . (!empty($templateRoles) ? "ROLE / ANGGOTA TIM TERLIBAT:\n{$templateRoles}\n\n" : "")
+                    . (!empty($templateBudget) ? "CATATAN ANGGARAN & KEBUTUHAN KHUSUS:\n{$templateBudget}\n\n" : "")
+                    . "========================================\n";
+
+                $originalName = "Template Konteks - " . Str::slug($templateName, ' ');
+                $extension = 'txt';
                 $uploadedBy = auth()->id();
 
                 // Dapatkan nama unik agar tidak bentrok
                 $newName = $originalName;
                 $counter = 1;
 
-                // Setup query scope untuk mencari kecocokan nama file yang bertabrakan
                 $query = File::query();
                 if ($workspaceId) {
                     $query->where('workspace_id', $workspaceId);
                 } else {
                     $query->whereNull('workspace_id')
-                          ->where('company_id', $activeCompanyId);
+                        ->where('company_id', $activeCompanyId);
                 }
 
                 while ((clone $query)->where('file_name', $newName . '.' . $extension)->exists()) {
@@ -82,9 +188,10 @@ class BriefController extends Controller
                 }
 
                 $finalName = $newName . '.' . $extension;
-                
-                // Simpan fisik
-                $path = $file->storeAs('files', $finalName, 'public');
+                $storagePath = 'files/' . Str::slug($newName, '_') . '_' . time() . '.' . $extension;
+
+                // Simpan fisik file ke storage
+                Storage::disk('public')->put($storagePath, $textContent);
 
                 // Simpan DB
                 $fileModel = File::create([
@@ -92,22 +199,119 @@ class BriefController extends Controller
                     'company_id' => $activeCompanyId ?: null,
                     'uploaded_by' => $uploadedBy,
                     'file_name' => $finalName,
-                    'file_path' => $path,
-                    'file_size' => $file->getSize(),
+                    'file_path' => $storagePath,
+                    'file_size' => strlen($textContent),
                     'file_type' => $extension,
-                    'file_url' => asset('storage/' . $path),
+                    'file_url' => asset('storage/' . $storagePath),
                     'is_private' => false,
                     'uploaded_at' => now(),
                 ]);
 
-                // Simpan mapping nama asli file -> file id
-                $uploadedFilesMapping[$file->getClientOriginalName()] = $fileModel->id;
-            }
+                $uploadedFilesMapping[$finalName] = $fileModel->id;
 
-            // 2. Parse & Normalize documents
-            $documents = $this->documentParser->parse(
-                $request->file('documents')
-            );
+                $documents = [
+                    [
+                        'filename' => $finalName,
+                        'extension' => 'txt',
+                        'mime_type' => 'text/plain',
+                        'content' => $textContent,
+                    ]
+                ];
+
+                // Jika pengguna juga mengunggah dokumen fisik pendukung (PDF, DOCX, TXT)
+                if ($request->hasFile('documents')) {
+                    foreach ($request->file('documents') as $file) {
+                        $docOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                        $docExtension = $file->getClientOriginalExtension();
+
+                        $docNewName = $docOriginalName;
+                        $docCounter = 1;
+                        $docQuery = File::query();
+                        if ($workspaceId) {
+                            $docQuery->where('workspace_id', $workspaceId);
+                        } else {
+                            $docQuery->whereNull('workspace_id')->where('company_id', $activeCompanyId);
+                        }
+                        while ((clone $docQuery)->where('file_name', $docNewName . '.' . $docExtension)->exists()) {
+                            $docNewName = $docOriginalName . '(' . $docCounter . ')';
+                            $docCounter++;
+                        }
+                        $docFinalName = $docNewName . '.' . $docExtension;
+                        $docPath = $file->storeAs('files', $docFinalName, 'public');
+
+                        $docModel = File::create([
+                            'workspace_id' => $workspaceId ?: null,
+                            'company_id' => $activeCompanyId ?: null,
+                            'uploaded_by' => $uploadedBy,
+                            'file_name' => $docFinalName,
+                            'file_path' => $docPath,
+                            'file_size' => $file->getSize(),
+                            'file_type' => $docExtension,
+                            'file_url' => asset('storage/' . $docPath),
+                            'is_private' => false,
+                            'uploaded_at' => now(),
+                        ]);
+
+                        $uploadedFilesMapping[$file->getClientOriginalName()] = $docModel->id;
+                    }
+
+                    // Parse dokumen pendukung dan gabungkan ke array $documents
+                    $parsedUploadedDocs = $this->documentParser->parse($request->file('documents'));
+                    $documents = array_merge($documents, $parsedUploadedDocs);
+                }
+            } else {
+                // 1. Simpan file ke Storage dan Database (tabel files)
+                foreach ($request->file('documents') as $file) {
+                    $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+                    $extension = $file->getClientOriginalExtension();
+                    $uploadedBy = auth()->id();
+
+                    // Dapatkan nama unik agar tidak bentrok
+                    $newName = $originalName;
+                    $counter = 1;
+
+                    // Setup query scope untuk mencari kecocokan nama file yang bertabrakan
+                    $query = File::query();
+                    if ($workspaceId) {
+                        $query->where('workspace_id', $workspaceId);
+                    } else {
+                        $query->whereNull('workspace_id')
+                            ->where('company_id', $activeCompanyId);
+                    }
+
+                    while ((clone $query)->where('file_name', $newName . '.' . $extension)->exists()) {
+                        $newName = $originalName . '(' . $counter . ')';
+                        $counter++;
+                    }
+
+                    $finalName = $newName . '.' . $extension;
+
+                    // Simpan fisik
+                    $path = $file->storeAs('files', $finalName, 'public');
+
+                    // Simpan DB
+                    $fileModel = File::create([
+                        'workspace_id' => $workspaceId ?: null,
+                        'company_id' => $activeCompanyId ?: null,
+                        'uploaded_by' => $uploadedBy,
+                        'file_name' => $finalName,
+                        'file_path' => $path,
+                        'file_size' => $file->getSize(),
+                        'file_type' => $extension,
+                        'file_url' => asset('storage/' . $path),
+                        'is_private' => false,
+                        'uploaded_at' => now(),
+                    ]);
+
+                    // Simpan mapping nama asli file -> file id
+                    $uploadedFilesMapping[$file->getClientOriginalName()] = $fileModel->id;
+                }
+
+                // 2. Parse & Normalize documents
+                $documents = $this->documentParser->parse(
+                    $request->file('documents')
+                );
+            }
 
             // 3. Generate Brief using AI
             $briefData = $this->aiService->generateBrief($documents);
@@ -115,6 +319,7 @@ class BriefController extends Controller
             // Save brief draft & files mapping to session
             session(['brief_draft' => $briefData]);
             session(['brief_files_mapping' => $uploadedFilesMapping]);
+            session()->forget('pending_template_brief');
             if ($workspaceId) {
                 session(['brief_workspace_id' => $workspaceId]);
             } else {
@@ -122,7 +327,6 @@ class BriefController extends Controller
             }
 
             return redirect()->route('brief.review');
-
         } catch (\Exception $e) {
             Log::error('AI Brief parsing failed: ' . $e->getMessage());
             return redirect()->back()->with('alert', [
@@ -149,10 +353,24 @@ class BriefController extends Controller
         $company = Company::find($activeCompanyId);
         $members = $company ? $company->users()->where('user_companies.status_active', true)->get() : collect();
 
+        $deliverables = $briefData['summary']['deliverables'] ?? [];
+        $deliverablesLabel = is_array($deliverables)
+            ? implode(', ', $deliverables)
+            : ($deliverables ?? '');
+
+        // Available uploaded files for decision sources
+        $availableFiles = collect($briefData['files'] ?? [])
+            ->map(fn($f) => is_array($f) ? ($f['name'] ?? '') : (string) $f)
+            ->filter()
+            ->values()
+            ->toArray();
+
         return view('ai-brief', [
             'brief' => $briefData,
             'members' => $members,
             'briefWorkspaceId' => session('brief_workspace_id'),
+            'deliverablesLabel' => $deliverablesLabel,
+            'availableFiles' => $availableFiles,
         ]);
     }
 
@@ -262,7 +480,7 @@ class BriefController extends Controller
             $defaultColumn = BoardColumn::where('workspace_id', $workspace->id)
                 ->where('name', 'like', '%To Do%')
                 ->first();
-            
+
             if (!$defaultColumn) {
                 $defaultColumn = BoardColumn::where('workspace_id', $workspace->id)->first();
             }
@@ -293,7 +511,8 @@ class BriefController extends Controller
                         }
                     }
 
-                    // Parse deadline string to a valid ISO date for database compatibility
+                    // Parse start_date & deadline string to a valid ISO date for database compatibility
+                    $parsedStartDate = $this->parseDateToIso($taskData['start_date'] ?? null);
                     $parsedDate = $this->parseDateToIso($taskData['deadline'] ?? null);
 
                     // Determine phase
@@ -317,6 +536,7 @@ class BriefController extends Controller
                         'status' => 'todo',
                         'board_column_id' => $defaultColumnId,
                         'priority' => $taskData['priority'],
+                        'start_datetime' => $parsedStartDate ? Carbon::parse($parsedStartDate)->startOfDay() : null,
                         'due_datetime' => $parsedDate ? Carbon::parse($parsedDate)->endOfDay() : null,
                         'phase' => $taskPhase,
                     ]);
@@ -340,7 +560,6 @@ class BriefController extends Controller
             return redirect()->route('kanban-tugas', $workspace->id)
                 ->with('success', 'Proyek berhasil dibuat dari brief!')
                 ->with('new_task_ids', $newCreatedTaskIds);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Approved brief import failed: ' . $e->getMessage());
@@ -369,10 +588,18 @@ class BriefController extends Controller
         }
 
         $months = [
-            'januari' => 'january', 'februari' => 'february', 'maret' => 'march',
-            'april' => 'april', 'mei' => 'may', 'juni' => 'june',
-            'juli' => 'july', 'agustus' => 'august', 'september' => 'september',
-            'oktober' => 'october', 'november' => 'november', 'desember' => 'december'
+            'januari' => 'january',
+            'februari' => 'february',
+            'maret' => 'march',
+            'april' => 'april',
+            'mei' => 'may',
+            'juni' => 'june',
+            'juli' => 'july',
+            'agustus' => 'august',
+            'september' => 'september',
+            'oktober' => 'october',
+            'november' => 'november',
+            'desember' => 'december'
         ];
 
         $cleanedString = strtolower($dateString);
@@ -390,6 +617,4 @@ class BriefController extends Controller
             return null;
         }
     }
-       
- 
 }

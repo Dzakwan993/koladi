@@ -9,7 +9,6 @@
 
         <div x-data="aiBriefComponent()" class="min-h-screen bg-[#e9effd] py-8 px-4">
             <div class="max-w-full mx-auto space-y-3">
-
                 {{-- Header --}}
                 <div class="flex flex-col gap-3">
                     <div class="flex">
@@ -171,7 +170,7 @@
                                                 d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                                         </svg>
                                     </button>
-                                    <button type="button" @click="removeDecision(index)"
+                                    <button type="button" @click="confirmDelete('decision', index)"
                                         class="text-slate-400 hover:text-rose-600" title="Hapus">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
                                             viewBox="0 0 24 24">
@@ -208,6 +207,7 @@
                             @endforeach
                         </ul>
                     </div>
+
                 @endif
 
                 {{-- Klarifikasi Tim ke Klien --}}
@@ -235,81 +235,205 @@
                     </div>
                 @endif
 
-                {{-- Draft Daftar Tugas --}}
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center gap-2">
+                {{-- Draft Daftar Tugas & Timeline Card --}}
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-4">
+                    <!-- Header Card: Judul di Kiri, Toggle & Tambah Tugas di Kanan -->
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-100 pb-4">
+                        <div class="flex items-center gap-2 pt-1">
                             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2"
                                 viewBox="0 0 24 24">
                                 <path
                                     d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-5 8l2 2 4-4" />
                             </svg>
-                            <h2 class="font-semibold text-slate-800">Draft Daftar Tugas</h2>
+                            <h2 class="font-semibold text-slate-800" x-text="viewMode === 'tasks' ? 'Draft Daftar Tugas' : 'Timeline Pekerjaan'"></h2>
                         </div>
-                        <button type="button" @click="addTask()"
-                            class="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M12 4v16m8-8H4" />
-                            </svg>
-                            Tambah Tugas
-                        </button>
+
+                        <!-- Right Control: Toggle (Atas) & Tambah Tugas (Bawahnya) -->
+                        <div class="flex flex-col items-end gap-2">
+                            <!-- Toggle Mode -->
+                            <div class="flex rounded-lg bg-blue-50 p-1 shadow-inner ring-1 ring-blue-100">
+                                <button type="button" @click="viewMode = 'tasks'"
+                                    :class="{
+                                        'bg-blue-500 text-white shadow-sm': viewMode === 'tasks',
+                                        'text-blue-700 hover:bg-blue-100': viewMode !== 'tasks'
+                                    }"
+                                    class="rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200">
+                                    Draft Tugas
+                                </button>
+                                <button type="button" @click="viewMode = 'timeline'"
+                                    :class="{
+                                        'bg-blue-500 text-white shadow-sm': viewMode === 'timeline',
+                                        'text-blue-700 hover:bg-blue-100': viewMode !== 'timeline'
+                                    }"
+                                    class="rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-200">
+                                    Draft Timeline
+                                </button>
+                            </div>
+
+                            <!-- Tombol Tambah Tugas -->
+                            <button type="button" @click="addTask()"
+                                class="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M12 4v16m8-8H4" />
+                                </svg>
+                                Tambah Tugas
+                            </button>
+                        </div>
                     </div>
 
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="text-xs text-slate-400 uppercase border-b border-slate-100">
-                                <th class="text-left font-medium py-2">Tugas</th>
-                                <th class="text-left font-medium py-2">Pemilik</th>
-                                <th class="text-left font-medium py-2">Priority</th>
-                                <th class="text-left font-medium py-2">Tanggal</th>
-                                <th class="py-2"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template x-for="(task, index) in tasks" :key="index">
-                                <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
-                                    <td class="py-3 pr-2">
-                                        <p class="font-medium text-slate-700" x-text="task.title || 'Tanpa Judul'"></p>
-                                        <p class="text-xs text-slate-400" x-text="task.description"></p>
-                                    </td>
-                                    <td class="py-3 pr-2">
-                                        <span class="text-xs text-slate-600" x-text="task._assignee_name || '—'"></span>
-                                    </td>
-                                    <td class="py-3 pr-2">
-                                        <span :class="{
-                                                    'bg-rose-50 text-rose-500': task.priority === 'high' || task.priority === 'urgent',
-                                                    'bg-blue-50 text-blue-500': task.priority === 'medium',
-                                                    'bg-slate-50 text-slate-500': task.priority === 'low'
-                                                }" class="text-[10px] font-semibold px-2 py-1 rounded-md"
-                                            x-text="task.priority ? task.priority.toUpperCase() : 'MED'">
-                                        </span>
-                                    </td>
-                                    <td class="py-3 pr-2 text-slate-500 text-xs whitespace-nowrap"
-                                        x-text="task.deadline || '—'"></td>
-                                    <td class="py-3 text-right">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <button type="button" @click="editTask(index)"
-                                                class="text-slate-400 hover:text-blue-600" title="Edit">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
-                                                    viewBox="0 0 24 24">
-                                                    <path
-                                                        d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                                </svg>
-                                            </button>
-                                            <button type="button" @click="removeTask(index)"
-                                                class="text-slate-400 hover:text-rose-600" title="Hapus">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
-                                                    viewBox="0 0 24 24">
-                                                    <path
-                                                        d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </td>
+                    <!-- MODE 1: Tabel Tugas (Tanpa Pemilik, dengan Tanggal Mulai & Selesai) -->
+                    <div x-show="viewMode === 'tasks'" class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-xs text-slate-400 uppercase border-b border-slate-100">
+                                    <th class="text-left font-medium py-2.5 w-5/12">Tugas &amp; Fase</th>
+                                    <th class="text-left font-medium py-2.5 w-2/12">Priority</th>
+                                    <th class="text-left font-medium py-2.5 w-2/12">Tanggal Mulai</th>
+                                    <th class="text-left font-medium py-2.5 w-2/12">Tenggat Selesai</th>
+                                    <th class="py-2.5 text-right w-1/12">Aksi</th>
                                 </tr>
+                            </thead>
+                            <tbody>
+                                <template x-for="(task, index) in sortedTasksList()" :key="index">
+                                    <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
+                                        <td class="py-3 pr-4">
+                                            <p class="font-medium text-slate-800 text-sm" x-text="task.title || 'Tanpa Judul'"></p>
+                                            <p class="text-xs text-slate-400 mt-0.5" x-text="task.description"></p>
+                                            <template x-if="task.phase">
+                                                <div class="inline-flex items-center gap-1 mt-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                                                    <span class="opacity-60">FASE:</span>
+                                                    <span x-text="task.phase"></span>
+                                                </div>
+                                            </template>
+                                        </td>
+                                        <td class="py-3 pr-2 align-top pt-4">
+                                            <span :class="{
+                                                        'bg-rose-50 text-rose-500 border border-rose-200': task.priority === 'high' || task.priority === 'urgent',
+                                                        'bg-blue-50 text-blue-500 border border-blue-200': task.priority === 'medium',
+                                                        'bg-slate-50 text-slate-500 border border-slate-200': task.priority === 'low'
+                                                    }" class="text-[10px] font-bold px-2.5 py-1 rounded-full uppercase"
+                                                x-text="task.priority ? task.priority.toUpperCase() : 'MED'">
+                                            </span>
+                                        </td>
+                                        <td class="py-3 pr-2 text-slate-600 text-xs whitespace-nowrap align-top pt-4 font-medium"
+                                            x-text="formatDisplayDate(task.start_date)"></td>
+                                        <td class="py-3 pr-2 text-slate-600 text-xs whitespace-nowrap align-top pt-4 font-medium"
+                                            x-text="formatDisplayDate(task.deadline)"></td>
+                                        <td class="py-3 text-right align-top pt-4">
+                                            <div class="flex items-center justify-end gap-2">
+                                                <button type="button" @click="editTaskByRef(task)"
+                                                    class="text-slate-400 hover:text-blue-600 p-1 rounded-lg hover:bg-blue-50 transition" title="Edit">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
+                                                        viewBox="0 0 24 24">
+                                                        <path
+                                                            d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                                    </svg>
+                                                </button>
+                                                <button type="button" @click="confirmDelete('task', task)"
+                                                    class="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition" title="Hapus">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
+                                                        viewBox="0 0 24 24">
+                                                        <path
+                                                            d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- MODE 2: Timeline Gantt View (Header Bulan + Minggu 1 2 3 4 & Bar per Tugas) -->
+                    <div x-show="viewMode === 'timeline'" class="overflow-x-auto border border-gray-200 rounded-xl bg-white shadow-xs">
+                        
+                        <!-- Table Header: Phase / Progress vs Months & Weeks Grid -->
+                        <div class="flex bg-gray-100 border-b text-gray-700 text-xs font-semibold select-none min-w-[900px]">
+                            <!-- Kolom Kiri: Phase / Progress -->
+                            <div class="w-56 px-4 py-3 border-r bg-gray-50 flex items-center justify-between">
+                                <span>Phase / Progress</span>
+                            </div>
+
+                            <!-- Kolom Kanan: 12 Bulan dengan Sub-Header Minggu (1 2 3 4) -->
+                            <div class="flex-1 grid grid-cols-12 divide-x divide-gray-200">
+                                <template x-for="m in ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des']" :key="m">
+                                    <div class="flex flex-col">
+                                        <!-- Header Bulan -->
+                                        <div class="py-1.5 text-center text-xs font-bold text-gray-700 bg-gray-100 border-b border-gray-200" x-text="m"></div>
+                                        <!-- Sub-Header Minggu (1 2 3 4) -->
+                                        <div class="grid grid-cols-4 text-center text-[10px] text-gray-500 bg-gray-50 py-0.5 divide-x divide-gray-200/60">
+                                            <span>1</span>
+                                            <span>2</span>
+                                            <span>3</span>
+                                            <span>4</span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Loop Phase Groups (Setiap baris tugas memiliki bar tersendiri) -->
+                        <div class="divide-y divide-gray-200 min-w-[900px]">
+                            <template x-for="(phase, pIdx) in getProjectPhases()" :key="pIdx">
+                                <div class="flex hover:bg-gray-50/40 transition">
+                                    
+                                    <!-- Sisi Kiri: Info Box Fase (Blok Warna Phase) -->
+                                    <div class="w-56 px-4 py-4 border-r flex flex-col justify-center select-none"
+                                        :class="getPhaseSideColor(pIdx, phase.name)">
+                                        <h3 class="text-sm font-bold truncate leading-tight" x-text="phase.name"></h3>
+                                        
+                                        <!-- Sub info tanggal / Segera -->
+                                        <div class="text-xs mt-1.5">
+                                            <template x-if="phase.is_immediate">
+                                                <span class="inline-flex items-center gap-1 bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-200 shadow-xs">
+                                                    <svg class="w-2.5 h-2.5 text-amber-600 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                                    </svg>
+                                                    Segera
+                                                </span>
+                                            </template>
+                                            <template x-if="!phase.is_immediate && (phase.start_date || phase.end_date)">
+                                                <span class="text-gray-600 font-medium text-[11px]" x-text="formatDateRange(phase.start_date, phase.end_date)"></span>
+                                            </template>
+                                        </div>
+                                    </div>
+
+                                    <!-- Sisi Kanan: Area Gantt Chart per Tugas (Masing-masing tugas 1 Bar) -->
+                                    <div class="flex-1 relative bg-white flex flex-col justify-center divide-y divide-gray-100">
+                                        
+                                        <!-- Subtle 48 Weeks Vertical Grid Lines (12 bulan x 4 minggu) -->
+                                        <div class="absolute inset-0 grid grid-cols-12 divide-x divide-gray-200/80 pointer-events-none opacity-40">
+                                            <template x-for="i in 12" :key="i">
+                                                <div class="h-full grid grid-cols-4 divide-x divide-gray-100">
+                                                    <div></div><div></div><div></div><div></div>
+                                                </div>
+                                            </template>
+                                        </div>
+
+                                        <!-- Loop Setiap Tugas di dalam Fase (Setiap tugas punya 1 Bar Horizontal sendiri) -->
+                                        <template x-for="(task, tIdx) in phase.tasks" :key="tIdx">
+                                            <div class="relative py-2 px-2 flex items-center min-h-[44px]" @click="editTaskByRef(task)">
+                                                
+                                                <!-- Bar Gantt Horizontal per Tugas -->
+                                                <div class="relative z-10 h-7 rounded-md transition-all duration-300 flex items-center px-2.5 shadow-xs"
+                                                    :class="getTaskBarColor(pIdx, phase.name, phase.is_immediate)"
+                                                    :style="`width: ${getTaskBarWidth(task, phase)}%; margin-left: ${getTaskBarLeft(task, phase)}%; min-width: 90px; max-width: 100%;`">
+                                                    
+                                                    <span class="text-white text-xs font-semibold truncate tracking-tight drop-shadow-xs"
+                                                        x-text="task.title || 'Tugas Tanpa Judul'">
+                                                    </span>
+                                                </div>
+
+                                            </div>
+                                        </template>
+
+                                    </div>
+
+                                </div>
                             </template>
-                        </tbody>
-                    </table>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- Hidden form for approve submission (submitted programmatically on CTA click) --}}
@@ -455,7 +579,17 @@
                                         placeholder="Deskripsi singkat tugas..."
                                         class="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:outline-none resize-none"></textarea>
                                 </div>
-                                <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-500 mb-1.5">Fase / Tahapan Proyek (Opsional)</label>
+                                    <select x-model="editTaskForm.phase"
+                                        class="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:outline-none bg-white">
+                                        <option value="">— Pilih Fase —</option>
+                                        <template x-for="ph in getAvailablePhases()" :key="ph">
+                                            <option :value="ph" x-text="ph"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <div>
                                         <label class="block text-xs font-semibold text-slate-500 mb-1.5">Prioritas</label>
                                         <select x-model="editTaskForm.priority"
@@ -467,22 +601,15 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Deadline</label>
+                                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Tanggal Mulai</label>
+                                        <input type="date" x-model="editTaskForm.start_date"
+                                            class="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:outline-none text-slate-700">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">Tenggat Selesai</label>
                                         <input type="date" x-model="editTaskForm.deadline"
                                             class="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:outline-none text-slate-700">
                                     </div>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-500 mb-1.5">Pemilik / Penanggung
-                                        Jawab</label>
-                                    <select x-model="editTaskForm.assignee_id"
-                                        @change="editTaskForm._assignee_name = $event.target.options[$event.target.selectedIndex].text"
-                                        class="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:outline-none bg-white">
-                                        <option value="">Pilih Anggota</option>
-                                        @foreach($members as $member)
-                                            <option value="{{ $member->id }}">{{ $member->full_name ?? $member->name }}</option>
-                                        @endforeach
-                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -564,6 +691,33 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Modal Konfirmasi Hapus --}}
+            <div x-show="confirmDeleteModal" class="fixed inset-0 z-[60] overflow-y-auto" style="display: none;">
+                <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="confirmDeleteModal = false"></div>
+                <div class="flex min-h-full items-center justify-center p-4">
+                    <div class="relative bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-sm p-6 text-center">
+                        <!-- Icon Warning -->
+                        <div class="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 3h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-sm font-bold text-slate-800 mb-1">Hapus Item?</h3>
+                        <p class="text-xs text-slate-500 mb-5">Tindakan ini tidak dapat dibatalkan. Item akan dihapus dari draft.</p>
+                        <div class="flex gap-2 justify-center">
+                            <button type="button" @click="confirmDeleteModal = false"
+                                class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 font-medium text-xs px-4 py-2 rounded-xl transition-colors">
+                                Batal
+                            </button>
+                            <button type="button" @click="doConfirmedDelete()"
+                                class="bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs px-4 py-2 rounded-xl transition-colors">
+                                Ya, Hapus
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         @php
@@ -571,6 +725,7 @@
                 'title' => $t['title'] ?? '',
                 'description' => $t['description'] ?? '',
                 'priority' => $t['priority'] ?? 'medium',
+                'start_date' => $t['start_date'] ?? '',
                 'deadline' => $t['deadline'] ?? '',
                 'assignee_id' => $t['assignee_id'] ?? '',
                 'phase' => $t['phase'] ?? '',
@@ -589,6 +744,9 @@
             <script>
                 function aiBriefComponent() {
                     return {
+                        // ─── State: View Mode ───────────────────────────────────
+                        viewMode: 'tasks', // 'tasks' or 'timeline'
+
                         // ─── State: Tasks ───────────────────────────────────────
                         tasks: @json($taskData),
 
@@ -623,15 +781,272 @@
                         ),
                         isEditingDeadline: false,
 
+                        init() {
+                            // Normalize dates to YYYY-MM-DD for date inputs
+                            this.tasks.forEach(t => {
+                                const norm = (val) => this.parseDateToISO(val);
+                                if (t.start_date) t.start_date = norm(t.start_date);
+                                if (t.deadline) t.deadline = norm(t.deadline);
+                            });
+                        },
+
+                        // Konversi berbagai format tanggal → YYYY-MM-DD (untuk <input type="date">)
+                        parseDateToISO(str) {
+                            if (!str) return '';
+                            // Sudah ISO
+                            if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.split('T')[0];
+
+                            // Bulan Indonesia dan Inggris
+                            const monthMap = {
+                                januari:1, february:2, februari:2, maret:3, april:4, mei:5, may:5,
+                                juni:6, june:6, juli:7, july:7, agustus:8, august:8,
+                                september:9, oktober:10, october:10, november:11, desember:12, december:12,
+                                jan:1, feb:2, mar:3, apr:4, jun:6, jul:7, agu:8, aug:8,
+                                sep:9, okt:10, oct:10, nov:11, des:12, dec:12
+                            };
+
+                            // "1 September 2026" atau "September 1, 2026"
+                            const m1 = str.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+                            if (m1) {
+                                const mon = monthMap[m1[2].toLowerCase()];
+                                if (mon) return `${m1[3]}-${String(mon).padStart(2,'0')}-${String(m1[1]).padStart(2,'0')}`;
+                            }
+                            const m2 = str.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
+                            if (m2) {
+                                const mon = monthMap[m2[1].toLowerCase()];
+                                if (mon) return `${m2[3]}-${String(mon).padStart(2,'0')}-${String(m2[2]).padStart(2,'0')}`;
+                            }
+
+                            // Fallback: biarkan apa adanya
+                            return str;
+                        },
+
                         formatDisplayDate(dateStr) {
                             if (!dateStr) return '—';
-                            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-                                const parts = dateStr.split('-');
+                            const iso = this.parseDateToISO(dateStr);
+                            if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+                                const parts = iso.split('-');
                                 const date = new Date(parts[0], parts[1] - 1, parts[2]);
                                 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
                                 return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
                             }
                             return dateStr;
+                        },
+
+                        formatDateRange(startDate, endDate) {
+                            const s = this.formatDisplayDate(startDate);
+                            const e = this.formatDisplayDate(endDate);
+                            if (s !== '—' && e !== '—') {
+                                return `${s} - ${e}`;
+                            } else if (e !== '—') {
+                                return `Tenggat: ${e}`;
+                            } else if (s !== '—') {
+                                return `Mulai: ${s}`;
+                            }
+                            return 'Belum ada tanggal';
+                        },
+
+                        // Daftar fase unik dari semua tasks (untuk dropdown fase di modal)
+                        getAvailablePhases() {
+                            const seen = new Set();
+                            this.tasks.forEach(t => {
+                                const p = (t.phase && t.phase.trim()) ? t.phase.trim() : null;
+                                if (p) seen.add(p);
+                            });
+                            // Klarifikasi selalu pertama jika ada
+                            const phases = [...seen];
+                            phases.sort((a, b) => {
+                                if (a.toLowerCase().includes('klarifikasi')) return -1;
+                                if (b.toLowerCase().includes('klarifikasi')) return 1;
+                                return a.localeCompare(b);
+                            });
+                            return phases;
+                        },
+
+                        // Tasks list dengan Klarifikasi di atas (untuk tabel Mode Draft Tugas)
+                        sortedTasksList() {
+                            return [...this.tasks].sort((a, b) => {
+                                const aK = (a.phase || '').toLowerCase().includes('klarifikasi');
+                                const bK = (b.phase || '').toLowerCase().includes('klarifikasi');
+                                if (aK && !bK) return -1;
+                                if (!aK && bK) return 1;
+                                return 0;
+                            });
+                        },
+
+                        // Edit task dari referensi object (dipakai dari Gantt bar)
+                        editTaskByRef(taskObj) {
+                            const idx = this.tasks.findIndex(t => t === taskObj || (t.title === taskObj.title && t.phase === taskObj.phase));
+                            if (idx !== -1) this.editTask(idx);
+                        },
+
+                        getProjectPhases() {
+                            const groups = {};
+                            this.tasks.forEach(task => {
+                                const phaseName = (task.phase && task.phase.trim()) ? task.phase.trim() : 'Fase Umum';
+                                if (!groups[phaseName]) {
+                                    groups[phaseName] = {
+                                        name: phaseName,
+                                        is_immediate: false,
+                                        start_date: '',
+                                        end_date: '',
+                                        tasks: []
+                                    };
+                                }
+                                groups[phaseName].tasks.push(task);
+
+                                // Track earliest start and latest deadline for the phase
+                                if (task.start_date) {
+                                    if (!groups[phaseName].start_date || new Date(task.start_date) < new Date(groups[phaseName].start_date)) {
+                                        groups[phaseName].start_date = task.start_date;
+                                    }
+                                }
+                                if (task.deadline) {
+                                    if (!groups[phaseName].end_date || new Date(task.deadline) > new Date(groups[phaseName].end_date)) {
+                                        groups[phaseName].end_date = task.deadline;
+                                    }
+                                }
+                            });
+
+                            const phaseList = Object.values(groups);
+
+                            // Calculate month-based position and bar width for Gantt visual
+                            phaseList.forEach(phase => {
+                                const isKlarifikasi = phase.name.toLowerCase().includes('klarifikasi');
+                                phase.is_immediate = isKlarifikasi && !phase.start_date && !phase.end_date;
+
+                                if (phase.is_immediate) {
+                                    phase.bar_left = 0;
+                                    phase.bar_width = 30; // compact front bar
+                                } else {
+                                    let startMonth = 0; // Jan = 0
+                                    let endMonth = 11; // Dec = 11
+
+                                    if (phase.start_date) {
+                                        const d = new Date(phase.start_date);
+                                        if (!isNaN(d.getTime())) startMonth = d.getMonth();
+                                    }
+                                    if (phase.end_date) {
+                                        const d = new Date(phase.end_date);
+                                        if (!isNaN(d.getTime())) endMonth = d.getMonth();
+                                    } else {
+                                        endMonth = startMonth;
+                                    }
+
+                                    if (endMonth < startMonth) endMonth = startMonth;
+
+                                    const colWidthPercent = 100 / 12;
+                                    phase.bar_left = Math.max(0, startMonth * colWidthPercent);
+                                    const spanMonths = Math.max(1, (endMonth - startMonth + 1));
+                                    phase.bar_width = Math.min(100 - phase.bar_left, Math.max(15, spanMonths * colWidthPercent));
+                                }
+                            });
+
+                            // Sort: Klarifikasi ALWAYS at index 0 (top), followed by chronological order
+                            phaseList.sort((a, b) => {
+                                const aIsKlarifikasi = a.name.toLowerCase().includes('klarifikasi');
+                                const bIsKlarifikasi = b.name.toLowerCase().includes('klarifikasi');
+                                if (aIsKlarifikasi && !bIsKlarifikasi) return -1;
+                                if (!aIsKlarifikasi && bIsKlarifikasi) return 1;
+
+                                if (a.start_date && b.start_date) {
+                                    return new Date(a.start_date) - new Date(b.start_date);
+                                }
+                                return 0;
+                            });
+
+                            return phaseList;
+                        },
+
+                        // Kalkulasi posisi & lebar bar per tugas (berdasarkan 48 minggu dalam 1 tahun)
+                        getTaskBarLeft(task, phase) {
+                            if (phase.is_immediate || (!task.start_date && !task.deadline)) {
+                                return 0; // Full dari ujung kiri
+                            }
+                            const dateToUse = task.start_date || task.deadline;
+                            const d = new Date(dateToUse);
+                            if (isNaN(d.getTime())) return 0;
+
+                            const month = d.getMonth(); // 0 - 11
+                            const day = d.getDate(); // 1 - 31
+                            const weekInMonth = Math.min(3, Math.floor((day - 1) / 7)); // 0 - 3
+                            const totalWeekSlot = (month * 4) + weekInMonth; // 0 - 47
+
+                            return Math.max(0, Math.min(92, (totalWeekSlot / 48) * 100));
+                        },
+
+                        getTaskBarWidth(task, phase) {
+                            if (phase.is_immediate) {
+                                return 100; // Full dari ujung ke ujung
+                            }
+                            if (!task.start_date && !task.deadline) {
+                                return 100;
+                            }
+
+                            if (task.start_date && task.deadline) {
+                                const s = new Date(task.start_date);
+                                const e = new Date(task.deadline);
+                                if (!isNaN(s.getTime()) && !isNaN(e.getTime()) && e >= s) {
+                                    const sSlot = (s.getMonth() * 4) + Math.min(3, Math.floor((s.getDate() - 1) / 7));
+                                    const eSlot = (e.getMonth() * 4) + Math.min(3, Math.floor((e.getDate() - 1) / 7));
+                                    const diffWeeks = Math.max(1, (eSlot - sSlot + 1));
+                                    const widthPercent = (diffWeeks / 48) * 100;
+                                    return Math.max(8, Math.min(100, widthPercent));
+                                }
+                            }
+                            return 12; // Default span 1-2 minggu minimal agar terbaca
+                        },
+
+                        getPhaseSideColor(idx, name) {
+                            if (name.toLowerCase().includes('klarifikasi')) {
+                                return 'bg-amber-50 text-amber-900 border-amber-200';
+                            }
+                            const colors = [
+                                'bg-sky-50 text-sky-900 border-sky-100',
+                                'bg-emerald-50 text-emerald-900 border-emerald-100',
+                                'bg-amber-50 text-amber-900 border-amber-100',
+                                'bg-purple-50 text-purple-900 border-purple-100',
+                                'bg-rose-50 text-rose-900 border-rose-100',
+                                'bg-indigo-50 text-indigo-900 border-indigo-100',
+                            ];
+                            return colors[idx % colors.length];
+                        },
+
+                        getTaskBarColor(pIdx, phaseName, isImmediate) {
+                            if (isImmediate || phaseName.toLowerCase().includes('klarifikasi')) {
+                                return 'bg-amber-500 hover:bg-amber-600 border border-amber-400';
+                            }
+                            const barColors = [
+                                'bg-[#3b82f6] hover:bg-[#2563eb] border border-blue-400',    // Plan / Blue
+                                'bg-[#10b981] hover:bg-[#059669] border border-emerald-400', // Develop / Green
+                                'bg-[#f59e0b] hover:bg-[#d97706] border border-amber-400',   // Test / Yellow
+                                'bg-[#8b5cf6] hover:bg-[#7c3aed] border border-purple-400',  // Purple
+                                'bg-[#ef4444] hover:bg-[#dc2626] border border-red-400',     // Red
+                                'bg-[#06b6d4] hover:bg-[#0891b2] border border-cyan-400',    // Cyan
+                            ];
+                            return barColors[pIdx % barColors.length];
+                        },
+
+                        // ─── Confirm Delete ───────────────────────────────────────
+                        confirmDeleteModal: false,
+                        _confirmDeleteType: null, // 'task' | 'decision'
+                        _confirmDeletePayload: null,
+
+                        confirmDelete(type, payload) {
+                            this._confirmDeleteType = type;
+                            this._confirmDeletePayload = payload;
+                            this.confirmDeleteModal = true;
+                        },
+
+                        doConfirmedDelete() {
+                            if (this._confirmDeleteType === 'task') {
+                                this.removeTaskByRef(this._confirmDeletePayload);
+                            } else if (this._confirmDeleteType === 'decision') {
+                                this.removeDecision(this._confirmDeletePayload);
+                            }
+                            this.confirmDeleteModal = false;
+                            this._confirmDeleteType = null;
+                            this._confirmDeletePayload = null;
                         },
 
                         // ─── State: Task Modal ───────────────────────────────────
@@ -641,6 +1056,7 @@
                             title: '',
                             description: '',
                             priority: 'medium',
+                            start_date: '',
                             deadline: '',
                             assignee_id: '',
                             _assignee_name: '',
@@ -654,6 +1070,7 @@
                                 title: '',
                                 description: '',
                                 priority: 'medium',
+                                start_date: '',
                                 deadline: '',
                                 assignee_id: '',
                                 _assignee_name: '',
@@ -669,6 +1086,7 @@
                                 title: t.title || '',
                                 description: t.description || '',
                                 priority: t.priority || 'medium',
+                                start_date: t.start_date || '',
                                 deadline: t.deadline || '',
                                 assignee_id: t.assignee_id || '',
                                 _assignee_name: t._assignee_name || '',
@@ -692,6 +1110,11 @@
 
                         removeTask(index) {
                             this.tasks.splice(index, 1);
+                        },
+
+                        removeTaskByRef(taskObj) {
+                            const idx = this.tasks.findIndex(t => t === taskObj || (t.title === taskObj.title && t.phase === taskObj.phase));
+                            if (idx !== -1) this.tasks.splice(idx, 1);
                         },
 
                         // ─── Decisions CRUD ──────────────────────────────────────
@@ -760,7 +1183,7 @@
 
                             // Serialize tasks
                             this.tasks.forEach((task, i) => {
-                                const fields = ['title', 'description', 'priority', 'deadline', 'assignee_id', 'phase'];
+                                const fields = ['title', 'description', 'priority', 'start_date', 'deadline', 'assignee_id', 'phase'];
                                 fields.forEach(field => {
                                     const input = document.createElement('input');
                                     input.type = 'hidden';

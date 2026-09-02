@@ -4322,17 +4322,25 @@
                     },
 
 
-                    // ✅ Perbaikan — pastikan urutan EDF tetap terjaga
+                    // ✅ Perbaikan — pastikan tugas dengan fase 'Klarifikasi' paling atas, lalu jaga urutan EDF
                     getFilteredTasksByColumn(columnId) {
                         const columnTasks = this.tasks.filter(task => task.board_column_id === columnId);
                         const filtered = this.filterTasks(columnTasks);
-                        // Jaga urutan EDF: done/cancel ke bawah, lalu sort by due_datetime
                         return filtered.sort((a, b) => {
+                            // 1. Fase Klarifikasi selalu paling atas
+                            const aIsKlarifikasi = (a.phase || '').toLowerCase().includes('klarifikasi');
+                            const bIsKlarifikasi = (b.phase || '').toLowerCase().includes('klarifikasi');
+                            if (aIsKlarifikasi && !bIsKlarifikasi) return -1;
+                            if (!aIsKlarifikasi && bIsKlarifikasi) return 1;
+
+                            // 2. Status selesai (done/cancel) ke bawah
                             const doneStatus = ['done', 'cancel'];
                             const aIsDone = doneStatus.includes(a.status);
                             const bIsDone = doneStatus.includes(b.status);
                             if (aIsDone && !bIsDone) return 1;
                             if (!aIsDone && bIsDone) return -1;
+
+                            // 3. Sort by dueDate / due_datetime
                             if (!a.dueDate) return 1;
                             if (!b.dueDate) return -1;
                             return new Date(a.dueDate) - new Date(b.dueDate);
