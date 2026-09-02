@@ -12,7 +12,7 @@ class FirefliesService
 
     public function __construct()
     {
-        $this->apiKey = env('FIREFLIES_API_KEY');
+        $this->apiKey = config('services.fireflies.key');
     }
 
     /**

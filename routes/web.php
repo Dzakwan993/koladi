@@ -45,6 +45,9 @@ Route::get('/workspace/{workspace}/upload-brief', [BriefController::class, 'uplo
 Route::get('/workspace/{workspace}/ai-brief', [BriefController::class, 'brief'])
     ->name('ai-brief');
 
+Route::get('/workspace/{workspace}/brief/transcript-status', [BriefController::class, 'transcriptStatus'])
+    ->name('brief.transcriptStatus');
+
 
 // Route::get('/', [LandingPageController::class, 'index'])->name('landingpage');
 
@@ -354,6 +357,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/upload', [BriefController::class, 'upload'])->name('upload');
             Route::get('/review', [BriefController::class, 'review'])->name('review');
             Route::post('/approve', [BriefController::class, 'approve'])->name('approve');
+            Route::post('/from-transcript', [BriefController::class, 'uploadFromTranscript'])->name('fromTranscript');
         });
 
         // ========================================
@@ -629,5 +633,5 @@ Route::middleware(['auth'])->group(function () {
 
 
     Route::get('/activity-log/{workspace}', [ActivityLogController::class, 'index'])
-    ->name('activity-log');
+        ->name('activity-log');
 });

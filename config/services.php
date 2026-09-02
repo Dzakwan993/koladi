@@ -23,7 +23,7 @@ return [
         'temperature' => (float) env('GEMINI_TEMPERATURE', 0.2),
         'timeout'     => (int) env('GEMINI_TIMEOUT', 120),
     ],
-    
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],
@@ -49,6 +49,10 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
+    'fireflies' => [
+        'key' => env('FIREFLIES_API_KEY'),
     ],
 
 ];

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class FirefliesWebhookController extends Controller
 {
@@ -87,6 +88,9 @@ class FirefliesWebhookController extends Controller
         $content = "Meeting Link: {$meetingUrl}\n\nTranscript:\n{$transcript}";
         Storage::disk('public')->put($storagePath, $content);
 
+        // ✅ BARU: cek event mana yang lagi "aktif" di workspace ini
+        $eventId = Cache::get("active_meeting_event:{$workspaceId}");
+
         $fileModel = File::create([
             'workspace_id' => $workspaceId,
             'company_id' => null,
@@ -99,6 +103,12 @@ class FirefliesWebhookController extends Controller
             'is_private' => false,
             'uploaded_at' => now(),
         ]);
+
+        // ✅ BARU: tandai transkrip event ini sudah siap
+        if ($eventId) {
+            Cache::put("transcript_status:{$eventId}", 'ready', now()->addHours(6));
+            Cache::put("transcript_file:{$eventId}", $fileModel->id, now()->addHours(6));
+        }
 
         Log::info('Transkrip Fireflies berhasil disimpan', [
             'file_id' => $fileModel->id,

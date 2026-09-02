@@ -765,8 +765,7 @@
 
         async function joinMeetingWithAttendance(eventId, meetingLink) {
             try {
-                // 1. Record attendance dulu
-                const response = await fetch(`/calendar/event/${eventId}/attendance`, {
+                await fetch(`/calendar/event/${eventId}/attendance`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -776,28 +775,14 @@
                     },
                     credentials: 'same-origin'
                 });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // 2. Tampilkan notifikasi sukses
-                    showNotification('success', 'Kehadiran Anda telah dicatat! Mengarahkan ke rapat...');
-
-                    // 3. Buka link rapat di tab baru
-                    setTimeout(() => {
-                        window.open(meetingLink, '_blank');
-                    }, 500);
-                } else {
-                    // Tetap buka meeting meskipun gagal record (fallback)
-                    console.warn('Failed to record attendance:', data.message);
-                    window.open(meetingLink, '_blank');
-                }
-
             } catch (error) {
-                console.error('Error recording attendance:', error);
-                // Fallback: tetap buka meeting
-                window.open(meetingLink, '_blank');
+                console.warn('Gagal record attendance:', error);
             }
+
+            window.open(meetingLink, '_blank');
+
+            const workspaceId = '{{ $workspaceId }}';
+            window.location.href = `/workspace/${workspaceId}/upload-brief?waiting_event=${eventId}`;
         }
 
         // ✅ Helper function untuk notifikasi (gunakan SweetAlert jika ada, atau buat custom)

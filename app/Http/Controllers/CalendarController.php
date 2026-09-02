@@ -1510,6 +1510,10 @@ class CalendarController extends Controller
                     );
 
                     if ($firefliesResult['success'] ?? false) {
+                        // ✅ BARU: tandai workspace ini punya meeting aktif
+                        Cache::put("active_meeting_event:{$event->workspace_id}", $eventId, now()->addHours(6));
+                        Cache::put("transcript_status:{$eventId}", 'waiting', now()->addHours(6));
+
                         Log::info('Fireflies bot diundang ke meeting', [
                             'event_id' => $eventId,
                             'meeting_link' => $event->meeting_link,
