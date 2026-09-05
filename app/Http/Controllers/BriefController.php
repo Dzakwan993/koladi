@@ -372,8 +372,17 @@ class BriefController extends Controller
                 $documents = array_merge($documents, $parsedUploadedDocs);
             }
 
-            // 3. Generate Brief using AI
-            $briefData = $this->aiService->generateBrief($documents);
+            // 3. Ambil existing active tasks dari workspace jika ada
+            $existingTasks = [];
+            if ($workspaceId) {
+                $existingTasks = Task::where('workspace_id', $workspaceId)
+                    ->whereNull('completed_at')
+                    ->get(['id', 'title', 'phase', 'due_datetime', 'description'])
+                    ->toArray();
+            }
+
+            // 4. Generate Brief using AI
+            $briefData = $this->aiService->generateBrief($documents, $existingTasks);
 
             // Save brief draft & files mapping to session
             session(['brief_draft' => $briefData]);
@@ -424,12 +433,23 @@ class BriefController extends Controller
             ->values()
             ->toArray();
 
+        // Ambil existing tasks dari workspace untuk dropdown selection di UI
+        $workspaceId = session('brief_workspace_id');
+        $workspaceExistingTasks = [];
+        if ($workspaceId) {
+            $workspaceExistingTasks = Task::where('workspace_id', $workspaceId)
+                ->whereNull('completed_at')
+                ->get(['id', 'title', 'due_datetime', 'description'])
+                ->toArray();
+        }
+
         return view('ai-brief', [
             'brief' => $briefData,
             'members' => $members,
-            'briefWorkspaceId' => session('brief_workspace_id'),
+            'briefWorkspaceId' => $workspaceId,
             'deliverablesLabel' => $deliverablesLabel,
             'availableFiles' => $availableFiles,
+            'workspaceExistingTasks' => $workspaceExistingTasks,
         ]);
     }
 
@@ -585,7 +605,52 @@ class BriefController extends Controller
                         Log::info("[PHASE TRACKER] Task '{$taskData['title']}' tidak memiliki phase (NULL)");
                     }
 
-                    // Create task
+                    $taskAction = $taskData['action'] ?? 'create';
+                    $existingTaskId = $taskData['existing_task_id'] ?? null;
+
+                    // Abaikan jika user memilih 'ignore'
+                    if ($taskAction === 'ignore') {
+                        continue;
+                    }
+
+                    if ($taskAction === 'update' && !empty($existingTaskId)) {
+                        // 🔄 UPDATE TASK LAMA YANG SUDAH ADA DI KANBAN
+                        $task = Task::where('id', $existingTaskId)->first();
+                        if ($task) {
+                            $updatePayload = [
+                                'title' => $taskData['title'],
+                                'description' => $taskData['description'] ?? $task->description,
+                                'priority' => $taskData['priority'] ?? $task->priority,
+                            ];
+
+                            if ($parsedStartDate) {
+                                $updatePayload['start_datetime'] = Carbon::parse($parsedStartDate)->startOfDay();
+                            }
+                            if ($parsedDate) {
+                                $updatePayload['due_datetime'] = Carbon::parse($parsedDate)->endOfDay();
+                            }
+                            if ($taskPhase) {
+                                $updatePayload['phase'] = $taskPhase;
+                            }
+
+                            $task->update($updatePayload);
+                            $newCreatedTaskIds[] = $task->id;
+
+                            // Update assignee jika ada
+                            if (!empty($taskData['assignee_id'])) {
+                                TaskAssignment::updateOrCreate(
+                                    ['task_id' => $task->id],
+                                    [
+                                        'user_id' => $taskData['assignee_id'],
+                                        'assigned_at' => now(),
+                                    ]
+                                );
+                            }
+                            continue;
+                        }
+                    }
+
+                    // ➕ BUAT TASK BARU
                     $task = Task::create([
                         'id' => Str::uuid()->toString(),
                         'workspace_id' => $workspace->id,
@@ -613,6 +678,26 @@ class BriefController extends Controller
                 }
             }
 
+            // Simpan log AI Processing
+            \App\Models\AIProcessingLog::create([
+                'user_id' => Auth::id(),
+                'workspace_id' => $workspace->id,
+                'project_name' => $request->project_name,
+                'payload' => [
+                    'summary' => [
+                        'project_name' => $request->project_name,
+                        'project_description' => $request->project_goal,
+                        'deliverables' => is_string($request->deliverables) ? array_map('trim', explode(',', $request->deliverables)) : [],
+                        'main_deadline' => $request->deadline,
+                    ],
+                    'tasks' => $request->tasks ?? [],
+                    'decisions' => $request->decisions ?? [],
+                    'missing_information' => session('brief_draft')['missing_information'] ?? [],
+                    'clarification_questions' => $request->clarification_questions ?? [],
+                    'files_mapping' => $filesMapping,
+                ],
+            ]);
+
             DB::commit();
             Log::info('DB Dipanggil cuk');
 
@@ -628,6 +713,33 @@ class BriefController extends Controller
                 'text' => 'Gagal membuat proyek: ' . $e->getMessage(),
             ])->withInput();
         }
+    }
+
+    public function showLog(Workspace $workspace, $logId)
+    {
+        $log = \App\Models\AIProcessingLog::where('workspace_id', $workspace->id)
+            ->findOrFail($logId);
+
+        // Fetch company members to populate owner selection dropdown (just like in review())
+        $activeCompanyId = session('active_company_id');
+        $company = Company::find($activeCompanyId);
+        $members = $company ? $company->users()->where('user_companies.status_active', true)->get() : collect();
+
+        // Fetch existing tasks in workspace
+        $workspaceExistingTasks = Task::where('workspace_id', $workspace->id)
+            ->whereNull('completed_at')
+            ->get(['id', 'title', 'due_datetime', 'description'])
+            ->toArray();
+
+        // Pass isHistory => true to view
+        return view('ai-brief', [
+            'brief' => $log->payload,
+            'members' => $members,
+            'briefWorkspaceId' => $workspace->id,
+            'isHistory' => true,
+            'logId' => $log->id,
+            'workspaceExistingTasks' => $workspaceExistingTasks,
+        ]);
     }
 
     /**

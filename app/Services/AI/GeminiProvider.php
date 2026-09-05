@@ -197,7 +197,7 @@ class GeminiProvider implements AIProvider
                     'responseMimeType' => 'application/json',
                     'responseSchema'   => !empty($responseSchema) ? $responseSchema : null,
                     'temperature'      => $temperature,
-                    'maxOutputTokens'  => 6144,
+                    'maxOutputTokens'  => 16384,
                 ])
             ]);
 

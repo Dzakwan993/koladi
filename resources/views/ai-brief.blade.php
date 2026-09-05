@@ -2,17 +2,119 @@
 
 @section('title', 'Pengumuman')
 
-    @section('content')
-        <meta name="csrf-token" content="{{ csrf_token() }}">
-        @include('components.sweet-alert')
-        <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@section('content')
+@php
+$deliverablesLabel = is_array($brief['summary']['deliverables'] ?? null)
+    ? implode(', ', $brief['summary']['deliverables'])
+    : ($brief['summary']['deliverables'] ?? '');
+
+$workspaceTasksList = $workspaceExistingTasks ?? [];
+
+$taskData = collect($brief['tasks'] ?? [])->map(function($t) use ($workspaceTasksList) {
+    $action = $t['action'] ?? 'create';
+    $rawId = trim((string) ($t['existing_task_id'] ?? ''));
+    $existingTaskId = null;
+    $reason = $t['reason'] ?? null;
+
+    if (!empty($rawId)) {
+        // 1. Cek kecocokan ID langsung (UUID atau string ID)
+        $matchedById = collect($workspaceTasksList)->first(function($item) use ($rawId) {
+            return strcasecmp(trim((string) ($item['id'] ?? '')), $rawId) === 0;
+        });
+
+        if ($matchedById) {
+            $existingTaskId = (string) $matchedById['id'];
+        } else {
+            // 2. Coba extract UUID jika ada prefix seperti "[ID: xxx-xxx]"
+            if (preg_match('/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/', $rawId, $matches)) {
+                $matchedUuid = collect($workspaceTasksList)->first(fn($item) => strcasecmp(trim((string) ($item['id'] ?? '')), $matches[0]) === 0);
+                if ($matchedUuid) {
+                    $existingTaskId = (string) $matchedUuid['id'];
+                }
+            }
+
+            // 3. Match berdasarkan judul jika AI mengembalikan string judul task
+            if (!$existingTaskId) {
+                $matchedByTitle = collect($workspaceTasksList)->first(function($item) use ($rawId) {
+                    return strcasecmp(trim($item['title']), trim($rawId)) === 0
+                        || stripos($item['title'], trim($rawId)) !== false
+                        || stripos(trim($rawId), $item['title']) !== false;
+                });
+                if ($matchedByTitle) {
+                    $existingTaskId = (string) $matchedByTitle['id'];
+                }
+            }
+        }
+    }
+
+    // Jika AI menyarankan update tapi existing_task_id masih belum ketemu, coba cari task lama yang cocok dengan judul task
+    if ($action === 'update' && empty($existingTaskId)) {
+        $matchedByTitle = collect($workspaceTasksList)->first(function($item) use ($t) {
+            $title = $t['title'] ?? '';
+            return strcasecmp(trim($item['title']), trim($title)) === 0
+                || stripos($item['title'], trim($title)) !== false
+                || stripos(trim($title), $item['title']) !== false;
+        });
+        if ($matchedByTitle) {
+            $existingTaskId = (string) $matchedByTitle['id'];
+        }
+    }
+
+    $finalExistingTaskId = $existingTaskId ?: (!empty($rawId) ? $rawId : '');
+
+    // Cari data task lama jika ada matching existing_task_id
+    $oldTask = $finalExistingTaskId ? collect($workspaceTasksList)->first(fn($item) => strcasecmp(trim((string) ($item['id'] ?? '')), trim((string) $finalExistingTaskId)) === 0) : null;
+
+    return [
+        'title' => $t['title'] ?? '',
+        'description' => $t['description'] ?? '',
+        'priority' => $t['priority'] ?? 'medium',
+        'deadline' => $t['deadline'] ?? '',
+        'start_date' => $t['start_date'] ?? '',
+        'assignee_id' => $t['assignee_id'] ?? '',
+        'phase' => $t['phase'] ?? '',
+        'action' => $action, // 'create', 'update', 'ignore'
+        'existing_task_id' => $finalExistingTaskId,
+        'reason' => $reason,
+        'diff' => ($action === 'update' && ($reason || $oldTask)) ? [
+            'reason' => $reason,
+            'old_deadline' => $oldTask['due_datetime'] ?? null,
+            'new_deadline' => $t['deadline'] ?? null,
+            'old_title' => $oldTask['title'] ?? null,
+        ] : null,
+        '_editing' => false,
+    ];
+})->values()->all();
+
+$decisionsData = collect($brief['decisions'] ?? [])->map(fn($d) => [
+    'title' => is_array($d) ? ($d['title'] ?? '') : $d,
+    'sources' => is_array($d) ? ($d['sources'] ?? []) : [],
+])->values()->all();
+
+$availableFiles = isset($isHistory) && $isHistory
+    ? array_keys($brief['files_mapping'] ?? [])
+    : array_keys(session('brief_files_mapping') ?? []);
+@endphp
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@include('components.sweet-alert')
+<script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 
         <div x-data="aiBriefComponent()" class="min-h-screen bg-[#e9effd] py-8 px-4">
             <div class="max-w-full mx-auto space-y-3">
                 {{-- Header --}}
                 <div class="flex flex-col gap-3">
                     <div class="flex">
-                        @if ($briefWorkspaceId)
+                        @if (isset($isHistory) && $isHistory)
+                            <a href="{{ route('activity-log', $briefWorkspaceId) }}"
+                                class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl transition duration-200 shadow-sm hover:shadow group">
+                                <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform text-slate-500 group-hover:text-blue-600"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
+                                </svg>
+                                <span>Kembali ke Log Aktivitas</span>
+                            </a>
+                        @elseif ($briefWorkspaceId)
                             <a href="{{ route('upload-brief', $briefWorkspaceId) }}"
                                 class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-blue-600 bg-white hover:bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl transition duration-200 shadow-sm hover:shadow group">
                                 <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform text-slate-500 group-hover:text-blue-600"
@@ -34,8 +136,11 @@
                     </div>
 
                     <div>
-                        <h1 class="text-2xl font-semibold text-slate-800">Analisis Brief Proyek</h1>
-                        <p class="text-sm text-slate-500 mt-1">Unggah dokumen proyek Anda dan biarkan AI menyusun strategi awal.
+                        <h1 class="text-2xl font-semibold text-slate-800">
+                            {{ (isset($isHistory) && $isHistory) ? 'Detail AI Processing Log' : 'Analisis Brief Proyek' }}
+                        </h1>
+                        <p class="text-sm text-slate-500 mt-1">
+                            {{ (isset($isHistory) && $isHistory) ? 'Riwayat strategi proyek dan daftar tugas yang terstruktur dari hasil pemrosesan AI.' : 'Unggah dokumen proyek Anda dan biarkan AI menyusun strategi awal.' }}
                         </p>
                     </div>
                 </div>
@@ -55,6 +160,7 @@
                         <div class="bg-slate-50 rounded-lg p-8 relative group">
                             <div class="flex items-center justify-between mb-1">
                                 <p class="text-xs text-slate-400">Tujuan Utama</p>
+                                @if(!isset($isHistory) || !$isHistory)
                                 <button type="button" @click="editGoal()"
                                     class="text-slate-400 hover:text-blue-600 focus:outline-none" title="Edit Tujuan Utama">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"
@@ -63,12 +169,14 @@
                                             d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                                     </svg>
                                 </button>
+                                @endif
                             </div>
                             <p class="text-sm text-slate-700 font-medium" x-text="projectGoal || '—'"></p>
                         </div>
                         <div class="bg-slate-50 rounded-lg p-8 relative group">
                             <div class="flex items-center justify-between mb-1">
                                 <p class="text-xs text-slate-400">Deliverables</p>
+                                @if(!isset($isHistory) || !$isHistory)
                                 <button type="button" @click="editDeliverables()"
                                     class="text-slate-400 hover:text-blue-600 focus:outline-none" title="Edit Deliverables">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"
@@ -77,6 +185,7 @@
                                             d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                                     </svg>
                                 </button>
+                                @endif
                             </div>
                             <p class="text-sm text-slate-700 font-medium" x-text="deliverables || '—'"></p>
                         </div>
@@ -90,6 +199,7 @@
                                 <template x-if="!isEditingDeadline">
                                     <span class="flex items-center gap-2">
                                         <span x-text="formatDisplayDate(mainDeadline)"></span>
+                                        @if(!isset($isHistory) || !$isHistory)
                                         <button type="button" @click="isEditingDeadline = true"
                                             class="text-slate-400 hover:text-blue-600 focus:outline-none" title="Edit Deadline">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2"
@@ -98,6 +208,7 @@
                                                     d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                                             </svg>
                                         </button>
+                                        @endif
                                     </span>
                                 </template>
                                 <template x-if="isEditingDeadline">
@@ -128,6 +239,7 @@
                             </svg>
                             <h2 class="font-semibold text-slate-800">Keputusan Kunci</h2>
                         </div>
+                        @if(!isset($isHistory) || !$isHistory)
                         <button type="button" @click="addDecision()"
                             class="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -135,6 +247,7 @@
                             </svg>
                             Tambah Keputusan
                         </button>
+                        @endif
                     </div>
 
                     <ul class="space-y-3">
@@ -161,6 +274,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                @if(!isset($isHistory) || !$isHistory)
                                 <div class="flex items-center gap-2 flex-shrink-0">
                                     <button type="button" @click="editDecision(index)"
                                         class="text-slate-400 hover:text-blue-600" title="Edit">
@@ -179,6 +293,7 @@
                                         </svg>
                                     </button>
                                 </div>
+                                @endif
                             </li>
                         </template>
                     </ul>
@@ -207,7 +322,6 @@
                             @endforeach
                         </ul>
                     </div>
-
                 @endif
 
                 {{-- Klarifikasi Tim ke Klien --}}
@@ -271,6 +385,7 @@
                             </div>
 
                             <!-- Tombol Tambah Tugas -->
+                            @if(!isset($isHistory) || !$isHistory)
                             <button type="button" @click="addTask()"
                                 class="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -278,35 +393,185 @@
                                 </svg>
                                 Tambah Tugas
                             </button>
+                            @endif
                         </div>
                     </div>
 
-                    <!-- MODE 1: Tabel Tugas (Tanpa Pemilik, dengan Tanggal Mulai & Selesai) -->
+                    <!-- MODE 1: Tabel Tugas (Dengan Action Selector & Visual Diff Rekonsiliasi) -->
                     <div x-show="viewMode === 'tasks'" class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead>
                                 <tr class="text-xs text-slate-400 uppercase border-b border-slate-100">
-                                    <th class="text-left font-medium py-2.5 w-5/12">Tugas &amp; Fase</th>
-                                    <th class="text-left font-medium py-2.5 w-2/12">Priority</th>
-                                    <th class="text-left font-medium py-2.5 w-2/12">Tanggal Mulai</th>
-                                    <th class="text-left font-medium py-2.5 w-2/12">Tenggat Selesai</th>
-                                    <th class="py-2.5 text-right w-1/12">Aksi</th>
+                                    <th class="text-left font-medium py-2.5 w-[42%] min-w-[340px]">Tugas &amp; Rekomendasi AI</th>
+                                    <th class="text-left font-medium py-2.5 w-[22%] min-w-[190px]">Aksi / Status</th>
+                                    <th class="text-left font-medium py-2.5 w-[14%] min-w-[130px]">Fase Proyek</th>
+                                    <th class="text-center font-medium py-2.5 w-[7%] whitespace-nowrap">Priority</th>
+                                    <th class="text-center font-medium py-2.5 w-[8%] whitespace-nowrap">Tgl Mulai</th>
+                                    <th class="text-center font-medium py-2.5 w-[8%] whitespace-nowrap">Tenggat Selesai</th>
+                                    <th class="py-2.5 text-right w-[4%] whitespace-nowrap pr-2">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <template x-for="(task, index) in sortedTasksList()" :key="index">
-                                    <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
-                                        <td class="py-3 pr-4">
-                                            <p class="font-medium text-slate-800 text-sm" x-text="task.title || 'Tanpa Judul'"></p>
-                                            <p class="text-xs text-slate-400 mt-0.5" x-text="task.description"></p>
-                                            <template x-if="task.phase">
-                                                <div class="inline-flex items-center gap-1 mt-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                                                    <span class="opacity-60">FASE:</span>
-                                                    <span x-text="task.phase"></span>
+                                    <tr class="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors"
+                                        :class="{'bg-amber-50/20': task.action === 'update', 'opacity-60 bg-slate-50/40': task.action === 'ignore'}">
+                                        
+                                        <!-- Kolom 1: Info Tugas + Diff Preview -->
+                                        <td class="py-3.5 pr-6 align-top">
+                                            <div class="flex items-start gap-2">
+                                                <div class="flex-1">
+                                                    <div class="flex items-center gap-2">
+                                                        <p class="font-semibold text-slate-800 text-sm" x-text="task.title || 'Tanpa Judul'"></p>
+                                                        
+                                                        <!-- Badge AI Recommendation -->
+                                                        <template x-if="task.action === 'update'">
+                                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                                </svg>
+                                                                UPDATE TASK LAMA
+                                                            </span>
+                                                        </template>
+                                                        <template x-if="task.action === 'create'">
+                                                            <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                                                                </svg>
+                                                                TASK BARU
+                                                            </span>
+                                                        </template>
+                                                    </div>
+
+                                                    <p class="text-xs text-slate-500 mt-1" x-text="task.description"></p>
+
+                                                    <!-- Visual Diff Accordion (Human-in-the-loop review) -->
+                                                    <template x-if="task.action === 'update' && (task.reason || task.diff)">
+                                                        <div class="mt-2.5 p-2.5 rounded-xl bg-amber-50/80 border border-amber-200/90 text-xs space-y-1.5">
+                                                            <div class="flex items-center gap-1.5 font-bold text-amber-900 text-[11px]">
+                                                                <svg class="w-3.5 h-3.5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                </svg>
+                                                                <span>Konteks Perubahan dari AI:</span>
+                                                            </div>
+                                                            <p class="text-[11px] text-amber-800" x-text="task.reason || (task.diff && task.diff.reason)"></p>
+
+                                                            <!-- Kotak Perbandingan Data Lama vs Baru -->
+                                                            <template x-if="task.diff">
+                                                                <div class="grid grid-cols-2 gap-2 pt-1 border-t border-amber-200/60 text-[11px]">
+                                                                    <div class="bg-white/80 p-2 rounded-lg border border-amber-100">
+                                                                        <span class="text-slate-400 block text-[9px] uppercase font-bold">Data Lama di Kanban:</span>
+                                                                        <p class="text-slate-700 font-medium truncate" :title="getExistingTaskTitle(task.existing_task_id) || (task.diff && task.diff.old_title) || ''" x-text="getExistingTaskTitle(task.existing_task_id) || (task.diff && task.diff.old_title) || 'Task di Kanban'"></p>
+                                                                        <template x-if="(getExistingTaskDeadline(task.existing_task_id) && getExistingTaskDeadline(task.existing_task_id) !== '—') || (task.diff && task.diff.old_deadline && task.diff.old_deadline !== '—' && task.diff.old_deadline.trim() !== '')">
+                                                                            <p class="text-slate-600 text-[10px] mt-0.5">
+                                                                                <span class="text-slate-400">Deadline:</span>
+                                                                                <span :class="task.deadline && (getExistingTaskDeadline(task.existing_task_id) || (task.diff && task.diff.old_deadline)) !== task.deadline ? 'line-through text-rose-500' : 'text-slate-600'" x-text="formatDisplayDate(getExistingTaskDeadline(task.existing_task_id) || (task.diff && task.diff.old_deadline))"></span>
+                                                                            </p>
+                                                                        </template>
+                                                                    </div>
+                                                                    <div class="bg-emerald-50/80 p-2 rounded-lg border border-emerald-100">
+                                                                        <span class="text-emerald-700 block text-[9px] uppercase font-bold">Hasil Meeting Baru (AI):</span>
+                                                                        <p class="text-slate-800 font-medium truncate" :title="task.title" x-text="task.title || 'Pembaruan Tugas'"></p>
+                                                                        <template x-if="(task.diff.new_deadline && task.diff.new_deadline !== '—' && task.diff.new_deadline.trim() !== '') || (task.deadline && task.deadline !== '—' && task.deadline.trim() !== '')">
+                                                                            <p class="text-emerald-700 text-[10px] font-semibold mt-0.5">
+                                                                                <span class="text-emerald-600">Deadline:</span>
+                                                                                <span x-text="formatDisplayDate(task.diff.new_deadline || task.deadline)"></span>
+                                                                            </p>
+                                                                        </template>
+                                                                    </div>
+                                                                </div>
+                                                            </template>
+                                                        </div>
+                                                    </template>
                                                 </div>
-                                            </template>
+                                            </div>
                                         </td>
-                                        <td class="py-3 pr-2 align-top pt-4">
+
+                                        <!-- Kolom 2: Action / Decision Selector -->
+                                        <td class="py-3.5 pr-4 align-top">
+                                            @if(isset($isHistory) && $isHistory)
+                                                <div class="space-y-1">
+                                                    <template x-if="task.action === 'update'">
+                                                        <div>
+                                                            <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200">
+                                                                <svg class="w-3 h-3 text-amber-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                                </svg>
+                                                                Perbarui Task Lama
+                                                            </span>
+                                                            <p class="text-[11px] text-slate-600 font-medium mt-1 truncate max-w-[200px]"
+                                                                :title="getExistingTaskTitle(task.existing_task_id) || (task.diff && task.diff.old_title) || ''"
+                                                                x-text="getExistingTaskTitle(task.existing_task_id) || (task.diff && task.diff.old_title) || '—'"></p>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="task.action === 'create'">
+                                                        <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-900 border border-emerald-200">
+                                                            <svg class="w-3 h-3 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                                                            </svg>
+                                                            Simpan Task Baru
+                                                        </span>
+                                                    </template>
+                                                    <template x-if="task.action === 'ignore'">
+                                                        <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-500 border border-slate-200">
+                                                            🚫 Abaikan
+                                                        </span>
+                                                    </template>
+                                                </div>
+                                            @else
+                                                <div class="space-y-1.5">
+                                                    <select x-model="task.action"
+                                                        class="w-full text-xs font-semibold rounded-lg px-2.5 py-1.5 border transition-all focus:outline-none focus:ring-1"
+                                                        :class="{
+                                                            'bg-amber-50 text-amber-900 border-amber-300 focus:ring-amber-500': task.action === 'update',
+                                                            'bg-emerald-50 text-emerald-900 border-emerald-300 focus:ring-emerald-500': task.action === 'create',
+                                                            'bg-slate-100 text-slate-500 border-slate-300 focus:ring-slate-400': task.action === 'ignore'
+                                                        }">
+                                                        <option value="create">➕ Simpan Sebagai Task Baru</option>
+                                                        <option value="update">🔄 Perbarui Task yang Sudah Ada</option>
+                                                        <option value="ignore">🚫 Abaikan (Jangan Simpan)</option>
+                                                    </select>
+
+                                                    <!-- Target Task Picker jika mode Update -->
+                                                    <template x-if="task.action === 'update'">
+                                                        <div class="space-y-1">
+                                                            <label class="text-[10px] font-bold text-slate-400 uppercase">Task lama yang diperbarui:</label>
+                                                            <select x-model="task.existing_task_id"
+                                                                class="w-full text-xs rounded-lg px-2 py-1 bg-white border border-amber-200 text-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500">
+                                                                <option value="" disabled>-- Pilih Task di Kanban --</option>
+                                                                @foreach($workspaceTasksList as $exTask)
+                                                                    <option value="{{ $exTask['id'] }}">
+                                                                        {{ $exTask['title'] }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            @endif
+                                        </td>
+
+                                        <!-- Kolom 3: Fase Proyek -->
+                                        <td class="py-3.5 pr-3 align-top">
+                                            @if(isset($isHistory) && $isHistory)
+                                                <template x-if="task.phase">
+                                                    <span class="inline-flex items-center gap-1 bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-semibold px-2.5 py-1 rounded-lg" x-text="task.phase"></span>
+                                                </template>
+                                                <template x-if="!task.phase">
+                                                    <span class="text-slate-300 text-xs">—</span>
+                                                </template>
+                                            @else
+                                                <select x-model="task.phase"
+                                                    class="w-36 max-w-full text-xs font-medium rounded-lg px-2 py-1.5 bg-indigo-50/50 border border-indigo-200 text-indigo-900 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                                    <option value="">— Tanpa Fase —</option>
+                                                    <template x-for="ph in getAvailablePhases()" :key="ph">
+                                                        <option :value="ph" x-text="ph" :selected="ph === task.phase"></option>
+                                                    </template>
+                                                </select>
+                                            @endif
+                                        </td>
+
+                                        <!-- Kolom 4: Priority -->
+                                        <td class="py-3.5 px-2 text-center align-top pt-4 whitespace-nowrap">
                                             <span :class="{
                                                         'bg-rose-50 text-rose-500 border border-rose-200': task.priority === 'high' || task.priority === 'urgent',
                                                         'bg-blue-50 text-blue-500 border border-blue-200': task.priority === 'medium',
@@ -315,29 +580,35 @@
                                                 x-text="task.priority ? task.priority.toUpperCase() : 'MED'">
                                             </span>
                                         </td>
-                                        <td class="py-3 pr-2 text-slate-600 text-xs whitespace-nowrap align-top pt-4 font-medium"
+
+                                        <!-- Kolom 5: Tanggal Mulai -->
+                                        <td class="py-3.5 px-2 text-center text-slate-600 text-xs whitespace-nowrap align-top pt-4 font-medium"
                                             x-text="formatDisplayDate(task.start_date)"></td>
-                                        <td class="py-3 pr-2 text-slate-600 text-xs whitespace-nowrap align-top pt-4 font-medium"
+
+                                        <!-- Kolom 6: Tenggat Selesai -->
+                                        <td class="py-3.5 px-2 text-center text-slate-600 text-xs whitespace-nowrap align-top pt-4 font-medium"
                                             x-text="formatDisplayDate(task.deadline)"></td>
-                                        <td class="py-3 text-right align-top pt-4">
-                                            <div class="flex items-center justify-end gap-2">
+
+                                        <!-- Kolom 7: Aksi Modal & Delete -->
+                                        <td class="py-3.5 pr-2 text-right align-top pt-3 whitespace-nowrap">
+                                            @if(!isset($isHistory) || !$isHistory)
+                                            <div class="flex items-center justify-end gap-1.5">
                                                 <button type="button" @click="editTaskByRef(task)"
-                                                    class="text-slate-400 hover:text-blue-600 p-1 rounded-lg hover:bg-blue-50 transition" title="Edit">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
-                                                        viewBox="0 0 24 24">
-                                                        <path
-                                                            d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                                    class="text-slate-400 hover:text-blue-600 p-1.5 rounded-lg hover:bg-blue-50 transition" title="Edit Detail">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                                                     </svg>
                                                 </button>
                                                 <button type="button" @click="confirmDelete('task', task)"
-                                                    class="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition" title="Hapus">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2"
-                                                        viewBox="0 0 24 24">
-                                                        <path
-                                                            d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6" />
+                                                    class="text-slate-400 hover:text-rose-600 p-1.5 rounded-lg hover:bg-rose-50 transition" title="Hapus">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                        <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14zM10 11v6M14 11v6" />
                                                     </svg>
                                                 </button>
                                             </div>
+                                            @else
+                                            <span class="text-slate-300 text-xs">—</span>
+                                            @endif
                                         </td>
                                     </tr>
                                 </template>
@@ -413,7 +684,8 @@
 
                                         <!-- Loop Setiap Tugas di dalam Fase (Setiap tugas punya 1 Bar Horizontal sendiri) -->
                                         <template x-for="(task, tIdx) in phase.tasks" :key="tIdx">
-                                            <div class="relative py-2 px-2 flex items-center min-h-[44px]" @click="editTaskByRef(task)">
+                                            <div class="relative py-2 px-2 flex items-center min-h-[44px]"
+                                                @if(!isset($isHistory) || !$isHistory) @click="editTaskByRef(task)" class="cursor-pointer" @endif>
                                                 
                                                 <!-- Bar Gantt Horizontal per Tugas -->
                                                 <div class="relative z-10 h-7 rounded-md transition-all duration-300 flex items-center px-2.5 shadow-xs"
@@ -432,46 +704,59 @@
 
                                 </div>
                             </template>
-                        </div>
-                    </div>
-                </div>
+                        </div>{{-- /divide-y min-w-[900px] --}}
+                    </div>{{-- /overflow-x-auto x-show timeline wrapper --}}
 
-                {{-- Hidden form for approve submission (submitted programmatically on CTA click) --}}
-                <form id="approve-form" action="{{ route('brief.approve') }}" method="POST" class="hidden">
-                    @csrf
-                    <input type="hidden" name="workspace_id" value="{{ $briefWorkspaceId ?? '' }}">
-                    <input type="hidden" name="project_name" value="{{ $brief['summary']['project_name'] ?? '' }}">
-                    <input type="hidden" id="hidden-project-goal" name="project_goal"
-                        value="{{ $brief['summary']['project_description'] ?? '' }}">
-                    <input type="hidden" id="hidden-deliverables" name="deliverables" value="{{ $deliverablesLabel ?? '' }}">
-                    <input type="hidden" id="hidden-deadline" name="deadline"
-                        value="{{ $brief['summary']['main_deadline'] ?? '' }}">
-                    @foreach($brief['clarification_questions'] ?? [] as $q)
-                        <input type="hidden" name="clarification_questions[]" value="{{ $q }}">
-                    @endforeach
-                    {{-- Tasks dan Decisions diserialisasi via JS sebelum submit --}}
-                    <div id="task-inputs"></div>
-                </form>
+        {{-- Hidden form for approve submission (submitted programmatically on CTA click) --}}
+        <form id="approve-form" action="{{ route('brief.approve') }}" method="POST" class="hidden">
+            @csrf
+            <input type="hidden" name="workspace_id" value="{{ $briefWorkspaceId ?? '' }}">
+            <input type="hidden" name="project_name" value="{{ $brief['summary']['project_name'] ?? '' }}">
+            <input type="hidden" id="hidden-project-goal" name="project_goal" value="{{ $brief['summary']['project_description'] ?? '' }}">
+            <input type="hidden" id="hidden-deliverables" name="deliverables" value="{{ $deliverablesLabel ?? '' }}">
+            <input type="hidden" id="hidden-deadline" name="deadline" value="{{ $brief['summary']['main_deadline'] ?? '' }}">
+            @foreach($brief['clarification_questions'] ?? [] as $q)
+            <input type="hidden" name="clarification_questions[]" value="{{ $q }}">
+            @endforeach
+            {{-- Tasks dan Decisions diserialisasi via JS sebelum submit --}}
+            <div id="task-inputs"></div>
+            <div id="decision-inputs"></div>
+        </form>
 
-                {{-- CTA --}}
-                <button type="button" id="proses-ai-btn" @click="submitApprove()"
-                    class="w-full bg-blue-700 hover:bg-blue-800 transition-colors text-white rounded-2xl py-4 flex flex-col items-center gap-1 text-center">
-                    <span class="flex items-center gap-2 font-semibold text-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <rect x="4" y="4" width="16" height="16" rx="2" />
-                            <path d="M9 9h6v6H9zM4 9h2M4 15h2M18 9h2M18 15h2M9 4v2M15 4v2M9 18v2M15 18v2" />
-                        </svg>
-                        Proses dengan AI
-                    </span>
-                    <span class="text-xs text-blue-100 font-normal ">
-                        Biarkan AI menyusun strategi awal, ringkasan eksekutif, serta daftar tugas yang terstruktur secara
-                        otomatis.
-                    </span>
-                </button>
 
-            </div>
+        @if(!($isHistory ?? false))
+        {{-- CTA --}}
+        <button type="button" id="proses-ai-btn" @click="submitApprove()"
+            class="w-full bg-blue-700 hover:bg-blue-800 transition-colors text-white rounded-2xl py-4 flex flex-col items-center gap-1 text-center">
+            <span class="flex items-center gap-2 font-semibold text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <rect x="4" y="4" width="16" height="16" rx="2" />
+                    <path d="M9 9h6v6H9zM4 9h2M4 15h2M18 9h2M18 15h2M9 4v2M15 4v2M9 18v2M15 18v2" />
+                </svg>
+                Proses dengan AI
+            </span>
+            <span class="text-xs text-blue-100 font-normal ">
+                Biarkan AI menyusun strategi awal, ringkasan eksekutif, serta daftar tugas yang terstruktur secara otomatis.
+            </span>
+        </button>
+        @else
+        <div class="w-full bg-emerald-50 border border-emerald-200 rounded-2xl py-5 flex flex-col items-center gap-1 text-center">
+            <span class="flex items-center gap-2 font-semibold text-emerald-800 text-sm">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Brief Telah Diproses
+            </span>
+            <span class="text-xs text-emerald-600 font-medium">
+                Log AI Processing ini telah disetujui dan diterapkan sebagai proyek/tugas aktif.
+            </span>
+        </div>
+        @endif
 
-            {{-- Modal Edit Tujuan Utama --}}
+    </div>
+
+
+
             <div x-show="openEditGoalModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
                 <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="openEditGoalModal = false"></div>
                 <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
@@ -611,6 +896,38 @@
                                             class="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:outline-none text-slate-700">
                                     </div>
                                 </div>
+
+                                <!-- Rekonsiliasi Aksi di Modal -->
+                                <div class="pt-3 border-t border-slate-100 space-y-3 bg-slate-50/70 p-3.5 rounded-xl">
+                                    <div>
+                                        <label class="block text-xs font-bold text-slate-700 mb-1">Tindakan Penyimpanan ke Kanban</label>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <label class="flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer select-none transition-all"
+                                                :class="editTaskForm.action === 'create' ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-semibold' : 'bg-white border-slate-200 text-slate-600'">
+                                                <input type="radio" value="create" x-model="editTaskForm.action" class="text-emerald-600 focus:ring-emerald-500">
+                                                <span>➕ Buat Task Baru</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer select-none transition-all"
+                                                :class="editTaskForm.action === 'update' ? 'bg-amber-50 border-amber-300 text-amber-900 font-semibold' : 'bg-white border-slate-200 text-slate-600'">
+                                                <input type="radio" value="update" x-model="editTaskForm.action" class="text-amber-600 focus:ring-amber-500">
+                                                <span>🔄 Update Task Lama</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div x-show="editTaskForm.action === 'update'" class="space-y-1">
+                                        <label class="block text-[11px] font-semibold text-slate-600">Tautkan ke Task Lama di Kanban:</label>
+                                        <select x-model.number="editTaskForm.existing_task_id"
+                                            class="w-full text-xs border border-amber-300 rounded-lg px-3 py-2 bg-white text-slate-800 focus:ring-1 focus:ring-amber-500 focus:outline-none">
+                                            <option :value="null" disabled>-- Pilih Task di Kanban --</option>
+                                            @foreach($workspaceTasksList as $exTask)
+                                                <option value="{{ $exTask['id'] }}">
+                                                    {{ $exTask['title'] }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="bg-slate-50 px-6 py-4 flex flex-row-reverse gap-2 rounded-b-2xl">
@@ -721,17 +1038,6 @@
         </div>
 
         @php
-            $taskData = collect($brief['tasks'] ?? [])->map(fn($t) => [
-                'title' => $t['title'] ?? '',
-                'description' => $t['description'] ?? '',
-                'priority' => $t['priority'] ?? 'medium',
-                'start_date' => $t['start_date'] ?? '',
-                'deadline' => $t['deadline'] ?? '',
-                'assignee_id' => $t['assignee_id'] ?? '',
-                'phase' => $t['phase'] ?? '',
-                '_editing' => false,
-            ])->values()->all();
-
             $decisionsData = collect($brief['decisions'] ?? [])->map(fn($d) => [
                 'title' => is_array($d) ? ($d['title'] ?? '') : $d,
                 'sources' => is_array($d) ? ($d['sources'] ?? []) : [],
@@ -746,9 +1052,23 @@
                     return {
                         // ─── State: View Mode ───────────────────────────────────
                         viewMode: 'tasks', // 'tasks' or 'timeline'
+                        isHistory: @json(isset($isHistory) && $isHistory),
 
                         // ─── State: Tasks ───────────────────────────────────────
                         tasks: @json($taskData),
+                        workspaceExistingTasks: @json($workspaceTasksList ?? []),
+
+                        getExistingTaskTitle(id) {
+                            if (!id) return '';
+                            const found = (this.workspaceExistingTasks || []).find(t => String(t.id).trim().toLowerCase() === String(id).trim().toLowerCase());
+                            return found ? found.title : '';
+                        },
+
+                        getExistingTaskDeadline(id) {
+                            if (!id) return '';
+                            const found = (this.workspaceExistingTasks || []).find(t => String(t.id).trim().toLowerCase() === String(id).trim().toLowerCase());
+                            return found ? (found.due_datetime || '') : '';
+                        },
 
                         // ─── State: Decisions ────────────────────────────────────
                         decisions: @json($decisionsData),
@@ -782,11 +1102,12 @@
                         isEditingDeadline: false,
 
                         init() {
-                            // Normalize dates to YYYY-MM-DD for date inputs
+                            // Normalize dates to YYYY-MM-DD for date inputs & ensure existing_task_id is string
                             this.tasks.forEach(t => {
                                 const norm = (val) => this.parseDateToISO(val);
                                 if (t.start_date) t.start_date = norm(t.start_date);
                                 if (t.deadline) t.deadline = norm(t.deadline);
+                                if (t.existing_task_id) t.existing_task_id = String(t.existing_task_id);
                             });
                         },
 
@@ -877,7 +1198,13 @@
                         // Edit task dari referensi object (dipakai dari Gantt bar)
                         editTaskByRef(taskObj) {
                             const idx = this.tasks.findIndex(t => t === taskObj || (t.title === taskObj.title && t.phase === taskObj.phase));
-                            if (idx !== -1) this.editTask(idx);
+                            if (idx !== -1) {
+                                this.editTask(idx);
+                            } else {
+                                this.editTaskForm = { ...taskObj, action: 'create' };
+                                this.editingTaskIndex = null;
+                                this.openEditTaskModal = true;
+                            }
                         },
 
                         getProjectPhases() {
@@ -1060,7 +1387,9 @@
                             deadline: '',
                             assignee_id: '',
                             _assignee_name: '',
-                            phase: ''
+                            phase: '',
+                            action: 'create',
+                            existing_task_id: ''
                         },
 
                         // ─── Tasks CRUD ─────────────────────────────────────────
@@ -1074,7 +1403,9 @@
                                 deadline: '',
                                 assignee_id: '',
                                 _assignee_name: '',
-                                phase: ''
+                                phase: '',
+                                action: 'create',
+                                existing_task_id: this.workspaceExistingTasks.length > 0 ? this.workspaceExistingTasks[0].id : ''
                             };
                             this.openEditTaskModal = true;
                         },
@@ -1090,7 +1421,9 @@
                                 deadline: t.deadline || '',
                                 assignee_id: t.assignee_id || '',
                                 _assignee_name: t._assignee_name || '',
-                                phase: t.phase || ''
+                                phase: t.phase || '',
+                                action: t.action || 'create',
+                                existing_task_id: t.existing_task_id || (this.workspaceExistingTasks.length > 0 ? this.workspaceExistingTasks[0].id : '')
                             };
                             this.openEditTaskModal = true;
                         },
@@ -1176,14 +1509,52 @@
                             this.openEditDeliverablesModal = false;
                         },
 
-                        // ─── Form Submission ────────────────────────────────────
+                        // ─── Form Submission dengan Human-in-the-Loop Dialog ─────
                         submitApprove() {
+                            const createCount = this.tasks.filter(t => t.action === 'create' || !t.action).length;
+                            const updateCount = this.tasks.filter(t => t.action === 'update').length;
+
+                            Swal.fire({
+                                title: 'Konfirmasi Penyimpanan Kanban',
+                                html: `
+                                    <div class="text-left text-xs space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200 mt-2 text-slate-700">
+                                        <p class="font-bold text-slate-800 text-sm mb-1">Rincian Tindakan AI Brief:</p>
+                                        <div class="flex items-center justify-between py-1 border-b border-slate-200">
+                                            <span class="text-emerald-700 font-medium">➕ Task Baru yang dibuat</span>
+                                            <span class="font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">${createCount} Tugas</span>
+                                        </div>
+                                        <div class="flex items-center justify-between py-1 border-b border-slate-200">
+                                            <span class="text-amber-700 font-medium">🔄 Task Eksisting yang diperbarui</span>
+                                            <span class="font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md">${updateCount} Tugas</span>
+                                        </div>
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 mt-3 italic">Pastikan seluruh penyesuaian deadline dan tugas sudah sesuai sebelum menerapkan ke Kanban.</p>
+                                `,
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonColor: '#2563eb',
+                                cancelButtonColor: '#64748b',
+                                confirmButtonText: 'Ya, Terapkan Sekarang',
+                                cancelButtonText: 'Cek Lagi',
+                                customClass: {
+                                    popup: 'rounded-2xl',
+                                    confirmButton: 'rounded-xl text-xs font-semibold px-4 py-2.5',
+                                    cancelButton: 'rounded-xl text-xs font-semibold px-4 py-2.5'
+                                }
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    this.executeFormSubmit();
+                                }
+                            });
+                        },
+
+                        executeFormSubmit() {
                             const container = document.getElementById('task-inputs');
                             container.innerHTML = '';
 
                             // Serialize tasks
                             this.tasks.forEach((task, i) => {
-                                const fields = ['title', 'description', 'priority', 'start_date', 'deadline', 'assignee_id', 'phase'];
+                                const fields = ['title', 'description', 'priority', 'start_date', 'deadline', 'assignee_id', 'phase', 'action', 'existing_task_id'];
                                 fields.forEach(field => {
                                     const input = document.createElement('input');
                                     input.type = 'hidden';

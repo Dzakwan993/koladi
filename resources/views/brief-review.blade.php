@@ -7,7 +7,7 @@
         <!-- Header -->
         <div class="mb-8 flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900 mb-1">Analisis Brief Proyek</h1>
+                <h1 class="text-2xl font-bold text-gray-900 mb-1">Analisis Brief Proyekaaa</h1>
                 <p class="text-sm text-gray-600">Unggah dokumen proyek Anda dan biarkan AI menyusun strategi awal.</p>
             </div>
             <a href="{{ route('brief.index') }}"

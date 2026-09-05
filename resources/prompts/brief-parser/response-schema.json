@@ -53,9 +53,12 @@
           "priority": { "type": "string", "nullable": true },
           "start_date": { "type": "string", "nullable": true },
           "deadline": { "type": "string", "nullable": true },
-          "phase": { "type": "string", "nullable": true }
+          "phase": { "type": "string", "nullable": true },
+          "action": { "type": "string", "enum": ["create", "update"] },
+          "existing_task_id": { "type": "string", "nullable": true },
+          "reason": { "type": "string", "nullable": true }
         },
-        "required": ["title", "description", "priority", "start_date", "deadline", "phase"]
+        "required": ["title", "description", "priority", "start_date", "deadline", "phase", "action", "existing_task_id", "reason"]
       }
     },
     "missing_information": {

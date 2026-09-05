@@ -420,20 +420,19 @@
         </div>
     </div>
 
-    {{-- ─── MODAL PERSETUJUAN PEMROSESAN AI ──────────────────────────────── --}}
-    <div id="aiConsentModal" class="fixed inset-0 z-[9998] flex items-center justify-center p-4" style="display: none !important;">
+    {{-- ─── MODAL PERSETUJUAN PENGGUNAAN AI (CONSENT MODAL) ─────────────── --}}
+    <div id="aiConsentModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4" style="display: none !important;">
         {{-- Backdrop --}}
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" id="aiConsentBackdrop"></div>
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeAiConsentModal(true)"></div>
 
         {{-- Modal Card --}}
-        <div class="relative bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-md mx-auto overflow-hidden" style="animation: modalSlideIn 0.2s ease-out;">
-
+        <div class="relative bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-lg mx-auto overflow-hidden z-10" style="animation: modalSlideIn 0.2s ease-out;">
             {{-- Header --}}
-            <div class="px-6 pt-6 pb-4 border-b border-slate-100">
-                <div class="flex items-center gap-3 mb-1">
-                    <div class="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.955 11.955 0 003 12c0 2.458.728 4.745 1.98 6.65l.01.015M17.25 6.003A11.95 11.95 0 0121 12c0 2.264-.6 4.39-1.651 6.22M7.5 12a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0z" />
+            <div class="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center flex-shrink-0 text-indigo-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                         </svg>
                     </div>
                     <div>
@@ -444,7 +443,6 @@
 
             {{-- Body --}}
             <div class="px-6 py-5 space-y-4">
-
                 {{-- Info utama --}}
                 <div class="flex items-start gap-3">
                     <div class="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -502,7 +500,6 @@
                         Saya memahami informasi di atas dan menyetujui pemrosesan dokumen/konteks menggunakan AI.
                     </span>
                 </label>
-
             </div>
 
             {{-- Footer --}}
@@ -510,7 +507,7 @@
                 <button
                     type="button"
                     id="aiConsentCancelBtn"
-                    onclick="closeAiConsentModal()"
+                    onclick="closeAiConsentModal(true)"
                     class="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
                     Batal
                 </button>
@@ -723,6 +720,18 @@
                     </svg>
                 </button>
             </div>
+        </div>
+    </div>
+
+    {{-- Overlay Menunggu Transkrip Fireflies --}}
+    <div id="transcriptWaitingOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center hidden">
+        <div class="bg-white p-8 rounded-3xl shadow-xl flex flex-col items-center max-w-sm w-full mx-4 border border-slate-100" id="transcriptWaitingCard">
+            <div class="relative w-16 h-16 mb-4">
+                <div class="absolute inset-0 rounded-full border-4 border-slate-100"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-t-indigo-600 animate-spin"></div>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-1">Menunggu Meeting Selesai...</h3>
+            <p class="text-xs text-slate-500 text-center leading-relaxed">Transkrip akan otomatis masuk begitu meeting berakhir. Halaman ini tidak perlu di-refresh.</p>
         </div>
     </div>
 
@@ -1091,10 +1100,12 @@
         modal.style.display = 'flex';
     }
 
-    function closeAiConsentModal() {
+    function closeAiConsentModal(clearAction = false) {
         const modal = document.getElementById('aiConsentModal');
-        modal.style.display = 'none';
-        _pendingAction = null;
+        if (modal) modal.style.display = 'none';
+        if (clearAction) {
+            _pendingAction = null;
+        }
     }
 
     function handleConsentCheckbox() {
@@ -1105,16 +1116,16 @@
     function handleAiConsentApproved() {
         if (!document.getElementById('aiConsentCheckbox').checked) return;
         _consentGiven = true;
+        const currentAction = _pendingAction;
+        _pendingAction = null;
         closeAiConsentModal();
 
-        if (_pendingAction === 'formSubmit') {
+        if (currentAction === 'formSubmit') {
             document.getElementById('loadingOverlay').classList.remove('hidden');
             document.getElementById('uploadForm').submit();
-        } else {
-            // Default: buka modal pilihan sumber dokumen
+        } else if (currentAction === 'sourcePicker') {
             openSourceSelectionModal();
         }
-        _pendingAction = null;
     }
 
     // ── Source Selection Modal Logic ──────────────────────────────────────────

@@ -15,13 +15,12 @@ class AIService
 
     }
 
-    public function generateBrief(array $documents)
+    public function generateBrief(array $documents, array $existingTasks = [])
     {
-        $prompt = $this->promptBuilder->build($documents);
+        $prompt = $this->promptBuilder->build($documents, $existingTasks);
 
         $response = $this->provider->generate($prompt);
 
         return $this->validator->validate($response);
-
     }
 }

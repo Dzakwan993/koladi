@@ -241,7 +241,7 @@ window.addEventListener('resize', handleResize);" class="flex h-screen relative"
             @if ($currentWorkspace)
                 <a href="{{ route('activity-log', $currentWorkspace->id) }}"
                     class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg transition
-            {{ Request::is('activity-log/*') ? 'bg-[#e9effd] text-[#225ad6] font-medium active' : 'text-gray-600 hover:bg-gray-50' }}">
+            {{ (request()->routeIs('activity-log*') || request()->routeIs('ai-processing-log*') || Request::is('activity-log*') || Request::is('workspace/*/ai-processing-log/*') || Request::is('activity-log')) ? 'bg-[#e9effd] text-[#225ad6] font-medium active' : 'text-gray-600 hover:bg-gray-50' }}">
 
                     <svg class="w-5 h-5 sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"

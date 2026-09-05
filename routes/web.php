@@ -640,6 +640,9 @@ Route::middleware(['auth'])->group(function () {
     });
 
 
+    Route::get('/workspace/{workspace}/ai-processing-log/{log}', [BriefController::class, 'showLog'])
+        ->name('ai-processing-log.show');
+
     Route::get('/activity-log/{workspace}', [ActivityLogController::class, 'index'])
         ->name('activity-log');
 });
