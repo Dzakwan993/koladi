@@ -7,12 +7,12 @@ use Illuminate\Support\Facades\Log;
 
 class FirefliesService
 {
-    protected string $apiKey;
+    protected ?string $apiKey;
     protected string $endpoint = 'https://api.fireflies.ai/graphql';
 
     public function __construct()
     {
-        $this->apiKey = config('services.fireflies.key');
+        $this->apiKey = config('services.fireflies.key') ?: null;
     }
 
     /**
@@ -22,6 +22,11 @@ class FirefliesService
      */
     public function addToLiveMeeting(string $meetingLink, string $title): array
     {
+        if (empty($this->apiKey)) {
+            Log::warning('Fireflies API key is not configured in environment.');
+            return ['success' => false, 'message' => 'Fireflies API key is not configured. Please set FIREFLIES_API_KEY in .env'];
+        }
+
         $query = '
             mutation AddToLiveMeeting($meeting_link: String!, $title: String) {
                 addToLiveMeeting(meeting_link: $meeting_link, title: $title) {
@@ -65,6 +70,11 @@ class FirefliesService
      */
     public function getTranscript(string $meetingId): array
     {
+        if (empty($this->apiKey)) {
+            Log::warning('Fireflies API key is not configured in environment.');
+            return ['success' => false, 'message' => 'Fireflies API key is not configured. Please set FIREFLIES_API_KEY in .env'];
+        }
+
         $query = '
             query Transcript($transcriptId: String!) {
                 transcript(id: $transcriptId) {
