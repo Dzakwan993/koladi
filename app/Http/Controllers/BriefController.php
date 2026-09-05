@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 
 class BriefController extends Controller
 {
@@ -615,6 +616,52 @@ class BriefController extends Controller
         } catch (\Exception $e) {
             Log::warning("Failed to parse deadline string: " . $dateString);
             return null;
+        }
+    }
+
+    /**
+     * ✅ BARU: Cek status transkrip untuk event tertentu (dipoll dari frontend)
+     */
+    public function transcriptStatus(Request $request, Workspace $workspace)
+    {
+        $eventId = $request->query('event');
+        $status  = Cache::get("transcript_status:{$eventId}", 'waiting');
+        $fileId  = Cache::get("transcript_file:{$eventId}");
+        $file    = $fileId ? File::find($fileId) : null;
+
+        return response()->json([
+            'status'    => $status,
+            'file_id'   => $file->id ?? null,
+            'file_name' => $file->file_name ?? null,
+        ]);
+    }
+
+    /**
+     * ✅ BARU: Proses brief langsung dari file transkrip yang sudah tersimpan
+     */
+    public function uploadFromTranscript(Request $request)
+    {
+        $request->validate(['file_id' => 'required|exists:files,id']);
+        $fileModel = File::findOrFail($request->file_id);
+        $content   = Storage::disk('public')->get($fileModel->file_path);
+
+        $documents = [[
+            'filename'  => $fileModel->file_name,
+            'extension' => 'txt',
+            'mime_type' => 'text/plain',
+            'content'   => $content,
+        ]];
+
+        try {
+            $briefData = $this->aiService->generateBrief($documents);
+            session(['brief_draft' => $briefData]);
+            session(['brief_files_mapping' => [$fileModel->file_name => $fileModel->id]]);
+            session(['brief_workspace_id' => $fileModel->workspace_id]);
+
+            return response()->json(['redirect' => route('brief.review')]);
+        } catch (\Exception $e) {
+            Log::error('AI Brief dari transkrip gagal: ' . $e->getMessage());
+            return response()->json(['error' => 'Gagal memproses transkrip: ' . $e->getMessage()], 500);
         }
     }
 }
