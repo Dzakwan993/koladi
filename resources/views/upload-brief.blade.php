@@ -292,8 +292,8 @@
                                 </svg>
                             </div>
                             <div class="flex-1 min-w-0">
-                                <p class="text-xs font-bold text-slate-800 truncate">Template Konteks - {{ $savedTemplate['name'] ?? 'Rencana Kerja' }}.txt</p>
-                                <p class="text-[10px] text-indigo-600 font-medium">Dari Formulir Template Rencana Kerja</p>
+                                <p class="text-xs font-bold text-slate-800 truncate">{{ $savedTemplate['name'] ?? 'Rencana Kerja' }}.txt</p>
+                                <p class="text-[10px] text-indigo-600 font-medium">Template: {{ $savedTemplate['preset_name'] ?? 'Formulir Rencana Kerja' }}</p>
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
@@ -529,6 +529,203 @@
         </div>
     </div>
 
+    {{-- ─── MODAL PILIHAN SUMBER BERKAS (LOKAL vs WORKSPACE) ─────────────── --}}
+    <div id="sourceSelectionModal" class="fixed inset-0 z-[9998] flex items-center justify-center p-4" style="display: none !important;">
+        {{-- Backdrop --}}
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeSourceSelectionModal()"></div>
+
+        {{-- Modal Card --}}
+        <div class="relative bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-lg mx-auto overflow-hidden z-10" style="animation: modalSlideIn 0.2s ease-out;">
+            {{-- Header --}}
+            <div class="px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm border border-indigo-100/60">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 leading-tight">Pilih Sumber Dokumen Brief</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Tentukan dari mana Anda ingin mengambil berkas konteks.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeSourceSelectionModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Body Options --}}
+            <div class="p-6 space-y-3.5">
+                {{-- Opsi 1: Dari Komputer Lokal --}}
+                <div onclick="selectLocalComputerSource()" class="group relative flex items-start gap-4 p-4 rounded-2xl border-2 border-slate-100 hover:border-indigo-500 bg-white hover:bg-indigo-50/20 transition-all cursor-pointer shadow-sm hover:shadow-md">
+                    <div class="w-11 h-11 rounded-2xl bg-blue-50 text-blue-600 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center flex-shrink-0 transition-colors shadow-sm">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0H3" />
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">Unggah dari Komputer Lokal</h4>
+                            <span class="text-xs font-semibold text-indigo-600 group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Pilih file baru berformat PDF, DOCX, atau TXT dari perangkat Anda.</p>
+                    </div>
+                </div>
+
+                {{-- Opsi 2: Dari Penyimpanan Workspace --}}
+                <div onclick="selectWorkspaceStorageSource()" class="group relative flex items-start gap-4 p-4 rounded-2xl border-2 border-slate-100 hover:border-indigo-500 bg-white hover:bg-indigo-50/20 transition-all cursor-pointer shadow-sm hover:shadow-md">
+                    <div class="w-11 h-11 rounded-2xl bg-purple-50 text-purple-600 group-hover:bg-indigo-600 group-hover:text-white flex items-center justify-center flex-shrink-0 transition-colors shadow-sm">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">Penyimpanan Workspace</h4>
+                            <span class="text-xs font-semibold text-indigo-600 group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Pilih dari berkas atau transkrip meeting yang sudah tersimpan di <span class="font-semibold text-slate-700">{{ $workspace->name ?? 'Workspace ini' }}</span>.</p>
+                        <span class="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-[10px] font-bold border border-purple-100">
+                            {{ count($workspaceFiles ?? []) }} Dokumen Tersedia
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- ─── MODAL PILIH BERKAS WORKSPACE (MULTI-SELECT) ────────────────────── --}}
+    <div id="workspaceFilePickerModal" class="fixed inset-0 z-[9998] flex items-center justify-center p-4 sm:p-6 overflow-y-auto" style="display: none !important;">
+        {{-- Backdrop --}}
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeWorkspaceFilePickerModal()"></div>
+
+        {{-- Modal Content Card --}}
+        <div class="relative bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-2xl my-4 overflow-hidden z-10" style="animation: modalSlideIn 0.2s ease-out;">
+            {{-- Header --}}
+            <div class="px-6 sm:px-8 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center flex-shrink-0 shadow-sm border border-purple-100/60">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-bold text-slate-800 leading-tight">Pilih Dokumen dari Workspace</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Pilih satu atau beberapa berkas untuk dianalisis bersama oleh AI.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeWorkspaceFilePickerModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Search & Selection Toolbar --}}
+            <div class="px-6 sm:px-8 py-3 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between gap-3">
+                <div class="relative flex-1">
+                    <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                        type="text"
+                        id="workspaceFileSearchInput"
+                        oninput="filterWorkspaceFiles()"
+                        placeholder="Cari nama dokumen atau transkrip..."
+                        class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-700">
+                </div>
+                <span id="selectedCountBadge" class="text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-lg shrink-0">
+                    0 dipilih
+                </span>
+            </div>
+
+            {{-- File List Item Selection --}}
+            <div class="p-6 sm:p-8 max-h-[50vh] overflow-y-auto space-y-2" id="workspaceFileListContainer">
+                @forelse($workspaceFiles ?? [] as $wsFile)
+                    @php
+                        $ext = strtolower(pathinfo($wsFile->file_name, PATHINFO_EXTENSION) ?: $wsFile->file_type);
+                        $isTxt = in_array($ext, ['txt', 'text/plain']);
+                        $isPdf = in_array($ext, ['pdf', 'application/pdf']);
+                        $isDocx = in_array($ext, ['docx', 'doc']);
+                    @endphp
+                    <div
+                        data-file-id="{{ $wsFile->id }}"
+                        data-file-name="{{ $wsFile->file_name }}"
+                        data-file-size="{{ $wsFile->file_size }}"
+                        onclick="toggleWorkspaceFileSelection('{{ $wsFile->id }}')"
+                        class="workspace-file-row group flex items-center justify-between gap-3.5 p-3.5 rounded-2xl border border-slate-200 hover:border-indigo-400 bg-white hover:bg-indigo-50/20 cursor-pointer transition-all">
+                        <div class="flex items-center gap-3.5 min-w-0">
+                            {{-- Checkbox --}}
+                            <input
+                                type="checkbox"
+                                value="{{ $wsFile->id }}"
+                                class="workspace-file-checkbox w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer pointer-events-none"
+                                onchange="updateSelectedWorkspaceFileCount()">
+
+                            {{-- File Icon --}}
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 {{ $isPdf ? 'bg-rose-50 text-rose-600' : ($isDocx ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600') }}">
+                                @if($isPdf)
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                    </svg>
+                                @elseif($isDocx)
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                    </svg>
+                                @else
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
+                                    </svg>
+                                @endif
+                            </div>
+
+                            {{-- File Info --}}
+                            <div class="min-w-0">
+                                <p class="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors">{{ $wsFile->file_name }}</p>
+                                <p class="text-[10px] text-slate-400 mt-0.5">
+                                    {{ strtoupper($ext) }} &bull; {{ number_format($wsFile->file_size / 1024, 1) }} KB &bull; {{ \Carbon\Carbon::parse($wsFile->uploaded_at)->translatedFormat('d M Y H:i') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <span class="text-[10px] font-semibold text-slate-400 group-hover:text-indigo-600 uppercase tracking-wider shrink-0">
+                            Pilih
+                        </span>
+                    </div>
+                @empty
+                    <div class="text-center py-8">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                            </svg>
+                        </div>
+                        <p class="text-xs font-bold text-slate-700">Belum ada dokumen di workspace ini</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Silakan pilih opsi "Unggah dari Komputer Lokal" untuk mengunggah dokumen baru.</p>
+                    </div>
+                @endforelse
+            </div>
+
+            {{-- Footer --}}
+            <div class="px-6 sm:px-8 py-4 bg-slate-50 rounded-b-3xl border-t border-slate-100 flex items-center justify-between">
+                <button type="button" onclick="closeWorkspaceFilePickerModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition-colors">
+                    Batal
+                </button>
+                <button
+                    type="button"
+                    id="confirmWorkspaceFilesBtn"
+                    onclick="confirmWorkspaceFilesSelection()"
+                    class="px-5 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-md shadow-indigo-500/20 flex items-center gap-2">
+                    <span>Gunakan Berkas Terpilih</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
     {{-- Premium Loading Overlay --}}
     <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center hidden">
         <div class="bg-white p-8 rounded-3xl shadow-xl flex flex-col items-center max-w-sm w-full mx-4 border border-slate-100">
@@ -576,6 +773,7 @@
 <script>
     let _consentGiven = false;
     let _pendingAction = null; // 'filePicker' or 'formSubmit'
+    let _selectedWorkspaceFiles = []; // Array of { id, name, size }
 
     function uploadBriefComponent() {
         return {
@@ -838,13 +1036,14 @@
                 const hasPendingTemplate = {{ session()->has('pending_template_brief') ? 'true' : 'false' }};
                 const fileInput = document.getElementById('fileInput');
                 const hasFiles = fileInput && fileInput.files && fileInput.files.length > 0;
+                const hasWorkspaceSelected = _selectedWorkspaceFiles.length > 0;
 
-                if (!hasPendingTemplate && !hasFiles) {
+                if (!hasPendingTemplate && !hasFiles && !hasWorkspaceSelected) {
                     event.preventDefault();
                     Swal.fire({
                         icon: 'warning',
                         title: 'Pilih Berkas atau Template',
-                        text: 'Silakan unggah dokumen brief proyek Anda atau gunakan Formulir Template Rencana Kerja.',
+                        text: 'Silakan unggah dokumen brief dari komputer, pilih dari workspace, atau gunakan Formulir Template.',
                         confirmButtonColor: '#4f46e5'
                     });
                     return false;
@@ -865,14 +1064,21 @@
         };
     }
 
+    let _isProgrammaticClick = false;
+
     // ── AI Consent Modal Logic ─────────────────────────────────────────────────
 
     function handleFileInputClick(event) {
-        if (_consentGiven) {
+        if (_isProgrammaticClick) {
+            _isProgrammaticClick = false;
             return true;
         }
         event.preventDefault();
-        _pendingAction = 'filePicker';
+        if (_consentGiven) {
+            openSourceSelectionModal();
+            return false;
+        }
+        _pendingAction = 'sourcePicker';
         openAiConsentModal();
         return false;
     }
@@ -901,13 +1107,219 @@
         _consentGiven = true;
         closeAiConsentModal();
 
-        if (_pendingAction === 'filePicker') {
-            document.getElementById('fileInput').click();
-        } else if (_pendingAction === 'formSubmit') {
+        if (_pendingAction === 'formSubmit') {
             document.getElementById('loadingOverlay').classList.remove('hidden');
             document.getElementById('uploadForm').submit();
+        } else {
+            // Default: buka modal pilihan sumber dokumen
+            openSourceSelectionModal();
         }
         _pendingAction = null;
+    }
+
+    // ── Source Selection Modal Logic ──────────────────────────────────────────
+
+    function openSourceSelectionModal() {
+        const modal = document.getElementById('sourceSelectionModal');
+        modal.style.removeProperty('display');
+        modal.style.display = 'flex';
+    }
+
+    function closeSourceSelectionModal() {
+        const modal = document.getElementById('sourceSelectionModal');
+        modal.style.display = 'none';
+    }
+
+    function selectLocalComputerSource() {
+        closeSourceSelectionModal();
+        _isProgrammaticClick = true;
+        document.getElementById('fileInput').click();
+    }
+
+    function selectWorkspaceStorageSource() {
+        closeSourceSelectionModal();
+        openWorkspaceFilePickerModal();
+    }
+
+    // ── Workspace File Picker Modal Logic (Multi-select) ──────────────────────
+
+    function openWorkspaceFilePickerModal() {
+        const modal = document.getElementById('workspaceFilePickerModal');
+        modal.style.removeProperty('display');
+        modal.style.display = 'flex';
+        syncWorkspaceFileCheckboxes();
+    }
+
+    function closeWorkspaceFilePickerModal() {
+        const modal = document.getElementById('workspaceFilePickerModal');
+        modal.style.display = 'none';
+    }
+
+    function syncWorkspaceFileCheckboxes() {
+        const checkboxes = document.querySelectorAll('.workspace-file-checkbox');
+        checkboxes.forEach(cb => {
+            const isSelected = _selectedWorkspaceFiles.some(f => f.id === cb.value);
+            cb.checked = isSelected;
+            const row = cb.closest('.workspace-file-row');
+            if (row) {
+                if (isSelected) {
+                    row.classList.add('border-indigo-500', 'bg-indigo-50/30');
+                } else {
+                    row.classList.remove('border-indigo-500', 'bg-indigo-50/30');
+                }
+            }
+        });
+        updateSelectedWorkspaceFileCount();
+    }
+
+    function toggleWorkspaceFileSelection(fileId) {
+        const row = document.querySelector(`.workspace-file-row[data-file-id="${fileId}"]`);
+        if (!row) return;
+
+        const fileName = row.getAttribute('data-file-name');
+        const fileSize = parseFloat(row.getAttribute('data-file-size')) || 0;
+        const cb = row.querySelector('.workspace-file-checkbox');
+
+        const existingIndex = _selectedWorkspaceFiles.findIndex(f => f.id === fileId);
+        if (existingIndex > -1) {
+            _selectedWorkspaceFiles.splice(existingIndex, 1);
+            if (cb) cb.checked = false;
+            row.classList.remove('border-indigo-500', 'bg-indigo-50/30');
+        } else {
+            _selectedWorkspaceFiles.push({ id: fileId, name: fileName, size: fileSize });
+            if (cb) cb.checked = true;
+            row.classList.add('border-indigo-500', 'bg-indigo-50/30');
+        }
+
+        updateSelectedWorkspaceFileCount();
+    }
+
+    function updateSelectedWorkspaceFileCount() {
+        const badge = document.getElementById('selectedCountBadge');
+        if (badge) {
+            badge.innerText = `${_selectedWorkspaceFiles.length} dipilih`;
+        }
+    }
+
+    function filterWorkspaceFiles() {
+        const q = (document.getElementById('workspaceFileSearchInput').value || '').toLowerCase();
+        const rows = document.querySelectorAll('.workspace-file-row');
+        rows.forEach(row => {
+            const name = (row.getAttribute('data-file-name') || '').toLowerCase();
+            if (name.includes(q)) {
+                row.style.display = 'flex';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function confirmWorkspaceFilesSelection() {
+        closeWorkspaceFilePickerModal();
+        updateCombinedFileList();
+    }
+
+    function removeWorkspaceFile(fileId) {
+        _selectedWorkspaceFiles = _selectedWorkspaceFiles.filter(f => f.id !== fileId);
+        updateCombinedFileList();
+    }
+
+    // ── Combined File List Preview ────────────────────────────────────────────
+
+    function updateFileList() {
+        updateCombinedFileList();
+    }
+
+    function updateCombinedFileList() {
+        const input = document.getElementById('fileInput');
+        const container = document.getElementById('fileListContainer');
+        const list = document.getElementById('fileList');
+
+        // Bersihkan item upload & workspace (jangan hapus template item jika ada)
+        const itemsToRemove = list.querySelectorAll('.custom-file-item');
+        itemsToRemove.forEach(el => el.remove());
+
+        // Bersihkan hidden inputs workspace lama di form
+        const oldHiddenWsInputs = document.querySelectorAll('input[name="workspace_file_ids[]"]');
+        oldHiddenWsInputs.forEach(el => el.remove());
+
+        const form = document.getElementById('uploadForm');
+        let totalItemsCount = 0;
+
+        // 1. Render Berkas dari Komputer Lokal
+        if (input && input.files && input.files.length > 0) {
+            Array.from(input.files).forEach((file, index) => {
+                totalItemsCount++;
+                const item = document.createElement('div');
+                item.className = 'custom-file-item flex items-center justify-between gap-3 bg-slate-50 border border-slate-100 rounded-xl p-3';
+                item.innerHTML = `
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-semibold text-slate-700 truncate">${file.name}</p>
+                            <p class="text-[10px] text-slate-400">Komputer Lokal &bull; ${(file.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // 2. Render Berkas dari Workspace
+        _selectedWorkspaceFiles.forEach(wsFile => {
+            totalItemsCount++;
+
+            // Tambahkan hidden input ke form
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'workspace_file_ids[]';
+            hiddenInput.value = wsFile.id;
+            form.appendChild(hiddenInput);
+
+            const item = document.createElement('div');
+            item.className = 'custom-file-item flex items-center justify-between gap-3 bg-purple-50/40 border border-purple-100 rounded-xl p-3';
+            item.innerHTML = `
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-8 h-8 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-semibold text-slate-800 truncate">${wsFile.name}</p>
+                        <p class="text-[10px] text-purple-600 font-medium">Dari Workspace &bull; ${(wsFile.size / 1024).toFixed(1)} KB</p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    onclick="removeWorkspaceFile('${wsFile.id}')"
+                    class="text-slate-400 hover:text-rose-600 p-1 rounded-lg hover:bg-rose-50 transition-colors"
+                    title="Hapus Berkas">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            `;
+            list.appendChild(item);
+        });
+
+        const hasTemplate = document.getElementById('templateFileItem') !== null;
+
+        if (totalItemsCount > 0 || hasTemplate) {
+            container.classList.remove('hidden');
+            setTimeout(() => {
+                const submitBtn = document.getElementById('submitBtn');
+                if (submitBtn) {
+                    submitBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 100);
+        } else {
+            container.classList.add('hidden');
+        }
     }
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -917,49 +1329,17 @@
                 closeAiConsentModal();
             });
         }
+
+        // Auto-scroll ke daftar berkas jika baru saja menyimpan template rencana kerja
+        @if(session()->has('pending_template_brief'))
+        setTimeout(() => {
+            const container = document.getElementById('fileListContainer');
+            if (container) {
+                container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 200);
+        @endif
     });
-
-    // ── File List Preview ─────────────────────────────────────────────────────
-
-    function updateFileList() {
-        const input = document.getElementById('fileInput');
-        const container = document.getElementById('fileListContainer');
-        const list = document.getElementById('fileList');
-
-        list.innerHTML = '';
-
-        if (input.files.length > 0) {
-            container.classList.remove('hidden');
-            Array.from(input.files).forEach(file => {
-                const item = document.createElement('div');
-                item.className = 'flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-3';
-                item.innerHTML = `
-                    <div class="w-8 h-8 bg-indigo-50 text-indigo-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <p class="text-xs font-semibold text-slate-700 truncate">${file.name}</p>
-                        <p class="text-[10px] text-slate-400">${(file.size / 1024).toFixed(1)} KB</p>
-                    </div>
-                `;
-                list.appendChild(item);
-            });
-
-            setTimeout(() => {
-                const submitBtn = document.getElementById('submitBtn');
-                if (submitBtn) {
-                    submitBtn.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center'
-                    });
-                }
-            }, 100);
-        } else {
-            container.classList.add('hidden');
-        }
-    }
 
     // ── Drag & Drop Styling ───────────────────────────────────────────────────
 
@@ -980,6 +1360,115 @@
                 dropzone.classList.add('border-slate-200');
             }, false);
         });
+    }
+
+    // ── Polling Transkrip Meeting Fireflies ───────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+        const params = new URLSearchParams(window.location.search);
+        const waitingEvent = params.get('waiting_event');
+        const workspaceId = '{{ $workspace->id ?? '' }}';
+
+        if (waitingEvent && workspaceId) {
+            const overlay = document.getElementById('transcriptWaitingOverlay');
+            if (overlay) overlay.classList.remove('hidden');
+            pollTranscript(workspaceId, waitingEvent);
+        }
+    });
+
+    function pollTranscript(workspaceId, eventId) {
+        const url = `/workspace/${workspaceId}/brief/transcript-status?event=${eventId}`;
+        let attempts = 0;
+        const MAX_ATTEMPTS = 540; // 540 x 5 detik = 45 menit
+
+        const interval = setInterval(async () => {
+            attempts++;
+
+            if (attempts > MAX_ATTEMPTS) {
+                clearInterval(interval);
+                const card = document.getElementById('transcriptWaitingCard');
+                if (card) {
+                    card.innerHTML = `
+                        <div class="text-center">
+                            <p class="text-sm font-semibold text-gray-700 mb-2">Transkrip belum juga masuk</p>
+                            <p class="text-xs text-gray-500 mb-4">Ada kemungkinan bot Fireflies gagal join meeting. Cek halaman Dokumen, atau unggah transkrip secara manual.</p>
+                            <button onclick="document.getElementById('transcriptWaitingOverlay').classList.add('hidden')"
+                                class="text-xs bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 transition-colors">
+                                Tutup
+                            </button>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            try {
+                const res = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await res.json();
+
+                if (data.status === 'ready' && data.file_id) {
+                    clearInterval(interval);
+                    const overlay = document.getElementById('transcriptWaitingOverlay');
+                    if (overlay) overlay.classList.add('hidden');
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Transkrip Siap!',
+                        text: `"${data.file_name}" berhasil masuk. Klik "Analisis Sekarang" untuk lanjut.`,
+                        confirmButtonText: 'Analisis Sekarang',
+                        confirmButtonColor: '#4f46e5',
+                        showCancelButton: true,
+                        cancelButtonText: 'Nanti Saja'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            submitTranscriptFile(data.file_id);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Polling error:', e);
+            }
+        }, 5000);
+    }
+
+    async function submitTranscriptFile(fileId) {
+        document.getElementById('loadingOverlay').classList.remove('hidden');
+
+        try {
+            const res = await fetch(`{{ route('brief.fromTranscript') }}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({
+                    file_id: fileId
+                })
+            });
+            const data = await res.json();
+
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            } else {
+                document.getElementById('loadingOverlay').classList.add('hidden');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: data.error || 'Terjadi kesalahan.'
+                });
+            }
+        } catch (e) {
+            document.getElementById('loadingOverlay').classList.add('hidden');
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: 'Terjadi kesalahan jaringan.'
+            });
+        }
     }
 </script>
 @endpush

@@ -29,6 +29,12 @@ class GeminiProvider implements AIProvider
             config('services.gemini.api_key_2'),
             config('services.gemini.api_key_3'),
             config('services.gemini.api_key_4'),
+            config('services.gemini.api_key_5'),
+            config('services.gemini.api_key_6'),
+            config('services.gemini.api_key_7'),
+            config('services.gemini.api_key_8'),
+            config('services.gemini.api_key_9'),
+            config('services.gemini.api_key_10'),
         ]));
 
         if (empty($this->apiKeys)) {

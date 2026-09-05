@@ -34,7 +34,20 @@ class BriefController extends Controller
 
     public function index()
     {
-        return view('upload-brief');
+        $activeCompanyId = session('active_company_id');
+        $workspaceFiles = File::query()
+            ->whereNull('workspace_id')
+            ->where('company_id', $activeCompanyId)
+            ->where(function ($q) {
+                $q->whereIn('file_type', ['pdf', 'docx', 'txt', 'text/plain'])
+                  ->orWhere('file_name', 'like', '%.pdf')
+                  ->orWhere('file_name', 'like', '%.docx')
+                  ->orWhere('file_name', 'like', '%.txt');
+            })
+            ->latest('uploaded_at')
+            ->get();
+
+        return view('upload-brief', compact('workspaceFiles'));
     }
 
     public function brief(Workspace $workspace)
@@ -44,7 +57,18 @@ class BriefController extends Controller
 
     public function uploadbrief(Workspace $workspace)
     {
-        return view('upload-brief', compact('workspace'));
+        $workspaceFiles = File::query()
+            ->where('workspace_id', $workspace->id)
+            ->where(function ($q) {
+                $q->whereIn('file_type', ['pdf', 'docx', 'txt', 'text/plain'])
+                  ->orWhere('file_name', 'like', '%.pdf')
+                  ->orWhere('file_name', 'like', '%.docx')
+                  ->orWhere('file_name', 'like', '%.txt');
+            })
+            ->latest('uploaded_at')
+            ->get();
+
+        return view('upload-brief', compact('workspace', 'workspaceFiles'));
     }
 
     public function workspaceTemplate(Workspace $workspace)
@@ -60,10 +84,11 @@ class BriefController extends Controller
     public function saveTemplate(Request $request)
     {
         $request->validate([
+            'template_preset_name' => ['nullable', 'string', 'max:255'],
             'template_name' => ['required', 'string', 'max:255'],
             'template_goal' => ['required', 'string'],
-            'template_start_date' => ['nullable', 'string', 'max:255'],
-            'template_end_date' => ['nullable', 'string', 'max:255'],
+            'template_start_date' => ['required', 'string', 'max:255'],
+            'template_end_date' => ['required', 'string', 'max:255'],
             'template_period' => ['nullable', 'string', 'max:255'],
             'template_phases' => ['nullable', 'string'],
             'template_tasks' => ['nullable', 'string'],
@@ -78,6 +103,7 @@ class BriefController extends Controller
 
         session([
             'pending_template_brief' => [
+                'preset_name' => $request->input('template_preset_name', 'Kustom'),
                 'name' => $request->input('template_name', 'Template Proyek'),
                 'goal' => $request->input('template_goal', ''),
                 'start_date' => $request->input('template_start_date', ''),
@@ -116,12 +142,19 @@ class BriefController extends Controller
     {
         $hasPendingTemplate = session()->has('pending_template_brief');
         $isTemplate = $request->boolean('is_template') || $hasPendingTemplate;
+        $workspaceFileIds = $request->input('workspace_file_ids', []);
+        if (is_string($workspaceFileIds)) {
+            $workspaceFileIds = json_decode($workspaceFileIds, true) ?: [];
+        }
 
-        if (!$isTemplate && !$request->hasFile('documents')) {
+        $hasWorkspaceFiles = !empty($workspaceFileIds);
+        $hasUploadFiles = $request->hasFile('documents');
+
+        if (!$isTemplate && !$hasUploadFiles && !$hasWorkspaceFiles) {
             return redirect()->back()->with('alert', [
                 'icon' => 'warning',
                 'title' => 'Perhatian',
-                'text' => 'Silakan pilih minimal satu berkas dokumen atau gunakan Template Rencana Kerja.',
+                'text' => 'Silakan pilih berkas dokumen dari komputer/workspace atau gunakan Template Rencana Kerja.',
             ]);
         }
 
@@ -132,8 +165,34 @@ class BriefController extends Controller
             $uploadedFilesMapping = [];
             $documents = [];
 
+            // ── 1. Proses Dokumen dari Penyimpanan Workspace (jika ada) ──
+            if ($hasWorkspaceFiles) {
+                $wsFiles = File::whereIn('id', $workspaceFileIds)->get();
+                $uploadedFilesFromWs = [];
+
+                foreach ($wsFiles as $wsFile) {
+                    $fullPath = Storage::disk('public')->path($wsFile->file_path);
+                    if (file_exists($fullPath)) {
+                        $uploadedFile = new \Illuminate\Http\UploadedFile(
+                            $fullPath,
+                            $wsFile->file_name,
+                            $wsFile->file_type === 'txt' ? 'text/plain' : ($wsFile->file_type === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+                            null,
+                            true // test mode: allows instantiating from existing path
+                        );
+                        $uploadedFilesFromWs[] = $uploadedFile;
+                        $uploadedFilesMapping[$wsFile->file_name] = $wsFile->id;
+                    }
+                }
+
+                if (!empty($uploadedFilesFromWs)) {
+                    $parsedWsDocs = $this->documentParser->parse($uploadedFilesFromWs);
+                    $documents = array_merge($documents, $parsedWsDocs);
+                }
+            }
+
             if ($isTemplate) {
-                // 1. Format konten teks template proyek
+                // Format konten teks template proyek
                 $pending = session('pending_template_brief', []);
                 $templateName = $request->filled('template_name') ? $request->input('template_name') : ($pending['name'] ?? 'Template Proyek');
                 $templateGoal = $request->filled('template_goal') ? $request->input('template_goal') : ($pending['goal'] ?? '');
@@ -210,17 +269,15 @@ class BriefController extends Controller
 
                 $uploadedFilesMapping[$finalName] = $fileModel->id;
 
-                $documents = [
-                    [
-                        'filename' => $finalName,
-                        'extension' => 'txt',
-                        'mime_type' => 'text/plain',
-                        'content' => $textContent,
-                    ]
+                $documents[] = [
+                    'filename' => $finalName,
+                    'extension' => 'txt',
+                    'mime_type' => 'text/plain',
+                    'content' => $textContent,
                 ];
 
                 // Jika pengguna juga mengunggah dokumen fisik pendukung (PDF, DOCX, TXT)
-                if ($request->hasFile('documents')) {
+                if ($hasUploadFiles) {
                     foreach ($request->file('documents') as $file) {
                         $docOriginalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
                         $docExtension = $file->getClientOriginalExtension();
@@ -260,8 +317,8 @@ class BriefController extends Controller
                     $parsedUploadedDocs = $this->documentParser->parse($request->file('documents'));
                     $documents = array_merge($documents, $parsedUploadedDocs);
                 }
-            } else {
-                // 1. Simpan file ke Storage dan Database (tabel files)
+            } else if ($hasUploadFiles) {
+                // 1. Simpan file baru ke Storage dan Database (tabel files)
                 foreach ($request->file('documents') as $file) {
                     $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
                     $extension = $file->getClientOriginalExtension();
@@ -309,9 +366,10 @@ class BriefController extends Controller
                 }
 
                 // 2. Parse & Normalize documents
-                $documents = $this->documentParser->parse(
+                $parsedUploadedDocs = $this->documentParser->parse(
                     $request->file('documents')
                 );
+                $documents = array_merge($documents, $parsedUploadedDocs);
             }
 
             // 3. Generate Brief using AI

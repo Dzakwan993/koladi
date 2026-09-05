@@ -84,6 +84,7 @@
             {{-- Hidden Inputs --}}
             <input type="hidden" name="workspace_id" value="{{ $workspace->id ?? '' }}">
             <input type="hidden" name="is_template" value="1">
+            <input type="hidden" name="template_preset_name" :value="selectedPresetName || 'Kustom'">
             <input type="hidden" name="template_name" :value="form.name">
             <input type="hidden" name="template_goal" :value="form.goal">
             <input type="hidden" name="template_start_date" :value="form.start_date">
@@ -578,7 +579,7 @@
 
                 // 1. Jika ada data template yang disimpan sebelumnya di session dan tidak sedang pilih preset baru
                 if (savedData && Object.keys(savedData).length > 0 && presetParam === null) {
-                    this.selectedPresetName = savedData.name || 'Kustom';
+                    this.selectedPresetName = savedData.preset_name || 'Kustom';
                     
                     let restoredRows = [];
 

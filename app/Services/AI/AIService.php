@@ -7,7 +7,7 @@ class AIService
     public function __construct(
         private AIProvider $provider,
         private PromptBuilderService $promptBuilder,
-        private JsonValidatorService $validator,
+    private JsonValidatorService $validator,
 
         // Fungsi beriktu belum jadi digunakan pada MVP
         // private BriefMapperService $mapper,
