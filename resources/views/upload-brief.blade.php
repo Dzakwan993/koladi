@@ -731,7 +731,11 @@
                 <div class="absolute inset-0 rounded-full border-4 border-t-indigo-600 animate-spin"></div>
             </div>
             <h3 class="text-lg font-bold text-slate-800 mb-1">Menunggu Meeting Selesai...</h3>
-            <p class="text-xs text-slate-500 text-center leading-relaxed">Transkrip akan otomatis masuk begitu meeting berakhir. Halaman ini tidak perlu di-refresh.</p>
+            <p class="text-xs text-slate-500 text-center leading-relaxed mb-6">Transkrip akan otomatis masuk begitu meeting berakhir. Halaman ini tidak perlu di-refresh.</p>
+            <button type="button" onclick="closeTranscriptWaitingOverlay()"
+                class="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors">
+                Tutup & Unggah Manual
+            </button>
         </div>
     </div>
 
@@ -1374,6 +1378,22 @@
     }
 
     // ── Polling Transkrip Meeting Fireflies ───────────────────────────────────
+    let transcriptPollInterval = null;
+
+    function closeTranscriptWaitingOverlay() {
+        if (transcriptPollInterval) {
+            clearInterval(transcriptPollInterval);
+            transcriptPollInterval = null;
+        }
+        const overlay = document.getElementById('transcriptWaitingOverlay');
+        if (overlay) overlay.classList.add('hidden');
+
+        // Bersihkan parameter waiting_event dari URL agar saat di-refresh tidak terkunci lagi
+        const url = new URL(window.location);
+        url.searchParams.delete('waiting_event');
+        window.history.replaceState({}, document.title, url.toString());
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const params = new URLSearchParams(window.location.search);
         const waitingEvent = params.get('waiting_event');
@@ -1391,20 +1411,25 @@
         let attempts = 0;
         const MAX_ATTEMPTS = 540; // 540 x 5 detik = 45 menit
 
-        const interval = setInterval(async () => {
+        if (transcriptPollInterval) {
+            clearInterval(transcriptPollInterval);
+        }
+
+        transcriptPollInterval = setInterval(async () => {
             attempts++;
 
             if (attempts > MAX_ATTEMPTS) {
-                clearInterval(interval);
+                clearInterval(transcriptPollInterval);
+                transcriptPollInterval = null;
                 const card = document.getElementById('transcriptWaitingCard');
                 if (card) {
                     card.innerHTML = `
                         <div class="text-center">
                             <p class="text-sm font-semibold text-gray-700 mb-2">Transkrip belum juga masuk</p>
                             <p class="text-xs text-gray-500 mb-4">Ada kemungkinan bot Fireflies gagal join meeting. Cek halaman Dokumen, atau unggah transkrip secara manual.</p>
-                            <button onclick="document.getElementById('transcriptWaitingOverlay').classList.add('hidden')"
+                            <button onclick="closeTranscriptWaitingOverlay()"
                                 class="text-xs bg-indigo-600 text-white px-4 py-2 rounded-xl hover:bg-indigo-700 transition-colors">
-                                Tutup
+                                Tutup & Unggah Manual
                             </button>
                         </div>
                     `;
@@ -1421,9 +1446,9 @@
                 const data = await res.json();
 
                 if (data.status === 'ready' && data.file_id) {
-                    clearInterval(interval);
-                    const overlay = document.getElementById('transcriptWaitingOverlay');
-                    if (overlay) overlay.classList.add('hidden');
+                    clearInterval(transcriptPollInterval);
+                    transcriptPollInterval = null;
+                    closeTranscriptWaitingOverlay();
 
                     Swal.fire({
                         icon: 'success',

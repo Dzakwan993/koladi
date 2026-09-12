@@ -124,6 +124,14 @@ class CalendarEvent extends Model
     }
 
     /**
+     * Accessor untuk membersihkan kode [W-xxx] dari judul event
+     */
+    public function getTitleAttribute($value)
+    {
+        return preg_replace('/^\[W-[a-zA-Z0-9\-]+\]\s*/', '', (string)$value);
+    }
+
+    /**
      * Get durasi event dalam menit
      */
     public function getDurationInMinutes()
@@ -132,7 +140,7 @@ class CalendarEvent extends Model
     }
 
     /**
-     * Get formatted date range
+     * Get formatted date range (Bahasa Indonesia)
      */
     public function getFormattedDateRange()
     {
@@ -140,13 +148,13 @@ class CalendarEvent extends Model
         $end = $this->end_datetime->locale('id');
 
         if ($start->isSameDay($end)) {
-            return $start->format('l, d M Y') . ', ' .
-                $start->format('h:i A') . ' - ' .
-                $end->format('h:i A');
+            return $start->translatedFormat('l, d M Y') . ', ' .
+                $start->format('H:i') . ' - ' .
+                $end->format('H:i') . ' WIB';
         }
 
-        return $start->format('l, d M Y h:i A') . ' - ' .
-            $end->format('l, d M Y h:i A');
+        return $start->translatedFormat('l, d M Y, H:i') . ' - ' .
+            $end->translatedFormat('l, d M Y, H:i') . ' WIB';
     }
 
     /**

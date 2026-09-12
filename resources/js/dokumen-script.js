@@ -2572,15 +2572,25 @@ export default function documentSearch() {
 
         // Download file
         downloadFile(file) {
-            console.log("Fungsi downlaod dipanggil!");
-            console.log("Isi File_URL", file.file_url);
-            if (!file || !file.file_url) {
-                console.error("File URL tidak ditemukan");
+            console.log("Fungsi download dipanggil!", file);
+            if (!file) {
+                console.error("File tidak ditemukan");
                 return;
             }
 
-            // Buka tab baru untuk preview
-            window.open(file.file_url, "_blank");
+            if (file.type === "Link") {
+                window.open(file.file_url, "_blank");
+                return;
+            }
+
+            if (file.id) {
+                window.location.href = `/documents/${file.id}/download`;
+                return;
+            }
+
+            if (file.file_url) {
+                window.open(file.file_url, "_blank");
+            }
         },
 
         openEditFile(file) {

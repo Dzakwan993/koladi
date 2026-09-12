@@ -24,8 +24,8 @@
                         {{-- Button Actions --}}
                         <div class="flex gap-3">
                             <button onclick="window.location.href='{{ route('notulensi-umum') }}'"
-                                class="inline-flex items-center justify-center gap-2 text-sm bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
-                                <i class="fas fa-file-alt"></i>
+                                class="inline-flex items-center justify-center gap-2 text-sm bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 hover:border-slate-300 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl font-semibold transition-all duration-300 shadow-sm hover:shadow transform hover:-translate-y-0.5">
+                                <i class="fas fa-file-alt text-blue-600"></i>
                                 <span class="hidden sm:inline">Notulensi</span>
                             </button>
 
@@ -73,14 +73,14 @@
                         <div class="flex items-center justify-between mb-3 sm:mb-4">
                             <div class="flex items-center gap-2 sm:gap-3">
                                 <div
-                                    class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md">
+                                    class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md">
                                     <i class="fas fa-list-check text-white text-base sm:text-lg"></i>
                                 </div>
                                 <div>
                                     <p class="text-sm sm:text-base lg:text-lg text-[#1E1E1E] font-bold" id="scheduleTitle">
                                         Semua Jadwal
                                     </p>
-                                    <p class="text-xs text-gray-500 hidden sm:block">Daftar jadwal yang tersedia</p>
+                                    <p class="text-xs text-gray-500 hidden sm:block" id="scheduleSubtitle">Daftar jadwal yang tersedia</p>
                                 </div>
                             </div>
                         </div>
@@ -225,16 +225,17 @@
         }
 
         .fc .fc-day-today .fc-daygrid-day-number {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
             color: white !important;
             font-weight: 700;
-            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
         }
 
         .fc-day-selected:not(.fc-day-today) .fc-daygrid-day-number {
-            background: linear-gradient(135deg, #225ad6 0%, #1e40af 100%) !important;
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%) !important;
             color: white !important;
             font-weight: 700;
+            box-shadow: 0 2px 6px rgba(30, 64, 175, 0.35);
         }
 
         .fc .fc-col-header-cell-cushion {
@@ -315,6 +316,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/locales-all.global.min.js"></script>
 
     @if (session('success'))
         <script>
@@ -382,7 +384,8 @@
                 },
                 dayHeaderContent: function(arg) {
                     const dayNames = ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'];
-                    return dayNames[arg.dow];
+                    const dayIdx = arg.date ? arg.date.getDay() : (typeof arg.dow !== 'undefined' ? arg.dow : 0);
+                    return dayNames[dayIdx];
                 },
 
                 events: function(info, successCallback, failureCallback) {
@@ -417,21 +420,33 @@
                 },
 
                 dateClick: function(info) {
+                    const alreadySelected = info.dayEl.classList.contains('fc-day-selected');
                     document.querySelectorAll('.fc-day-selected')
                         .forEach(el => el.classList.remove('fc-day-selected'));
-                    info.dayEl.classList.add('fc-day-selected');
 
+                    const titleEl = document.getElementById('scheduleTitle');
+                    const subtitleEl = document.getElementById('scheduleSubtitle');
+
+                    if (alreadySelected) {
+                        titleEl.textContent = 'Semua Jadwal';
+                        if (subtitleEl) subtitleEl.textContent = 'Daftar jadwal yang tersedia';
+                        renderScheduleList(allEvents);
+                        return;
+                    }
+
+                    info.dayEl.classList.add('fc-day-selected');
                     const clickedDate = info.dateStr;
                     const filteredEvents = filterEventsByDate(allEvents, clickedDate);
 
-                    const dateObj = new Date(clickedDate);
-                    const titleEl = document.getElementById('scheduleTitle');
+                    const [year, month, day] = clickedDate.split('-').map(Number);
+                    const dateObj = new Date(year, month - 1, day);
                     titleEl.textContent = dateObj.toLocaleDateString('id-ID', {
                         weekday: 'long',
                         day: 'numeric',
                         month: 'long',
                         year: 'numeric'
                     });
+                    if (subtitleEl) subtitleEl.textContent = 'Klik lagi tanggal ini untuk melihat semua jadwal';
 
                     renderScheduleList(filteredEvents);
                 },
@@ -641,16 +656,27 @@
                 const isMultiDay = startDateStr !== endDateStr;
 
                 if (isMultiDay) {
-                    return `${startDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} - ${endDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+                    const startFormatted = startDate.toLocaleDateString('id-ID', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short'
+                    });
+                    const endFormatted = endDate.toLocaleDateString('id-ID', {
+                        weekday: 'short',
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric'
+                    });
+                    return `${startFormatted} - ${endFormatted}`;
                 } else {
                     const startTime = startDate.toLocaleTimeString('id-ID', {
                         hour: '2-digit',
                         minute: '2-digit'
-                    });
+                    }).replace(':', '.');
                     const endTime = endDate.toLocaleTimeString('id-ID', {
                         hour: '2-digit',
                         minute: '2-digit'
-                    });
+                    }).replace(':', '.');
                     return `${startTime} - ${endTime} WIB`;
                 }
             }

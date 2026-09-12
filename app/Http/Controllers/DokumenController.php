@@ -259,6 +259,104 @@ class DokumenController extends Controller
         ]);
     }
 
+    public function downloadFile($id)
+    {
+        $file = File::findOrFail($id);
+
+        if ($file->file_type === 'Link') {
+            return redirect()->away($file->file_url);
+        }
+
+        if ($file->is_private) {
+            $user = auth()->user();
+            if (!$user) {
+                abort(403, 'Silakan login terlebih dahulu untuk mengunduh berkas.');
+            }
+
+            $companyId = $file->company_id ?? $file->workspace?->company_id ?? session('active_company_id');
+            $userCompany = $user->userCompanies()
+                ->where('company_id', $companyId)
+                ->with('role')
+                ->first();
+
+            $isSuperAdmin = ($userCompany?->role?->name ?? 'Member') === 'SuperAdmin';
+            $isUploader = (string)$file->uploaded_by === (string)$user->id;
+            $isRecipient = $file->documentRecipients()
+                ->where('user_id', $user->id)
+                ->where('status', true)
+                ->exists();
+
+            if (!$isSuperAdmin && !$isUploader && !$isRecipient) {
+                abort(403, 'Anda tidak memiliki akses untuk mengunduh dokumen ini.');
+            }
+        }
+
+        $path = $file->file_path;
+
+        if (!$path || !Storage::disk('public')->exists($path)) {
+            $basename = basename($file->file_url);
+            if (Storage::disk('public')->exists('files/' . $basename)) {
+                $path = 'files/' . $basename;
+            } elseif ($file->file_url && Storage::disk('public')->exists($file->file_url)) {
+                $path = $file->file_url;
+            } else {
+                abort(404, 'Berkas tidak ditemukan di server.');
+            }
+        }
+
+        return Storage::disk('public')->download($path, $file->file_name);
+    }
+
+    public function previewFile($id)
+    {
+        $file = File::findOrFail($id);
+
+        if ($file->file_type === 'Link') {
+            return redirect()->away($file->file_url);
+        }
+
+        if ($file->is_private) {
+            $user = auth()->user();
+            if (!$user) {
+                abort(403, 'Silakan login terlebih dahulu untuk melihat berkas.');
+            }
+
+            $companyId = $file->company_id ?? $file->workspace?->company_id ?? session('active_company_id');
+            $userCompany = $user->userCompanies()
+                ->where('company_id', $companyId)
+                ->with('role')
+                ->first();
+
+            $isSuperAdmin = ($userCompany?->role?->name ?? 'Member') === 'SuperAdmin';
+            $isUploader = (string)$file->uploaded_by === (string)$user->id;
+            $isRecipient = $file->documentRecipients()
+                ->where('user_id', $user->id)
+                ->where('status', true)
+                ->exists();
+
+            if (!$isSuperAdmin && !$isUploader && !$isRecipient) {
+                abort(403, 'Anda tidak memiliki akses untuk melihat dokumen ini.');
+            }
+        }
+
+        $path = $file->file_path;
+
+        if (!$path || !Storage::disk('public')->exists($path)) {
+            $basename = basename($file->file_url);
+            if (Storage::disk('public')->exists('files/' . $basename)) {
+                $path = 'files/' . $basename;
+            } elseif ($file->file_url && Storage::disk('public')->exists($file->file_url)) {
+                $path = $file->file_url;
+            } else {
+                abort(404, 'Berkas tidak ditemukan di server.');
+            }
+        }
+
+        return Storage::disk('public')->response($path, null, [
+            'Content-Disposition' => 'inline; filename="' . $file->file_name . '"'
+        ]);
+    }
+
 
     public function storeLink(Request $request)
     {

@@ -7,115 +7,215 @@
         {{-- Preview berdasarkan tipe file --}}
         {{-- Jenis File PDF --}}
         <template x-if="currentFile && currentFile.type === 'PDF'">
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-6 md:p-8 text-center">
-                <img src="{{ asset('images/icons/pdf.svg') }}" alt="PDF"
-                    class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-3 sm:mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
-                <button @click="downloadFile(currentFile)"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                    Download PDF
-                </button>
+            <div class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div class="flex items-center gap-2">
+                        <img src="{{ asset('images/icons/pdf.svg') }}" alt="PDF" class="w-6 h-6">
+                        <span class="text-sm font-medium text-gray-800 truncate max-w-xs sm:max-w-md" x-text="currentFile?.name"></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="window.open('/documents/' + currentFile.id + '/preview', '_blank')"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
+                            <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            Buka Tab Baru
+                        </button>
+                        <button @click="window.location.href = '/documents/' + currentFile.id + '/download'"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-sm">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Download PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="border border-gray-200 rounded-lg overflow-hidden bg-gray-100 shadow-inner">
+                    <iframe :src="'/documents/' + currentFile.id + '/preview'" class="w-full h-[650px] border-0" frameborder="0"></iframe>
+                </div>
             </div>
         </template>
 
         {{-- Jenis File Word --}}
         <template x-if="currentFile && currentFile.type === 'Word'">
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-                <img src="{{ asset('images/icons/microsoft-word.svg') }}" alt="Word" class="w-16 h-16 mx-auto mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
-                <button @click="downloadFile(currentFile)"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                    Download Document
-                </button>
+            <div class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div class="flex items-center gap-2">
+                        <img src="{{ asset('images/icons/microsoft-word.svg') }}" alt="Word" class="w-6 h-6">
+                        <span class="text-sm font-medium text-gray-800 truncate max-w-xs sm:max-w-md" x-text="currentFile?.name"></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="window.open('https://docs.google.com/viewer?url=' + encodeURIComponent(currentFile.file_url.startsWith('http') ? currentFile.file_url : (window.location.origin + '/documents/' + currentFile.id + '/preview')) + '&embedded=true', '_blank')"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
+                            <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            Buka di Google Docs
+                        </button>
+                        <button @click="window.location.href = '/documents/' + currentFile.id + '/download'"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-sm">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Download Document
+                        </button>
+                    </div>
+                </div>
+                <div class="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 shadow-inner">
+                    <iframe :src="'https://docs.google.com/viewer?url=' + encodeURIComponent(currentFile.file_url.startsWith('http') ? currentFile.file_url : (window.location.origin + '/documents/' + currentFile.id + '/preview')) + '&embedded=true'"
+                        class="w-full h-[650px] border-0" frameborder="0">
+                    </iframe>
+                </div>
             </div>
         </template>
 
         {{-- Jenis File Excel --}}
         <template x-if="currentFile && currentFile.type === 'Excel'">
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-                <img src="{{ asset('images/icons/excel.svg') }}" alt="Excel" class="w-16 h-16 mx-auto mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
-                <button @click="downloadFile(currentFile)"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                    Download Spreadsheet
-                </button>
+            <div class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div class="flex items-center gap-2">
+                        <img src="{{ asset('images/icons/excel.svg') }}" alt="Excel" class="w-6 h-6">
+                        <span class="text-sm font-medium text-gray-800 truncate max-w-xs sm:max-w-md" x-text="currentFile?.name"></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="window.open('https://docs.google.com/viewer?url=' + encodeURIComponent(currentFile.file_url.startsWith('http') ? currentFile.file_url : (window.location.origin + '/documents/' + currentFile.id + '/preview')) + '&embedded=true', '_blank')"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
+                            <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            Buka di Google Docs
+                        </button>
+                        <button @click="window.location.href = '/documents/' + currentFile.id + '/download'"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-sm">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Download Spreadsheet
+                        </button>
+                    </div>
+                </div>
+                <div class="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 shadow-inner">
+                    <iframe :src="'https://docs.google.com/viewer?url=' + encodeURIComponent(currentFile.file_url.startsWith('http') ? currentFile.file_url : (window.location.origin + '/documents/' + currentFile.id + '/preview')) + '&embedded=true'"
+                        class="w-full h-[650px] border-0" frameborder="0">
+                    </iframe>
+                </div>
             </div>
         </template>
 
         {{-- Jenis File Powerpoint --}}
         <template x-if="currentFile && currentFile.type === 'PowerPoint'">
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-                <img src="{{ asset('images/icons/powerpoint.svg') }}" alt="PowerPoint" class="w-16 h-16 mx-auto mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
-
-                <button @click="downloadFile(currentFile)"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                    Download PowerPoint
-                </button>
+            <div class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div class="flex items-center gap-2">
+                        <img src="{{ asset('images/icons/powerpoint.svg') }}" alt="PowerPoint" class="w-6 h-6">
+                        <span class="text-sm font-medium text-gray-800 truncate max-w-xs sm:max-w-md" x-text="currentFile?.name"></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="window.open('https://docs.google.com/viewer?url=' + encodeURIComponent(currentFile.file_url.startsWith('http') ? currentFile.file_url : (window.location.origin + '/documents/' + currentFile.id + '/preview')) + '&embedded=true', '_blank')"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
+                            <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            Buka di Google Docs
+                        </button>
+                        <button @click="window.location.href = '/documents/' + currentFile.id + '/download'"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-sm">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Download PowerPoint
+                        </button>
+                    </div>
+                </div>
+                <div class="border border-gray-200 rounded-lg overflow-hidden bg-gray-50 shadow-inner">
+                    <iframe :src="'https://docs.google.com/viewer?url=' + encodeURIComponent(currentFile.file_url.startsWith('http') ? currentFile.file_url : (window.location.origin + '/documents/' + currentFile.id + '/preview')) + '&embedded=true'"
+                        class="w-full h-[650px] border-0" frameborder="0">
+                    </iframe>
+                </div>
             </div>
         </template>
 
         {{-- Jenis File Text --}}
         <template x-if="currentFile && currentFile.type === 'Text'">
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-                <img src="{{ asset('images/icons/text-file.svg') }}" alt="Text" class="w-16 h-16 mx-auto mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
-
-                <button @click="downloadFile(currentFile)"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                    Download Text File
-                </button>
+            <div class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div class="flex items-center gap-2">
+                        <img src="{{ asset('images/icons/text-file.svg') }}" alt="Text" class="w-6 h-6">
+                        <span class="text-sm font-medium text-gray-800 truncate max-w-xs sm:max-w-md" x-text="currentFile?.name"></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="window.open('/documents/' + currentFile.id + '/preview', '_blank')"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
+                            <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            Buka Tab Baru
+                        </button>
+                        <button @click="window.location.href = '/documents/' + currentFile.id + '/download'"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-sm">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Download Text File
+                        </button>
+                    </div>
+                </div>
+                <div class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-inner">
+                    <iframe :src="'/documents/' + currentFile.id + '/preview'" class="w-full h-[500px] border-0" frameborder="0"></iframe>
+                </div>
             </div>
         </template>
 
         {{-- Jenis File Gambar --}}
         <template x-if="currentFile && currentFile.type === 'Image'">
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-
-                <img :src="currentFile.file_url" alt="Image" class="mx-auto rounded-lg shadow mb-4"
-                    style="max-width: 100%; max-height: 180px; object-fit: contain;">
-
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
-
-                <button @click="downloadFile(currentFile)"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                    Download Image
-                </button>
+            <div class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div class="flex items-center gap-2">
+                        <img src="{{ asset('images/icons/image.svg') }}" alt="Image" class="w-6 h-6">
+                        <span class="text-sm font-medium text-gray-800 truncate max-w-xs sm:max-w-md" x-text="currentFile?.name"></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="window.open('/documents/' + currentFile.id + '/preview', '_blank')"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
+                            <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            Buka Gambar Penuh
+                        </button>
+                        <button @click="window.location.href = '/documents/' + currentFile.id + '/download'"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-sm">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Download Image
+                        </button>
+                    </div>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-center min-h-[300px]">
+                    <img :src="'/documents/' + currentFile.id + '/preview'" alt="Preview"
+                        class="max-h-[550px] max-w-full rounded-lg shadow-sm object-contain">
+                </div>
             </div>
         </template>
 
-
-
         {{-- Jenis File Video --}}
         <template x-if="currentFile && currentFile.type === 'Video'">
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-                <video controls class="max-h-96 mx-auto rounded-lg shadow mb-4">
-                    <source :src="currentFile.file_url">
-                </video>
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
-
-                <button @click="downloadFile(currentFile)"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                    Download Video
-                </button>
+            <div class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div class="flex items-center gap-2">
+                        <img src="{{ asset('images/icons/video.svg') }}" alt="Video" class="w-6 h-6">
+                        <span class="text-sm font-medium text-gray-800 truncate max-w-xs sm:max-w-md" x-text="currentFile?.name"></span>
+                    </div>
+                    <button @click="window.location.href = '/documents/' + currentFile.id + '/download'"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        Download Video
+                    </button>
+                </div>
+                <div class="bg-black rounded-lg p-2 flex items-center justify-center">
+                    <video controls class="max-h-[550px] max-w-full rounded">
+                        <source :src="'/documents/' + currentFile.id + '/preview'">
+                    </video>
+                </div>
             </div>
         </template>
 
         {{-- Jenis File Audio --}}
         <template x-if="currentFile && currentFile.type === 'Audio'">
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-                <img src="{{ asset('images/icons/audio.svg') }}" alt="Audio" class="w-16 h-16 mx-auto mb-4">
-
-                <audio controls class="mx-auto mb-4 w-full">
-                    <source :src="currentFile.file_url">
-                </audio>
-
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
-
-                <button @click="downloadFile(currentFile)"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                    Download Audio
-                </button>
+            <div class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div class="flex items-center gap-2">
+                        <img src="{{ asset('images/icons/audio.svg') }}" alt="Audio" class="w-6 h-6">
+                        <span class="text-sm font-medium text-gray-800 truncate max-w-xs sm:max-w-md" x-text="currentFile?.name"></span>
+                    </div>
+                    <button @click="window.location.href = '/documents/' + currentFile.id + '/download'"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        Download Audio
+                    </button>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+                    <img src="{{ asset('images/icons/audio.svg') }}" alt="Audio" class="w-16 h-16 mx-auto mb-4">
+                    <audio controls class="w-full max-w-xl mx-auto">
+                        <source :src="'/documents/' + currentFile.id + '/preview'">
+                    </audio>
+                </div>
             </div>
         </template>
 
@@ -123,25 +223,41 @@
         <template x-if="currentFile && currentFile.type === 'Zip'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                 <img src="{{ asset('images/icons/zip.svg') }}" alt="Zip" class="w-16 h-16 mx-auto mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
-
-                <button @click="downloadFile(currentFile)"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                <p class="text-base font-semibold text-gray-700 mb-1" x-text="currentFile?.name"></p>
+                <p class="text-xs text-gray-500 mb-4" x-text="(currentFile?.type || '') + ' • ' + (currentFile?.size || '')"></p>
+                <p class="text-xs text-gray-400 mb-5">Berkas arsip (ZIP/RAR) tidak dapat dipratinjau di browser. Silakan unduh berkas untuk mengekstrak isinya.</p>
+                <button @click="window.location.href = '/documents/' + currentFile.id + '/download'"
+                    class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium text-sm shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                     Download Archive
                 </button>
             </div>
         </template>
 
-        {{-- Jenis File code --}}
+        {{-- Jenis File Code --}}
         <template x-if="currentFile && currentFile.type === 'Code'">
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-                <img src="{{ asset('images/icons/code.svg') }}" alt="Code" class="w-16 h-16 mx-auto mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
-
-                <button @click="downloadFile(currentFile)"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
-                    Download Code File
-                </button>
+            <div class="space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <div class="flex items-center gap-2">
+                        <img src="{{ asset('images/icons/code.svg') }}" alt="Code" class="w-6 h-6">
+                        <span class="text-sm font-medium text-gray-800 truncate max-w-xs sm:max-w-md" x-text="currentFile?.name"></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button @click="window.open('/documents/' + currentFile.id + '/preview', '_blank')"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition shadow-sm">
+                            <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                            Buka Tab Baru
+                        </button>
+                        <button @click="window.location.href = '/documents/' + currentFile.id + '/download'"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-sm">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            Download Code File
+                        </button>
+                    </div>
+                </div>
+                <div class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-inner">
+                    <iframe :src="'/documents/' + currentFile.id + '/preview'" class="w-full h-[500px] border-0" frameborder="0"></iframe>
+                </div>
             </div>
         </template>
 
@@ -149,15 +265,16 @@
         <template x-if="currentFile && currentFile.type === 'Unknown'">
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                 <img src="{{ asset('images/icons/file-unknown.svg') }}" alt="Unknown" class="w-16 h-16 mx-auto mb-4">
-                <p class="text-sm text-gray-600 mb-4" x-text="currentFile?.name"></p>
-
-                <button @click="downloadFile(currentFile)"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                <p class="text-base font-semibold text-gray-700 mb-1" x-text="currentFile?.name"></p>
+                <p class="text-xs text-gray-500 mb-4" x-text="(currentFile?.type || '') + ' • ' + (currentFile?.size || '')"></p>
+                <p class="text-xs text-gray-400 mb-5">Tipe berkas ini tidak dapat dipratinjau langsung di browser. Silakan unduh untuk membukanya.</p>
+                <button @click="window.location.href = '/documents/' + currentFile.id + '/download'"
+                    class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium text-sm shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                     Download File
                 </button>
             </div>
         </template>
-
     </div>
 
     {{-- Komentar Section --}}

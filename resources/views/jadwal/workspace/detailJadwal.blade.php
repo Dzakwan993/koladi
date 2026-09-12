@@ -90,10 +90,10 @@
                             <p class="font-medium text-[14px] text-[#6B7280]">
                                 @if ($isMultiDay)
                                     {{ $startDate->translatedFormat('l, d M Y, H:i') }} -
-                                    {{ $endDate->translatedFormat('l, d M Y, H:i') }}
+                                    {{ $endDate->translatedFormat('l, d M Y, H:i') }} WIB
                                 @else
                                     {{ $startDate->translatedFormat('l, d M Y') }},
-                                    {{ $startDate->format('H:i') }} - {{ $endDate->format('H:i') }}
+                                    {{ $startDate->format('H:i') }} - {{ $endDate->format('H:i') }} WIB
                                 @endif
 
                                 @if ($event->recurrence)

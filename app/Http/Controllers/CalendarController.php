@@ -892,18 +892,8 @@ class CalendarController extends Controller
             $startDatetime = Carbon::parse($validated['start_datetime'], 'Asia/Jakarta');
             $endDatetime = Carbon::parse($validated['end_datetime'], 'Asia/Jakarta');
 
-            // 🎯 FITUR AUTO-GENERATE KODE WORKSPACE
-            // Contoh hasil: "[W-456] Pembahasan Target Q3"
-            // ℹ️ Bot Fireflies TIDAK di-invite di sini lagi.
-            // Bot baru di-invite saat user PERTAMA klik "Masuk ke Meeting"
-            // (lihat method recordAttendance() di bawah).
+            // Judul disimpan bersih tanpa tag kode workspace
             $finalTitle = $validated['title'];
-            if ($isOnlineMeeting) {
-                $workspaceTag = "[W-" . $workspace->id . "]";
-                if (!str_contains($finalTitle, '[')) {
-                    $finalTitle = $workspaceTag . ' ' . $finalTitle;
-                }
-            }
 
             $event = CalendarEvent::create([
                 'workspace_id' => $workspaceId,
@@ -1504,15 +1494,27 @@ class CalendarController extends Controller
                 $event = CalendarEvent::find($eventId);
 
                 if ($event && $event->is_online_meeting && $event->meeting_link) {
+                    // Berikan tag workspace hanya untuk bot Fireflies agar webhook bisa mencocokkan workspace
+                    $firefliesTitle = "[W-{$event->workspace_id}] " . $event->title;
+
                     $firefliesResult = $this->firefliesService->addToLiveMeeting(
                         $event->meeting_link,
-                        $event->title
+                        $firefliesTitle
                     );
 
                     if ($firefliesResult['success'] ?? false) {
                         // ✅ BARU: tandai workspace ini punya meeting aktif
                         Cache::put("active_meeting_event:{$event->workspace_id}", $eventId, now()->addHours(6));
                         Cache::put("transcript_status:{$eventId}", 'waiting', now()->addHours(6));
+
+                        // Mapping meeting_link agar webhook bisa mencocokkan event meski judul di Meet berubah
+                        if ($event->meeting_link) {
+                            $meetCode = trim(parse_url($event->meeting_link, PHP_URL_PATH) ?? '', '/');
+                            if ($meetCode) {
+                                Cache::put("meeting_link_event:{$meetCode}", $eventId, now()->addHours(6));
+                                Cache::put("meeting_link_workspace:{$meetCode}", $event->workspace_id, now()->addHours(6));
+                            }
+                        }
 
                         Log::info('Fireflies bot diundang ke meeting', [
                             'event_id' => $eventId,

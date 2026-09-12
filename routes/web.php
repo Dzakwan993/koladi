@@ -81,7 +81,14 @@ Route::get('auth/google/callback', [GoogleController::class, 'handleGoogleCallba
 
 // ✅ Invitation Routes (Public)
 Route::post('/invite/send', [InvitationController::class, 'send'])->name('invite.send');
-Route::get('/invite/accept/{token}', [InvitationController::class, 'accept'])->name('invite.accept');
+// ✅ Public Storage fallback route
+Route::get('/storage/{path}', function (string $path) {
+    $cleanPath = ltrim($path, '/');
+    if (!Storage::disk('public')->exists($cleanPath)) {
+        abort(404, 'Berkas tidak ditemukan.');
+    }
+    return Storage::disk('public')->response($cleanPath);
+})->where('path', '.*')->name('storage.file');
 
 // ============================================
 // 🔐 ROUTES OTP & PASSWORD RESET
@@ -499,6 +506,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/workspaces/{workspace}/members', [DokumenController::class, 'getWorkspaceMembers'])->name('workspace.members');
         Route::post('/documents/recipients', [DokumenController::class, 'recipientsStore'])->name('document.recipients.store');
         Route::get('/documents/{document}/recipients', [DokumenController::class, 'getRecipients']);
+        Route::get('/documents/{id}/download', [DokumenController::class, 'downloadFile'])->name('documents.download');
+        Route::get('/documents/{id}/preview', [DokumenController::class, 'previewFile'])->name('documents.preview');
 
         // Document Comments
         Route::prefix('documents')->group(function () {
@@ -527,6 +536,8 @@ Route::middleware(['auth'])->group(function () {
             // ✅ Route untuk move documents dari company ke workspace
             Route::post('/move', [CompanyDokumenController::class, 'moveDocuments'])->name('move');
             Route::get('/workspaces', [CompanyDokumenController::class, 'getAvailableWorkspaces'])->name('workspaces');
+            Route::get('/{id}/download', [DokumenController::class, 'downloadFile'])->name('download');
+            Route::get('/{id}/preview', [DokumenController::class, 'previewFile'])->name('preview');
         });
 
         // Comments untuk company documents
