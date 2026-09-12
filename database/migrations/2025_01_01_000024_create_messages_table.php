@@ -24,8 +24,11 @@ return new class extends Migration
             $table->timestamp('read_at')->nullable();
             $table->timestamp('updated_at')->nullable();
 
-            $table->foreign('reply_to_message_id')->references('id')->on('messages');
             $table->index('conversation_id', 'idx_messages_conversation_id');
+        });
+
+        Schema::table('messages', function (Blueprint $table) {
+            $table->foreign('reply_to_message_id')->references('id')->on('messages');
         });
 
         // Add deferred FK from conversations.last_message_id to messages.id

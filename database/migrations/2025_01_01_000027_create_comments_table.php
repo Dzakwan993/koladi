@@ -19,7 +19,9 @@ return new class extends Migration
             $table->timestamp('created_at')->nullable()->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->nullable()->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->softDeletes();
+        });
 
+        Schema::table('comments', function (Blueprint $table) {
             $table->foreign('parent_comment_id')->references('id')->on('comments')->onDelete('cascade');
         });
     }

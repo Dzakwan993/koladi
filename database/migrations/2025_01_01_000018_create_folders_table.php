@@ -21,7 +21,6 @@ return new class extends Migration
             $table->uuid('parent_id')->nullable();
             $table->foreignUuid('company_id')->nullable()->constrained('companies')->onDelete('cascade');
 
-            $table->foreign('parent_id')->references('id')->on('folders')->onDelete('cascade');
             $table->index('company_id', 'idx_folders_company_id');
         });
     }

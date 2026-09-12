@@ -32,9 +32,12 @@ return new class extends Migration
             $table->timestamp('created_at')->nullable()->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->nullable()->default(DB::raw('CURRENT_TIMESTAMP'));
 
-            $table->foreign('parent_id')->references('id')->on('mindmap_nodes')->onDelete('cascade');
             $table->index('mindmap_id', 'idx_mindmap_nodes_mindmap_id');
             $table->index('parent_id', 'idx_mindmap_nodes_parent_id');
+        });
+
+        Schema::table('mindmap_nodes', function (Blueprint $table) {
+            $table->foreign('parent_id')->references('id')->on('mindmap_nodes')->onDelete('cascade');
         });
     }
 
