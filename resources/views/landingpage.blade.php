@@ -100,121 +100,91 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-
-        /* Apple Dock Style Underline Navbar */
-        .nav-apple-item {
-            position: relative;
-            transition: color 0.2s ease;
-        }
-        .nav-apple-item::after {
-            content: '';
-            position: absolute;
-            bottom: 2px;
-            left: 50%;
-            width: 0%;
-            height: 2.5px;
-            background-color: #2563eb;
-            border-radius: 9999px;
-            transition: width 0.25s ease, opacity 0.25s ease;
-            transform: translateX(-50%);
-            opacity: 0;
-        }
-        .nav-apple-item:hover::after,
-        .nav-apple-item.active::after {
-            width: 60%;
-            opacity: 1;
-        }
-
-        /* Transisi gelombang dari hero putih ke section biru */
-        .hero-wave {
-            position: absolute;
-            left: 0;
-            bottom: -1px;
-            width: 100%;
-            height: 82px;
-            z-index: 20;
-            overflow: hidden;
-            pointer-events: none;
-        }
-
-        .hero-wave svg {
-            display: block;
-            width: 120%;
-            min-width: 1440px;
-            height: 100%;
-            margin-left: -10%;
-            transform-origin: bottom center;
-            animation: heroWaveMotion 7s ease-in-out infinite;
-        }
-
-        @keyframes heroWaveMotion {
-            0%, 100% {
-                transform: translateX(-1%) scaleY(1);
-            }
-
-            50% {
-                transform: translateX(-7%) scaleY(1.18);
-            }
-        }
     </style>
 </head>
 
 <body class="bg-gray-50 text-gray-800">
-    <!-- Navigation (Clean Dominant White Theme) -->
-    <nav class="fixed top-0 w-full bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-sm z-50 transition-all duration-300">
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full bg-white/90 backdrop-blur-md shadow-sm z-50 transition-all duration-300">
         <div class="container mx-auto px-4 lg:px-8">
-            <div class="flex items-center justify-between h-20">
-                <div class="flex items-center">
-                    <a href="#" class="inline-flex items-center">
-                        <img src="images/LogoKoladi.svg" alt="Logo Koladi" class="h-8 transition-transform duration-200 hover:scale-105">
-                    </a>
+            <div class="flex items-center justify-between h-16">
+                <div
+                    class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                    <img src="images/LogoKoladi.svg" alt="">
                 </div>
 
                 <!-- Desktop Menu -->
-                <div class="hidden md:flex items-center space-x-8">
-                    <a href="#beranda" class="font-bold text-gray-800 hover:text-blue-600 transition-colors text-sm tracking-wide py-2">Beranda</a>
-                    <a href="#fitur" class="font-bold text-gray-800 hover:text-blue-600 transition-colors text-sm tracking-wide py-2">Fitur</a>
-                    <a href="#tentang" class="font-bold text-gray-800 hover:text-blue-600 transition-colors text-sm tracking-wide py-2">Tentang</a>
-                    <a href="#paket" class="font-bold text-gray-800 hover:text-blue-600 transition-colors text-sm tracking-wide py-2">Paket</a>
-                    <span class="text-gray-300 font-light">|</span>
-                    <a href="{{ route('daftar') }}" class="font-bold text-gray-700 hover:text-black transition-colors text-sm tracking-wide py-2">Daftar</a>
+                <div class="hidden md:flex items-center space-x-12">
+                    <a href="#beranda" class="font-bold hover:text-purple-600 transition-colors">Beranda</a>
+                    <a href="#fitur" class="font-bold hover:text-purple-600 transition-colors">Fitur</a>
+                    <a href="#tentang" class=" font-bold hover:text-purple-600 transition-colors">Tentang</a>
+                    <a href="#paket" class=" font-bold hover:text-purple-600 transition-colors">Paket</a>
+                </div>
+
+                <div class="hidden md:flex items-center space-x-4">
                     <a href="{{ route('masuk') }}">
-                        <button class="px-7 py-2.5 bg-blue-600 text-white font-extrabold text-sm rounded-full hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all duration-200 shadow-md shadow-blue-500/20">
+                        <button
+                            class="px-6 py-2.5 bg-blue-600 text-white font-bold text-[13px] rounded-full
+               hover:bg-blue-700 hover:-translate-y-0.5 active:scale-95
+               transition-all duration-200 shadow-sm hover:shadow-md">
                             Masuk
                         </button>
                     </a>
+
+                    <!-- Button Daftar -->
+                    <a href="{{ route('daftar') }}">
+                        <button
+                            class="px-6 py-2.5 bg-gray-200 text-black font-bold text-[13px] rounded-full
+               hover:bg-gray-300 hover:-translate-y-0.5 active:scale-95
+               transition-all duration-200 shadow-sm hover:shadow-md">
+                            Daftar
+                        </button>
+                    </a>
+
                 </div>
 
                 <!-- Mobile Menu Button -->
-                <button id="mobileMenuBtn" class="md:hidden p-2 text-gray-800 focus:outline-none hover:bg-gray-100 rounded-lg transition-colors">
+                <button id="mobileMenuBtn" class="md:hidden p-2">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
                 </button>
             </div>
         </div>
 
         <!-- Mobile Menu -->
-        <div id="mobileMenu" class="hidden md:hidden bg-white border-b border-gray-200 shadow-lg">
-            <div class="container mx-auto px-4 py-4 space-y-4 text-gray-800">
-                <a href="#beranda" class="block font-bold hover:text-blue-600 transition-colors">Beranda</a>
-                <a href="#fitur" class="block font-bold hover:text-blue-600 transition-colors">Fitur</a>
-                <a href="#tentang" class="block font-bold hover:text-blue-600 transition-colors">Tentang</a>
-                <a href="#paket" class="block font-bold hover:text-blue-600 transition-colors">Paket</a>
-                <div class="flex flex-col space-y-3 pt-4 border-t border-gray-100">
-                    <a href="{{ route('daftar') }}" class="block font-bold text-center py-2 text-gray-700 hover:text-black">Daftar</a>
+        <div id="mobileMenu" class="hidden md:hidden bg-white border-t">
+            <div class="container mx-auto px-4 py-4 space-y-4">
+                <a href="#beranda" class="block hover:text-purple-600 transition-colors">Beranda</a>
+                <a href="#fitur" class="block hover:text-purple-600 transition-colors">Fitur</a>
+                <a href="#tentang" class="block hover:text-purple-600 transition-colors">Tentang</a>
+                <a href="#paket" class="block hover:text-purple-600 transition-colors">Paket</a>
+                <div class="flex flex-col space-y-2 pt-4">
                     <a href="{{ route('masuk') }}">
-                        <button class="w-full px-6 py-2.5 bg-blue-600 text-white font-extrabold text-sm rounded-full hover:bg-blue-700 transition-all shadow-md">
+                        <button
+                            class="px-6 py-2.5 bg-blue-600 text-white font-bold text-[13px] rounded-full
+               hover:bg-blue-700 hover:-translate-y-0.5 active:scale-95
+               transition-all duration-200 shadow-sm hover:shadow-md">
                             Masuk
+                        </button>
+                    </a>
+
+                    <!-- Button Daftar -->
+                    <a href="{{ route('daftar') }}">
+                        <button
+                            class="px-6 py-2.5 bg-gray-200 text-black font-bold text-[13px] rounded-full
+               hover:bg-gray-300 hover:-translate-y-0.5 active:scale-95
+               transition-all duration-200 shadow-sm hover:shadow-md">
+                            Daftar
                         </button>
                     </a>
                 </div>
             </div>
         </div>
-
     </nav>
 
-    <!-- Hero Section (Dominan Putih Clean Theme) -->
+    <!-- Hero Section -->
     <section id="beranda" class="min-h-screen flex items-center bg-white overflow-hidden relative pt-24 pb-12">
         <!-- Subtle Glow Effects -->
         <div class="absolute -top-40 -left-40 w-96 h-96 bg-blue-100/60 rounded-full blur-3xl pointer-events-none"></div>
@@ -224,22 +194,22 @@
             <div class="grid lg:grid-cols-12 gap-12 items-center">
 
                 <!-- Left Content -->
-                <div class="lg:col-span-6 text-left space-y-6">
+                <div class="lg:col-span-6 text-center lg:text-left space-y-6 flex flex-col items-center lg:items-start mt-8 lg:mt-0 order-2 lg:order-1">
                     <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 leading-[1.15] tracking-tight">
-                        ALL IN ONE<br>
-                        <span class="text-blue-600">WORKSPACES.</span>
+                        SATU PROYEK<br>
+                        <span class="text-blue-600">SATU KONTEKS</span>
                     </h1>
 
                     <p class="text-lg sm:text-xl font-bold text-blue-800">
-                        WORKSPACES LOKAL HARGA MASUK AKAL
+                        AI PROJECT WORKSPACE
                     </p>
 
-                    <p class="text-sm sm:text-base text-gray-600 font-medium leading-relaxed max-w-lg">
+                    <p class="text-sm sm:text-base text-gray-600 font-medium leading-relaxed max-w-lg mx-auto lg:mx-0">
                         Kelola seluruh proyek, tugas tim, pengumuman, chat, dan analisis AI dalam satu tempat yang terintegrasi dan efisien.
                     </p>
 
                     <!-- CTA Buttons -->
-                    <div class="flex flex-wrap items-center gap-4 pt-2">
+                    <div class="flex flex-wrap justify-center lg:justify-start items-center gap-4 pt-2">
                         <a href="{{ route('daftar') }}">
                             <button class="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm rounded-full shadow-lg hover:scale-105 transition-all duration-200">
                                 COBA GRATIS ->
@@ -253,96 +223,70 @@
                     </div>
                 </div>
 
-                <!-- Right Content: Tilted Photo Mosaic Grid (Static Neat Wall Style) -->
-                <div class="lg:col-span-6 relative flex items-center justify-center min-h-[420px] sm:min-h-[500px]">
-                    <div class="grid grid-cols-3 gap-3 sm:gap-4 transform -rotate-12 scale-105 sm:scale-110 md:scale-125">
+                <!-- Right Content - Laptop Mockup -->
+                <div class="lg:col-span-6 relative animate-slideInRight flex justify-center items-center w-full mt-10 lg:mt-0 order-1 lg:order-2">
+                    <div class="relative w-full max-w-2xl transform hover:scale-105 transition-all duration-500 animate-float">
 
-                        <!-- Column 1 -->
-                        <div class="space-y-3 sm:space-y-4 flex flex-col">
-                            <img src="/images/workspaces.svg" alt="Foto 1" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
-                            <img src="/images/kanban.svg" alt="Foto 2" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
-                            <img src="/images/Chat.svg" alt="Foto 3" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
-                        </div>
+                        <!-- Screen -->
+                        <img src="/images/laptop.svg" alt="Dashboard Preview" class="w-full h-auto object-contain drop-shadow-2xl relative z-10">
 
-                        <!-- Column 2 (Shifted Upwards) -->
-                        <div class="space-y-3 sm:space-y-4 flex flex-col -mt-6 sm:-mt-10">
-                            <img src="/images/pengumuman.svg" alt="Foto 4" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
-                            <img src="/images/mindmap.svg" alt="Foto 5" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
-                            <img src="/images/timeline.svg" alt="Foto 6" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
-                        </div>
-
-                        <!-- Column 3 -->
-                        <div class="space-y-3 sm:space-y-4 flex flex-col">
-                            <img src="/images/statistik.svg" alt="Foto 7" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
-                            <img src="/images/dokumen.svg" alt="Foto 8" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
-                            <img src="/images/LogoAtas.svg" alt="Foto 9" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
-                        </div>
-
+                        <!-- Floating Elements -->
+                        <div class="absolute -top-10 -right-4 sm:-right-10 w-16 h-16 sm:w-24 sm:h-24 bg-yellow-400 rounded-2xl shadow-lg animate-float z-0"
+                            style="animation-delay: 1s"></div>
+                        <div class="absolute -bottom-10 -left-4 sm:-left-10 w-14 h-14 sm:w-20 sm:h-20 bg-pink-400 rounded-full shadow-lg animate-float z-0"
+                            style="animation-delay: 2s"></div>
+                        <div class="absolute top-1/2 -right-8 sm:-right-12 w-10 h-10 sm:w-16 sm:h-16 bg-blue-400 rounded-lg shadow-lg animate-float z-0"
+                            style="animation-delay: 3s"></div>
                     </div>
                 </div>
 
             </div>
         </div>
 
-        <div class="hero-wave" aria-hidden="true">
-            <svg viewBox="0 0 1440 90" preserveAspectRatio="none">
-                <defs>
-                    <linearGradient id="heroToProblem" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stop-color="#60a5fa" />
-                        <stop offset="52%" stop-color="#dbeafe" />
-                        <stop offset="100%" stop-color="#dbeafe" />
-                    </linearGradient>
-                </defs>
-                <path fill="url(#heroToProblem)"
-                    d="M0,42 C180,5 345,82 555,43 C755,5 938,82 1145,43 C1285,17 1377,20 1440,36 L1440,90 L0,90 Z" />
-            </svg>
-        </div>
     </section>
 
     <!-- Problem Section -->
-    <section class="py-20 bg-gradient-to-br from-blue-400 via-blue-100 to-blue-100 relative overflow-hidden">
-        <!-- Animated Background -->
+    <section class="py-20 bg-blue-50 relative overflow-hidden">
+        <!-- Clean Background -->
 
         <div class="container mx-auto px-4 lg:px-8 relative z-10">
             <div class="max-w-6xl mx-auto">
                 <div class="text-center mb-16 animate-fadeInUp">
 
                     <h2 class="text-4xl md:text-5xl font-extrabold mb-6 text-gray-900 leading-tight">
-                        Tim sibuk. Chat penuh.<br>Dokumen tercecer.<br>
-                        <span class="text-red-600">Hasil berantakan?</span>
+                        Brief Klien Berantakan.<br>Meeting Transcript Panjang.<br>
+                        <span class="text-red-600">Pusing Buat Task Satu-satu?</span>
                     </h2>
                 </div>
 
                 <div class="grid md:grid-cols-3 gap-8 mb-12">
                     <div
-                        class="text-center p-8 rounded-3xl bg-gradient-to-br from-blue-400 to-blue-900 text-white shadow-2xl transform hover:scale-110 hover:rotate-2 transition-all duration-300">
-                        <div class="text-7xl font-black mb-4 animate-pulse">80%</div>
-                        <p class="font-semibold text-lg"> responden mengatakan: "Dokumen kerja sering tersebar di banyak
-                            tempat dan sulit ditemukan saat dibutuhkan."
-                        </p>
+                        class="text-center p-8 rounded-3xl bg-white text-slate-800 shadow-xl border border-slate-100 transform hover:-translate-y-2 transition-all duration-300">
+                        <div class="text-6xl font-black mb-4 text-blue-600">PDF</div>
+                        <p class="font-medium text-slate-600">Proposal dan requirement klien yang mencapai belasan halaman.</p>
                     </div>
 
                     <div
-                        class="text-center p-8 rounded-3xl bg-gradient-to-br from-blue-400 to-blue-900 text-white shadow-2xl transform hover:scale-110 hover:rotate-2 transition-all duration-300">
-                        <div class="text-7xl font-black mb-4 animate-pulse" style="animation-delay: 0.5s">70%</div>
-                        <p class="font-semibold text-lg">merasa informasi penting sering tenggelam di chat.</p>
+                        class="text-center p-8 rounded-3xl bg-white text-slate-800 shadow-xl border border-slate-100 transform hover:-translate-y-2 transition-all duration-300">
+                        <div class="text-6xl font-black mb-4 text-purple-600">CHAT</div>
+                        <p class="font-medium text-slate-600">Revisi dan tambahan brief yang tersebar di WhatsApp atau Email.</p>
                     </div>
 
                     <div
-                        class="text-center p-8 rounded-3xl bg-gradient-to-br from-blue-400 to-blue-900 text-white shadow-2xl transform hover:scale-110 hover:rotate-2 transition-all duration-300">
-                        <div class="text-7xl font-black mb-4 animate-pulse" style="animation-delay: 1s">50%</div>
-                        <p class="font-semibold text-lg">Sebagian besar harus pakai banyak tools berbeda</p>
+                        class="text-center p-8 rounded-3xl bg-white text-slate-800 shadow-xl border border-slate-100 transform hover:-translate-y-2 transition-all duration-300">
+                        <div class="text-6xl font-black mb-4 text-blue-800">DOCX</div>
+                        <p class="font-medium text-slate-600">Transcript hasil meeting yang formatnya berantakan dan susah dibaca.</p>
                     </div>
                 </div>
 
                 <div
-                    class="text-center p-10 bg-gradient-to-r from-blue-400 via-blue-900 to-blue-400 rounded-3xl shadow-2xl transform hover:scale-105 transition-all duration-300">
+                    class="text-center p-10 bg-blue-900 rounded-3xl shadow-xl transform hover:-translate-y-1 transition-all duration-300">
                     <p class="text-2xl md:text-3xl font-black text-white mb-6">
-                        Hasilnya? Waktu habis cuma buat sinkronisasi, bukan kerja penting.
+                        Hasilnya? Project Manager habis waktu membaca semuanya hanya untuk membuat setup project.
                     </p>
                     <a href="{{ route('daftar') }}">
                         <button
-                            class="px-8 py-4 bg-white text-blue-600 rounded-full text-lg font-bold hover:shadow-2xl transform hover:scale-110 transition-all duration-300 animate-bounce">
+                            class="px-8 py-4 bg-white text-blue-600 rounded-full text-lg font-bold hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
                             COBA SOLUSINYA GRATIS! →
                         </button>
                     </a>
@@ -352,8 +296,8 @@
     </section>
 
     <!-- Problems List -->
-    <section class="py-20 bg-gradient-to-br from-white via-white to-white relative overflow-hidden">
-        <!-- Animated Background -->
+    <section class="py-20 bg-white relative overflow-hidden">
+        <!-- Clean Background -->
 
         <div class="container mx-auto px-4 lg:px-8 relative z-10">
             <h2 class="text-3xl md:text-5xl font-extrabold text-center mb-6 text-black">
@@ -361,43 +305,32 @@
             </h2>
             <p class="text-center text-xl text-blue-700 mb-16 font-semibold"></p>
 
-            <div class="flex flex-wrap gap-6 justify-center max-w-4xl mx-auto mb-16">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-16">
 
-                <div
-                    class="w-40 h-40 rounded-full bg-blue-800/80 backdrop-blur-2xl border border-blue-400/40 shadow-[0_0_25px_rgba(30,144,255,0.35)] flex flex-col items-center justify-center hover:bg-blue-600/60 hover:shadow-[0_0_35px_rgba(30,144,255,0.55)] transition-all duration-300">
-                    <div class="text-4xl mb-2 text-white">📅</div>
-                    <p class="text-sm text-white text-center px-3 font-semibold">Waktu rapat susah cocok</p>
+                <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center hover:shadow-md transition-shadow">
+                    <svg class="w-8 h-8 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
+                    <p class="text-sm text-slate-700 font-medium">Copy paste manual</p>
                 </div>
 
-                <div
-                    class="w-40 h-40 rounded-full bg-blue-800/80 backdrop-blur-2xl border border-blue-400/40 shadow-[0_0_25px_rgba(30,144,255,0.35)] flex flex-col items-center justify-center hover:bg-blue-600/60 hover:shadow-[0_0_35px_rgba(30,144,255,0.55)] transition-all duration-300">
-                    <div class="text-4xl mb-2 text-white">💬</div>
-                    <p class="text-sm text-white text-center px-3 font-semibold">Chat penting tenggelam</p>
+                <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center hover:shadow-md transition-shadow">
+                    <svg class="w-8 h-8 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <p class="text-sm text-slate-700 font-medium">Info terlewatkan</p>
                 </div>
 
-                <div
-                    class="w-40 h-40 rounded-full bg-blue-800/80 backdrop-blur-2xl border border-blue-400/40 shadow-[0_0_25px_rgba(30,144,255,0.35)] flex flex-col items-center justify-center hover:bg-blue-600/60 hover:shadow-[0_0_35px_rgba(30,144,255,0.55)] transition-all duration-300">
-                    <div class="text-4xl mb-2 text-white">🧩</div>
-                    <p class="text-sm text-white text-center px-3 font-semibold">Terlalu banyak tools</p>
+                <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center hover:shadow-md transition-shadow">
+                    <svg class="w-8 h-8 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <p class="text-sm text-slate-700 font-medium">Banyak waktu terbuang</p>
                 </div>
 
-                <div
-                    class="w-40 h-40 rounded-full bg-blue-800/80 backdrop-blur-2xl border border-blue-400/40 shadow-[0_0_25px_rgba(30,144,255,0.35)] flex flex-col items-center justify-center hover:bg-blue-600/60 hover:shadow-[0_0_35px_rgba(30,144,255,0.55)] transition-all duration-300">
-                    <div class="text-4xl mb-2 text-white">📂</div>
-                    <p class="text-sm text-white text-center px-3 font-semibold">File berserakan</p>
+                <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center hover:shadow-md transition-shadow">
+                    <svg class="w-8 h-8 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <p class="text-sm text-slate-700 font-medium">Typo & Human Error</p>
                 </div>
-
-                <div
-                    class="w-40 h-40 rounded-full bg-blue-800/80 backdrop-blur-2xl border border-blue-400/40 shadow-[0_0_25px_rgba(30,144,255,0.35)] flex flex-col items-center justify-center hover:bg-blue-600/60 hover:shadow-[0_0_35px_rgba(30,144,255,0.55)] transition-all duration-300">
-                    <div class="text-4xl mb-2 text-white">🚫</div>
-                    <p class="text-sm text-white text-center px-3 font-semibold">Progress tidak sinkron</p>
-                </div>
-
 
             </div>
 
             <div
-                class="text-center max-w-2xl mx-auto bg-gradient-to-r from-blue-500 via-blue-700 to-blue-500 p-12 rounded-2xl shadow-2xl transform hover:scale-105 transition-all duration-300">
+                class="text-center max-w-2xl mx-auto bg-blue-700 p-12 rounded-2xl shadow-xl transform hover:-translate-y-1 transition-all duration-300">
                 <p class="text-[16px] md:text-[20px] font-black text-white mb-6 leading-tight">
                     Eits... tenang! Sekarang ada koladi yang bisa mengatasi
                     semua permasalahan tersebut!
@@ -405,7 +338,7 @@
                 <div class="space-y-4">
                     <a href="{{ route('daftar') }}">
                         <button
-                            class="px-4 py-3 bg-white text-blue-600 rounded-full text-[14px] font-bold hover:shadow-2xl transform hover:scale-110 transition-all duration-300 animate-bounce">
+                            class="px-4 py-3 bg-white text-blue-600 rounded-full text-[14px] font-bold hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300">
                             COBA SOLUSINYA GRATIS! →
                         </button>
                     </a>
@@ -415,22 +348,14 @@
         </div>
     </section>
 
-    <!-- AI Decision Support (Creative / Premium) -->
+    <!-- AI Project Planning Assistant (Creative / Premium) -->
     <section class="py-20 bg-white relative overflow-hidden">
-        <!-- premium background -->
+        <!-- Clean Background -->
         <div class="absolute inset-0 pointer-events-none">
-            <div
-                class="absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-gradient-to-tr from-blue-500/15 via-purple-500/10 to-red-500/10 rounded-full blur-3xl">
-            </div>
-
             <!-- subtle grid -->
             <div
                 class="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(to_right,#0f172a_1px,transparent_1px),linear-gradient(to_bottom,#0f172a_1px,transparent_1px)] [background-size:48px_48px]">
             </div>
-
-            <!-- floating accents -->
-            <div class="absolute top-24 left-10 w-24 h-24 rounded-3xl bg-blue-500/10 blur-xl"></div>
-            <div class="absolute bottom-24 right-10 w-28 h-28 rounded-3xl bg-red-500/10 blur-xl"></div>
         </div>
 
         <div class="container mx-auto px-4 lg:px-8 relative z-10">
@@ -438,38 +363,21 @@
                 <!-- header -->
                 <div class="text-center mb-10">
                     <div
-                        class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-blue-200 bg-white/70 backdrop-blur-xl shadow-sm">
-                        <span class="text-base">✨</span>
-                        <span class="text-sm font-extrabold text-slate-900">Koladi AI </span>
-                        <span class="px-2 py-0.5 rounded-full text-[12px] font-black bg-blue-600 text-white">DSS</span>
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
+                        <span class="text-sm font-extrabold text-slate-900">Koladi</span>
+                        <span class="px-2 py-0.5 rounded-full text-[12px] font-bold bg-slate-100 text-slate-600 border border-slate-200">Project Planner</span>
                     </div>
 
                     <h3 class="mt-4 text-3xl md:text-5xl font-extrabold text-slate-900 leading-tight">
-                        Tapi...Ada Masalah Yang <span class="text-red-600">Lebih Berbahaya!!</span> <br>
-
-                        <span class="relative inline-block mt-4">
-                            <!-- Teks -->
-                            <span class="relative z-10 text-white drop-shadow-[0_0_20px_rgba(220,38,38,0.6)]">
-                                "Tim Berkerja Tanpa Arah"
-                            </span>
-
-                            <!-- Highlight penuh: merah solid, cerah -->
-                            <span class="absolute inset-0 z-0 bg-red-600"></span>
-
-                            <!-- Glow luar -->
-                            <span class="absolute -inset-1 z-0 bg-red-600 blur-md opacity-50"></span>
+                        Cukup Upload, <span class="text-blue-600">Sistem Buatkan Draft-nya!</span> <br>
+                        <span class="text-slate-500 text-2xl md:text-3xl font-semibold mt-2 block">
+                            Kerja Cerdas Tanpa Setup Manual
                         </span>
                     </h3>
 
                     <p class="mt-4 text-base md:text-lg text-slate-700 max-w-3xl mx-auto leading-relaxed">
-                        Risiko terbesar bukan teknis, tapi
-                        <span
-                            class="text-slate-900 font-semibold px-2 bg-red-600/15 drop-shadow-[0_0_14px_rgba(220,38,38,0.35)]">tim
-                            tanpa arah</span>
-                        dan
-                        <span
-                            class="text-slate-900 font-semibold px-2 bg-red-600/15 drop-shadow-[0_0_14px_rgba(220,38,38,0.35)]">keputusan
-                            tanpa data</span>.
+                        Anda tidak perlu lagi memindahkan data satu per satu. AI akan membaca seluruh konteks dan Anda tinggal
+                        <span class="text-slate-900 font-semibold px-2 bg-blue-600/15 drop-shadow-[0_0_14px_rgba(37,99,235,0.35)]">Review & Approve</span>.
                     </p>
                 </div>
 
@@ -486,87 +394,81 @@
                                 <!-- label -->
                                 <div class="flex items-center gap-3">
                                     <span
-                                        class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md">
-                                        🤖
+                                        class="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 shadow-sm border border-blue-100">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                                     </span>
                                     <div class="leading-tight">
-                                        <p class="text-sm font-extrabold text-slate-900">Koladi • AI Decision Support
+                                        <p class="text-sm font-extrabold text-slate-900">Koladi • Brief Parser
                                         </p>
                                         <p class="text-xs font-medium text-slate-500">
-                                            Aktivitas tim → insight → keputusan
+                                            Baca Brief → Ekstrak Info → Jadi Task
                                         </p>
                                     </div>
                                 </div>
 
                                 <!-- headline -->
                                 <h4 class="mt-5 text-2xl md:text-3xl font-extrabold text-slate-900 leading-tight">
-                                    Koladi mengubah aktivitas kerja menjadi <span class="text-blue-700">insight</span>
-                                    yang siap dipakai.
+                                    Menganalisis dokumen dalam format <span class="text-blue-700">PDF, DOCX, TXT, dan Chat</span> sekaligus.
                                 </h4>
 
                                 <p class="mt-3 text-slate-700 leading-relaxed">
-                                    Lihat risiko lebih cepat—sebelum deadline molor dan performa turun.
+                                    Koladi AI secara otomatis menghasilkan struktur JSON terstruktur siap pakai yang sangat detail.
                                 </p>
 
                                 <!-- proof line -->
                                 <div class="mt-5 rounded-2xl border border-blue-200/80 bg-blue-50 p-4">
                                     <p class="text-slate-900 font-extrabold">
-                                        Keputusan bukan perasaan —
-                                        <span class="text-blue-700">berdasarkan data kerja nyata.</span>
+                                        Tetap Anda Kendalinya —
+                                        <span class="text-blue-700">AI Bukan Pengambil Keputusan.</span>
                                     </p>
                                     <p class="mt-1 text-sm text-slate-600 font-medium">
-                                        Ringkas, jelas, dan langsung bisa ditindaklanjuti.
+                                        AI hanya membuatkan draft. Anda yang menentukan, mengedit, dan setuju untuk membuat project.
                                     </p>
                                 </div>
 
-                                <!-- 3 feature cards sejajar -->
                                 <div class="mt-6 grid sm:grid-cols-3 gap-4">
                                     <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                                         <div class="flex items-center gap-2">
                                             <span
-                                                class="h-9 w-9 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-sm">
-                                                ✴️
+                                                class="h-9 w-9 rounded-xl bg-slate-50 text-slate-600 border border-slate-200 flex items-center justify-center">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                                             </span>
                                             <div class="leading-tight">
-                                                <p class="text-sm font-extrabold text-slate-900">Pola Kerja</p>
-                                                <p class="text-[11px] font-semibold text-slate-500">Ritme & kebiasaan
-                                                </p>
+                                                <p class="text-sm font-extrabold text-slate-900">Draft Tasks</p>
                                             </div>
                                         </div>
                                         <p class="mt-3 text-[13px] text-slate-700 leading-relaxed">
-                                            Baca pola yang tidak terlihat dari aktivitas harian.
+                                            Membuat daftar tugas lengkap dengan prioritas dan estimasi deadline.
                                         </p>
                                     </div>
 
                                     <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                                         <div class="flex items-center gap-2">
                                             <span
-                                                class="h-9 w-9 rounded-2xl bg-slate-800 text-white flex items-center justify-center text-sm">
-                                                ⚖️
+                                                class="h-9 w-9 rounded-xl bg-slate-50 text-slate-600 border border-slate-200 flex items-center justify-center">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                             </span>
                                             <div class="leading-tight">
-                                                <p class="text-sm font-extrabold text-slate-900">Beban Kerja</p>
-                                                <p class="text-[11px] font-semibold text-slate-500">Adil & terukur</p>
+                                                <p class="text-sm font-extrabold text-slate-900">Missing Info</p>
                                             </div>
                                         </div>
                                         <p class="mt-3 text-[13px] text-slate-700 leading-relaxed">
-                                            Ukur kapasitas dan distribusi tugas biar tidak timpang.
+                                            Mendeteksi informasi yang belum jelas (budget, PIC) untuk diklarifikasi.
                                         </p>
                                     </div>
 
                                     <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                                         <div class="flex items-center gap-2">
                                             <span
-                                                class="h-9 w-9 rounded-2xl bg-red-600 text-white flex items-center justify-center text-sm">
-                                                🚨
+                                                class="h-9 w-9 rounded-xl bg-slate-50 text-slate-600 border border-slate-200 flex items-center justify-center">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                                             </span>
                                             <div class="leading-tight">
-                                                <p class="text-sm font-extrabold text-slate-900">Risiko Dini</p>
-                                                <p class="text-[11px] font-semibold text-slate-500">Early warning</p>
+                                                <p class="text-sm font-extrabold text-slate-900">Traceability</p>
                                             </div>
                                         </div>
                                         <p class="mt-3 text-[13px] text-slate-700 leading-relaxed">
-                                            Deteksi bottleneck dan potensi telat sebelum membesar.
+                                            Memberitahu Anda dari dokumen mana informasi tersebut didapatkan.
                                         </p>
                                     </div>
                                 </div>
@@ -575,25 +477,20 @@
                             <!-- Right: risk box -->
                             <div class="lg:col-span-5">
                                 <div
-                                    class="relative overflow-hidden rounded-3xl border border-red-200/70 bg-white shadow-sm p-6">
-                                    <!-- subtle background glow -->
-                                    <div
-                                        class="absolute -top-24 -right-24 h-56 w-56 rounded-full bg-red-600/10 blur-2xl">
-                                    </div>
-
+                                    class="relative overflow-hidden rounded-3xl border border-blue-200/70 bg-white shadow-sm p-6">
                                     <div class="relative flex items-center justify-between gap-4">
                                         <div>
-                                            <p class="text-xs font-black text-red-700 tracking-wider uppercase">Risk
+                                            <p class="text-xs font-black text-blue-700 tracking-wider uppercase">FLOW
                                             </p>
                                             <p class="mt-1 text-base font-extrabold text-slate-900 leading-tight">
-                                                Yang sering terlambat disadari
+                                                Proses Kerja AI
                                             </p>
                                         </div>
 
                                         <span
-                                            class="inline-flex items-center gap-2 rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white">
+                                            class="inline-flex items-center gap-2 rounded-full bg-blue-600 px-3 py-1 text-xs font-black text-white">
                                             <span class="h-2 w-2 rounded-full bg-white/90"></span>
-                                            RISK
+                                            SIMPLE
                                         </span>
                                     </div>
 
@@ -601,14 +498,13 @@
                                         <div
                                             class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
                                             <span
-                                                class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-red-600 text-white shadow-sm">
-                                                ⚠️
+                                                class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 shadow-sm border border-slate-200 font-bold text-sm">
+                                                1
                                             </span>
                                             <div class="min-w-0">
-                                                <p class="font-extrabold text-slate-900 leading-snug">Overload
-                                                    tersembunyi</p>
+                                                <p class="font-extrabold text-slate-900 leading-snug">Upload Dokumen</p>
                                                 <p class="mt-0.5 text-sm text-slate-600 font-medium leading-snug">
-                                                    Kelihatan aman, padahal beban sudah berlebih.
+                                                    Unggah PDF, DOCX, TXT, Email, atau Chat sekaligus.
                                                 </p>
                                             </div>
                                         </div>
@@ -616,14 +512,13 @@
                                         <div
                                             class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
                                             <span
-                                                class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm">
-                                                ⏳
+                                                class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 shadow-sm border border-slate-200 font-bold text-sm">
+                                                2
                                             </span>
                                             <div class="min-w-0">
-                                                <p class="font-extrabold text-slate-900 leading-snug">Deadline rawan
-                                                    molor</p>
+                                                <p class="font-extrabold text-slate-900 leading-snug">AI Menganalisis</p>
                                                 <p class="mt-0.5 text-sm text-slate-600 font-medium leading-snug">
-                                                    Progres tampak normal, tapi risiko menumpuk diam-diam.
+                                                    Parser pintar menormalisasi teks dan mengekstrak poin-poin.
                                                 </p>
                                             </div>
                                         </div>
@@ -631,14 +526,13 @@
                                         <div
                                             class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
                                             <span
-                                                class="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
-                                                📉
+                                                class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700 shadow-sm border border-slate-200 font-bold text-sm">
+                                                3
                                             </span>
                                             <div class="min-w-0">
-                                                <p class="font-extrabold text-slate-900 leading-snug">Performa turun
-                                                    diam-diam</p>
+                                                <p class="font-extrabold text-slate-900 leading-snug">Human Review</p>
                                                 <p class="mt-0.5 text-sm text-slate-600 font-medium leading-snug">
-                                                    Output menurun tanpa alarm yang jelas.
+                                                    Validasi, edit jika perlu, lalu simpan menjadi project.
                                                 </p>
                                             </div>
                                         </div>
@@ -646,8 +540,7 @@
 
                                     <div class="relative mt-5 border-t border-slate-200 pt-4">
                                         <p class="text-sm text-slate-600 font-semibold">
-                                            Koladi memberi <span class="text-slate-900 font-extrabold">early
-                                                warning</span> + rekomendasi action.
+                                            AI di Koladi tidak mengarang. <span class="text-slate-900 font-extrabold">Hanya mengambil fakta</span> dari dokumen.
                                         </p>
                                     </div>
                                 </div>
@@ -661,28 +554,16 @@
                     <!-- JUDUL -->
                     <h2 class="mb-6 md:mb-10 max-w-4xl text-2xl md:text-4xl font-bold text-slate-900">
                         <span class="text-slate-800">
-                            Prioritas yang harus dibereskan saat ini
+                            Didukung dengan Teknologi Terkini
                         </span>
                     </h2>
 
                     <!-- IMAGE -->
                     <div class="relative w-full max-w-7xl">
-                        <div
-                            class="absolute inset-0 -z-10 blur-3xl opacity-40 bg-gradient-to-tr from-blue-500/20 via-purple-500/10 to-red-500/10 rounded-[40px]">
-                        </div>
-
                         <img src="images/ai.svg" alt="Koladi AI"
-                            class="w-full h-auto max-h-[700px] object-contain scale-110 md:scale-125 drop-shadow-[0_30px_80px_rgba(15,23,42,0.20)]" />
+                            class="w-full h-auto max-h-[700px] object-contain scale-110 md:scale-125" />
                     </div>
                 </div>
-                {{-- end foto ai --}}
-                {{-- <!-- CTA row -->
-                        <div class="mt-10 flex justify-center">
-                            <p class="text-lg md:text-xl text-slate-700 font-semibold text-center">
-                                Semua solusi ini <span class="font-extrabold text-slate-900">terintegrasi dalam
-                                    Koladi</span>
-                            </p>
-                        </div> --}}
             </div>
         </div>
     </section>
@@ -691,111 +572,99 @@
 
 
     <!-- Features Section -->
-    <section id="fitur"
-        class="py-20 bg-gradient-to-br from-slate-900 via-blue-400 to-slate-900 text-white relative overflow-hidden">
-        <!-- Animated Stars Background -->
-        <div class="absolute inset-0">
-            <div class="absolute top-1/4 left-1/4 w-2 h-2 bg-white rounded-full animate-pulse"></div>
-            <div class="absolute top-1/3 right-1/3 w-1 h-1 bg-white rounded-full animate-pulse"
-                style="animation-delay: 1s"></div>
-            <div class="absolute bottom-1/4 left-1/2 w-2 h-2 bg-white rounded-full animate-pulse"
-                style="animation-delay: 2s"></div>
-            <div class="absolute top-1/2 right-1/4 w-1 h-1 bg-white rounded-full animate-pulse"
-                style="animation-delay: 1.5s"></div>
-        </div>
-
+    <section id="fitur" class="py-20 bg-slate-50 text-slate-800 relative overflow-hidden">
         <div class="container mx-auto px-4 lg:px-8 relative z-10">
             <div class="text-center mb-16">
-
-                <h2 class="text-5xl md:text-[40px] font-black mb-4">
+                <h2 class="text-4xl md:text-[40px] font-black mb-4 text-slate-900">
                     Fitur-Fitur Koladi
                 </h2>
-                <p class="text-xl text-white-900 text-[12px]">Semua yang tim Anda butuhkan, dalam satu tempat!</p>
+                <p class="text-lg text-slate-600 font-medium">Semua yang tim Anda butuhkan, dalam satu tempat!</p>
             </div>
 
             <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto mb-16">
+                <!-- Tambah Fitur AI di Sini -->
                 <div
-                    class="group p-8 bg-gradient-to-br from-blue to-blue rounded-3xl shadow-2xl hover:shadow-purple-500/50 transform hover:-translate-y-3 hover:rotate-3 transition-all duration-300 border-2 border-purple-400">
-                    <div class="text-5xl mb-4 transform group-hover:scale-125 transition-transform duration-300"><img
-                            src="/images/workspaces.svg" alt="" class="invert">
+                    class="group p-8 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div class="mb-4 text-blue-600">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     </div>
-                    <h3 class="text-2xl font-black mb-3">WORKSPACES</h3>
-                    <p class="text-purple-100">Ruang kerja terpadu untuk tim</p>
+                    <h3 class="text-lg font-bold mb-2 text-slate-800">AI Planner</h3>
+                    <p class="text-sm text-slate-500">Otomatis buat task dari dokumen</p>
                 </div>
 
                 <div
-                    class="group p-8 bg-gradient-to-br from-blue to-blue rounded-3xl shadow-2xl hover:shadow-purple-500/50 transform hover:-translate-y-3 hover:rotate-3 transition-all duration-300 border-2 border-purple-400">
-                    <div class="text-5xl mb-4 transform group-hover:scale-125 transition-transform duration-300"><img
-                            src="/images/pengumuman.svg" alt="" class="invert">
+                    class="group p-8 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div class="mb-4 text-slate-600">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                     </div>
-                    <h3 class="text-2xl font-black mb-3">PENGUMUMAN</h3>
-                    <p class="text-blue-100">Broadcast info penting dengan mudah</p>
+                    <h3 class="text-lg font-bold mb-2 text-slate-800">Workspaces</h3>
+                    <p class="text-sm text-slate-500">Ruang kerja terpadu untuk tim</p>
                 </div>
 
                 <div
-                    class="group p-8 bg-gradient-to-br from-blue to-blue rounded-3xl shadow-2xl hover:shadow-purple-500/50 transform hover:-translate-y-3 hover:rotate-3 transition-all duration-300 border-2 border-purple-400">
-                    <div class="text-5xl mb-4 transform group-hover:scale-125 transition-transform duration-300"><img
-                            src="/images/kanban.svg" alt="" class="invert">
+                    class="group p-8 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div class="mb-4 text-slate-600">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>
                     </div>
-                    <h3 class="text-2xl font-black mb-3">KANBAN TUGAS</h3>
-                    <p class="text-indigo-100">Kelola task dengan sistem kanban</p>
+                    <h3 class="text-lg font-bold mb-2 text-slate-800">Pengumuman</h3>
+                    <p class="text-sm text-slate-500">Broadcast info penting dengan mudah</p>
                 </div>
 
                 <div
-                    class="group p-8 bg-gradient-to-br from-blue to-blue rounded-3xl shadow-2xl hover:shadow-purple-500/50 transform hover:-translate-y-3 hover:rotate-3 transition-all duration-300 border-2 border-purple-400">
-                    <div class="text-5xl mb-4 transform group-hover:scale-125 transition-transform duration-300"><img
-                            src="/images/Chat.svg" alt="" class="invert">
+                    class="group p-8 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div class="mb-4 text-slate-600">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path></svg>
                     </div>
-                    <h3 class="text-2xl font-black mb-3">CHAT</h3>
-                    <p class="text-pink-100">Komunikasi real-time dengan tim</p>
+                    <h3 class="text-lg font-bold mb-2 text-slate-800">Kanban Tugas</h3>
+                    <p class="text-sm text-slate-500">Kelola task dengan sistem kanban</p>
                 </div>
 
                 <div
-                    class="group p-8 bg-gradient-to-br from-blue to-blue rounded-3xl shadow-2xl hover:shadow-purple-500/50 transform hover:-translate-y-3 hover:rotate-3 transition-all duration-300 border-2 border-purple-400">
-                    <div class="text-5xl mb-4 transform group-hover:scale-125 transition-transform duration-300"><img
-                            src="/images/timeline.svg" alt="" class="invert">
+                    class="group p-8 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div class="mb-4 text-slate-600">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                     </div>
-                    <h3 class="text-2xl font-black mb-3">TIMELINE</h3>
-                    <p class="text-green-100">Pantau progress secara visual</p>
+                    <h3 class="text-lg font-bold mb-2 text-slate-800">Chat</h3>
+                    <p class="text-sm text-slate-500">Komunikasi real-time dengan tim</p>
                 </div>
 
                 <div
-                    class="group p-8 bg-gradient-to-br from-blue to-blue rounded-3xl shadow-2xl hover:shadow-purple-500/50 transform hover:-translate-y-3 hover:rotate-3 transition-all duration-300 border-2 border-purple-400">
-                    <div class="text-5xl mb-4 transform group-hover:scale-125 transition-transform duration-300"><img
-                            src="/images/mindmap.svg" alt="" class="invert">
+                    class="group p-8 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div class="mb-4 text-slate-600">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     </div>
-                    <h3 class="text-2xl font-black mb-3">MINDMAP</h3>
-                    <p class="text-yellow-100">Visualisasi ide dan konsep</p>
+                    <h3 class="text-lg font-bold mb-2 text-slate-800">Timeline</h3>
+                    <p class="text-sm text-slate-500">Pantau progress secara visual</p>
                 </div>
 
                 <div
-                    class="group p-8 bg-gradient-to-br from-blue to-blue rounded-3xl shadow-2xl hover:shadow-purple-500/50 transform hover:-translate-y-3 hover:rotate-3 transition-all duration-300 border-2 border-purple-400">
-                    <div class="text-5xl mb-4 transform group-hover:scale-125 transition-transform duration-300"><img
-                            src="/images/statistik.svg" alt="" class="invert">
+                    class="group p-8 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div class="mb-4 text-slate-600">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                     </div>
-                    <h3 class="text-2xl font-black mb-3">STATISTIK</h3>
-                    <p class="text-red-100">Analitik performa tim lengkap</p>
+                    <h3 class="text-lg font-bold mb-2 text-slate-800">Statistik</h3>
+                    <p class="text-sm text-slate-500">Analitik performa tim lengkap</p>
                 </div>
 
                 <div
-                    class="group p-8 bg-gradient-to-br from-blue to-blue rounded-3xl shadow-2xl hover:shadow-purple-500/50 transform hover:-translate-y-3 hover:rotate-3 transition-all duration-300 border-2 border-purple-400">
-                    <div class="text-5xl mb-4 transform group-hover:scale-125 transition-transform duration-300"><img
-                            src="/images/dokumen.svg" alt="" class="invert">
+                    class="group p-8 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                    <div class="mb-4 text-slate-600">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                     </div>
-                    <h3 class="text-2xl font-black mb-3">DOKUMEN</h3>
-                    <p class="text-teal-100">Kelola semua file di satu tempat</p>
+                    <h3 class="text-lg font-bold mb-2 text-slate-800">Dokumen</h3>
+                    <p class="text-sm text-slate-500">Kelola semua file di satu tempat</p>
                 </div>
             </div>
 
             <div
-                class="text-center bg-gradient-to-r from-blue-500 via-blue-700 to-blue-500 p-10 rounded-2xl shadow-2xl max-w-2xl mx-auto transform hover:scale-105 transition-all duration-300">
+                class="text-center bg-blue-700 p-10 rounded-2xl shadow-xl max-w-2xl mx-auto transform hover:-translate-y-1 transition-all duration-300">
                 <h3 class="text-3xl md:text-[25px] font-black text-white mb-4">
                     Dapatkan Semua Fitur Ini GRATIS!
                 </h3>
                 <p class=" text-white mb-6 font-bold text[16px]">Coba selama 7 hari tanpa biaya apapun</p>
                 <a href="{{ route('daftar') }}">
                     <button
-                        class="px-4 py-3 bg-white text-blue-600 rounded-full text-[13px] font-black hover:bg-gray-100 shadow-2xl transform hover:scale-110 transition-all duration-300 animate-pulse">
+                        class="px-4 py-3 bg-white text-blue-600 rounded-full text-[13px] font-black hover:bg-gray-100 shadow-xl transform hover:-translate-y-1 transition-all duration-300">
                         MULAI GRATIS SEKARANG! →
                     </button>
                 </a>
@@ -804,17 +673,14 @@
     </section>
 
     <!-- About Section -->
-    <section id="tentang" class="py-20 bg-gradient-to-br from-purple-50 to-blue-50">
+    <section id="tentang" class="py-20 bg-slate-50">
         <div class="container mx-auto px-4 lg:px-8">
             <div class="max-w-4xl mx-auto text-center">
                 <h2 class="text-4xl md:text-5xl font-bold mb-8 text-gray-800">
                     Apa itu Koladi?
                 </h2>
                 <p class="text-xl text-gray-700 leading-relaxed">
-                    Koladi adalah tools untuk mempermudah komunikasi, manajemen tugas, penjadwalan, dan dokumen dalam
-                    satu platform yang rapih. Tanpa ribut pindah aplikasi, tim bisa bekerja lebih terstruktur,
-                    transparan, dan efisien. Koladi juga memberikan visualisasi & insight performa anlamnya terkoneksi
-                    dalam satu ekosistem yang mudah diadopsi.
+                    Koladi adalah AI Project Planning Assistant yang membantu Anda dan tim mengubah dokumen acak (PDF, Word, WhatsApp) menjadi task yang terstruktur tanpa perlu pusing copy-paste secara manual. Terintegrasi langsung ke fitur Manajemen Tugas, Chat, Penjadwalan, dan File Sharing.
                 </p>
             </div>
         </div>
@@ -833,7 +699,7 @@
                 <!-- Basic Plan -->
                 <div
                     class="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-200 hover:border-purple-500 transform hover:-translate-y-2 transition-all duration-300">
-                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Basic</h3>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Starter</h3>
                     <div class="mb-6">
                         <div class="text-gray-500 line-through text-lg leading-none mb-1">Rp
                             {{ number_format($basicPrice * 2, 0, ',', '.') }}</div>
@@ -856,11 +722,11 @@
 
                 <!-- Standard Plan -->
                 <div
-                    class="bg-gradient-to-br from-purple-500 to-blue-600 rounded-2xl shadow-2xl p-8 transform scale-105 hover:-translate-y-2 transition-all duration-300 text-white">
+                    class="bg-blue-700 rounded-2xl shadow-xl p-8 transform md:scale-105 hover:-translate-y-1 transition-all duration-300 text-white border border-blue-600">
                     <div
                         class="bg-yellow-400 text-purple-900 text-sm font-bold px-4 py-1 rounded-full inline-block mb-4">
                         POPULER</div>
-                    <h3 class="text-2xl font-bold mb-4">Standard</h3>
+                    <h3 class="text-2xl font-bold mb-4">Team</h3>
                     <div class="mb-6">
                         <div class="text-white line-through text-lg leading-none mb-1">Rp
                             {{ number_format($standardPrice * 2, 0, ',', '.') }}</div>
@@ -883,7 +749,7 @@
                 <!-- Premium Plan -->
                 <div
                     class="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-200 hover:border-purple-500 transform hover:-translate-y-2 transition-all duration-300">
-                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Premium</h3>
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">Agency</h3>
                     <div class="mb-6">
                         <div class="text-gray-500 line-through text-lg leading-none mb-1">Rp
                             {{ number_format($businessPrice * 2, 0, ',', '.') }}</div>
@@ -910,16 +776,8 @@
 
     <!-- Feedback Section -->
     <section id="feedback"
-        class="py-20 bg-gradient-to-br from-black via-blue-700 to-blue-800 relative overflow-hidden">
-        <!-- Animated Background -->
-        <div class="absolute inset-0 opacity-30">
-            <div
-                class="absolute top-10 left-10 w-72 h-72 rounded-full mix-blend-overlay filter blur-3xl animate-float">
-            </div>
-            <div class="absolute bottom-10 right-10 w-72 h-72 bg-blue rounded-full mix-blend-overlay filter blur-3xl animate-float"
-                style="animation-delay: 2s"></div>
-        </div>
-
+        class="py-20 bg-slate-900 relative overflow-hidden">
+        <!-- Clean Background -->
         <div class="container mx-auto px-4 lg:px-8 relative z-10">
             <div class="max-w-3xl mx-auto">
                 <div class="text-center mb-12">
