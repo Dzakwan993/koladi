@@ -226,7 +226,7 @@
                         <div class="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-purple-500/10 rounded-3xl blur-2xl -z-10"></div>
 
                         <!-- Screen -->
-                        <img src="/images/laptop.svg" alt="Dashboard Preview" class="w-full h-auto object-contain drop-shadow-2xl relative z-10">
+                        <img src="/images/laptop.png" alt="Dashboard Preview" class="w-full h-auto object-contain drop-shadow-2xl relative z-10">
 
                         <!-- Floating Micro-Card 1 (Top Right) -->
                         <div class="absolute -top-4 -right-2 sm:-right-4 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl p-3 shadow-xl flex items-center gap-3 z-20 animate-float" style="animation-duration: 4s;">
@@ -257,105 +257,115 @@
 
     </section>
 
-    <!-- Problem Section -->
-    <section class="py-20 bg-blue-50 relative overflow-hidden">
-        <!-- Clean Background -->
-
+    <!-- Problem Section - Konteks Permasalahan -->
+    <section class="py-24 bg-slate-50 relative overflow-hidden">
         <div class="container mx-auto px-4 lg:px-8 relative z-10">
-            <div class="max-w-6xl mx-auto">
-                <div class="text-center mb-16 animate-fadeInUp">
+            <div class="max-w-5xl mx-auto">
 
-                    <h2 class="text-4xl md:text-5xl font-extrabold mb-6 text-gray-900 leading-tight">
-                        Brief Klien Berantakan.<br>Meeting Transcript Panjang.<br>
-                        <span class="text-red-600">Pusing Buat Task Satu-satu?</span>
+                <!-- Header -->
+                <div class="max-w-3xl mx-auto text-center mb-12">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-white border border-slate-200 text-slate-500 text-xs font-bold uppercase tracking-wider shadow-sm">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                        Konteks Permasalahan
+                    </div>
+
+                    <h2 class="mt-5 text-4xl md:text-5xl font-black text-slate-950 leading-tight tracking-tight">
+                        Brief Klien Berantakan.<br>
+                        Meeting Transcript Panjang.
                     </h2>
-                </div>
 
-                <div class="grid md:grid-cols-3 gap-8 mb-12">
-                    <div
-                        class="text-center p-8 rounded-3xl bg-white text-slate-800 shadow-xl border border-slate-100 transform hover:-translate-y-2 transition-all duration-300">
-                        <div class="text-6xl font-black mb-4 text-blue-600">PDF</div>
-                        <p class="font-medium text-slate-600">Proposal dan requirement klien yang mencapai belasan halaman.</p>
-                    </div>
-
-                    <div
-                        class="text-center p-8 rounded-3xl bg-white text-slate-800 shadow-xl border border-slate-100 transform hover:-translate-y-2 transition-all duration-300">
-                        <div class="text-6xl font-black mb-4 text-purple-600">CHAT</div>
-                        <p class="font-medium text-slate-600">Revisi dan tambahan brief yang tersebar di WhatsApp atau Email.</p>
-                    </div>
-
-                    <div
-                        class="text-center p-8 rounded-3xl bg-white text-slate-800 shadow-xl border border-slate-100 transform hover:-translate-y-2 transition-all duration-300">
-                        <div class="text-6xl font-black mb-4 text-blue-800">DOCX</div>
-                        <p class="font-medium text-slate-600">Transcript hasil meeting yang formatnya berantakan dan susah dibaca.</p>
-                    </div>
-                </div>
-
-                <div
-                    class="text-center p-10 bg-blue-900 rounded-3xl shadow-xl transform hover:-translate-y-1 transition-all duration-300">
-                    <p class="text-2xl md:text-3xl font-black text-white mb-6">
-                        Hasilnya? Project Manager habis waktu membaca semuanya hanya untuk membuat setup project.
+                    <p class="mt-4 text-base md:text-lg text-slate-500 leading-7 max-w-2xl mx-auto">
+                        Informasi proyek sering tersebar di berbagai dokumen dan percakapan, membuat konteks pekerjaan sulit dipahami secara menyeluruh.
                     </p>
-                    <a href="{{ route('daftar') }}">
-                        <button
-                            class="px-8 py-3.5 bg-white text-blue-900 rounded-full text-base font-bold hover:bg-blue-50 shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-                            Coba Solusinya Gratis →
-                        </button>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Problems List -->
-    <section class="py-20 bg-white relative overflow-hidden">
-        <!-- Clean Background -->
-
-        <div class="container mx-auto px-4 lg:px-8 relative z-10">
-            <h2 class="text-3xl md:text-5xl font-extrabold text-center mb-6 text-black">
-                Masalah yang Hampir <span class="text-red-600">Semua Tim</span> Alami
-            </h2>
-            <p class="text-center text-xl text-blue-700 mb-16 font-semibold"></p>
-
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-16">
-
-                <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center hover:shadow-md transition-shadow">
-                    <svg class="w-8 h-8 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path></svg>
-                    <p class="text-sm text-slate-700 font-medium">Copy paste manual</p>
                 </div>
 
-                <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center hover:shadow-md transition-shadow">
-                    <svg class="w-8 h-8 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                    <p class="text-sm text-slate-700 font-medium">Info terlewatkan</p>
+                <!-- Sources -->
+                <div class="grid md:grid-cols-3 gap-5">
+
+                    <!-- PDF -->
+                    <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-red-50 text-red-500">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l4 4v14H7a2 2 0 01-2-2V5a2 2 0 012-2zm7 0v5h5"/>
+                                </svg>
+                            </div>
+                            <span class="text-[10px] font-bold tracking-wider text-red-500 bg-red-50 px-2.5 py-1 rounded-full">PDF</span>
+                        </div>
+                        <h3 class="mt-5 text-lg font-extrabold text-slate-900">Proposal & Requirement</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-500">
+                            Dokumen klien yang panjang berisi banyak detail, kebutuhan, dan ketentuan proyek.
+                        </p>
+                        <div class="mt-5 space-y-2">
+                            <div class="h-1.5 w-full rounded-full bg-slate-100"></div>
+                            <div class="h-1.5 w-10/12 rounded-full bg-slate-100"></div>
+                            <div class="h-1.5 w-7/12 rounded-full bg-slate-100"></div>
+                        </div>
+                    </article>
+
+                    <!-- CHAT -->
+                    <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M5 19l1.5-3.2A7.5 7.5 0 1119 16.5L20 19l-3.3-1.2A7.5 7.5 0 015 19z"/>
+                                    <path stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M9 10h.01M12 10h.01M15 10h.01"/>
+                                </svg>
+                            </div>
+                            <span class="text-[10px] font-bold tracking-wider text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">CHAT</span>
+                        </div>
+                        <h3 class="mt-5 text-lg font-extrabold text-slate-900">WhatsApp & Email</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-500">
+                            Revisi dan tambahan kebutuhan muncul di percakapan berbeda sehingga informasi mudah tersebar.
+                        </p>
+                        <div class="mt-5 space-y-2">
+                            <div class="ml-auto h-6 w-8/12 rounded-xl rounded-br-sm bg-emerald-50"></div>
+                            <div class="h-6 w-9/12 rounded-xl rounded-bl-sm bg-slate-100"></div>
+                            <div class="ml-auto h-6 w-6/12 rounded-xl rounded-br-sm bg-emerald-50"></div>
+                        </div>
+                    </article>
+
+                    <!-- TRANSCRIPT -->
+                    <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6 3h8l4 4v14H6a2 2 0 01-2-2V5a2 2 0 012-2zm8 0v5h5"/>
+                                    <path stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M8 12h6M8 15h6M8 18h4"/>
+                                </svg>
+                            </div>
+                            <span class="text-[10px] font-bold tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">TRANSCRIPT</span>
+                        </div>
+                        <h3 class="mt-5 text-lg font-extrabold text-slate-900">Hasil Meeting</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-500">
+                            Transcript yang panjang membuat keputusan, kebutuhan, dan action item sulit ditemukan kembali.
+                        </p>
+                        <div class="mt-5 space-y-2">
+                            <div class="h-1.5 w-full rounded-full bg-slate-100"></div>
+                            <div class="h-1.5 w-11/12 rounded-full bg-slate-100"></div>
+                            <div class="h-1.5 w-9/12 rounded-full bg-slate-100"></div>
+                            <div class="h-1.5 w-7/12 rounded-full bg-slate-100"></div>
+                        </div>
+                    </article>
                 </div>
 
-                <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center hover:shadow-md transition-shadow">
-                    <svg class="w-8 h-8 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <p class="text-sm text-slate-700 font-medium">Banyak waktu terbuang</p>
+                <!-- Impact -->
+                <div class="mt-6 rounded-2xl border border-slate-200 bg-white px-6 py-6 md:px-8 md:py-7 shadow-sm">
+                    <div class="flex flex-col md:flex-row md:items-center gap-5">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 4h.01M5.2 20h13.6c1.6 0 2.6-1.7 1.8-3.1L13.8 4.7c-.8-1.4-2.8-1.4-3.6 0L3.4 16.9C2.6 18.3 3.6 20 5.2 20z"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-xs font-bold uppercase tracking-wider text-red-500">Dampaknya</p>
+                            <p class="mt-1 text-base md:text-lg font-extrabold text-slate-900">
+                                Project Manager menghabiskan banyak waktu untuk membaca, merangkum, dan menyusun informasi secara manual.
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col items-center justify-center text-center hover:shadow-md transition-shadow">
-                    <svg class="w-8 h-8 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    <p class="text-sm text-slate-700 font-medium">Typo & Human Error</p>
-                </div>
-
-            </div>
-
-            <div
-                class="text-center max-w-2xl mx-auto bg-blue-700 p-10 md:p-12 rounded-2xl shadow-xl transform hover:-translate-y-1 transition-all duration-300">
-                <p class="text-lg md:text-xl font-bold text-white mb-6 leading-snug">
-                    Eits... tenang! Sekarang ada Koladi yang bisa mengatasi
-                    semua permasalahan tersebut!
-                </p>
-                <div class="space-y-4">
-                    <a href="{{ route('daftar') }}">
-                        <button
-                            class="px-8 py-3.5 bg-white text-blue-700 rounded-full text-sm font-bold hover:bg-blue-50 shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-                            Coba Solusinya Gratis →
-                        </button>
-                    </a>
-                    <p class="text-blue-100 font-medium text-sm">Gratis 7 hari, tanpa biaya apapun</p>
-                </div>
             </div>
         </div>
     </section>
