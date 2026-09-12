@@ -561,21 +561,6 @@
 
                     </div>
                 </div>
-
-                <div class="mt-10 md:mt-20 flex flex-col items-center text-center">
-                    <!-- JUDUL -->
-                    <h2 class="mb-6 md:mb-10 max-w-4xl text-2xl md:text-4xl font-bold text-slate-900">
-                        <span class="text-slate-800">
-                            Didukung dengan Teknologi Terkini
-                        </span>
-                    </h2>
-
-                    <!-- IMAGE -->
-                    <div class="relative w-full max-w-5xl mx-auto overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-md p-3 sm:p-6">
-                        <img src="images/ai.svg" alt="Koladi AI Architecture"
-                            class="w-full h-auto max-h-[520px] object-contain mx-auto" />
-                    </div>
-                </div>
             </div>
         </div>
     </section>
@@ -644,14 +629,14 @@
                     <p class="text-sm text-slate-500 leading-relaxed">Komunikasi real-time antar rekan kerja langsung di dalam konteks proyek.</p>
                 </div>
 
-                <!-- 6. Timeline -->
+                <!-- 6. Jadwal & Notulensi -->
                 <div
                     class="group p-8 bg-white rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:-translate-y-1 transition-all duration-300">
                     <div class="mb-5 w-12 h-12 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     </div>
-                    <h3 class="text-lg font-bold mb-2 text-slate-900">Timeline</h3>
-                    <p class="text-sm text-slate-500 leading-relaxed">Pantau jadwal, milestone, dan deadline seluruh anggota tim secara visual.</p>
+                    <h3 class="text-lg font-bold mb-2 text-slate-900">Jadwal & Notulensi</h3>
+                    <p class="text-sm text-slate-500 leading-relaxed">Pantau agenda rapat tim, kalender terpadu, dan notulensi meeting otomatis.</p>
                 </div>
 
                 <!-- 7. Statistik -->
