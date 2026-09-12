@@ -114,6 +114,15 @@
 
                         </button>
 
+                        <button @click="tab='ai-processing'" class="px-6 py-4 text-sm font-medium border-b-2 transition"
+                            :class="tab == 'ai-processing' ?
+                                    'border-blue-600 text-blue-600' :
+                                    'border-transparent text-gray-500 hover:text-gray-700'">
+
+                            AI Processing Log
+
+                        </button>
+
                     </div>
 
                 </div>
@@ -536,6 +545,73 @@
 
                     </div>
 
+                </div>
+
+                {{-- ========================= --}}
+                {{-- AI PROCESSING LOG --}}
+                {{-- ========================= --}}
+                <div x-show="tab=='ai-processing'" x-transition>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-gray-50 text-left text-gray-600 text-sm">
+                                    <th class="px-8 py-4 font-semibold">Proyek</th>
+                                    <th class="px-8 py-4 font-semibold">Dokumen yang Diproses</th>
+                                    <th class="px-8 py-4 font-semibold">Diproses Oleh</th>
+                                    <th class="px-8 py-4 font-semibold">Waktu Processing</th>
+                                    <th class="px-8 py-4 font-semibold w-32 text-right">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($aiProcessingLogs as $log)
+                                <tr class="border-t hover:bg-gray-50 transition">
+                                    <td class="px-8 py-6">
+                                        <div class="font-semibold text-slate-800">{{ $log->project_name }}</div>
+                                    </td>
+                                    <td class="px-8 py-6 text-gray-600 text-sm">
+                                        @if(!empty($log->payload['files_mapping']))
+                                            <div class="flex flex-wrap gap-1.5">
+                                                @foreach(array_keys($log->payload['files_mapping']) as $filename)
+                                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-indigo-50 border border-indigo-100 text-xs text-indigo-700">
+                                                        <svg class="w-3 h-3 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                        </svg>
+                                                        {{ $filename }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="text-xs text-gray-400 italic">Tidak ada dokumen</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-8 py-6 text-gray-600 text-sm">
+                                        {{ $log->user->full_name ?? 'Seseorang' }}
+                                    </td>
+                                    <td class="px-8 py-6 text-gray-500 text-sm">
+                                        {{ $log->created_at->format('d M Y H:i') }}
+                                        <span class="block text-[11px] text-gray-400 mt-0.5">{{ $log->created_at->diffForHumans() }}</span>
+                                    </td>
+                                    <td class="px-8 py-6 text-right">
+                                        <a href="{{ route('ai-processing-log.show', ['workspace' => $workspace->id, 'log' => $log->id]) }}"
+                                           class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-xs font-semibold text-blue-700 transition">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                            Detail
+                                        </a>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="5" class="px-8 py-10 text-center text-gray-400 text-sm">
+                                        Belum ada log AI Processing yang tercatat.
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
             </div>

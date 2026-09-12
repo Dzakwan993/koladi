@@ -19,11 +19,17 @@ return [
         'api_key_2'   => env('GEMINI_API_KEY_2'),
         'api_key_3'   => env('GEMINI_API_KEY_3'),
         'api_key_4'   => env('GEMINI_API_KEY_4'),
+        'api_key_5'   => env('GEMINI_API_KEY_5'),
+        'api_key_6'   => env('GEMINI_API_KEY_6'),
+        'api_key_7'   => env('GEMINI_API_KEY_7'),
+        'api_key_8'   => env('GEMINI_API_KEY_8'),
+        'api_key_9'   => env('GEMINI_API_KEY_9'),
+        'api_key_10'  => env('GEMINI_API_KEY_10'),
         'base_url'    => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
         'temperature' => (float) env('GEMINI_TEMPERATURE', 0.2),
         'timeout'     => (int) env('GEMINI_TIMEOUT', 120),
     ],
-    
+
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],
@@ -49,6 +55,10 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
+    ],
+
+    'fireflies' => [
+        'key' => env('FIREFLIES_API_KEY'),
     ],
 
 ];

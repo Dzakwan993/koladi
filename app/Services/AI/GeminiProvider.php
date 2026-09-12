@@ -29,6 +29,12 @@ class GeminiProvider implements AIProvider
             config('services.gemini.api_key_2'),
             config('services.gemini.api_key_3'),
             config('services.gemini.api_key_4'),
+            config('services.gemini.api_key_5'),
+            config('services.gemini.api_key_6'),
+            config('services.gemini.api_key_7'),
+            config('services.gemini.api_key_8'),
+            config('services.gemini.api_key_9'),
+            config('services.gemini.api_key_10'),
         ]));
 
         if (empty($this->apiKeys)) {
@@ -57,6 +63,7 @@ class GeminiProvider implements AIProvider
                     'api_key_index'   => $result['api_key_index'],
                 ]);
 
+                Log::info('Gemini Raw Response Text: ' . $result['text']);
                 return $result['text'];
 
             } catch (RuntimeException $e) {
@@ -190,7 +197,7 @@ class GeminiProvider implements AIProvider
                     'responseMimeType' => 'application/json',
                     'responseSchema'   => !empty($responseSchema) ? $responseSchema : null,
                     'temperature'      => $temperature,
-                    'maxOutputTokens'  => 6144,
+                    'maxOutputTokens'  => 16384,
                 ])
             ]);
 

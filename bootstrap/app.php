@@ -40,6 +40,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'midtrans/callback',
             'midtrans/*',
             'xendit/callback', // ✅ Tambahkan ini
+            'api/webhooks/fireflies-meeting',
+            'api/webhooks/tactiq-meeting',
+
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

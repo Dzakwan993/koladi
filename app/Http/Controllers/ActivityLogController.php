@@ -147,7 +147,13 @@ class ActivityLogController extends Controller
             ];
         });
 
-        // ===== 6. MERGE & SORT =====
+        // ===== 6. AI PROCESSING LOGS =====
+        $aiProcessingLogs = \App\Models\AIProcessingLog::where('workspace_id', $workspace->id)
+            ->with('user')
+            ->latest()
+            ->get();
+
+        // ===== 7. MERGE & SORT =====
         $sortedActivities = $taskActivities
             ->concat($fileActivities)
             ->concat($memberActivities)
@@ -160,6 +166,6 @@ class ActivityLogController extends Controller
                 return $item;
             });
 
-        return view('activity-log', compact('workspace', 'sortedActivities', 'decisions'));
+        return view('activity-log', compact('workspace', 'sortedActivities', 'decisions', 'aiProcessingLogs'));
     }
 }

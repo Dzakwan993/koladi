@@ -42,8 +42,17 @@ Broadcast::routes(['middleware' => ['web', 'auth']]);
 Route::get('/workspace/{workspace}/upload-brief', [BriefController::class, 'uploadbrief'])
     ->name('upload-brief');
 
+Route::get('/workspace/{workspace}/brief/template', [BriefController::class, 'workspaceTemplate'])
+    ->name('workspace.brief.template');
+
+Route::get('/brief/template', [BriefController::class, 'template'])
+    ->name('brief.template');
+
 Route::get('/workspace/{workspace}/ai-brief', [BriefController::class, 'brief'])
     ->name('ai-brief');
+
+Route::get('/workspace/{workspace}/brief/transcript-status', [BriefController::class, 'transcriptStatus'])
+    ->name('brief.transcriptStatus');
 
 
 // Route::get('/', [LandingPageController::class, 'index'])->name('landingpage');
@@ -107,6 +116,12 @@ Route::middleware(['auth', 'check.system.admin'])->prefix('admin')->name('admin.
 
 // Webhook Xendit (tanpa auth)
 Route::post('/xendit/callback', [SubscriptionController::class, 'xenditCallback'])->name('xendit.callback');
+
+// 🔥 Webhook Tactiq / Make.com untuk AI Brief Meeting (lama, biarkan tetap ada)
+Route::post('/api/webhooks/tactiq-meeting', [\App\Http\Controllers\Api\MeetingWebhookController::class, 'handleWebhook']);
+
+// 🔥 BARU: Webhook native Fireflies.ai
+Route::post('/api/webhooks/fireflies-meeting', [\App\Http\Controllers\Api\FirefliesWebhookController::class, 'handleWebhook']);
 
 // ============================================
 // 🔐 AUTHENTICATED ROUTES
@@ -342,12 +357,15 @@ Route::middleware(['auth'])->group(function () {
         // ========================================
         // 🔥 Document AI Brief Routes
         // ========================================
-        
+
         Route::prefix('brief')->name('brief.')->group(function () {
             Route::get('/', [BriefController::class, 'index'])->name('index');
             Route::post('/upload', [BriefController::class, 'upload'])->name('upload');
+            Route::post('/template/save', [BriefController::class, 'saveTemplate'])->name('template.save');
+            Route::post('/template/clear', [BriefController::class, 'clearTemplate'])->name('template.clear');
             Route::get('/review', [BriefController::class, 'review'])->name('review');
             Route::post('/approve', [BriefController::class, 'approve'])->name('approve');
+            Route::post('/from-transcript', [BriefController::class, 'uploadFromTranscript'])->name('fromTranscript');
         });
 
         // ========================================
@@ -622,6 +640,9 @@ Route::middleware(['auth'])->group(function () {
     });
 
 
+    Route::get('/workspace/{workspace}/ai-processing-log/{log}', [BriefController::class, 'showLog'])
+        ->name('ai-processing-log.show');
+
     Route::get('/activity-log/{workspace}', [ActivityLogController::class, 'index'])
-    ->name('activity-log');
+        ->name('activity-log');
 });
