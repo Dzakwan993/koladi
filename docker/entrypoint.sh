@@ -21,24 +21,17 @@ TABLE_COUNT=$(PGPASSWORD="$DB_PASSWORD" psql \
   -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public';" \
   2>/dev/null | tr -d ' ')
 
-# 4️⃣ Import SQL ONLY if DB empty
-if [ "$TABLE_COUNT" = "0" ]; then
-  echo "📥 Database empty — importing Koladi.sql"
-  if [ -f "/var/www/Koladi.sql" ]; then
-    PGPASSWORD="$DB_PASSWORD" psql \
-      -h "$DB_HOST" -U "$DB_USERNAME" -d "$DB_DATABASE" \
-      < /var/www/Koladi.sql
-    echo "✅ Koladi.sql imported"
-  else
-    echo "❌ Koladi.sql NOT FOUND"
-    exit 1
-  fi
-else
-  echo "✅ Database already initialized — skipping import"
-fi
+# 4️⃣ Run database migrations
+echo "🔄 Running database migrations..."
+php artisan migrate --force
 
-# 5️⃣ Run migrations ONLY if needed (optional)
-# php artisan migrate --force || true
+# 5️⃣ Seed initial data ONLY if DB was empty
+if [ "$TABLE_COUNT" = "0" ]; then
+  echo "🌱 Database empty — seeding initial data..."
+  php artisan db:seed --force || true
+else
+  echo "✅ Database already initialized"
+fi
 
 # 6️⃣ Storage + cache
 php artisan storage:link || true

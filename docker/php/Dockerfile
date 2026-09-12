@@ -29,7 +29,12 @@ RUN chown -R www-data:www-data storage bootstrap/cache public \
 && chmod -R 775 storage bootstrap/cache public
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh \
+ && chmod +x /usr/local/bin/entrypoint.sh \
+ && if [ -f /var/www/docker/entrypoint.local.sh ]; then \
+      sed -i 's/\r$//' /var/www/docker/entrypoint.local.sh && \
+      chmod +x /var/www/docker/entrypoint.local.sh; \
+    fi
 
 # Frontend build
 RUN npm ci && npm run build
