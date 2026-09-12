@@ -100,153 +100,203 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
+
+        /* Apple Dock Style Underline Navbar */
+        .nav-apple-item {
+            position: relative;
+            transition: color 0.2s ease;
+        }
+        .nav-apple-item::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            width: 0%;
+            height: 2.5px;
+            background-color: #2563eb;
+            border-radius: 9999px;
+            transition: width 0.25s ease, opacity 0.25s ease;
+            transform: translateX(-50%);
+            opacity: 0;
+        }
+        .nav-apple-item:hover::after,
+        .nav-apple-item.active::after {
+            width: 60%;
+            opacity: 1;
+        }
+
+        /* Transisi gelombang dari hero putih ke section biru */
+        .hero-wave {
+            position: absolute;
+            left: 0;
+            bottom: -1px;
+            width: 100%;
+            height: 82px;
+            z-index: 20;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .hero-wave svg {
+            display: block;
+            width: 120%;
+            min-width: 1440px;
+            height: 100%;
+            margin-left: -10%;
+            transform-origin: bottom center;
+            animation: heroWaveMotion 7s ease-in-out infinite;
+        }
+
+        @keyframes heroWaveMotion {
+            0%, 100% {
+                transform: translateX(-1%) scaleY(1);
+            }
+
+            50% {
+                transform: translateX(-7%) scaleY(1.18);
+            }
+        }
     </style>
 </head>
 
 <body class="bg-gray-50 text-gray-800">
-    <!-- Navigation -->
-    <nav class="fixed top-0 w-full bg-white/90 backdrop-blur-md shadow-sm z-50 transition-all duration-300">
+    <!-- Navigation (Clean Dominant White Theme) -->
+    <nav class="fixed top-0 w-full bg-white/95 backdrop-blur-md border-b border-gray-200/80 shadow-sm z-50 transition-all duration-300">
         <div class="container mx-auto px-4 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div
-                    class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                    <img src="images/LogoKoladi.svg" alt="">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center">
+                    <a href="#" class="inline-flex items-center">
+                        <img src="images/LogoKoladi.svg" alt="Logo Koladi" class="h-8 transition-transform duration-200 hover:scale-105">
+                    </a>
                 </div>
 
                 <!-- Desktop Menu -->
-                <div class="hidden md:flex items-center space-x-12">
-                    <a href="#beranda" class="font-bold hover:text-purple-600 transition-colors">Beranda</a>
-                    <a href="#fitur" class="font-bold hover:text-purple-600 transition-colors">Fitur</a>
-                    <a href="#tentang" class=" font-bold hover:text-purple-600 transition-colors">Tentang</a>
-                    <a href="#paket" class=" font-bold hover:text-purple-600 transition-colors">Paket</a>
-                </div>
-
-                <div class="hidden md:flex items-center space-x-4">
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#beranda" class="font-bold text-gray-800 hover:text-blue-600 transition-colors text-sm tracking-wide py-2">Beranda</a>
+                    <a href="#fitur" class="font-bold text-gray-800 hover:text-blue-600 transition-colors text-sm tracking-wide py-2">Fitur</a>
+                    <a href="#tentang" class="font-bold text-gray-800 hover:text-blue-600 transition-colors text-sm tracking-wide py-2">Tentang</a>
+                    <a href="#paket" class="font-bold text-gray-800 hover:text-blue-600 transition-colors text-sm tracking-wide py-2">Paket</a>
+                    <span class="text-gray-300 font-light">|</span>
+                    <a href="{{ route('daftar') }}" class="font-bold text-gray-700 hover:text-black transition-colors text-sm tracking-wide py-2">Daftar</a>
                     <a href="{{ route('masuk') }}">
-                        <button
-                            class="px-6 py-2.5 bg-blue-600 text-white font-bold text-[13px] rounded-full
-               hover:bg-blue-700 hover:-translate-y-0.5 active:scale-95
-               transition-all duration-200 shadow-sm hover:shadow-md">
+                        <button class="px-7 py-2.5 bg-blue-600 text-white font-extrabold text-sm rounded-full hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all duration-200 shadow-md shadow-blue-500/20">
                             Masuk
                         </button>
                     </a>
-
-                    <!-- Button Daftar -->
-                    <a href="{{ route('daftar') }}">
-                        <button
-                            class="px-6 py-2.5 bg-gray-200 text-black font-bold text-[13px] rounded-full
-               hover:bg-gray-300 hover:-translate-y-0.5 active:scale-95
-               transition-all duration-200 shadow-sm hover:shadow-md">
-                            Daftar
-                        </button>
-                    </a>
-
                 </div>
 
                 <!-- Mobile Menu Button -->
-                <button id="mobileMenuBtn" class="md:hidden p-2">
+                <button id="mobileMenuBtn" class="md:hidden p-2 text-gray-800 focus:outline-none hover:bg-gray-100 rounded-lg transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 6h16M4 12h16M4 18h16"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
                 </button>
             </div>
         </div>
 
         <!-- Mobile Menu -->
-        <div id="mobileMenu" class="hidden md:hidden bg-white border-t">
-            <div class="container mx-auto px-4 py-4 space-y-4">
-                <a href="#beranda" class="block hover:text-purple-600 transition-colors">Beranda</a>
-                <a href="#fitur" class="block hover:text-purple-600 transition-colors">Fitur</a>
-                <a href="#tentang" class="block hover:text-purple-600 transition-colors">Tentang</a>
-                <a href="#paket" class="block hover:text-purple-600 transition-colors">Paket</a>
-                <div class="flex flex-col space-y-2 pt-4">
+        <div id="mobileMenu" class="hidden md:hidden bg-white border-b border-gray-200 shadow-lg">
+            <div class="container mx-auto px-4 py-4 space-y-4 text-gray-800">
+                <a href="#beranda" class="block font-bold hover:text-blue-600 transition-colors">Beranda</a>
+                <a href="#fitur" class="block font-bold hover:text-blue-600 transition-colors">Fitur</a>
+                <a href="#tentang" class="block font-bold hover:text-blue-600 transition-colors">Tentang</a>
+                <a href="#paket" class="block font-bold hover:text-blue-600 transition-colors">Paket</a>
+                <div class="flex flex-col space-y-3 pt-4 border-t border-gray-100">
+                    <a href="{{ route('daftar') }}" class="block font-bold text-center py-2 text-gray-700 hover:text-black">Daftar</a>
                     <a href="{{ route('masuk') }}">
-                        <button
-                            class="px-6 py-2.5 bg-blue-600 text-white font-bold text-[13px] rounded-full
-               hover:bg-blue-700 hover:-translate-y-0.5 active:scale-95
-               transition-all duration-200 shadow-sm hover:shadow-md">
+                        <button class="w-full px-6 py-2.5 bg-blue-600 text-white font-extrabold text-sm rounded-full hover:bg-blue-700 transition-all shadow-md">
                             Masuk
                         </button>
                     </a>
-
-                    <!-- Button Daftar -->
-                    <a href="{{ route('daftar') }}">
-                        <button
-                            class="px-6 py-2.5 bg-gray-200 text-black font-bold text-[13px] rounded-full
-               hover:bg-gray-300 hover:-translate-y-0.5 active:scale-95
-               transition-all duration-200 shadow-sm hover:shadow-md">
-                            Daftar
-                        </button>
-                    </a>
                 </div>
             </div>
         </div>
+
     </nav>
 
-    <!-- Hero Section -->
-    <section id="beranda"
-        class="min-h-screen flex items-center bg-gradient-to-br from-indigo-100 via-white-500 to-blue-100 overflow-hidden relative">
-        <!-- Animated Background Elements -->
+    <!-- Hero Section (Dominan Putih Clean Theme) -->
+    <section id="beranda" class="min-h-screen flex items-center bg-white overflow-hidden relative pt-24 pb-12">
+        <!-- Subtle Glow Effects -->
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-blue-100/60 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute top-1/2 right-0 w-[500px] h-[500px] bg-purple-100/40 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div class="container mx-auto px-4 lg:px-8 relative z-10 pt-20">
-            <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <div class="container mx-auto px-4 lg:px-8 relative z-10">
+            <div class="grid lg:grid-cols-12 gap-12 items-center">
+
                 <!-- Left Content -->
-                <div class="text-left animate-slideInLeft">
-
-
-                    <h1 class="text-5xl md:text-6xl font-extrabold mb-4 text-gray-900 leading-tight">
+                <div class="lg:col-span-6 text-left space-y-6">
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 leading-[1.15] tracking-tight">
                         ALL IN ONE<br>
-                        <span class="bg-gradient-to-r from-blue-600 via-black to-black bg-clip-text text-transparent">
-                            WORKSPACES
-                        </span>
+                        <span class="text-blue-600">WORKSPACES.</span>
                     </h1>
 
-                    <p class="text-xl md:text-2xl font-bold text-blue-800 mb-8">
+                    <p class="text-lg sm:text-xl font-bold text-blue-800">
                         WORKSPACES LOKAL HARGA MASUK AKAL
                     </p>
-                    <a href="{{ route('daftar') }}">
-                        <button
-                            class="px-3 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg text-lg font-bold hover:shadow-2xl transform hover:scale-105 transition-all duration-300 hover:-translate-y-1">
-                            <p class="">COBA GRATIS -></p>
-                        </button>
-                    </a>
-                </div>
 
-                <!-- Right Content - Laptop Mockup -->
-                <div class="relative animate-slideInRight">
-                    <div class="relative transform hover:scale-105 transition-all duration-500 animate-float">
-                        <!-- Laptop Frame -->
-                        <div class="relative bg-gray-800 rounded-t-2xl p-2 shadow-2xl">
-                            <!-- Screen -->
-                            <div class="bg-white rounded-t-lg overflow-hidden flex items-center justify-center py-4">
-                                <img src="images/laptop.svg" alt="Dashboard Preview" class="w-50 h-auto object-contain">
-                            </div>
+                    <p class="text-sm sm:text-base text-gray-600 font-medium leading-relaxed max-w-lg">
+                        Kelola seluruh proyek, tugas tim, pengumuman, chat, dan analisis AI dalam satu tempat yang terintegrasi dan efisien.
+                    </p>
 
-                        </div>
-                        <!-- Laptop Base -->
-                        <div class="bg-gray-700 h-4 rounded-b-2xl shadow-xl"></div>
-                        <div class="bg-gray-600 h-1 w-3/4 mx-auto rounded-b-lg"></div>
-
-                        <!-- Floating Elements -->
-                        <div class="absolute -top-10 -right-10 w-20 h-20 bg-yellow-400 rounded-2xl shadow-lg animate-float"
-                            style="animation-delay: 1s"></div>
-                        <div class="absolute -bottom-10 -left-10 w-16 h-16 bg-pink-400 rounded-full shadow-lg animate-float"
-                            style="animation-delay: 2s"></div>
-                        <div class="absolute top-1/2 -right-5 w-12 h-12 bg-blue-400 rounded-lg shadow-lg animate-float"
-                            style="animation-delay: 3s"></div>
+                    <!-- CTA Buttons -->
+                    <div class="flex flex-wrap items-center gap-4 pt-2">
+                        <a href="{{ route('daftar') }}">
+                            <button class="px-8 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm rounded-full shadow-lg hover:scale-105 transition-all duration-200">
+                                COBA GRATIS ->
+                            </button>
+                        </a>
+                        <a href="#fitur">
+                            <button class="px-8 py-3.5 bg-white border-2 border-gray-300 hover:border-black text-gray-900 font-extrabold text-sm rounded-full hover:scale-105 transition-all duration-200 shadow-sm">
+                                Lihat Paket
+                            </button>
+                        </a>
                     </div>
                 </div>
+
+                <!-- Right Content: Tilted Photo Mosaic Grid (Static Neat Wall Style) -->
+                <div class="lg:col-span-6 relative flex items-center justify-center min-h-[420px] sm:min-h-[500px]">
+                    <div class="grid grid-cols-3 gap-3 sm:gap-4 transform -rotate-12 scale-105 sm:scale-110 md:scale-125">
+
+                        <!-- Column 1 -->
+                        <div class="space-y-3 sm:space-y-4 flex flex-col">
+                            <img src="/images/workspaces.svg" alt="Foto 1" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
+                            <img src="/images/kanban.svg" alt="Foto 2" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
+                            <img src="/images/Chat.svg" alt="Foto 3" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
+                        </div>
+
+                        <!-- Column 2 (Shifted Upwards) -->
+                        <div class="space-y-3 sm:space-y-4 flex flex-col -mt-6 sm:-mt-10">
+                            <img src="/images/pengumuman.svg" alt="Foto 4" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
+                            <img src="/images/mindmap.svg" alt="Foto 5" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
+                            <img src="/images/timeline.svg" alt="Foto 6" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
+                        </div>
+
+                        <!-- Column 3 -->
+                        <div class="space-y-3 sm:space-y-4 flex flex-col">
+                            <img src="/images/statistik.svg" alt="Foto 7" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
+                            <img src="/images/dokumen.svg" alt="Foto 8" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
+                            <img src="/images/LogoAtas.svg" alt="Foto 9" class="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 object-cover">
+                        </div>
+
+                    </div>
+                </div>
+
             </div>
         </div>
 
-        <!-- Scroll Indicator -->
-        {{-- <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3">
-                </path>
+        <div class="hero-wave" aria-hidden="true">
+            <svg viewBox="0 0 1440 90" preserveAspectRatio="none">
+                <defs>
+                    <linearGradient id="heroToProblem" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stop-color="#60a5fa" />
+                        <stop offset="52%" stop-color="#dbeafe" />
+                        <stop offset="100%" stop-color="#dbeafe" />
+                    </linearGradient>
+                </defs>
+                <path fill="url(#heroToProblem)"
+                    d="M0,42 C180,5 345,82 555,43 C755,5 938,82 1145,43 C1285,17 1377,20 1440,36 L1440,90 L0,90 Z" />
             </svg>
-        </div> --}}
+        </div>
     </section>
 
     <!-- Problem Section -->
